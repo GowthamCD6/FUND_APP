@@ -40,6 +40,17 @@ const ChatScreen = () => (
   </View>
 );
 
+const ProfileScreen = () => (
+  <View style={styles.screenContainer}>
+    <View style={styles.gradientHeader}>
+      <Text style={styles.headerTitle}>Profile</Text>
+    </View>
+    <View style={styles.screenContent}>
+      <Text style={styles.screenText}>Profile Screen</Text>
+    </View>
+  </View>
+);
+
 const Tab = createBottomTabNavigator();
 
 // Custom Tab Bar Button for Center "More" Button
@@ -146,7 +157,7 @@ const AppTabs = () => {
       {/* Profile Tab */}
       <Tab.Screen
         name="Profile"
-        component={Profile}
+        component={ProfileScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabIconContainer}>

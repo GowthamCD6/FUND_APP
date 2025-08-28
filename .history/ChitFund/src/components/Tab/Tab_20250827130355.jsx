@@ -7,7 +7,6 @@ import styles from './Tabsty';
 // Import actual page components
 import Home from '../../pages/Home/Home';
 import Portfolio from '../../pages/Portfolio/Portfolio';
-import Profile from '../../pages/Profile/Profile';
 
 // Import SVG assets from your assects folder
 import HomeIcon from '../../assects/Icon/home.svg';
@@ -36,6 +35,17 @@ const ChatScreen = () => (
     </View>
     <View style={styles.screenContent}>
       <Text style={styles.screenText}>Chat Screen</Text>
+    </View>
+  </View>
+);
+
+const ProfileScreen = () => (
+  <View style={styles.screenContainer}>
+    <View style={styles.gradientHeader}>
+      <Text style={styles.headerTitle}>Profile</Text>
+    </View>
+    <View style={styles.screenContent}>
+      <Text style={styles.screenText}>Profile Screen</Text>
     </View>
   </View>
 );
@@ -146,7 +156,7 @@ const AppTabs = () => {
       {/* Profile Tab */}
       <Tab.Screen
         name="Profile"
-        component={Profile}
+        component={ProfileScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabIconContainer}>

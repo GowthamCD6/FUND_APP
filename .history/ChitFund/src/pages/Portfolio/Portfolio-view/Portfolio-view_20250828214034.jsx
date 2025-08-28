@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
-import LeftArrowIcon from '../../assects/Icon/left-arrow.svg'; // Assuming this path is correct
+import LeftArrowIcon from '.';
 
 const ChitGroupDetails = ({ group, onClose }) => {
   // Dummy group data for testing purposes if group prop is not provided

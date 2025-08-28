@@ -62,7 +62,7 @@ const ChitGroupDetails = ({ group, onClose }) => {
           {/* Lottie Animation Section */}
           <View style={styles.animationContainer}>
             <LottieView
-              source={require('../../../animation/Finance.json')} // Ensure this path is correct
+              source={require('../../animation/Finance.json')} // Ensure this path is correct
               autoPlay
               loop
               style={styles.lottieAnimation}
@@ -132,7 +132,7 @@ const ChitGroupDetails = ({ group, onClose }) => {
       ) : (
         <View style={styles.noDataContainer}>
           <LottieView
-            source={require('../../../animation/Finance.json')} // Assuming you have a 'NoData' animation
+            source={require('../../animation/Finance.json')} // Assuming you have a 'NoData' animation
             autoPlay
             style={styles.noDataAnimation}
           />

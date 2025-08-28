@@ -146,7 +146,7 @@ const AppTabs = () => {
       {/* Profile Tab */}
       <Tab.Screen
         name="Profile"
-        component={Profile}
+        component={ProfileScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabIconContainer}>
