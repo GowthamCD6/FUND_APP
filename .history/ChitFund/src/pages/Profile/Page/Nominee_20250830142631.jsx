@@ -45,7 +45,7 @@ const Nominee = ({ onBack }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Nominee</Text>
       </View>
-      <View style={styles.separator} />
+
       {/* Content */}
       <View style={styles.content}>
         {/* Nominee Name Input */}
@@ -133,8 +133,7 @@ const Nominee = ({ onBack }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -143,9 +142,6 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 12 : 20,
     paddingBottom: 12,
     backgroundColor: '#FFFFFF',
-    width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#d7dce4ff',
   },
   backButton: {
     padding: 4,
@@ -160,51 +156,41 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: '#F0F0F0',
-    width: '100%',
+    backgroundColor: '#d7dce4ff',
   },
   content: {
     flex: 1,
-    width: '100%',
-    paddingHorizontal: 16,
-    paddingTop: 12,
+  },
+  formContainer: {
+    paddingTop: 32,
+    paddingHorizontal: 20,
   },
   inputContainer: {
-    marginBottom: 18,
-    width: '100%',
+    marginBottom: 28,
   },
   inputLabel: {
     fontSize: 16,
     fontWeight: '500',
     color: '#212121',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-    marginBottom: 8,
   },
   input: {
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 17,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#F5F5F5',
     color: '#212121',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-    height: 52,
-    width: '100%',
   },
   relationshipInput: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#F9F9F9',
-    height: 52,
-    width: '100%',
+    backgroundColor: '#F5F5F5',
   },
   relationshipText: {
     fontSize: 16,
@@ -213,24 +199,33 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 16,
-    color: '#A0A0A0',
+    color: '#9CA3AF',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   saveButton: {
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#3B82F6',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: Platform.OS === 'ios' ? 24 : 16,
-    width: '96%',
-    alignSelf: 'center',
+    gap: 8,
+    marginTop: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   saveButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '600',
+    marginTop:-80,
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   bottomSpacing: {
@@ -271,8 +266,6 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
     color: '#212121',
-    marginTop: 3,
-    marginBottom: 3,
     fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   relationshipItem: {
@@ -290,5 +283,4 @@ relationshipItemText: {
   fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
 },
 });
-
 export default Nominee;

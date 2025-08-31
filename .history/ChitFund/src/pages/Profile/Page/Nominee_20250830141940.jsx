@@ -45,7 +45,7 @@ const Nominee = ({ onBack }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Nominee</Text>
       </View>
-      <View style={styles.separator} />
+
       {/* Content */}
       <View style={styles.content}>
         {/* Nominee Name Input */}
@@ -133,108 +133,92 @@ const Nominee = ({ onBack }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    paddingBottom: 12,
+    paddingTop: Platform.OS === 'ios' ? 50 : 20, // Adjust for iOS status bar
+    paddingBottom: 16, // Increased paddingBottom for better spacing
     backgroundColor: '#FFFFFF',
-    width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#d7dce4ff',
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
-    marginTop: -10,
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
+    fontSize: 20, // Slightly smaller to match image
+    fontWeight: '500', // Adjusted fontWeight
+    color: '#1F2937', // Darker color
     marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#F0F0F0',
-    width: '100%',
+    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   content: {
     flex: 1,
-    width: '100%',
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 24, // Increased padding top for content
   },
   inputContainer: {
-    marginBottom: 18,
-    width: '100%',
+    marginBottom: 20, // Spacing between input sections
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
-    color: '#212121',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+    color: '#374151',
     marginBottom: 8,
+    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   input: {
-    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 17,
-    backgroundColor: '#F9F9F9',
-    color: '#212121',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-    height: 52,
-    width: '100%',
+    borderColor: '#D1D5DB', // Light gray border
+    borderRadius: 8, // Rounded corners for inputs
+    paddingHorizontal: 16, // More padding inside input
+    paddingVertical: 12, // More vertical padding
+    fontSize: 16,
+    color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   relationshipInput: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#F9F9F9',
-    height: 52,
-    width: '100%',
+  flexDirection: 'row',
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  alignItems: 'center',
+  borderWidth: 1,
+  borderWidth: 1,
+  borderColor: '#D1D5DB',
+  borderColor: '#D1D5DB',
+  borderRadius: 8,
+  borderRadius: 8,
+  paddingHorizontal: 16,
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  paddingVertical: 12,
   },
   relationshipText: {
     fontSize: 16,
-    color: '#212121',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+    color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   placeholderText: {
     fontSize: 16,
-    color: '#A0A0A0',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+    color: '#9CA3AF', // Lighter placeholder color
+    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   saveButton: {
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#6D28D9', // Purple color for the button
+    marginHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: Platform.OS === 'ios' ? 24 : 16,
-    width: '96%',
-    alignSelf: 'center',
   },
   saveButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-  },
-  bottomSpacing: {
-    height: 32,
+    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   modalOverlay: {
     flex: 1,
@@ -271,8 +255,6 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
     color: '#212121',
-    marginTop: 3,
-    marginBottom: 3,
     fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   relationshipItem: {
@@ -290,5 +272,4 @@ relationshipItemText: {
   fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
 },
 });
-
 export default Nominee;

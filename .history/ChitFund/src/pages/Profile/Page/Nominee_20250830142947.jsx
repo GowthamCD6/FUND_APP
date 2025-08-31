@@ -45,7 +45,7 @@ const Nominee = ({ onBack }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Nominee</Text>
       </View>
-      <View style={styles.separator} />
+
       {/* Content */}
       <View style={styles.content}>
         {/* Nominee Name Input */}
@@ -142,16 +142,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 12 : 20,
     paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
     width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#d7dce4ff',
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
-    marginTop: -10,
     fontSize: 22,
     fontWeight: '600',
     color: '#212121',
@@ -217,19 +214,29 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   saveButton: {
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#3B82F6',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: Platform.OS === 'ios' ? 24 : 16,
-    width: '96%',
+    gap: 8,
+    marginTop: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+    width: '97%',
     alignSelf: 'center',
   },
   saveButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '600',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
@@ -271,8 +278,6 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
     color: '#212121',
-    marginTop: 3,
-    marginBottom: 3,
     fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   relationshipItem: {
@@ -290,5 +295,4 @@ relationshipItemText: {
   fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
 },
 });
-
 export default Nominee;

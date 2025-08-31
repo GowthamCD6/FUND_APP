@@ -1,3 +1,15 @@
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import LottieView from 'lottie-react-native';
+
+/**
+ * A reusable "Under Construction" screen component.
+ * @param {object} props - The component's props.
+ * @param {function} props.onBack - A function to be called when the back button is pressed.
+ * @param {string} [props.pageName="This Page"] - The name of the page that is under construction.
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -11,28 +23,23 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const Nominee = ({ onBack }) => {
-  const [nomineeName, setNomineeName] = useState('');
-  const [nomineePhone, setNomineePhone] = useState('');
-  const [selectedRelationship, setSelectedRelationship] = useState('');
+const IdentityV = ({ onBack }) => {
+  const [identityName, setIdentityName] = useState('');
+  const [identityNumber, setIdentityNumber] = useState('');
+  const [selectedType, setSelectedType] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const relationships = [
-    'Father',
-    'Mother',
-    'Husband',
-    'Wife',
-    'Brother',
-    'Sister',
-    'Son',
-    'Daughter',
-    'Friend',
-    'Relative',
+  const identityTypes = [
+    'Aadhaar',
+    'PAN',
+    'Passport',
+    'Driving License',
+    'Voter ID',
     'Other',
   ];
 
-  const handleSelectRelationship = (relationship) => {
-    setSelectedRelationship(relationship);
+  const handleSelectType = (type) => {
+    setSelectedType(type);
     setIsModalVisible(false);
   };
 
@@ -43,45 +50,45 @@ const Nominee = ({ onBack }) => {
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Nominee</Text>
+        <Text style={styles.headerTitle}>Identity Verification</Text>
       </View>
       <View style={styles.separator} />
       {/* Content */}
       <View style={styles.content}>
-        {/* Nominee Name Input */}
+        {/* Identity Name Input */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Name</Text>
           <TextInput
             style={styles.input}
             placeholder="Full Name"
             placeholderTextColor="#9CA3AF"
-            value={nomineeName}
-            onChangeText={setNomineeName}
+            value={identityName}
+            onChangeText={setIdentityName}
           />
         </View>
 
-        {/* Nominee Phone Number Input */}
+        {/* Identity Number Input */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Phone number</Text>
+          <Text style={styles.inputLabel}>Identity Number</Text>
           <TextInput
             style={styles.input}
-            placeholder="1234567890"
+            placeholder="Enter ID Number"
             placeholderTextColor="#9CA3AF"
-            value={nomineePhone}
-            onChangeText={setNomineePhone}
-            keyboardType="phone-pad"
+            value={identityNumber}
+            onChangeText={setIdentityNumber}
+            keyboardType="default"
           />
         </View>
 
-        {/* Nominee Relationship Input with Modal Trigger */}
+        {/* Identity Type Input with Modal Trigger */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Relationship</Text>
+          <Text style={styles.inputLabel}>Identity Type</Text>
           <TouchableOpacity
             style={styles.relationshipInput}
             onPress={() => setIsModalVisible(true)}
           >
-            <Text style={selectedRelationship ? styles.relationshipText : styles.placeholderText}>
-              {selectedRelationship || 'Select'}
+            <Text style={selectedType ? styles.relationshipText : styles.placeholderText}>
+              {selectedType || 'Select'}
             </Text>
             <MaterialCommunityIcons name="chevron-down" size={20} color="#9CA3AF" />
           </TouchableOpacity>
@@ -89,11 +96,11 @@ const Nominee = ({ onBack }) => {
       </View>
 
       {/* Save Button */}
-      <TouchableOpacity style={styles.saveButton} onPress={() => console.log('Save Nominee')}>
+      <TouchableOpacity style={styles.saveButton} onPress={() => console.log('Save Identity')}>
         <Text style={styles.saveButtonText}>Save</Text>
       </TouchableOpacity>
 
-      {/* Relationship Selection Modal */}
+      {/* Identity Type Selection Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -103,21 +110,21 @@ const Nominee = ({ onBack }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nominee Relation</Text>
+              <Text style={styles.modalTitle}>Identity Type</Text>
               <TouchableOpacity onPress={() => setIsModalVisible(false)}>
                 <MaterialCommunityIcons name="close" size={24} color="#1F2937" />
               </TouchableOpacity>
             </View>
             <FlatList
-              data={relationships}
+              data={identityTypes}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.relationshipItem}
-                  onPress={() => handleSelectRelationship(item)}
+                  onPress={() => handleSelectType(item)}
                 >
                   <Text style={styles.relationshipItemText}>{item}</Text>
-                  {selectedRelationship === item && (
+                  {selectedType === item && (
                     <MaterialCommunityIcons name="check" size={20} color="#10B981" />
                   )}
                 </TouchableOpacity>
@@ -243,7 +250,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20, // Adjust for safe area on iOS
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     maxHeight: '50%',
     width: '100%',
     ...Platform.select({
@@ -279,16 +286,16 @@ const styles = StyleSheet.create({
    flexDirection: 'row',
    justifyContent: 'space-between',
    alignItems: 'center',
- paddingHorizontal: 20,
- paddingVertical: 15,
- borderBottomWidth: 1,
-  borderBottomColor: '#F3F4F6',
-},
-relationshipItemText: {
-  fontSize: 17,
-  color: '#1F2937',
-  fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
-},
+   paddingHorizontal: 20,
+   paddingVertical: 15,
+   borderBottomWidth: 1,
+   borderBottomColor: '#F3F4F6',
+  },
+  relationshipItemText: {
+    fontSize: 17,
+    color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
+  },
 });
 
-export default Nominee;
+export default IdentityV;

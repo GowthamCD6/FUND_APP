@@ -40,18 +40,18 @@ const Nominee = ({ onBack }) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Nominee</Text>
-      </View>
-      <View style={styles.separator} />
-      {/* Content */}
-      <View style={styles.content}>
-        {/* Nominee Name Input */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Name</Text>
-          <TextInput
+          <TouchableOpacity style={styles.backButton} onPress={onBack}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Add Nominee</Text>
+        </View>
+        <View style={styles.separator} />
+        {/* Content */}
+        <View style={styles.content}>
+          {/* Nominee Name Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Name</Text>
+            <TextInput
             style={styles.input}
             placeholder="Full Name"
             placeholderTextColor="#9CA3AF"

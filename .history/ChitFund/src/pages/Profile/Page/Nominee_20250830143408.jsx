@@ -45,7 +45,7 @@ const Nominee = ({ onBack }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Nominee</Text>
       </View>
-      <View style={styles.separator} />
+
       {/* Content */}
       <View style={styles.content}>
         {/* Nominee Name Input */}
@@ -142,16 +142,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 12 : 20,
     paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
     width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#d7dce4ff',
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
-    marginTop: -10,
     fontSize: 22,
     fontWeight: '600',
     color: '#212121',
@@ -271,8 +268,7 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
     color: '#212121',
-    marginTop: 3,
-    marginBottom: 3,
+    margi
     fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   relationshipItem: {

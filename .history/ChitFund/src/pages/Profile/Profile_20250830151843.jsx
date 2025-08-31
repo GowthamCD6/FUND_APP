@@ -21,8 +21,6 @@ const Profile = () => {
   const [showNominee, setShowNominee] = React.useState(false);
   const [showLinkBA, setShowLinkBA] = React.useState(false);
   const [showIdentityV, setShowIdentityV] = React.useState(false);
-  const linkBAAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
-  const identityVAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
   const slideAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
   const nomineeAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
 
@@ -57,38 +55,6 @@ const Profile = () => {
       }).start();
     }
   }, [showNominee, nomineeAnim]);
-
-  useEffect(() => {
-    if (showLinkBA) {
-      Animated.timing(linkBAAnim, {
-        toValue: 0,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(linkBAAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showLinkBA, linkBAAnim]);
-
-  useEffect(() => {
-    if (showIdentityV) {
-      Animated.timing(identityVAnim, {
-        toValue: 0,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(identityVAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showIdentityV, identityVAnim]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -284,9 +250,9 @@ const Profile = () => {
             <Nominee onBack={() => setShowNominee(false)} />
           </Animated.View>
         )}
-        {/* Linked Bank Account Page Slide-in */}
+        {/* Linked Bank Account Page */}
         {showLinkBA && (
-          <Animated.View style={{
+          <View style={{
             position: 'absolute',
             top: 0,
             left: 0,
@@ -294,22 +260,13 @@ const Profile = () => {
             bottom: 0,
             backgroundColor: '#fff',
             zIndex: 10,
-            transform: [{ translateX: linkBAAnim }],
           }}>
-            <LinkBA onBack={() => {
-              Animated.timing(linkBAAnim, {
-                toValue: Dimensions.get('window').width,
-                duration: 350,
-                useNativeDriver: true,
-              }).start(() => {
-                setShowLinkBA(false);
-              });
-            }} />
-          </Animated.View>
+            <LinkBA onBack={() => setShowLinkBA(false)} />
+          </View>
         )}
-        {/* Identity Verification Page Slide-in */}
+        {/* Identity Verification Page */}
         {showIdentityV && (
-          <Animated.View style={{
+          <View style={{
             position: 'absolute',
             top: 0,
             left: 0,
@@ -317,18 +274,9 @@ const Profile = () => {
             bottom: 0,
             backgroundColor: '#fff',
             zIndex: 10,
-            transform: [{ translateX: identityVAnim }],
           }}>
-            <IdentityV onBack={() => {
-              Animated.timing(identityVAnim, {
-                toValue: Dimensions.get('window').width,
-                duration: 350,
-                useNativeDriver: true,
-              }).start(() => {
-                setShowIdentityV(false);
-              });
-            }} />
-          </Animated.View>
+            <IdentityV onBack={() => setShowIdentityV(false)} />
+          </View>
         )}
       </View>
     </SafeAreaView>

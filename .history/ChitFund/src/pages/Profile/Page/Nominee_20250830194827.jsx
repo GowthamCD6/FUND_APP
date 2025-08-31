@@ -41,16 +41,40 @@ const Nominee = ({ onBack }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
         </TouchableOpacity>
+        </TouchableOpacity>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Add Nominee</Text>
+        <Text style={styles.headerTitle}>Add Nominee</Text>
         <Text style={styles.headerTitle}>Add Nominee</Text>
       </View>
+      </View>
+      </View>
+      <View style={styles.separator} />
+      <View style={styles.separator} />
       <View style={styles.separator} />
       {/* Content */}
+      {/* Content */}
+      {/* Content */}
+      <View style={styles.content}>
+      <View style={styles.content}>
       <View style={styles.content}>
         {/* Nominee Name Input */}
+        {/* Nominee Name Input */}
+        {/* Nominee Name Input */}
+        <View style={styles.inputContainer}>
+        <View style={styles.inputContainer}>
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Name</Text>
+          <Text style={styles.inputLabel}>Name</Text>
+          <Text style={styles.inputLabel}>Name</Text>
+          <TextInput
+          <TextInput
           <TextInput
             style={styles.input}
             placeholder="Full Name"

@@ -46,8 +46,8 @@ const Nominee = ({ onBack }) => {
         <Text style={styles.headerTitle}>Add Nominee</Text>
       </View>
       <View style={styles.separator} />
-      {/* Content */}
       <View style={styles.content}>
+      {/* Content */}
         {/* Nominee Name Input */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Name</Text>

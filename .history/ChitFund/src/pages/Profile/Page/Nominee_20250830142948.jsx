@@ -45,7 +45,7 @@ const Nominee = ({ onBack }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Nominee</Text>
       </View>
-      <View style={styles.separator} />
+
       {/* Content */}
       <View style={styles.content}>
         {/* Nominee Name Input */}
@@ -142,16 +142,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 12 : 20,
     paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
     width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#d7dce4ff',
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
-    marginTop: -10,
     fontSize: 22,
     fontWeight: '600',
     color: '#212121',
@@ -249,6 +246,16 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20, // Adjust for safe area on iOS
+    maxHeight: '50%',
+    width: '100%',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.1,
         shadowRadius: 5,
@@ -271,8 +278,6 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
     color: '#212121',
-    marginTop: 3,
-    marginBottom: 3,
     fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   relationshipItem: {
@@ -290,5 +295,4 @@ relationshipItemText: {
   fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
 },
 });
-
 export default Nominee;

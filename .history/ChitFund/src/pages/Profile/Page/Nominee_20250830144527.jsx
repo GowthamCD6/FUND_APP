@@ -142,16 +142,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 12 : 20,
     paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
     width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#d7dce4ff',
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
-    marginTop: -10,
     fontSize: 22,
     fontWeight: '600',
     color: '#212121',
