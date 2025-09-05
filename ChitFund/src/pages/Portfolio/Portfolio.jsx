@@ -117,7 +117,7 @@ const ChitfundPortfolio = () => {
         {/* NEW HEADER */}
         <View style={styles.header}>
             <TouchableOpacity style={styles.backButton}>
-                <LeftArrowIcon width={20} height={20} fill="#1F2937" marginTop={-10} />
+                <LeftArrowIcon width={20} height={20} fill="#1F2937" marginTop={-10}/>
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Portfolio</Text>
         </View>

@@ -2,20 +2,31 @@ import React, { useState } from 'react';
 import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Join from './Pages/Join';
+import GroupCard from './Pages/GroupCard';
 
 const MoreModal = ({ visible, onClose }) => {
   const [showJoinPage, setShowJoinPage] = useState(false);
+  const [showGroupCard, setShowGroupCard] = useState(false);
 
   const handleJoinPress = () => {
     setShowJoinPage(true);
+  };
+
+  const handleGroupCardPress = () => {
+    setShowGroupCard(true);
   };
 
   const handleJoinBack = () => {
     setShowJoinPage(false);
   };
 
+  const handleGroupCardBack = () => {
+    setShowGroupCard(false);
+  };
+
   const handleModalClose = () => {
     setShowJoinPage(false);
+    setShowGroupCard(false);
     onClose();
   };
 
@@ -28,6 +39,19 @@ const MoreModal = ({ visible, onClose }) => {
         onRequestClose={handleModalClose}
       >
         <Join onBack={handleJoinBack} />
+      </Modal>
+    );
+  }
+
+  if (showGroupCard) {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={visible}
+        onRequestClose={handleModalClose}
+      >
+        <GroupCard onBack={handleGroupCardBack} />
       </Modal>
     );
   }
@@ -53,6 +77,7 @@ const MoreModal = ({ visible, onClose }) => {
             icon={<MaterialCommunityIcons name="credit-card" size={26} color="#6B46C1" />}
             title="Group card"
             description="View and confirm the pay details"
+            onPress={handleGroupCardPress}
           />
           <MenuItem
             icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#6B46C1" />}

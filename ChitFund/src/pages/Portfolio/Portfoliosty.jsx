@@ -5,6 +5,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF', 
+    marginTop: 30,
   },
   header: {
     flexDirection: 'row',
@@ -17,12 +18,12 @@ const styles = StyleSheet.create({
     padding: 4, 
   },
   headerTitle: {
-    marginTop: -10,
     fontSize: 22,
     fontWeight: '600',
     color: '#212121',
     marginLeft: 16,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
+    marginTop: -10,
   },
   separator: {
     height: 1,
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#757575',
     marginBottom: 12,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : Platform.OS === 'ios' ? 'Gilroy-Regular' : 'Poppins-Regular',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
   },
   summaryContainer: {
     flexDirection: 'row',
