@@ -190,7 +190,7 @@ const ChitfundPortfolio = () => {
                                 onPress={() => handleViewGroupDetails(group)}
                             >
                                 <View style={styles.circleIcon}>
-                                    <RightViewIcon width={20} height={20} fill="#A0AEC0" />
+                                    <RightViewIcon width={20} height={20}/>
                                 </View>
                             </TouchableOpacity>
                         </View>

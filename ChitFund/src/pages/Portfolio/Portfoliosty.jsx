@@ -257,12 +257,14 @@ const styles = StyleSheet.create({
     marginBottom: 8, 
   },
   detailLabel: {
+    marginTop: 5,
     fontSize: 14,
     fontWeight: '600',
     color: '#4A5568',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
   },
   detailValue: {
+    marginTop: 5,
     fontSize: 14,
     fontWeight: '400',
     color: '#718096',
@@ -279,6 +281,7 @@ const styles = StyleSheet.create({
     color: '#A0AEC0',
     letterSpacing: 0.5,
     marginBottom: 8,
+    marginRight: 20,
     fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
   },
 
