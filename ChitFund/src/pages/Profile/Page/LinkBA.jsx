@@ -9,7 +9,7 @@ import LottieView from 'lottie-react-native';
  * @param {function} props.onBack - A function to be called when the back button is pressed.
  * @param {string} [props.pageName="This Page"] - The name of the page that is under construction.
  */
-const UnderConstruction = ({ onBack, pageName = "This Page" }) => {
+const LinkBA = ({ onBack, pageName = "This Page" }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F4F4F4" />
@@ -21,7 +21,7 @@ const UnderConstruction = ({ onBack, pageName = "This Page" }) => {
             loop
             style={{ width: 460, height: 260, marginRight: 90 }}
           />
-        </View>
+        </View>   
 
         <Text style={styles.title}>Under Construction</Text>
 
@@ -97,4 +97,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UnderConstruction;
+export default LinkBA;

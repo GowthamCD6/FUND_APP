@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,35 +8,52 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AccountD from './Page/AccountD';
 import Nominee from './Page/Nominee';
 import LinkBA from './Page/LinkBA';
 import IdentityV from './Page/IdentityV';
+import SecurPermis from './Page/SecurPermis';
+import PrivacyPolicy from './Page/PrivacyPolicy';
+import HelpSupport from './Page/HelpSup';
+import ShareModal from './Modals/Share';
+import RateModal from './Modals/Rate';
 import { Animated, Dimensions } from 'react-native';
 
 const Profile = () => {
-  const [showAccountD, setShowAccountD] = React.useState(false);
-  const [showNominee, setShowNominee] = React.useState(false);
-  const [showLinkBA, setShowLinkBA] = React.useState(false);
-  const [showIdentityV, setShowIdentityV] = React.useState(false);
-  const linkBAAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
-  const identityVAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
+  const [showAccountD, setShowAccountD] = useState(false);
+  const [showNominee, setShowNominee] = useState(false);
+  const [showLinkBA, setShowLinkBA] = useState(false);
+  const [showIdentityV, setShowIdentityV] = useState(false);
+  const [showSecurPermis, setShowSecurPermis] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showHelpSupport, setShowHelpSupport] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showRateModal, setShowRateModal] = useState(false);
+
+  // Animation values for slide-in effects
   const slideAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
   const nomineeAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
+  const linkBAAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
+  const identityVAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
+  const securPermisAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
+  const privacyPolicyAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
+  const helpSupportAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
 
+  // Animation effects for each page
   useEffect(() => {
     if (showAccountD) {
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 350,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     } else {
       Animated.timing(slideAnim, {
         toValue: Dimensions.get('window').width,
-        duration: 350,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     }
@@ -46,13 +63,13 @@ const Profile = () => {
     if (showNominee) {
       Animated.timing(nomineeAnim, {
         toValue: 0,
-        duration: 350,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     } else {
       Animated.timing(nomineeAnim, {
         toValue: Dimensions.get('window').width,
-        duration: 350,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     }
@@ -62,13 +79,13 @@ const Profile = () => {
     if (showLinkBA) {
       Animated.timing(linkBAAnim, {
         toValue: 0,
-        duration: 350,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     } else {
       Animated.timing(linkBAAnim, {
         toValue: Dimensions.get('window').width,
-        duration: 350,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     }
@@ -78,25 +95,76 @@ const Profile = () => {
     if (showIdentityV) {
       Animated.timing(identityVAnim, {
         toValue: 0,
-        duration: 350,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     } else {
       Animated.timing(identityVAnim, {
         toValue: Dimensions.get('window').width,
-        duration: 350,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     }
   }, [showIdentityV, identityVAnim]);
+
+  useEffect(() => {
+    if (showSecurPermis) {
+      Animated.timing(securPermisAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(securPermisAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showSecurPermis, securPermisAnim]);
+
+  useEffect(() => {
+    console.log('Privacy Policy state changed:', showPrivacyPolicy);
+    if (showPrivacyPolicy) {
+      console.log('Showing Privacy Policy');
+      Animated.timing(privacyPolicyAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      console.log('Hiding Privacy Policy');
+      Animated.timing(privacyPolicyAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showPrivacyPolicy, privacyPolicyAnim]);
+
+  useEffect(() => {
+    if (showHelpSupport) {
+      Animated.timing(helpSupportAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(helpSupportAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showHelpSupport, helpSupportAnim]);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {/* Main Profile Content */}
       <View style={{ flex: 1 }}>
-        {/* Profile Content (hidden when AccountD or Nominee page is open) */}
-  {!showAccountD && !showNominee && !showLinkBA && !showIdentityV && (
+        {/* Profile Content - Only show when no sub-page is open */}
+        {!showAccountD && !showNominee && !showLinkBA && !showIdentityV && !showSecurPermis && !showPrivacyPolicy && !showHelpSupport && (
           <>
             {/* Header - Portfolio style */}
             <View style={styles.header}>
@@ -130,7 +198,6 @@ const Profile = () => {
                     </View>
                     <MaterialCommunityIcons name="chevron-right" size={22} color="#CCCCCC" />
                   </TouchableOpacity>
-                  {/* ...other menu items... */}
                   <TouchableOpacity style={[styles.menuItem, styles.menuItemBorder]} onPress={() => setShowLinkBA(true)}>
                     <View style={styles.menuItemLeft}>
                       <MaterialCommunityIcons name="credit-card-outline" size={22} color="#666666" />
@@ -158,7 +225,7 @@ const Profile = () => {
               <View style={styles.sectionContainer}>
                 <Text style={styles.sectionTitle}>General</Text>
                 <View style={styles.menuSection}>
-                  <TouchableOpacity style={styles.menuItem}>
+                  <TouchableOpacity style={styles.menuItem} onPress={() => setShowSecurPermis(true)}>
                     <View style={styles.menuItemLeft}>
                       <MaterialCommunityIcons name="shield-lock-outline" size={22} color="#666666" />
                       <Text style={styles.menuItemText}>Security & Permission</Text>
@@ -166,7 +233,11 @@ const Profile = () => {
                     <MaterialCommunityIcons name="chevron-right" size={22} color="#CCCCCC" />
                   </TouchableOpacity>
                   <View style={styles.customDivider} />
-                  <TouchableOpacity style={styles.menuItem}>
+                  <TouchableOpacity style={styles.menuItem} onPress={() => {
+                    console.log('Privacy Policy clicked!');
+                    Alert.alert('Debug', 'Privacy Policy clicked!');
+                    setShowPrivacyPolicy(true);
+                  }}>
                     <View style={styles.menuItemLeft}>
                       <MaterialCommunityIcons name="file-document-outline" size={22} color="#666666" />
                       <Text style={styles.menuItemText}>Privacy Policy</Text>
@@ -174,7 +245,7 @@ const Profile = () => {
                     <MaterialCommunityIcons name="chevron-right" size={22} color="#CCCCCC" />
                   </TouchableOpacity>
                   <View style={styles.customDivider} />
-                  <TouchableOpacity style={styles.menuItem}>
+                  <TouchableOpacity style={styles.menuItem} onPress={() => setShowHelpSupport(true)}>
                     <View style={styles.menuItemLeft}>
                       <MaterialCommunityIcons name="help-circle-outline" size={22} color="#666666" />
                       <Text style={styles.menuItemText}>Help & Support</Text>
@@ -182,7 +253,7 @@ const Profile = () => {
                     <MaterialCommunityIcons name="chevron-right" size={22} color="#CCCCCC" />
                   </TouchableOpacity>
                   <View style={styles.customDivider} />
-                  <TouchableOpacity style={styles.menuItem}>
+                  <TouchableOpacity style={styles.menuItem} onPress={() => setShowShareModal(true)}>
                     <View style={styles.menuItemLeft}>
                       <MaterialCommunityIcons name="share-variant-outline" size={22} color="#666666" />
                       <Text style={styles.menuItemText}>Share GDK Chit Fund</Text>
@@ -190,7 +261,10 @@ const Profile = () => {
                     <MaterialCommunityIcons name="chevron-right" size={22} color="#CCCCCC" />
                   </TouchableOpacity>
                   <View style={styles.customDivider} />
-                  <TouchableOpacity style={styles.menuItem}>
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => setShowRateModal(true)}
+                  >
                     <View style={styles.menuItemLeft}>
                       <MaterialCommunityIcons name="star-outline" size={22} color="#666666" />
                       <Text style={styles.menuItemText}>Rate GDK Chit Fund</Text>
@@ -246,22 +320,17 @@ const Profile = () => {
             </View>
           </>
         )}
-        {/* Animated AccountD Slide-in */}
+
+        {/* Account Details Page - Full Screen Overlay */}
         {showAccountD && (
-          <Animated.View style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: '#fff',
-            zIndex: 10,
-            transform: [{ translateX: slideAnim }],
-          }}>
+          <Animated.View style={[
+            styles.fullScreenOverlay,
+            { transform: [{ translateX: slideAnim }] }
+          ]}>
             <AccountD onBack={() => {
               Animated.timing(slideAnim, {
                 toValue: Dimensions.get('window').width,
-                duration: 350,
+                duration: 300,
                 useNativeDriver: true,
               }).start(() => {
                 setShowAccountD(false);
@@ -269,37 +338,35 @@ const Profile = () => {
             }} />
           </Animated.View>
         )}
-        {/* Nominee Page Slide-in */}
+
+        {/* Nominee Details Page - Full Screen Overlay */}
         {showNominee && (
-          <Animated.View style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: '#fff',
-            zIndex: 10,
-            transform: [{ translateX: nomineeAnim }],
-          }}>
-            <Nominee onBack={() => setShowNominee(false)} />
+          <Animated.View style={[
+            styles.fullScreenOverlay,
+            { transform: [{ translateX: nomineeAnim }] }
+          ]}>
+            <Nominee onBack={() => {
+              Animated.timing(nomineeAnim, {
+                toValue: Dimensions.get('window').width,
+                duration: 300,
+                useNativeDriver: true,
+              }).start(() => {
+                setShowNominee(false);
+              });
+            }} />
           </Animated.View>
         )}
-        {/* Linked Bank Account Page Slide-in */}
+
+        {/* Linked Bank Account Page - Full Screen Overlay */}
         {showLinkBA && (
-          <Animated.View style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: '#fff',
-            zIndex: 10,
-            transform: [{ translateX: linkBAAnim }],
-          }}>
+          <Animated.View style={[
+            styles.fullScreenOverlay,
+            { transform: [{ translateX: linkBAAnim }] }
+          ]}>
             <LinkBA onBack={() => {
               Animated.timing(linkBAAnim, {
                 toValue: Dimensions.get('window').width,
-                duration: 350,
+                duration: 300,
                 useNativeDriver: true,
               }).start(() => {
                 setShowLinkBA(false);
@@ -307,22 +374,17 @@ const Profile = () => {
             }} />
           </Animated.View>
         )}
-        {/* Identity Verification Page Slide-in */}
+
+        {/* Identity Verification Page - Full Screen Overlay */}
         {showIdentityV && (
-          <Animated.View style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: '#fff',
-            zIndex: 10,
-            transform: [{ translateX: identityVAnim }],
-          }}>
+          <Animated.View style={[
+            styles.fullScreenOverlay,
+            { transform: [{ translateX: identityVAnim }] }
+          ]}>
             <IdentityV onBack={() => {
               Animated.timing(identityVAnim, {
                 toValue: Dimensions.get('window').width,
-                duration: 350,
+                duration: 300,
                 useNativeDriver: true,
               }).start(() => {
                 setShowIdentityV(false);
@@ -330,7 +392,78 @@ const Profile = () => {
             }} />
           </Animated.View>
         )}
+
+        {/* Security & Permissions Page - Full Screen Overlay */}
+        {showSecurPermis && (
+          <Animated.View style={[
+            styles.fullScreenOverlay,
+            { transform: [{ translateX: securPermisAnim }] }
+          ]}>
+            <SecurPermis onBack={() => {
+              Animated.timing(securPermisAnim, {
+                toValue: Dimensions.get('window').width,
+                duration: 300,
+                useNativeDriver: true,
+              }).start(() => {
+                setShowSecurPermis(false);
+              });
+            }} />
+          </Animated.View>
+        )}
+
+        {/* Privacy Policy Overlay */}
+        {showPrivacyPolicy && (
+          <Animated.View style={[
+            styles.fullScreenOverlay,
+            {
+              transform: [{ translateX: privacyPolicyAnim }],
+            }
+          ]}>
+            <PrivacyPolicy onBack={() => {
+              Animated.timing(privacyPolicyAnim, {
+                toValue: Dimensions.get('window').width,
+                duration: 300,
+                useNativeDriver: true,
+              }).start(() => {
+                setShowPrivacyPolicy(false);
+              });
+            }} />
+          </Animated.View>
+        )}
+
+        {/* Help & Support Overlay */}
+        {showHelpSupport && (
+          <Animated.View style={[
+            styles.fullScreenOverlay,
+            {
+              transform: [{ translateX: helpSupportAnim }],
+            }
+          ]}>
+            <HelpSupport onBack={() => {
+              Animated.timing(helpSupportAnim, {
+                toValue: Dimensions.get('window').width,
+                duration: 300,
+                useNativeDriver: true,
+              }).start(() => {
+                setShowHelpSupport(false);
+              });
+            }} />
+          </Animated.View>
+        )}
+
       </View>
+      
+      {/* Share Modal */}
+      <ShareModal 
+        visible={showShareModal}
+        onClose={() => setShowShareModal(false)}
+      />
+
+      {/* Rate Modal */}
+      <RateModal 
+        visible={showRateModal}
+        onClose={() => setShowRateModal(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -547,6 +680,15 @@ const styles = StyleSheet.create({
   },
   navTextActive: {
     color: '#6B46C1',
+  },
+  fullScreenOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#FFFFFF',
+    zIndex: 1000, // Ensure it covers everything including bottom navigation
   },
 });
 

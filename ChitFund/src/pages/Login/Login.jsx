@@ -58,6 +58,7 @@ const Login = () => {
         // If all checks pass, proceed with the login process
         setIsLoading(true);
 
+        await AsyncStorage.setItem('userPhoneNumber', phoneNumber);
         // Your API call logic would go here.
         // For demonstration, I'll simulate a network request.
         console.log("Attempting to log in with:", { phoneNumber, password });
