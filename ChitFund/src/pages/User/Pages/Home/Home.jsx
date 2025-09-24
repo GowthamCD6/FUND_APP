@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  SafeAreaView, 
-  TouchableOpacity, 
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
   Image,
-  Dimensions 
+  Dimensions,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 import styles from './Homesty';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 const Home = () => {
   const [activeSlide, setActiveSlide] = useState(0);
@@ -23,62 +23,62 @@ const Home = () => {
       title: 'Join Group',
       icon: 'account-group-outline',
       color: '#4CAF50',
-      description: 'Join a new chit group'
+      description: 'Join a new chit group',
     },
     {
       id: 2,
       title: 'My Portfolio',
       icon: 'chart-line',
       color: '#2196F3',
-      description: 'View your investments'
+      description: 'View your investments',
     },
     {
       id: 3,
       title: 'Payments',
       icon: 'credit-card-outline',
       color: '#FF9800',
-      description: 'Make payments'
+      description: 'Make payments',
     },
     {
       id: 4,
       title: 'Support',
       icon: 'help-circle-outline',
       color: '#9C27B0',
-      description: 'Get help & support'
-    }
+      description: 'Get help & support',
+    },
   ];
 
   const features = [
     {
       title: 'Secure Investments',
-      description: 'Your money is safe with our RBI-compliant chit fund operations',
-      icon: 'shield-check'
+      description:
+        'Your money is safe with our RBI-compliant chit fund operations',
+      icon: 'shield-check',
     },
     {
       title: 'Flexible Plans',
       description: 'Choose from various plans that suit your financial goals',
-      icon: 'cog-outline'
+      icon: 'cog-outline',
     },
     {
       title: 'Easy Withdrawals',
       description: 'Quick and hassle-free withdrawal process',
-      icon: 'cash-multiple'
-    }
+      icon: 'cash-multiple',
+    },
   ];
 
   const stats = [
-    { value: '10,000+', label: 'Happy Customers' },
-    { value: '₹50Cr+', label: 'Funds Managed' },
-    { value: '15+', label: 'Years Experience' },
-    { value: '99.9%', label: 'Success Rate' }
+    {value: '10,000+', label: 'Happy Customers'},
+    {value: '₹50Cr+', label: 'Funds Managed'},
+    {value: '15+', label: 'Years Experience'},
+    {value: '99.9%', label: 'Success Rate'},
   ];
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         {/* Header Section */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -87,13 +87,17 @@ const Home = () => {
               <Text style={styles.userName}>Gowtham</Text>
             </View>
             <TouchableOpacity style={styles.notificationButton}>
-              <MaterialCommunityIcons name="bell-outline" size={24} color="#1A2A4E" />
+              <MaterialCommunityIcons
+                name="bell-outline"
+                size={24}
+                color="#1A2A4E"
+              />
               <View style={styles.notificationBadge}>
                 <Text style={styles.badgeText}>3</Text>
               </View>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.companyHeader}>
             <Text style={styles.companyName}>ஸ்ரீ பெரியநாயகி அம்மன்</Text>
             <Text style={styles.companySubtitle}>CHITFUNDS</Text>
@@ -106,16 +110,21 @@ const Home = () => {
           <View style={styles.heroContent}>
             <Text style={styles.heroTitle}>Grow Your Wealth</Text>
             <Text style={styles.heroSubtitle}>
-              Join thousands of satisfied customers in our trusted chit fund community
+              Join thousands of satisfied customers in our trusted chit fund
+              community
             </Text>
             <TouchableOpacity style={styles.heroButton}>
               <Text style={styles.heroButtonText}>Start Investing</Text>
-              <MaterialCommunityIcons name="arrow-right" size={20} color="#FFFFFF" />
+              <MaterialCommunityIcons
+                name="arrow-right"
+                size={20}
+                color="#FFFFFF"
+              />
             </TouchableOpacity>
           </View>
           <View style={styles.heroAnimation}>
             <LottieView
-              source={require('../../animation/Finance.json')}
+              source={require('../../../../animation/Finance.json')}
               autoPlay
               loop
               style={styles.lottieHero}
@@ -140,17 +149,23 @@ const Home = () => {
         <View style={styles.quickActionsSection}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
-            {quickActions.map((action) => (
+            {quickActions.map(action => (
               <TouchableOpacity key={action.id} style={styles.actionCard}>
-                <View style={[styles.actionIcon, { backgroundColor: action.color + '20' }]}>
-                  <MaterialCommunityIcons 
-                    name={action.icon} 
-                    size={28} 
-                    color={action.color} 
+                <View
+                  style={[
+                    styles.actionIcon,
+                    {backgroundColor: action.color + '20'},
+                  ]}>
+                  <MaterialCommunityIcons
+                    name={action.icon}
+                    size={28}
+                    color={action.color}
                   />
                 </View>
                 <Text style={styles.actionTitle}>{action.title}</Text>
-                <Text style={styles.actionDescription}>{action.description}</Text>
+                <Text style={styles.actionDescription}>
+                  {action.description}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -162,15 +177,17 @@ const Home = () => {
           {features.map((feature, index) => (
             <View key={index} style={styles.featureCard}>
               <View style={styles.featureIcon}>
-                <MaterialCommunityIcons 
-                  name={feature.icon} 
-                  size={32} 
-                  color="#4CAF50" 
+                <MaterialCommunityIcons
+                  name={feature.icon}
+                  size={32}
+                  color="#4CAF50"
                 />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureDescription}>{feature.description}</Text>
+                <Text style={styles.featureDescription}>
+                  {feature.description}
+                </Text>
               </View>
             </View>
           ))}
@@ -184,12 +201,11 @@ const Home = () => {
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
-          
-          <ScrollView 
-            horizontal 
+
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.plansScrollView}
-          >
+            style={styles.plansScrollView}>
             <View style={styles.planCard}>
               <View style={styles.planHeader}>
                 <Text style={styles.planName}>Gold Plan</Text>
@@ -236,8 +252,9 @@ const Home = () => {
           <Text style={styles.sectionTitle}>What Our Customers Say</Text>
           <View style={styles.testimonialCard}>
             <Text style={styles.testimonialText}>
-              "ஸ்ரீ பெரியநாயகி அம்மன் ChitFunds has been my trusted partner for over 5 years. 
-              Their transparent process and timely payouts make them the best choice."
+              "ஸ்ரீ பெரியநாயகி அம்மன் ChitFunds has been my trusted partner for
+              over 5 years. Their transparent process and timely payouts make
+              them the best choice."
             </Text>
             <View style={styles.testimonialAuthor}>
               <View style={styles.authorInfo}>
@@ -246,11 +263,11 @@ const Home = () => {
               </View>
               <View style={styles.ratingStars}>
                 {[...Array(5)].map((_, i) => (
-                  <MaterialCommunityIcons 
-                    key={i} 
-                    name="star" 
-                    size={16} 
-                    color="#FFD700" 
+                  <MaterialCommunityIcons
+                    key={i}
+                    name="star"
+                    size={16}
+                    color="#FFD700"
                   />
                 ))}
               </View>
@@ -267,7 +284,7 @@ const Home = () => {
               <Text style={styles.contactText}>Call Us</Text>
               <Text style={styles.contactValue}>+91 98765 43210</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.contactCard}>
               <MaterialCommunityIcons name="email" size={24} color="#2196F3" />
               <Text style={styles.contactText}>Email Us</Text>

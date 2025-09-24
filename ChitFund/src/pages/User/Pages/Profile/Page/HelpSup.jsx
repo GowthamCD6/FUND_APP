@@ -106,7 +106,7 @@ const HelpSupport = ({ onBack }) => {
           <View style={styles.heroContent}>
             <View style={styles.heroIconContainer}>
               <LottieView
-                source={require('../../../animation/Customer_care.json')}
+                source={require('../../../../../animation/Customer_care.json')}
                 autoPlay
                 loop
                 style={styles.heroAnimation}
@@ -232,7 +232,7 @@ const HelpSupport = ({ onBack }) => {
             </View>
             <View style={styles.contactAnimationContainer}>
               <LottieView
-                source={require('../../../animation/contact_us.json')}
+                source={require('../../../../../animation/contact_us.json')}
                 autoPlay
                 loop
                 style={styles.contactAnimation}

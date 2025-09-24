@@ -5,19 +5,20 @@ import { NavigationContainer } from '@react-navigation/native';
 import styles from './Tabsty';
 
 // Import actual page components
-import Home from '../../pages/Home/Home';
-import Portfolio from '../../pages/Portfolio/Portfolio';
-import Profile from '../../pages/Profile/Profile';
+import Home from '../../../pages/User/Pages/Home/Home';
+import Portfolio from '../../../pages/User/Pages/Portfolio/Portfolio';
+import Profile from '../../../pages/User/Pages/Profile/Profile';
 
 // Import SVG assets from your assects folder
-import HomeIcon from '../../assects/Icon/home.svg';
-import UserIcon from '../../assects/Icon/user.svg';
-import CommentsIcon from '../../assects/Icon/comments.svg';
-import PortfolioIcon from '../../assects/Icon/Portfolio.svg';
-import PlusIcon from '../../assects/Icon/plus.svg';
+import HomeIcon from '../../../assects/Icon/home.svg';
+import UserIcon from '../../../assects/Icon/user.svg';
+import CommentsIcon from '../../../assects/Icon/comments.svg';
+import PortfolioIcon from '../../../assects/Icon/Portfolio.svg';
+import PlusIcon from '../../../assects/Icon/plus.svg';
 
 
-import MoreModal from '../../Modals/More';
+import MoreModal from '../../../pages/User/Modals/More';
+import AdminTab, { ADMIN_PHONE, ADMIN_PASSWORD } from '../ATab/AdminTab';
 
 // ---- Screen Components ----
 const MoreScreen = () => null; // Placeholder, modal will be shown instead
@@ -168,10 +169,14 @@ const AppTabs = () => {
   );
 };
 
-export default function TabNavigator() {
-  return (
-    <NavigationContainer>
-      <AppTabs />
-    </NavigationContainer>
-  );
+export default function TabNavigator({ route }) {
+  // Get role from navigation params
+  const role = route?.params?.role || 'user';
+  
+  console.log('TabNavigator received role:', role);
+  
+  if (role === 'admin') {
+    return <AdminTab />;
+  }
+  return <AppTabs />;
 }

@@ -13,7 +13,7 @@ const styles = StyleSheet.create({
 
   // Header Styles
   header: {
-    backgroundColor: '#1E40AF',
+    backgroundColor: '#6B46C1',
     paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: 30,
     paddingHorizontal: 20,
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   heroButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E40AF',
+    backgroundColor: '#6B46C1',
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1E40AF',
+    color: '#6B46C1',
     marginBottom: 4,
   },
   statLabel: {
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 14,
-    color: '#1E40AF',
+    color: '#6B46C1',
     fontWeight: '600',
   },
   plansScrollView: {
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   planAmount: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1E40AF',
+    color: '#6B46C1',
     marginBottom: 8,
   },
   planDuration: {
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   planButton: {
-    backgroundColor: '#1E40AF',
+    backgroundColor: '#6B46C1',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',

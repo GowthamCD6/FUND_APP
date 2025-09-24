@@ -9,8 +9,8 @@ import {
   Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import LeftArrowIcon from '../../assects/Icon/left-arrow.svg';
-import RightViewIcon from '../../assects/Icon/right-view.svg';
+import LeftArrowIcon from '../../../../assects/Icon/left-arrow.svg';
+import RightViewIcon from '../../../../assects/Icon/right-view.svg';
 import ChitGroupDetails from './Portfolio-view/Portfolio-view';
 import styles from './Portfoliosty';
 

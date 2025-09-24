@@ -10,22 +10,27 @@ import {
     TouchableOpacity,
     ActivityIndicator,
 } from 'react-native';
-import Loginimg from '../../assects/Firstpage-login-page/loginimg.svg';
+import Loginimg from '../../../assects/Firstpage-login-page/loginimg.svg';
 import styles from './Loginsty.jsx';
 import { TextInput } from 'react-native-paper';
 import React, { useState } from 'react';
-import Separator from '../../assects/Firstpage-login-page/separator.svg';
-import Googleicon from '../../assects/Firstpage-login-page/google.svg';
-import Tickicon from '../../assects/Firstpage-login-page/tick.svg';
-import Tickbox from '../../assects/Firstpage-login-page/tickbox.svg';
-import EyeOn from '../../assects/Firstpage-login-page/eye-svgrepo-com.svg';
-import EyeOff from '../../assects/Firstpage-login-page/eye-slash-svgrepo-com.svg';
+import Separator from '../../../assects/Firstpage-login-page/separator.svg';
+import Googleicon from '../../../assects/Firstpage-login-page/google.svg';
+import Tickicon from '../../../assects/Firstpage-login-page/tick.svg';
+import Tickbox from '../../../assects/Firstpage-login-page/tickbox.svg';
+import EyeOn from '../../../assects/Firstpage-login-page/eye-svgrepo-com.svg';
+import EyeOff from '../../../assects/Firstpage-login-page/eye-slash-svgrepo-com.svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
 // Encryption key generation removed - using direct messaging
 const Login = () => {
-    // const navigation = useNavigation();
+    const navigation = useNavigation();
+    // Reference credentials (not defaulted in UI)
+    const USER_PHONE = '987654321';
+    const USER_PASSWORD = 'abc';
+    const ADMIN_PHONE = '123456789';
+    const ADMIN_PASSWORD = 'abc';
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [checked, setChecked] = useState(false);
@@ -38,19 +43,19 @@ const Login = () => {
         // 1. Check if Mobile Number is empty
         if (!phoneNumber.trim()) {
             Alert.alert("Login Error", "Please enter your mobile number.");
-            return; // Stop the function if validation fails
+            return; 
         }
 
         // 2. Check if Password is empty
         if (!password) {
             Alert.alert("Login Error", "Please enter your password.");
-            return; // Stop the function if validation fails
+            return; 
         }
         
         // 3. Check if Privacy Policy is accepted
         if (!checked) {
             Alert.alert("Privacy Policy", "Please accept the Privacy Policy to continue.");
-            return; // Stop the function if validation fails
+            return; 
         }
 
         // --- VALIDATION LOGIC END ---
@@ -62,10 +67,17 @@ const Login = () => {
         // Your API call logic would go here.
         // For demonstration, I'll simulate a network request.
         console.log("Attempting to log in with:", { phoneNumber, password });
+        let role = 'user';
+        if (phoneNumber === ADMIN_PHONE && password === ADMIN_PASSWORD) {
+            role = 'admin';
+            console.log('Admin login detected, setting role to admin');
+        }
+        console.log('Navigating with role:', role);
+        
         setTimeout(() => {
             setIsLoading(false);
-            // Handle success or failure from the API call here
-        }, 2000); 
+            navigation.navigate('Tab', { role });
+        }, 1000); 
     };
 
     return (

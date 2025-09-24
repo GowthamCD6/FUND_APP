@@ -27,7 +27,7 @@ const Join = ({ onBack }) => {
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <LottieView
-            source={require('../../animation/join a group.json')}
+            source={require('../../../../animation/join a group.json')}
             autoPlay
             loop
             style={styles.lottieAnimation}

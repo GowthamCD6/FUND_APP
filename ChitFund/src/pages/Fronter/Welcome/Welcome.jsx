@@ -2,18 +2,18 @@ import {Text, TouchableOpacity, View, ScrollView} from 'react-native';
 import LottieView from 'lottie-react-native';
 import styles from '../Welcome/Welcomesty.jsx';
 import React from 'react';
-// import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
 const Welcome = () => {
-  // const navigation = useNavigation();
+  const navigation = useNavigation();
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>ஸ்ரீ பெரியநாயகி அம்மன் CHITFUNDS</Text>
 
       <LottieView
-        // source={require('../../animation/Welcome-page.json')}
-        source={require('../../animation/Revenue.json')}
+        // source={require('../../../animation/Welcome.json')}
+        source={require('../../../animation/Revenue.json')}
         autoPlay
         loop={false}
         style={{width: 290, height: 300,  backgroundColor: 'transparent',}}

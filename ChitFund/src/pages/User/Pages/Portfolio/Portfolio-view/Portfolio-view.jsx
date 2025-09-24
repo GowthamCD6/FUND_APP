@@ -55,7 +55,7 @@ const ChitGroupDetails = ({ onClose }) => {
         {/* Lottie Animation */}
         <View style={styles.animationContainer}>
           <LottieView
-            source={require('../../../animation/Finance.json')}
+            source={require('../../../../../animation/Finance.json')}
             autoPlay
             loop={false}
             style={styles.lottieAnimation}
