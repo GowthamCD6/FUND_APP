@@ -12,7 +12,6 @@ const Welcome = () => {
       <Text style={styles.title}>ஸ்ரீ பெரியநாயகி அம்மன் CHITFUNDS</Text>
 
       <LottieView
-        // source={require('../../../animation/Welcome.json')}
         source={require('../../../animation/Revenue.json')}
         autoPlay
         loop={false}

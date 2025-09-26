@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
   // Header Styles
   header: {
     backgroundColor: '#6B46C1',
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingTop: Platform.OS === 'ios' ? 50 : 35,
     paddingBottom: 30,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 25,
@@ -181,52 +181,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Quick Actions
-  quickActionsSection: {
-    backgroundColor: '#FFFFFF',
-    margin: 20,
-    marginTop: 0,
-    borderRadius: 20,
-    padding: 24,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  actionCard: {
-    width: '48%',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    marginBottom: 12,
-  },
-  actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  actionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  actionDescription: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
-  },
 
   // Features Section
   featuresSection: {
@@ -281,7 +235,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 5,
+    marginTop: 10,
   },
   viewAllText: {
     fontSize: 14,
@@ -292,10 +247,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   planCard: {
+    marginBottom: 10,
+    marginTop: 10,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     marginRight: 16,
+    marginLeft: 5,
     width: width * 0.7,
     elevation: 4,
     shadowColor: '#000',
@@ -453,6 +411,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E293B',
     padding: 20,
     alignItems: 'center',
+    paddingBottom: 130,
+    paddingTop: 25,
   },
   footerText: {
     fontSize: 12,

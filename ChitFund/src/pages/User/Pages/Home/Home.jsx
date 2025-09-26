@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import { Linking } from 'react-native';
 import {
   View,
   Text,
@@ -17,36 +18,6 @@ const {width} = Dimensions.get('window');
 const Home = () => {
   const [activeSlide, setActiveSlide] = useState(0);
 
-  const quickActions = [
-    {
-      id: 1,
-      title: 'Join Group',
-      icon: 'account-group-outline',
-      color: '#4CAF50',
-      description: 'Join a new chit group',
-    },
-    {
-      id: 2,
-      title: 'My Portfolio',
-      icon: 'chart-line',
-      color: '#2196F3',
-      description: 'View your investments',
-    },
-    {
-      id: 3,
-      title: 'Payments',
-      icon: 'credit-card-outline',
-      color: '#FF9800',
-      description: 'Make payments',
-    },
-    {
-      id: 4,
-      title: 'Support',
-      icon: 'help-circle-outline',
-      color: '#9C27B0',
-      description: 'Get help & support',
-    },
-  ];
 
   const features = [
     {
@@ -68,9 +39,9 @@ const Home = () => {
   ];
 
   const stats = [
-    {value: '10,000+', label: 'Happy Customers'},
-    {value: '₹50Cr+', label: 'Funds Managed'},
-    {value: '15+', label: 'Years Experience'},
+    {value: '200+', label: 'Happy Customers'},
+    {value: '₹20Cr+', label: 'Funds Managed'},
+    {value: '20+', label: 'Years Experience'},
     {value: '99.9%', label: 'Success Rate'},
   ];
 
@@ -145,31 +116,6 @@ const Home = () => {
           </View>
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActionsSection}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.actionsGrid}>
-            {quickActions.map(action => (
-              <TouchableOpacity key={action.id} style={styles.actionCard}>
-                <View
-                  style={[
-                    styles.actionIcon,
-                    {backgroundColor: action.color + '20'},
-                  ]}>
-                  <MaterialCommunityIcons
-                    name={action.icon}
-                    size={28}
-                    color={action.color}
-                  />
-                </View>
-                <Text style={styles.actionTitle}>{action.title}</Text>
-                <Text style={styles.actionDescription}>
-                  {action.description}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
 
         {/* Features Section */}
         <View style={styles.featuresSection}>
@@ -223,11 +169,11 @@ const Home = () => {
 
             <View style={styles.planCard}>
               <View style={styles.planHeader}>
-                <Text style={styles.planName}>Silver Plan</Text>
+                <Text style={styles.planName}>Platinum Plan</Text>
               </View>
-              <Text style={styles.planAmount}>₹3,000</Text>
-              <Text style={styles.planDuration}>15 Months</Text>
-              <Text style={styles.planReturn}>Expected Return: ₹42,000</Text>
+              <Text style={styles.planAmount}>₹10,000</Text>
+              <Text style={styles.planDuration}>20 Months</Text>
+              <Text style={styles.planReturn}>Expected Return: ₹1,90,000</Text>
               <TouchableOpacity style={styles.planButton}>
                 <Text style={styles.planButtonText}>Join Now</Text>
               </TouchableOpacity>
@@ -237,9 +183,9 @@ const Home = () => {
               <View style={styles.planHeader}>
                 <Text style={styles.planName}>Diamond Plan</Text>
               </View>
-              <Text style={styles.planAmount}>₹10,000</Text>
-              <Text style={styles.planDuration}>24 Months</Text>
-              <Text style={styles.planReturn}>Expected Return: ₹2,20,000</Text>
+              <Text style={styles.planAmount}>₹25,000</Text>
+              <Text style={styles.planDuration}>20 Months</Text>
+              <Text style={styles.planReturn}>Expected Return: ₹4,75,000</Text>
               <TouchableOpacity style={styles.planButton}>
                 <Text style={styles.planButtonText}>Join Now</Text>
               </TouchableOpacity>
@@ -253,12 +199,12 @@ const Home = () => {
           <View style={styles.testimonialCard}>
             <Text style={styles.testimonialText}>
               "ஸ்ரீ பெரியநாயகி அம்மன் ChitFunds has been my trusted partner for
-              over 5 years. Their transparent process and timely payouts make
+              over 20 years. Their transparent process and timely payouts make
               them the best choice."
             </Text>
             <View style={styles.testimonialAuthor}>
               <View style={styles.authorInfo}>
-                <Text style={styles.authorName}>Rajesh Kumar</Text>
+                <Text style={styles.authorName}>    Devaraj P</Text>
                 <Text style={styles.authorTitle}>Business Owner</Text>
               </View>
               <View style={styles.ratingStars}>
@@ -279,25 +225,28 @@ const Home = () => {
         <View style={styles.contactSection}>
           <Text style={styles.sectionTitle}>Get in Touch</Text>
           <View style={styles.contactGrid}>
-            <TouchableOpacity style={styles.contactCard}>
+            <TouchableOpacity
+              style={styles.contactCard}
+              onPress={() => Linking.openURL('tel:+918610696889')}
+            >
               <MaterialCommunityIcons name="phone" size={24} color="#4CAF50" />
               <Text style={styles.contactText}>Call Us</Text>
-              <Text style={styles.contactValue}>+91 98765 43210</Text>
+              <Text style={styles.contactValue}>+91 8610696889</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.contactCard}>
+            <TouchableOpacity
+              style={styles.contactCard}
+              onPress={() => Linking.openURL('mailto:Gowthamnaveen124@gmial.com')}
+            >
               <MaterialCommunityIcons name="email" size={24} color="#2196F3" />
               <Text style={styles.contactText}>Email Us</Text>
-              <Text style={styles.contactValue}>info@periyachit.com</Text>
+              <Text style={styles.contactValue}>Gowthamnaveen124@gmial.com</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Regulated by RBI | NBFC License No: XYZ123
-          </Text>
           <Text style={styles.footerCopyright}>
             © 2025 ஸ்ரீ பெரியநாயகி அம்மன் ChitFunds. All rights reserved.
           </Text>
