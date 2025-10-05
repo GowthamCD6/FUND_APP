@@ -72,6 +72,8 @@ const Login = () => {
             role = 'admin';
             console.log('Admin login detected, setting role to admin');
         }
+        // Store the user role in AsyncStorage
+        await AsyncStorage.setItem('userRole', role);
         console.log('Navigating with role:', role);
         
         setTimeout(() => {

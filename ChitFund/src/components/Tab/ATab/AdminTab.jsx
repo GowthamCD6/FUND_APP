@@ -3,32 +3,47 @@ import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import styles from './AdminTabsty.jsx'; // Adjust path if needed
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
 export const ADMIN_PHONE = '123456789';
 export const ADMIN_PASSWORD = 'abc';
 
-// Screens using provided styles
-function UserManagementScreen() {
+// Admin Dashboard Screens
+function DashboardScreen() {
   return (
     <View style={styles.screenContainer}>
       <View style={styles.gradientHeader}>
-        <Text style={styles.headerTitle}>User Management</Text>
+        <Text style={styles.headerTitle}>Admin Dashboard</Text>
       </View>
       <View style={styles.screenContent}>
-        <Text style={styles.screenText}>Manage users here</Text>
+        <Text style={styles.screenText}>Overview of chit fund operations</Text>
       </View>
     </View>
   );
 }
 
-function FundOverviewScreen() {
+function MembersScreen() {
   return (
     <View style={styles.screenContainer}>
       <View style={styles.gradientHeader}>
-        <Text style={styles.headerTitle}>Fund Overview</Text>
+        <Text style={styles.headerTitle}>Member Management</Text>
       </View>
       <View style={styles.screenContent}>
-        <Text style={styles.screenText}>Overview of funds</Text>
+        <Text style={styles.screenText}>Manage chit fund members</Text>
+      </View>
+    </View>
+  );
+}
+
+function TransactionsScreen() {
+  return (
+    <View style={styles.screenContainer}>
+      <View style={styles.gradientHeader}>
+        <Text style={styles.headerTitle}>Transactions</Text>
+      </View>
+      <View style={styles.screenContent}>
+        <Text style={styles.screenText}>Manage payments & collections</Text>
       </View>
     </View>
   );
@@ -38,40 +53,48 @@ function ReportsScreen() {
   return (
     <View style={styles.screenContainer}>
       <View style={styles.gradientHeader}>
-        <Text style={styles.headerTitle}>Reports</Text>
+        <Text style={styles.headerTitle}>Reports & Analytics</Text>
       </View>
       <View style={styles.screenContent}>
-        <Text style={styles.screenText}>View reports</Text>
+        <Text style={styles.screenText}>Financial reports & insights</Text>
       </View>
     </View>
   );
 }
 
-function ChatScreen() {
-  return (
-    <View style={styles.screenContainer}>
-      <View style={styles.gradientHeader}>
-        <Text style={styles.headerTitle}>Chat</Text>
-      </View>
-      <View style={styles.screenContent}>
-        <Text style={styles.screenText}>Chat with users</Text>
-      </View>
-    </View>
-  );
-}
+function SettingsScreen() {
+  const navigation = useNavigation();
+  
+  const handleLogout = async () => {
+    await AsyncStorage.clear();
+    navigation.navigate('Welcome');
+  };
 
-function ProfileScreen() {
   return (
     <View style={styles.screenContainer}>
       <View style={styles.gradientHeader}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>Admin Settings</Text>
       </View>
       <View style={styles.screenContent}>
-        <Text style={styles.screenText}>Admin Profile</Text>
+        <Text style={styles.screenText}>System configuration</Text>
         <View style={{ marginTop: 20, alignItems: 'center' }}>
           <Text style={{ fontSize: 14, color: '#666' }}>Admin Phone: {ADMIN_PHONE}</Text>
           <Text style={{ fontSize: 14, color: '#666' }}>Admin Password: {ADMIN_PASSWORD}</Text>
         </View>
+        <TouchableOpacity 
+          style={{ 
+            marginTop: 30, 
+            backgroundColor: '#EF4444', 
+            paddingHorizontal: 20, 
+            paddingVertical: 12, 
+            borderRadius: 8 
+          }} 
+          onPress={handleLogout}
+        >
+          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600', textAlign: 'center' }}>
+            Logout
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -103,38 +126,38 @@ const AdminTab = () => {
       }}
     >
       <Tab.Screen
-        name="Home"
-        component={UserManagementScreen}
+        name="Dashboard"
+        component={DashboardScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabIconContainer}>
               <MaterialCommunityIcons
-                name="home-outline"
+                name="view-dashboard-outline"
                 size={28}
                 color={focused ? '#6B46C1' : '#9CA3AF'}
                 style={styles.iconStyle}
               />
               <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
-                Home
+                Dashboard
               </Text>
             </View>
           ),
         }}
       />
       <Tab.Screen
-        name="Portfolio"
-        component={FundOverviewScreen}
+        name="Reports"
+        component={MembersScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabIconContainer}>
               <MaterialCommunityIcons
-                name="chart-donut"
+                name="chart-line"
                 size={28}
                 color={focused ? '#6B46C1' : '#9CA3AF'}
                 style={styles.iconStyle}
               />
               <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
-                Portfolio
+                Reports
               </Text>
             </View>
           ),
@@ -142,7 +165,7 @@ const AdminTab = () => {
       />
       <Tab.Screen
         name="Add"
-        component={ReportsScreen}
+        component={TransactionsScreen}
         options={{
           tabBarIcon: () => (
             <MaterialCommunityIcons
@@ -158,8 +181,8 @@ const AdminTab = () => {
         }}
       />
       <Tab.Screen
-        name="Chat"
-        component={ChatScreen}
+        name="Messages"
+        component={ReportsScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabIconContainer}>
@@ -170,26 +193,26 @@ const AdminTab = () => {
                 style={styles.iconStyle}
               />
               <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
-                Chat
+                Messages
               </Text>
             </View>
           ),
         }}
       />
       <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
+        name="Settings"
+        component={SettingsScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabIconContainer}>
               <MaterialCommunityIcons
-                name="account-outline"
+                name="cog-outline"
                 size={28}
                 color={focused ? '#6B46C1' : '#9CA3AF'}
                 style={styles.iconStyle}
               />
               <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
-                Profile
+                Settings
               </Text>
             </View>
           ),

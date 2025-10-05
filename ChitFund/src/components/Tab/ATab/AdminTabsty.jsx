@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    height: Platform.OS === 'ios' ? 130 : 110,
+    height: Platform.OS === 'ios' ? 130 : 100,
     borderTopWidth: 0,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,

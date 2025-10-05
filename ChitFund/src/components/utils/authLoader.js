@@ -11,11 +11,13 @@ const AuthLoader = () => {
     useEffect(() => {
         const loadData = async () => {
             const storedPhoneNumber = await AsyncStorage.getItem('userPhoneNumber');
+            const storedRole = await AsyncStorage.getItem('userRole');
             setPhoneNumber(storedPhoneNumber);
             if (storedPhoneNumber) {
-                // Navigate to main app screen
-                console.log("User is logged in, navigating to main app.");
-                navigation.navigate('Tab')
+                // Navigate to main app screen with stored role
+                const role = storedRole || 'user';
+                console.log("User is logged in, navigating to main app with role:", role);
+                navigation.navigate('Tab', { role })
             }
             else{
                 navigation.navigate('Welcome')
