@@ -9,12 +9,8 @@ import Home from '../../../pages/User/Pages/Home/Home';
 import Portfolio from '../../../pages/User/Pages/Portfolio/Portfolio';
 import Profile from '../../../pages/User/Pages/Profile/Profile';
 
-// Import SVG assets from your assects folder
-import HomeIcon from '../../../assects/Icon/home.svg';
-import UserIcon from '../../../assects/Icon/user.svg';
-import CommentsIcon from '../../../assects/Icon/comments.svg';
-import PortfolioIcon from '../../../assects/Icon/Portfolio.svg';
-import PlusIcon from '../../../assects/Icon/plus.svg';
+// Import MaterialCommunityIcons for consistent iconography
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 
 import MoreModal from '../../../pages/User/Modals/More';
@@ -71,10 +67,10 @@ const AppTabs = () => {
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
-                <HomeIcon
-                  width={24}
-                  height={24}
-                  fill={focused ? '#6B46C1' : '#6B7280'}
+                <MaterialCommunityIcons
+                  name="home"
+                  size={24}
+                  color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
                 <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}> 
@@ -92,10 +88,10 @@ const AppTabs = () => {
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
-                <PortfolioIcon
-                  width={24}
-                  height={24}
-                  fill={focused ? '#6B46C1' : '#6B7280'}
+                <MaterialCommunityIcons
+                  name="briefcase"
+                  size={24}
+                  color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
                 <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}> 
@@ -112,7 +108,7 @@ const AppTabs = () => {
           component={MoreScreen}
           options={{
             tabBarIcon: () => (
-              <PlusIcon width={28} height={28} fill="#FFFFFF" />
+              <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
             ),
             tabBarButton: (props) => (
               <CustomTabBarButton {...props} onPress={() => setShowMoreModal(true)} />
@@ -127,10 +123,10 @@ const AppTabs = () => {
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
-                <CommentsIcon
-                  width={24}
-                  height={24}
-                  fill={focused ? '#6B46C1' : '#6B7280'}
+                <MaterialCommunityIcons
+                  name="message"
+                  size={24}
+                  color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
                 <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}> 
@@ -148,10 +144,10 @@ const AppTabs = () => {
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
-                <UserIcon
-                  width={24}
-                  height={24}
-                  fill={focused ? '#6B46C1' : '#6B7280'}
+                <MaterialCommunityIcons
+                  name="account"
+                  size={24}
+                  color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
                 <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}> 

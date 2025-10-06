@@ -10,16 +10,10 @@ import {
     TouchableOpacity,
     ActivityIndicator,
 } from 'react-native';
-import Loginimg from '../../../assects/Firstpage-login-page/loginimg.svg';
 import styles from './Loginsty.jsx';
 import { TextInput } from 'react-native-paper';
 import React, { useState } from 'react';
-import Separator from '../../../assects/Firstpage-login-page/separator.svg';
-import Googleicon from '../../../assects/Firstpage-login-page/google.svg';
-import Tickicon from '../../../assects/Firstpage-login-page/tick.svg';
-import Tickbox from '../../../assects/Firstpage-login-page/tickbox.svg';
-import EyeOn from '../../../assects/Firstpage-login-page/eye-svgrepo-com.svg';
-import EyeOff from '../../../assects/Firstpage-login-page/eye-slash-svgrepo-com.svg';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 
@@ -89,7 +83,9 @@ const Login = () => {
                     <View>
                         <Text style={styles.hi}>Hi !</Text>
                         <Text style={styles.sectoptext}>Login to continue</Text>
-                        <Loginimg height={267} width={290} style={styles.logimg} />
+                        <View style={[styles.logimg, {justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6'}]}>
+                            <MaterialCommunityIcons name="account-circle" size={120} color="#6B46C1" />
+                        </View>
 
                         <View style={styles.inputcontainer}>
                             <TextInput
@@ -119,13 +115,21 @@ const Login = () => {
                                         top: 22,
                                     }}
                                 >
-                                    {showPassword ? <EyeOn width={24} height={24} /> : <EyeOff width={24} height={24} />}
+                                    <MaterialCommunityIcons 
+                                        name={showPassword ? 'eye' : 'eye-off'} 
+                                        size={24} 
+                                        color="#6B7280" 
+                                    />
                                 </Pressable>
                             </View> 
                         </View>
 
                         <Pressable style={styles.checkboxContainer} onPress={() => setChecked(!checked)}>
-                            {checked ? <Tickbox height={18} width={18} /> : <Tickicon height={18} width={18} />}
+                            <MaterialCommunityIcons 
+                                name={checked ? 'checkbox-marked' : 'checkbox-blank-outline'} 
+                                size={18} 
+                                color={checked ? '#6B46C1' : '#6B7280'} 
+                            />
                             <Text style={styles.checkboxText}>I agree with the Privacy Policy</Text>
                         </Pressable>
 
@@ -144,12 +148,14 @@ const Login = () => {
                         </TouchableOpacity>
 
                         <View style={styles.separator}>
-                            <Separator />
+                            <View style={{height: 1, backgroundColor: '#E5E7EB', flex: 1}} />
+                            <Text style={{marginHorizontal: 16, color: '#6B7280'}}>OR</Text>
+                            <View style={{height: 1, backgroundColor: '#E5E7EB', flex: 1}} />
                         </View>
                         <Text style={styles.googletext}>Login with Google</Text>
 
                         <Pressable style={styles.googleauthcontainer}>
-                            <Googleicon height={18} width={18} style={styles.googleicon} />
+                            <MaterialCommunityIcons name="google" size={18} color="#DB4437" style={styles.googleicon} />
                             <Text style={styles.googleauthtext}>Continue with Google</Text>
                         </Pressable>
                     </View>

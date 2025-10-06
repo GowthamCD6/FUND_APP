@@ -5,22 +5,14 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import Dashboard from '../../../pages/Admin/pages/Dashboard';
 
 export const ADMIN_PHONE = '123456789';
 export const ADMIN_PASSWORD = 'abc';
 
 // Admin Dashboard Screens
 function DashboardScreen() {
-  return (
-    <View style={styles.screenContainer}>
-      <View style={styles.gradientHeader}>
-        <Text style={styles.headerTitle}>Admin Dashboard</Text>
-      </View>
-      <View style={styles.screenContent}>
-        <Text style={styles.screenText}>Overview of chit fund operations</Text>
-      </View>
-    </View>
-  );
+  return <Dashboard />;
 }
 
 function MembersScreen() {
