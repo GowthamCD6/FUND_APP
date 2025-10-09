@@ -5,7 +5,7 @@ import AccountD from "../../pages/User/Pages/Profile/Page/AccountD";
 import LinkBA from "../../pages/User/Pages/Profile/Page/LinkBA";
 import Nominee from "../../pages/User/Pages/Profile/Page/Nominee";
 import SecurPermis from "../../pages/User/Pages/Profile/Page/SecurPermis";
-import AuthLoader from "../utils/authLoader";
+import AuthLoader from "../../utils/authLoader";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Welcome from "../../pages/Fronter/Welcome/Welcome";
 import Login from "../../pages/Fronter/Login/Login";
