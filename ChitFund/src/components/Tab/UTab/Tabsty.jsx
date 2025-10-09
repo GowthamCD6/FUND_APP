@@ -62,7 +62,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 60,
     width: 60,
-    paddingTop: 15,
+    gap:0
+    // paddingTop: 15,
   },
   iconStyle: {
     marginBottom: 6,
