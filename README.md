@@ -23,7 +23,7 @@ Members can manage their personal details, nominees, and linked bank accounts, a
 - **Navigation**: Animated slide-in transitions  
 
 ## 🚀 Why GDK Chit Fund?
-Since **2005**, GDK Chit Fund has built a legacy of trust. This app extends that trust digitally, giving members the tools to **track, manage, and grow their investments with ease**. Whether monitoring contributions or updating account details, everything is just a tap away.this app is made by Gowtham
+Since **2005**, GDK Chit Fund has built a legacy of trust. This app extends that trust digitally, giving members the tools to **track, manage, and grow their investments with ease**. Whether monitoring contributions or updating account details, everything is just a tap away.
 
 ---
 
