@@ -1,21 +1,34 @@
-
-import React from "react";
-import Login from "./src/pages/Fronter/Login/Login.jsx";
-import Welcome from "./src/pages/Fronter/Welcome/Welcome";
-import Tab from "./src/components/Tab/UTab/Tab.jsx"
+import React, { useEffect } from "react";
+import { SafeAreaView, StyleSheet, Alert } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import Routes from "./src/components/Routes/Routes.jsx";
-import { View } from "react-native";
+import Router from "./src/components/Routes/Routes";
+import "react-native-get-random-values";
+import { AuthProvider } from "./src/utils/AuthContext";
 
-const App = () => {
+const AppContent = () => {
+
   return (
     <SafeAreaProvider>
-      <View style={{ flex: 1 }}>
-        <Routes/>
-      </View>
+      <SafeAreaView style={[styles.container]}>
+        <Router />
+      </SafeAreaView>
     </SafeAreaProvider>
-    // <Tab/>
   );
 };
+
+const App = () => {
+
+  return (
+    <AuthProvider>
+      {/* <ThemeProvider> */}
+        <AppContent />
+      {/* </ThemeProvider> */}
+    </AuthProvider> 
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+});
 
 export default App;

@@ -1,45 +1,52 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import React, { useEffect } from 'react';
+import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
 const AuthLoader = () => {
-    const navigation = useNavigation()
-    const [loading, setLoading] = useState(true);
-    const [phoneNumber, setPhoneNumber] = useState(null);
+  const navigation = useNavigation();
 
-    useEffect(() => {
-        const loadData = async () => {
-            const storedPhoneNumber = await AsyncStorage.getItem('userPhoneNumber');
-            const storedRole = await AsyncStorage.getItem('userRole');
-            setPhoneNumber(storedPhoneNumber);
-            if (storedPhoneNumber) {
-                // Navigate to main app screen with stored role
-                const role = storedRole || 'user';
-                console.log("User is logged in, navigating to main app with role:", role);
-                navigation.navigate('Tab', { role })
-            }
-            else{
-                navigation.navigate('Welcome')
-            }
-            setLoading(false);
-        };
-        loadData();
-    }, []);
+  useEffect(() => {
+    const checkLogin = async () => {
+      try {
+        const phone = await AsyncStorage.getItem('userPhone');
+        const name = await AsyncStorage.getItem('userName');
+        console.log(phone, name);
+        
+        if (phone && name) {
+          navigation.navigate('TabRouting')
+        } else {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }
+      } catch (error) {
+        console.error('Error checking login status:', error);
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'SignIn' }],
+        });
+      }
+    };
 
-    if (loading) {
-        return (
-            <View>
-                <ActivityIndicator size="large" color="#0000ff" />
-            </View>
-        );
-    }
+    checkLogin();
+  }, []);
 
-    return (
-        <View>
-            <Text>Welcome back, user!</Text>
-        </View>
-    );
+  return (
+    <View style={styles.loaderContainer}>
+      <ActivityIndicator size="large" color="#2842C4" />
+    </View>
+  );
 };
+
+const styles = StyleSheet.create({
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+});
 
 export default AuthLoader;

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ApiService from './services/ApiService';
+import ApiService from '../services/ApiService';
 
 const AuthContext = createContext();
 
@@ -49,18 +49,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (phone, password) => {
     try {
-      const response = await ApiService.login(email, password);
+      const response = await ApiService.login(phone, password);
       if (response.success) {
         setUser(response.data.user);
         setIsAuthenticated(true);
         
         // Save user details to AsyncStorage (for backward compatibility)
-        await AsyncStorage.setItem('userFullName', response.data.user.fullName);
-        await AsyncStorage.setItem('userName', response.data.user.username);
-        await AsyncStorage.setItem('userEmail', response.data.user.email);
-        await AsyncStorage.setItem('userState', response.data.user.state || '');
+        await AsyncStorage.setItem('userName', response.data.user.name);
+        await AsyncStorage.setItem('userPhone', response.data.user.phone);
         await AsyncStorage.setItem('userLoginMethod', 'jwt');
         
         return response;
@@ -72,39 +70,35 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (userData) => {
-    try {
-      const response = await ApiService.register(userData);
-      if (response.success) {
-        setUser(response.data.user);
-        setIsAuthenticated(true);
+  // const register = async (userData) => {
+  //   try {
+  //     const response = await ApiService.register(userData);
+  //     if (response.success) {
+  //       setUser(response.data.user);
+  //       setIsAuthenticated(true);
         
-        // Save user details to AsyncStorage (for backward compatibility)
-        await AsyncStorage.setItem('userFullName', response.data.user.fullName);
-        await AsyncStorage.setItem('userName', response.data.user.username);
-        await AsyncStorage.setItem('userEmail', response.data.user.email);
-        await AsyncStorage.setItem('userState', response.data.user.state || '');
-        await AsyncStorage.setItem('userLoginMethod', 'jwt');
+  //       // Save user details to AsyncStorage (for backward compatibility)
+  //       await AsyncStorage.setItem('userFullName', response.data.user.fullName);
+  //       await AsyncStorage.setItem('userName', response.data.user.username);
+  //       await AsyncStorage.setItem('userEmail', response.data.user.email);
+  //       await AsyncStorage.setItem('userState', response.data.user.state || '');
+  //       await AsyncStorage.setItem('userLoginMethod', 'jwt');
         
-        return response;
-      } else {
-        throw new Error(response.message);
-      }
-    } catch (error) {
-      throw error;
-    }
-  };
+  //       return response;
+  //     } else {
+  //       throw new Error(response.message);
+  //     }
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // };
 
   const logout = async () => {
     try {
       await ApiService.logout();
       
       // Clear user data from AsyncStorage
-      await AsyncStorage.removeItem('userFullName');
-      await AsyncStorage.removeItem('userName');
-      await AsyncStorage.removeItem('userEmail');
-      await AsyncStorage.removeItem('userState');
-      await AsyncStorage.removeItem('userLoginMethod');
+      await AsyncStorage.clear();
       
       setUser(null);
       setIsAuthenticated(false);
@@ -121,7 +115,7 @@ export const AuthProvider = ({ children }) => {
     user,
     isLoading,
     login,
-    register,
+    // register,
     logout,
     checkAuthStatus
   };

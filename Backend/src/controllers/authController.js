@@ -3,118 +3,118 @@ const db = require('../config/db');
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../middleware/auth');
 
 // User Registration
-exports.register = async (req, res) => {
-  try {
-    const { username, email, password, fullName, state } = req.body;
+// exports.register = async (req, res) => {
+//   try {
+//     const { username, email, password, fullName, state } = req.body;
 
-    // Validation
-    if (!username || !email || !password || !fullName) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
-      });
-    }
+//     // Validation
+//     if (!username || !email || !password || !fullName) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'All fields are required'
+//       });
+//     }
 
-    // Check if user already exists
-    const checkUserSql = 'SELECT * FROM users WHERE email = ? OR username = ?';
-    db.query(checkUserSql, [email, username], async (err, results) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({
-          success: false,
-          message: 'Server error'
-        });
-      }
+//     // Check if user already exists
+//     const checkUserSql = 'SELECT * FROM users WHERE email = ? OR username = ?';
+//     db.query(checkUserSql, [email, username], async (err, results) => {
+//       if (err) {
+//         console.error('Database error:', err);
+//         return res.status(500).json({
+//           success: false,
+//           message: 'Server error'
+//         });
+//       }
 
-      if (results.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: 'User with this email or username already exists'
-        });
-      }
+//       if (results.length > 0) {
+//         return res.status(409).json({
+//           success: false,
+//           message: 'User with this email or username already exists'
+//         });
+//       }
 
-      // Hash password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
+//       // Hash password
+//       const saltRounds = 10;
+//       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-      // Insert new user
-      const insertUserSql = `
-        INSERT INTO users (username, email, password_hash, full_name, state, created_at) 
-        VALUES (?, ?, ?, ?, ?, NOW())
-      `;
+//       // Insert new user
+//       const insertUserSql = `
+//         INSERT INTO users (username, email, password_hash, full_name, state, created_at) 
+//         VALUES (?, ?, ?, ?, ?, NOW())
+//       `;
 
-      db.query(insertUserSql, [username, email, hashedPassword, fullName, state || null], (err, result) => {
-        if (err) {
-          console.error('Database error:', err);
-          return res.status(500).json({
-            success: false,
-            message: 'Error creating user'
-          });
-        }
+//       db.query(insertUserSql, [username, email, hashedPassword, fullName, state || null], (err, result) => {
+//         if (err) {
+//           console.error('Database error:', err);
+//           return res.status(500).json({
+//             success: false,
+//             message: 'Error creating user'
+//           });
+//         }
 
-        const userId = result.insertId;
+//         const userId = result.insertId;
         
-        // Generate tokens
-        const tokenPayload = {
-          userId: userId,
-          username: username,
-          email: email,
-          fullName: fullName
-        };
+//         // Generate tokens
+//         const tokenPayload = {
+//           userId: userId,
+//           username: username,
+//           email: email,
+//           fullName: fullName
+//         };
 
-        const accessToken = generateToken(tokenPayload);
-        const refreshToken = generateRefreshToken({ userId: userId });
+//         const accessToken = generateToken(tokenPayload);
+//         const refreshToken = generateRefreshToken({ userId: userId });
 
-        // Store refresh token in database
-        const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
-        db.query(storeTokenSql, [userId, refreshToken], (err) => {
-          if (err) {
-            console.error('Error storing refresh token:', err);
-          }
-        });
+//         // Store refresh token in database
+//         const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
+//         db.query(storeTokenSql, [userId, refreshToken], (err) => {
+//           if (err) {
+//             console.error('Error storing refresh token:', err);
+//           }
+//         });
 
-        res.status(201).json({
-          success: true,
-          message: 'User registered successfully',
-          data: {
-            user: {
-              id: userId,
-              username: username,
-              email: email,
-              fullName: fullName,
-              state: state
-            },
-            accessToken: accessToken,
-            refreshToken: refreshToken
-          }
-        });
-      });
-    });
+//         res.status(201).json({
+//           success: true,
+//           message: 'User registered successfully',
+//           data: {
+//             user: {
+//               id: userId,
+//               username: username,
+//               email: email,
+//               fullName: fullName,
+//               state: state
+//             },
+//             accessToken: accessToken,
+//             refreshToken: refreshToken
+//           }
+//         });
+//       });
+//     });
 
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-};
+//   } catch (error) {
+//     console.error('Registration error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Server error'
+//     });
+//   }
+// };
 
 // User Login
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
-    if (!email || !password) {
+    if (!phone || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required'
+        message: 'Phone and password are required'
       });
     }
 
-    // Find user by email
-    const findUserSql = 'SELECT * FROM users WHERE email = ?';
-    db.query(findUserSql, [email], async (err, results) => {
+    // Find user by phone
+    const findUserSql = 'SELECT * FROM users WHERE phone = ?';
+    db.query(findUserSql, [phone], async (err, results) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({
@@ -126,18 +126,18 @@ exports.login = async (req, res) => {
       if (results.length === 0) {
         return res.status(401).json({
           success: false,
-          message: 'Invalid email or password'
+          message: 'Invalid phone or password'
         });
       }
 
       const user = results[0];
 
       // Verify password
-      const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+      const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
         return res.status(401).json({
           success: false,
-          message: 'Invalid email or password'
+          message: 'Invalid phone or password'
         });
       }
 
@@ -152,9 +152,9 @@ exports.login = async (req, res) => {
       // Generate tokens
       const tokenPayload = {
         userId: user.id,
-        username: user.username,
-        email: user.email,
-        fullName: user.full_name
+        name: user.user,
+        // email: user.email,
+        phone: user.phone
       };
 
       const accessToken = generateToken(tokenPayload);
@@ -175,9 +175,8 @@ exports.login = async (req, res) => {
           user: {
             id: user.id,
             username: user.username,
-            email: user.email,
-            fullName: user.full_name,
-            state: user.state
+            // email: user.email,
+            phone: user.phone,
           },
           accessToken: accessToken,
           refreshToken: refreshToken

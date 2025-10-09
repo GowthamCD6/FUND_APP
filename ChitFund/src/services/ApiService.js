@@ -1,9 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@env';
+import { API_URL } from '../utils/env';
 
 class ApiService {
   constructor() {
-    this.baseURL = API_URL || 'http://localhost:3000';
+    this.baseURL = API_URL;
     this.accessToken = null;
     this.refreshToken = null;
   }
@@ -119,37 +119,37 @@ class ApiService {
   }
 
   // Authentication methods
-  async register(userData) {
-    try {
-      const response = await fetch(`${this.baseURL}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+  // async register(userData) {
+  //   try {
+  //     const response = await fetch(`${this.baseURL}/api/auth/register`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify(userData),
+  //     });
 
-      const data = await response.json();
+  //     const data = await response.json();
 
-      if (data.success) {
-        await this.saveTokens(data.data.accessToken, data.data.refreshToken);
-        return data;
-      } else {
-        throw new Error(data.message || 'Registration failed');
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
+  //     if (data.success) {
+  //       await this.saveTokens(data.data.accessToken, data.data.refreshToken);
+  //       return data;
+  //     } else {
+  //       throw new Error(data.message || 'Registration failed');
+  //     }
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
 
-  async login(email, password) {
+  async login(phone, password) {
     try {
       const response = await fetch(`${this.baseURL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ phone, password }),
       });
 
       const data = await response.json();
