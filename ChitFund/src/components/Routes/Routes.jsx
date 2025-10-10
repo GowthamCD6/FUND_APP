@@ -9,11 +9,13 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Welcome from "../../pages/Fronter/Welcome/Welcome";
 import Login from "../../pages/Fronter/Login/Login";
 import MemberDetails from "../../pages/Admin/pages/Reports/pages/MemberDetails/MemberDetails";
+import { StatusBar } from "react-native";
 
 const Routes = () => {
     const Stack = createNativeStackNavigator();
     return (
         <NavigationContainer>
+            <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
             <Stack.Navigator initialRouteName="Auth" screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="Welcome" component={Welcome} />
                 <Stack.Screen name="Login" component={Login} />

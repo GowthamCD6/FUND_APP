@@ -16,64 +16,50 @@ import React, { useState } from 'react';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import ApiService from '../../../services/ApiService.js';
+import AuthContext from '../../../utils/AuthContext.js';
 
 // Encryption key generation removed - using direct messaging
 const Login = () => {
     const navigation = useNavigation();
-    // Reference credentials (not defaulted in UI)
-    const USER_PHONE = '987654321';
-    const USER_PASSWORD = 'abc';
-    const ADMIN_PHONE = '123456789';
-    const ADMIN_PASSWORD = 'abc';
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [checked, setChecked] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setLoading] = useState(false);
 
     const handleLogin = async () => {
-        // --- VALIDATION LOGIC START ---
-
-        // 1. Check if Mobile Number is empty
-        if (!phoneNumber.trim()) {
-            Alert.alert("Login Error", "Please enter your mobile number.");
-            return; 
+        if (!phoneNumber || !password) {
+            Alert.alert("Missing Info", "Please enter all required fields.");
+            return;
         }
 
-        // 2. Check if Password is empty
-        if (!password) {
-            Alert.alert("Login Error", "Please enter your password.");
-            return; 
-        }
-        
-        // 3. Check if Privacy Policy is accepted
-        if (!checked) {
-            Alert.alert("Privacy Policy", "Please accept the Privacy Policy to continue.");
-            return; 
-        }
+        setLoading(true);
+        try {
+            // ✅ If user entered email, use email as username for login
+            const phone = phoneNumber;
 
-        // --- VALIDATION LOGIC END ---
+            const response = await AuthContext.login(phone, password);
+            if (!response.success) {
+                throw new Error(response.message || "Login failed");
+            }
 
-        // If all checks pass, proceed with the login process
-        setIsLoading(true);
+            await AsyncStorage.setItem("userEmail", user.get("email") || "");
+            await AsyncStorage.setItem("userName", user.get("username"));
+            await AsyncStorage.setItem("userFullName", user.get("name") || "");
+            await AsyncStorage.setItem("userState", user.get("state") || "");
+            await AsyncStorage.setItem("userLoginMethod", "EmailPassword");
 
-        await AsyncStorage.setItem('userPhoneNumber', phoneNumber);
-        // Your API call logic would go here.
-        // For demonstration, I'll simulate a network request.
-        console.log("Attempting to log in with:", { phoneNumber, password });
-        let role = 'user';
-        if (phoneNumber === ADMIN_PHONE && password === ADMIN_PASSWORD) {
-            role = 'admin';
-            console.log('Admin login detected, setting role to admin');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: "TabRouting" }],
+            });
+        } catch (error) {
+            console.error("Login Error:", error);
+            Alert.alert("Login Failed", error.message || "Invalid username or password.");
+        } finally {
+            setLoading(false);
         }
-        // Store the user role in AsyncStorage
-        await AsyncStorage.setItem('userRole', role);
-        console.log('Navigating with role:', role);
-        
-        setTimeout(() => {
-            setIsLoading(false);
-            navigation.navigate('Tab', { role });
-        }, 1000); 
     };
 
     return (
@@ -83,7 +69,7 @@ const Login = () => {
                     <View>
                         <Text style={styles.hi}>Hi !</Text>
                         <Text style={styles.sectoptext}>Login to continue</Text>
-                        <View style={[styles.logimg, {justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6'}]}>
+                        <View style={[styles.logimg, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6' }]}>
                             <MaterialCommunityIcons name="account-circle" size={120} color="#6B46C1" />
                         </View>
 
@@ -115,26 +101,26 @@ const Login = () => {
                                         top: 22,
                                     }}
                                 >
-                                    <MaterialCommunityIcons 
-                                        name={showPassword ? 'eye' : 'eye-off'} 
-                                        size={24} 
-                                        color="#6B7280" 
+                                    <MaterialCommunityIcons
+                                        name={showPassword ? 'eye' : 'eye-off'}
+                                        size={24}
+                                        color="#6B7280"
                                     />
                                 </Pressable>
-                            </View> 
+                            </View>
                         </View>
 
                         <Pressable style={styles.checkboxContainer} onPress={() => setChecked(!checked)}>
-                            <MaterialCommunityIcons 
-                                name={checked ? 'checkbox-marked' : 'checkbox-blank-outline'} 
-                                size={18} 
-                                color={checked ? '#6B46C1' : '#6B7280'} 
+                            <MaterialCommunityIcons
+                                name={checked ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                                size={18}
+                                color={checked ? '#6B46C1' : '#6B7280'}
                             />
                             <Text style={styles.checkboxText}>I agree with the Privacy Policy</Text>
                         </Pressable>
 
-                        <TouchableOpacity 
-                            style={[styles.pressablebtn, isLoading && { opacity: 0.7 }]} 
+                        <TouchableOpacity
+                            style={[styles.pressablebtn, isLoading && { opacity: 0.7 }]}
                             onPress={handleLogin}
                             disabled={isLoading}
                         >
@@ -148,9 +134,9 @@ const Login = () => {
                         </TouchableOpacity>
 
                         <View style={styles.separator}>
-                            <View style={{height: 1, backgroundColor: '#E5E7EB', flex: 1}} />
-                            <Text style={{marginHorizontal: 16, color: '#6B7280'}}>OR</Text>
-                            <View style={{height: 1, backgroundColor: '#E5E7EB', flex: 1}} />
+                            <View style={{ height: 1, backgroundColor: '#E5E7EB', flex: 1 }} />
+                            <Text style={{ marginHorizontal: 16, color: '#6B7280' }}>OR</Text>
+                            <View style={{ height: 1, backgroundColor: '#E5E7EB', flex: 1 }} />
                         </View>
                         <Text style={styles.googletext}>Login with Google</Text>
 
