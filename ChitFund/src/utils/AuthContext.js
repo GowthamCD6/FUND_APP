@@ -56,9 +56,9 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data.user);
         setIsAuthenticated(true);
         
-        // Save user details to AsyncStorage (for backward compatibility)
-        await AsyncStorage.setItem('userName', response.data.user.name);
-        await AsyncStorage.setItem('userPhone', response.data.user.phone);
+  // Save user details to AsyncStorage (for backward compatibility)
+  await AsyncStorage.setItem('userName', response.data.user.username ? String(response.data.user.username) : '');
+  await AsyncStorage.setItem('userPhone', response.data.user.phone ? String(response.data.user.phone) : '');
         await AsyncStorage.setItem('userLoginMethod', 'jwt');
         
         return response;

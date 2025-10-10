@@ -55,7 +55,7 @@ class ApiService {
         throw new Error('No refresh token available');
       }
 
-      const response = await fetch(`${this.baseURL}/api/auth/refresh-token`, {
+      const response = await fetch(`${this.baseURL}/auth/refresh-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +144,7 @@ class ApiService {
 
   async login(phone, password) {
     try {
-      const response = await fetch(`${this.baseURL}/api/auth/login`, {
+      const response = await fetch(`${this.baseURL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +170,7 @@ class ApiService {
       const refreshToken = await this.getRefreshToken();
       
       if (refreshToken) {
-        await fetch(`${this.baseURL}/api/auth/logout`, {
+        await fetch(`${this.baseURL}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -187,7 +187,7 @@ class ApiService {
 
   async getProfile() {
     try {
-      const response = await this.makeRequest('/api/auth/profile');
+      const response = await this.makeRequest('/auth/profile');
       return await response.json();
     } catch (error) {
       throw error;
@@ -197,7 +197,7 @@ class ApiService {
   // User preferences methods
   async getUserPreferences() {
     try {
-      const response = await this.makeRequest('/api/user/preferences');
+      const response = await this.makeRequest('/user/preferences');
       return await response.json();
     } catch (error) {
       throw error;
@@ -206,7 +206,7 @@ class ApiService {
 
   async updateUserPreferences(preferences) {
     try {
-      const response = await this.makeRequest('/api/user/preferences', {
+      const response = await this.makeRequest('/user/preferences', {
         method: 'PUT',
         body: JSON.stringify(preferences),
       });
