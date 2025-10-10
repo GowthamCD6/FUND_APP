@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import styles from './Tabsty';
+import styles from './UserTabsty';
 
 // Import actual page components
 import Home from '../../../pages/User/Pages/Home/Home';
@@ -47,7 +47,7 @@ const CustomTabBarButton = ({ children, onPress }) => (
 
 
 
-const AppTabs = () => {
+const UserTabs = () => {
   const [showMoreModal, setShowMoreModal] = useState(false);
 
   return (
@@ -73,7 +73,7 @@ const AppTabs = () => {
                   color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
-                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}> 
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}>
                   Home
                 </Text>
               </View>
@@ -94,7 +94,7 @@ const AppTabs = () => {
                   color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
-                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}> 
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}>
                   Portfolio
                 </Text>
               </View>
@@ -129,7 +129,7 @@ const AppTabs = () => {
                   color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
-                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}> 
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}>
                   Chat
                 </Text>
               </View>
@@ -150,7 +150,7 @@ const AppTabs = () => {
                   color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
-                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}> 
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}>
                   Profile
                 </Text>
               </View>
@@ -165,14 +165,4 @@ const AppTabs = () => {
   );
 };
 
-export default function TabNavigator({ route }) {
-  // Get role from navigation params
-  const role = route?.params?.role || 'user';
-  
-  console.log('TabNavigator received role:', role);
-  
-  if (role === 'admin') {
-    return <AdminTab />;
-  }
-  return <AppTabs />;
-}
+export default UserTabs;

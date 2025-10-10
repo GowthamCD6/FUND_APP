@@ -1,109 +1,112 @@
 const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../middleware/auth');
+const { decryptAES } = require('../utils/decryptAES');
 
 // User Registration
-// exports.register = async (req, res) => {
-//   try {
-//     const { username, email, password, fullName, state } = req.body;
+exports.register = async (req, res) => {
+  try {
+    const { username, password } = req.body;
 
-//     // Validation
-//     if (!username || !email || !password || !fullName) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'All fields are required'
-//       });
-//     }
+    // Validation
+    if (!username || !email || !password || !fullName) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+    }
 
-//     // Check if user already exists
-//     const checkUserSql = 'SELECT * FROM users WHERE email = ? OR username = ?';
-//     db.query(checkUserSql, [email, username], async (err, results) => {
-//       if (err) {
-//         console.error('Database error:', err);
-//         return res.status(500).json({
-//           success: false,
-//           message: 'Server error'
-//         });
-//       }
+    // Check if user already exists
+    const checkUserSql = 'SELECT * FROM users WHERE email = ? OR username = ?';
+    db.query(checkUserSql, [email, username], async (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Server error'
+        });
+      }
 
-//       if (results.length > 0) {
-//         return res.status(409).json({
-//           success: false,
-//           message: 'User with this email or username already exists'
-//         });
-//       }
+      if (results.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'User with this email or username already exists'
+        });
+      }
 
-//       // Hash password
-//       const saltRounds = 10;
-//       const hashedPassword = await bcrypt.hash(password, saltRounds);
+      // Hash password
+      const saltRounds = 10;
 
-//       // Insert new user
-//       const insertUserSql = `
-//         INSERT INTO users (username, email, password_hash, full_name, state, created_at) 
-//         VALUES (?, ?, ?, ?, ?, NOW())
-//       `;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-//       db.query(insertUserSql, [username, email, hashedPassword, fullName, state || null], (err, result) => {
-//         if (err) {
-//           console.error('Database error:', err);
-//           return res.status(500).json({
-//             success: false,
-//             message: 'Error creating user'
-//           });
-//         }
+      // Insert new user
+      const insertUserSql = `
+        INSERT INTO users (username, email, password, full_name, state, created_at) 
+        VALUES (?, ?, ?, ?, ?, NOW())
+      `;
 
-//         const userId = result.insertId;
-        
-//         // Generate tokens
-//         const tokenPayload = {
-//           userId: userId,
-//           username: username,
-//           email: email,
-//           fullName: fullName
-//         };
+      db.query(insertUserSql, [username, email, hashedPassword, fullName, state || null], (err, result) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({
+            success: false,
+            message: 'Error creating user'
+          });
+        }
 
-//         const accessToken = generateToken(tokenPayload);
-//         const refreshToken = generateRefreshToken({ userId: userId });
+        const userId = result.insertId;
 
-//         // Store refresh token in database
-//         const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
-//         db.query(storeTokenSql, [userId, refreshToken], (err) => {
-//           if (err) {
-//             console.error('Error storing refresh token:', err);
-//           }
-//         });
+        // Generate tokens
+        const tokenPayload = {
+          userId: userId,
+          username: username,
+          email: email,
+          fullName: fullName
+        };
 
-//         res.status(201).json({
-//           success: true,
-//           message: 'User registered successfully',
-//           data: {
-//             user: {
-//               id: userId,
-//               username: username,
-//               email: email,
-//               fullName: fullName,
-//               state: state
-//             },
-//             accessToken: accessToken,
-//             refreshToken: refreshToken
-//           }
-//         });
-//       });
-//     });
+        const accessToken = generateToken(tokenPayload);
+        const refreshToken = generateRefreshToken({ userId: userId });
 
-//   } catch (error) {
-//     console.error('Registration error:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Server error'
-//     });
-//   }
-// };
+        // Store refresh token in database
+        const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
+        db.query(storeTokenSql, [userId, refreshToken], (err) => {
+          if (err) {
+            console.error('Error storing refresh token:', err);
+          }
+        });
+
+        res.status(201).json({
+          success: true,
+          message: 'User registered successfully',
+          data: {
+            user: {
+              id: userId,
+              username: username,
+              email: email,
+              fullName: fullName,
+              state: state
+            },
+            accessToken: accessToken,
+            refreshToken: refreshToken
+          }
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
 
 // User Login
 exports.login = async (req, res) => {
   try {
     const { phone, password } = req.body;
+    // console.log('Login attempt for phone:', phone);
 
     if (!phone || !password) {
       return res.status(400).json({
@@ -132,13 +135,61 @@ exports.login = async (req, res) => {
 
       const user = results[0];
 
-      // Verify password
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+      // Helper: detect bcrypt hash format
+      const isBcryptHash = (val) => typeof val === 'string' && val.startsWith('$2') && val.length >= 50;
+
+      // Get plain password from request (decrypt if AES-encrypted, else use as-is)
+      let inputPlain = password;
+      try {
+        const maybeDecrypted = decryptAES(password);
+        if (typeof maybeDecrypted === 'string' && maybeDecrypted.length > 0) {
+          inputPlain = maybeDecrypted;
+        }
+      } catch (e) {
+        // Not encrypted or invalid base64 — assume plain text from client
+      }
+
+      let isPasswordValid = false;
+      let usedBcrypt = false;
+
+      // 1) Preferred: bcrypt hash in password column
+      if (user.password && isBcryptHash(user.password)) {
+        isPasswordValid = await bcrypt.compare(inputPlain, user.password);
+        usedBcrypt = true;
+      // 2) Legacy (sometimes bcrypt stored in password column)
+      } else if (user.password && isBcryptHash(user.password)) {
+        isPasswordValid = await bcrypt.compare(inputPlain, user.password);
+        usedBcrypt = true;
+      // 3) Old legacy: AES-encrypted password stored (NOT recommended)
+      } else if (user.password && typeof user.password === 'string') {
+        try {
+          const storedPlain = decryptAES(user.password);
+          isPasswordValid = storedPlain === inputPlain;
+        } catch (e) {
+          isPasswordValid = false;
+        }
+      }
+
       if (!isPasswordValid) {
         return res.status(401).json({
           success: false,
           message: 'Invalid phone or password'
         });
+      }
+
+      // Optional migration: if we authenticated using legacy AES, migrate to bcrypt
+      if (!usedBcrypt) {
+        try {
+          const newHash = await bcrypt.hash(inputPlain, 10);
+          const migrateSql = 'UPDATE users SET password = ?, password = NULL WHERE id = ?';
+          db.query(migrateSql, [newHash, user.id], (e) => {
+            if (e) {
+              console.error('Password migration error:', e);
+            }
+          });
+        } catch (e) {
+          console.error('Password rehash error:', e);
+        }
       }
 
       // Update last login
@@ -149,12 +200,15 @@ exports.login = async (req, res) => {
         }
       });
 
+
+
       // Generate tokens
       const tokenPayload = {
         userId: user.id,
-        name: user.user,
+        username: user.name,
         // email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        role: user.role
       };
 
       const accessToken = generateToken(tokenPayload);
@@ -177,6 +231,7 @@ exports.login = async (req, res) => {
             username: user.username,
             // email: user.email,
             phone: user.phone,
+            role: user.role,
           },
           accessToken: accessToken,
           refreshToken: refreshToken
@@ -243,7 +298,7 @@ exports.refreshToken = async (req, res) => {
         }
 
         const user = userResults[0];
-        
+
         // Generate new access token
         const tokenPayload = {
           userId: user.id,

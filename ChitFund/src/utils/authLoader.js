@@ -18,14 +18,14 @@ const AuthLoader = () => {
         } else {
           navigation.reset({
             index: 0,
-            routes: [{ name: 'Login' }],
+            routes: [{ name: 'Welcome' }],
           });
         }
       } catch (error) {
         console.error('Error checking login status:', error);
         navigation.reset({
           index: 0,
-          routes: [{ name: 'SignIn' }],
+          routes: [{ name: 'Welcome' }],
         });
       }
     };
