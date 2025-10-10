@@ -11,10 +11,14 @@ const AuthLoader = () => {
       try {
         const phone = await AsyncStorage.getItem('userPhone');
         const name = await AsyncStorage.getItem('userName');
-        console.log(phone, name);
+        const role = await AsyncStorage.getItem('userRole');
         
-        if (phone && name) {
-          navigation.navigate('TabRouting')
+        if (phone && role) {
+          if(role === 'Admin') {
+            navigation.navigate('AdminTabs');
+          } else {
+            navigation.navigate('TabRouting');
+          }
         } else {
           navigation.reset({
             index: 0,

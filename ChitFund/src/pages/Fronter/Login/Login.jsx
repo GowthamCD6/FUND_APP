@@ -112,9 +112,11 @@ const Login = () => {
 
             await AsyncStorage.setItem("userPhone", user.phone ? String(user.phone) : "");
             await AsyncStorage.setItem("userName", user.username ? String(user.username) : "");
-
+            await AsyncStorage.setItem("userRole", user.role ? String(user.role) : "");
+            await AsyncStorage.setItem("userLoginMethod", "jwt");
+            
             navigation.reset({
-                index: 0,
+                index: 0, 
                 routes: [{ name: "TabRouter", params: { role: user.role } }],
             });
         } catch (error) {

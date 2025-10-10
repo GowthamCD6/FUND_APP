@@ -6,10 +6,10 @@ const { decryptAES } = require('../utils/decryptAES');
 // User Registration
 exports.register = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { name, phone, password } = req.body;
 
     // Validation
-    if (!username || !email || !password || !fullName) {
+    if (!name || !phone || !password) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required'
@@ -17,8 +17,8 @@ exports.register = async (req, res) => {
     }
 
     // Check if user already exists
-    const checkUserSql = 'SELECT * FROM users WHERE email = ? OR username = ?';
-    db.query(checkUserSql, [email, username], async (err, results) => {
+    const checkUserSql = 'SELECT * FROM users WHERE phone = ?';
+    db.query(checkUserSql, [phone], async (err, results) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({
@@ -41,11 +41,11 @@ exports.register = async (req, res) => {
 
       // Insert new user
       const insertUserSql = `
-        INSERT INTO users (username, email, password, full_name, state, created_at) 
+        INSERT INTO users (name, phone, password, created_at) 
         VALUES (?, ?, ?, ?, ?, NOW())
       `;
 
-      db.query(insertUserSql, [username, email, hashedPassword, fullName, state || null], (err, result) => {
+      db.query(insertUserSql, [name, phone, hashedPassword], (err, result) => {
         if (err) {
           console.error('Database error:', err);
           return res.status(500).json({
@@ -59,7 +59,7 @@ exports.register = async (req, res) => {
         // Generate tokens
         const tokenPayload = {
           userId: userId,
-          username: username,
+          username: name,
           email: email,
           fullName: fullName
         };
@@ -81,7 +81,7 @@ exports.register = async (req, res) => {
           data: {
             user: {
               id: userId,
-              username: username,
+              username: name,
               email: email,
               fullName: fullName,
               state: state
@@ -228,7 +228,7 @@ exports.login = async (req, res) => {
         data: {
           user: {
             id: user.id,
-            username: user.username,
+            username: user.name,
             // email: user.email,
             phone: user.phone,
             role: user.role,
@@ -302,7 +302,7 @@ exports.refreshToken = async (req, res) => {
         // Generate new access token
         const tokenPayload = {
           userId: user.id,
-          username: user.username,
+          username: user.name,
           email: user.email,
           fullName: user.full_name
         };
@@ -361,7 +361,7 @@ exports.getProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const getUserSql = 'SELECT id, username, email, full_name, state, created_at, last_login FROM users WHERE id = ?';
+    const getUserSql = 'SELECT id, name, email, full_name, state, created_at, last_login FROM users WHERE id = ?';
     db.query(getUserSql, [userId], (err, results) => {
       if (err) {
         console.error('Database error:', err);
@@ -384,7 +384,7 @@ exports.getProfile = async (req, res) => {
         data: {
           user: {
             id: user.id,
-            username: user.username,
+            username: user.name,
             email: user.email,
             fullName: user.full_name,
             state: user.state,
