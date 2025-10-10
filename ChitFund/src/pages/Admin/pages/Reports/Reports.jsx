@@ -11,12 +11,14 @@ import {
   Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import styles from './ReportsStyles';
 
 const { width } = Dimensions.get('window');
 
 const Reports = () => {
-  const [activeTab, setActiveTab] = useState('all');
+  const navigation = useNavigation();
+  const [activeTab, setActiveTab] = useState('active');
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -145,8 +147,7 @@ const Reports = () => {
   };
 
   const openGroupDetails = (group) => {
-    setSelectedGroup(group);
-    setModalVisible(true);
+    navigation.navigate('MembersDetails', { group });
   };
 
   const formatDate = (dateString) => {
@@ -167,11 +168,7 @@ const Reports = () => {
   };
 
   const renderGroupCard = ({ item }) => (
-    <TouchableOpacity
-      style={styles.groupCard}
-      onPress={() => openGroupDetails(item)}
-      activeOpacity={0.7}
-    >
+    <View style={styles.groupCard}>
       <View style={styles.groupCardHeader}>
         <View style={styles.groupNameContainer}>
           <Text style={styles.groupName}>{item.name}</Text>
@@ -184,7 +181,13 @@ const Reports = () => {
             <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
           </View>
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={24} color="#9CA3AF" />
+        <TouchableOpacity 
+          onPress={() => openGroupDetails(item)}
+          style={styles.arrowButton}
+          activeOpacity={0.6}
+        >
+          <MaterialCommunityIcons name="chevron-right" size={24} color="#9CA3AF" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.groupCardContent}>
@@ -230,7 +233,7 @@ const Reports = () => {
           </Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   const renderMemberItem = ({ item }) => (
@@ -275,7 +278,10 @@ const Reports = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity style={styles.backButton}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.navigate('Dashboard')}
+          >
             <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Reports</Text>

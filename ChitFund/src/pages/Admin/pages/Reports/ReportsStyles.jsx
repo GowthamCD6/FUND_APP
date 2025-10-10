@@ -51,21 +51,25 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   activeTab: {
     backgroundColor: '#6B46C1',
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#6B7280',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Roboto',
   },
   activeTabText: {
     color: '#FFFFFF',
+    fontWeight: '600',
   },
   listContainer: {
     padding: 20,
@@ -89,6 +93,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     padding: 20,
     paddingBottom: 12,
+  },
+  arrowButton: {
+    padding: 8,
+    borderRadius: 8,
+    marginLeft: 8,
   },
   groupNameContainer: {
     flex: 1,
