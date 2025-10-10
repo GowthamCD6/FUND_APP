@@ -28,40 +28,61 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setLoading] = useState(false);
 
+    // const handleLogin = async () => {
+    //     if (!phoneNumber || !password) {
+    //         Alert.alert("Missing Info", "Please enter all required fields.");
+    //         return;
+    //     }
+
+    //     setLoading(true);
+    //     try {
+    //         // ✅ If user entered email, use email as username for login
+    //         const phone = phoneNumber;
+
+    //         const response = await AuthContext.login(phone, password);
+    //         if (!response.success) {
+    //             throw new Error(response.message || "Login failed");
+    //         }
+
+    //         await AsyncStorage.setItem("userEmail", user.get("email") || "");
+    //         await AsyncStorage.setItem("userName", user.get("username"));
+    //         await AsyncStorage.setItem("userFullName", user.get("name") || "");
+    //         await AsyncStorage.setItem("userState", user.get("state") || "");
+    //         await AsyncStorage.setItem("userLoginMethod", "EmailPassword");
+
+    //         navigation.reset({
+    //             index: 0,
+    //             routes: [{ name: "TabRouting" }],
+    //         });
+    //     } catch (error) {
+    //         console.error("Login Error:", error);
+    //         Alert.alert("Login Failed", error.message || "Invalid username or password.");
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
     const handleLogin = async () => {
         if (!phoneNumber || !password) {
             Alert.alert("Missing Info", "Please enter all required fields.");
             return;
         }
-
-        setLoading(true);
-        try {
-            // ✅ If user entered email, use email as username for login
-            const phone = phoneNumber;
-
-            const response = await AuthContext.login(phone, password);
-            if (!response.success) {
-                throw new Error(response.message || "Login failed");
-            }
-
-            await AsyncStorage.setItem("userEmail", user.get("email") || "");
-            await AsyncStorage.setItem("userName", user.get("username"));
-            await AsyncStorage.setItem("userFullName", user.get("name") || "");
-            await AsyncStorage.setItem("userState", user.get("state") || "");
-            await AsyncStorage.setItem("userLoginMethod", "EmailPassword");
-
-            navigation.reset({
-                index: 0,
-                routes: [{ name: "TabRouting" }],
-            });
-        } catch (error) {
-            console.error("Login Error:", error);
-            Alert.alert("Login Failed", error.message || "Invalid username or password.");
-        } finally {
-            setLoading(false);
+        
+        // Check if admin credentials
+        if(phoneNumber === '123456789' && password === 'abc'){
+            await AsyncStorage.setItem('userPhone', phoneNumber);
+            await AsyncStorage.setItem('userName', 'Admin');
+            await AsyncStorage.setItem('userRole', 'admin');
+            navigation.navigate('Tab', { role: 'admin' });
+            return;
         }
-    };
 
+        // Regular user login
+        await AsyncStorage.setItem('userPhone', phoneNumber);
+        await AsyncStorage.setItem('userName', 'User');
+        await AsyncStorage.setItem('userRole', 'user');
+        navigation.navigate('Tab', { role: 'user' });
+    }
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <SafeAreaView style={styles.container}>

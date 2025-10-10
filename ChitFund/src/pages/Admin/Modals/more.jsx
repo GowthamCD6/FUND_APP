@@ -1,0 +1,252 @@
+import React, { useState } from 'react';
+import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform, Alert } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+
+const MoreModal = ({ visible, onClose }) => {
+  const navigation = useNavigation();
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showManageMembers, setShowManageMembers] = useState(false);
+
+  const handleCreateGroupPress = () => {
+    setShowCreateGroup(true);
+  };
+
+  const handleManageMembersPress = () => {
+    setShowManageMembers(true);
+  };
+
+  const handleBackupPress = () => {
+    Alert.alert('Backup Data', 'This feature will be available soon!');
+    onClose();
+  };
+
+  const handleLogoutPress = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await AsyncStorage.clear();
+            onClose();
+            navigation.navigate('Welcome');
+          }
+        }
+      ]
+    );
+  };
+
+  const handleCreateGroupBack = () => {
+    setShowCreateGroup(false);
+  };
+
+  const handleManageMembersBack = () => {
+    setShowManageMembers(false);
+  };
+
+  const handleModalClose = () => {
+    setShowCreateGroup(false);
+    setShowManageMembers(false);
+    onClose();
+  };
+
+  // Placeholder components for future implementation
+  const CreateGroup = ({ onBack }) => (
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: 50 }}>
+      <TouchableOpacity onPress={onBack} style={{ padding: 20 }}>
+        <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
+      </TouchableOpacity>
+      <Text style={{ textAlign: 'center', fontSize: 18, marginTop: 100 }}>
+        Create Group Feature Coming Soon!
+      </Text>
+    </View>
+  );
+
+  const ManageMembers = ({ onBack }) => (
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: 50 }}>
+      <TouchableOpacity onPress={onBack} style={{ padding: 20 }}>
+        <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
+      </TouchableOpacity>
+      <Text style={{ textAlign: 'center', fontSize: 18, marginTop: 100 }}>
+        Manage Members Feature Coming Soon!
+      </Text>
+    </View>
+  );
+
+  if (showCreateGroup) {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={visible}
+        onRequestClose={handleModalClose}
+      >
+        <CreateGroup onBack={handleCreateGroupBack} />
+      </Modal>
+    );
+  }
+
+  if (showManageMembers) {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={visible}
+        onRequestClose={handleModalClose}
+      >
+        <ManageMembers onBack={handleManageMembersBack} />
+      </Modal>
+    );
+  }
+
+  return (
+  <Modal
+    animationType="slide"
+    transparent={true}
+    visible={visible}
+    onRequestClose={onClose}
+  >
+    <View style={styles.overlay}>
+      <View style={styles.container}>
+        {/* Modal Content */}
+        <View style={styles.menuList}>
+          <MenuItem
+            icon={<MaterialCommunityIcons name="account-group-outline" size={26} color="#6B46C1" />}
+            title="Create Group"
+            description="Create a new chit fund group"
+            onPress={handleCreateGroupPress}
+          />
+          <MenuItem
+            icon={<MaterialCommunityIcons name="account-multiple-outline" size={26} color="#6B46C1" />}
+            title="Manage Members"
+            description="Add, remove or edit member details"
+            onPress={handleManageMembersPress}
+          />
+          <MenuItem
+            icon={<MaterialCommunityIcons name="database-outline" size={26} color="#6B46C1" />}
+            title="Backup Data"
+            description="Export and backup system data"
+            onPress={handleBackupPress}
+          />
+          <MenuItem
+            icon={<MaterialCommunityIcons name="logout" size={26} color="#EF4444" />}
+            title="Logout"
+            description="Sign out from admin account"
+            onPress={handleLogoutPress}
+          />
+        </View>
+        {/* X Button */}
+        <TouchableOpacity style={styles.xButton} onPress={handleModalClose}>
+          <Text style={styles.xButtonText}>×</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
+};
+
+const MenuItem = ({ icon, title, description, onPress }) => (
+  <TouchableOpacity style={styles.menuItemRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
+    <View style={styles.menuIconWrap}>
+      <View style={styles.menuIconCircle}>
+        {icon}
+      </View>
+    </View>
+    <View style={styles.menuTextWrap}>
+      <Text style={styles.menuTitle}>{title}</Text>
+      <Text style={styles.menuDesc}>{description}</Text>
+    </View>
+  </TouchableOpacity>
+);
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+  },
+  container: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 24,
+    paddingHorizontal: 0,
+    paddingBottom: 32,
+    minHeight: 320,
+    alignItems: 'center',
+  },
+  menuList: {
+    width: '100%',
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  menuItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  menuIconWrap: {
+    marginRight: 18,
+  },
+  menuIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F3F0FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+  menuTextWrap: {
+    flex: 1,
+  },
+  menuTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#2D1E5B',
+    marginBottom: 2,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+  },
+  menuDesc: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
+  },
+  xButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#6B46C1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: 12,
+    shadowColor: '#6B46C1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  xButtonText: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: '700',
+    marginTop: -2,
+  },
+});
+
+export default MoreModal;
