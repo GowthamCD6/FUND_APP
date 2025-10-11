@@ -12,6 +12,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/admin', require('./routes/admin'));
 
 
 module.exports = app;

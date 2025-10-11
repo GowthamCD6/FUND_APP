@@ -6,15 +6,14 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  StyleSheet,
   Platform,
-  Dimensions,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import styles from './createGsty';
-
-const { width } = Dimensions.get('window');
+import { API_URL } from '../../../../../utils/env';
+import ApiService from '../../../../../services/ApiService';
 
 const CreateGroup = ({ onBack }) => {
   const [groupData, setGroupData] = useState({
@@ -26,6 +25,8 @@ const CreateGroup = ({ onBack }) => {
     startDate: '',
   });
   const [loading, setLoading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerDate, setPickerDate] = useState(new Date());
 
   // useEffect(() => {
   //   generateGroupId();
@@ -44,7 +45,7 @@ const CreateGroup = ({ onBack }) => {
 
   const validateForm = () => {
     const { groupName, totalMembers, groupAmount, duration, startDate } = groupData;
-    
+
     if (!groupName.trim()) {
       Alert.alert('Validation Error', 'Please enter group name');
       return false;
@@ -65,63 +66,88 @@ const CreateGroup = ({ onBack }) => {
       Alert.alert('Validation Error', 'Please enter start date');
       return false;
     }
-    
+
     return true;
+  };
+
+  const formatDate = (date) => {
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  };
+
+  const parseDDMMYYYY = (value) => {
+    try {
+      const [dd, mm, yyyy] = (value || '').split('/').map(Number);
+      if (!dd || !mm || !yyyy) return new Date();
+      return new Date(yyyy, mm - 1, dd);
+    } catch {
+      return new Date();
+    }
+  };
+
+  const openDatePicker = () => {
+    const initial = parseDDMMYYYY(groupData.startDate);
+    setPickerDate(initial);
+    setShowDatePicker(true);
+  };
+
+  const onAndroidDateChange = (event, selectedDate) => {
+    if (event.type === 'dismissed') {
+      setShowDatePicker(false);
+      return;
+    }
+    const date = selectedDate || pickerDate;
+    setShowDatePicker(false);
+    handleInputChange('startDate', formatDate(date));
+  };
+
+  const onIOSDateChange = (_event, selectedDate) => {
+    if (selectedDate) {
+      setPickerDate(selectedDate);
+    }
+  };
+
+  const confirmIOSDate = () => {
+    handleInputChange('startDate', formatDate(pickerDate));
+    setShowDatePicker(false);
+  };
+
+  const cancelIOSDate = () => {
+    setShowDatePicker(false);
   };
 
   const handleCreateGroup = async () => {
     if (!validateForm()) return;
-    
+
     setLoading(true);
     try {
-      // Get existing groups from AsyncStorage
-      const existingGroups = await AsyncStorage.getItem('chitFundGroups');
-      const groups = existingGroups ? JSON.parse(existingGroups) : [];
-      
-      // Create new group object
       const newGroup = {
         ...groupData,
         totalMembers: parseInt(groupData.totalMembers),
         groupAmount: parseFloat(groupData.groupAmount),
         duration: parseInt(groupData.duration),
-        createdDate: new Date().toISOString(),
-        status: 'Active',
         currentMembers: 0,
-        members: []
       };
-      
-      // Add to groups array
-      groups.push(newGroup);
-      
-      // Save back to AsyncStorage
-      await AsyncStorage.setItem('chitFundGroups', JSON.stringify(groups));
-      
+
+      const response = await ApiService.makeRequest('/groups/createGroup', {
+        method: 'POST',
+        body: JSON.stringify(newGroup),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to create group');
+      }
+
       Alert.alert(
         'Success!',
-        `Group "${groupData.groupName}" created successfully!\n\nGroup ID: ${groupData.groupId}`,
-        [
-          {
-            text: 'Create Another',
-            onPress: () => {
-              // Reset form and generate new ID
-              setGroupData({
-                // groupId: '',
-                groupName: '',
-                totalMembers: '20',
-                groupAmount: '',
-                duration: '20',
-                startDate: '',
-              });
-              // generateGroupId();
-            }
-          },
-          {
-            text: 'Done',
-            onPress: onBack
-          }
-        ]
+        `Group "${result.data.group_name}" created successfully!`,
+        `Group ID: ${result.data.group_code}`,
+
       );
-      
+
     } catch (error) {
       Alert.alert('Error', 'Failed to create group. Please try again.');
       console.error('Error creating group:', error);
@@ -139,14 +165,14 @@ const CreateGroup = ({ onBack }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create New Group</Text>
       </View>
-      
+
       <View style={styles.separator} />
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <View style={styles.formContainer}>
-          {/* Group ID Display */}
-          {/* <View style={styles.groupIdContainer}>
+            {/* Group ID Display */}
+            {/* <View style={styles.groupIdContainer}>
             <View style={styles.labelContainer}>
               <MaterialCommunityIcons name="identifier" size={20} color="#212121" />
               <Text style={styles.groupIdLabel}>Auto-Generated Group ID</Text>
@@ -159,88 +185,116 @@ const CreateGroup = ({ onBack }) => {
             </View>
           </View> */}
 
-          {/* Form Fields */}
-          <View style={styles.formSection}>
-            <InputField
-              label="Group Name"
-              placeholder="Enter group name"
-              value={groupData.groupName}
-              onChangeText={(value) => handleInputChange('groupName', value)}
-              icon="account-group-outline"
-              required
-            />
+            {/* Form Fields */}
+            <View style={styles.formSection}>
+              <InputField
+                label="Group Name"
+                placeholder="Enter group name"
+                value={groupData.groupName}
+                onChangeText={(value) => handleInputChange('groupName', value)}
+                icon="account-group-outline"
+                required
+              />
 
-            <View style={styles.row}>
-              <View style={[styles.halfWidth, { marginRight: 8 }]}>
-                <InputField
-                  label="Total Members"
-                  placeholder="e.g. 10"
-                  value={groupData.totalMembers}
-                  onChangeText={(value) => handleInputChange('totalMembers', value)}
-                  icon="account-multiple"
-                  keyboardType="numeric"
-                  required
-                />
+              <View style={styles.row}>
+                <View style={[styles.halfWidth, { marginRight: 8 }]}>
+                  <InputField
+                    label="Total Members"
+                    placeholder="e.g. 10"
+                    value={groupData.totalMembers}
+                    onChangeText={(value) => handleInputChange('totalMembers', value)}
+                    icon="account-multiple"
+                    keyboardType="numeric"
+                    required
+                  />
+                </View>
+                <View style={[styles.halfWidth, { marginLeft: 8 }]}>
+                  <InputField
+                    label="Duration (Months)"
+                    placeholder="e.g. 12"
+                    value={groupData.duration}
+                    onChangeText={(value) => handleInputChange('duration', value)}
+                    icon="calendar-month"
+                    keyboardType="numeric"
+                    required
+                  />
+                </View>
               </View>
-              <View style={[styles.halfWidth, { marginLeft: 8 }]}>
-                <InputField
-                  label="Duration (Months)"
-                  placeholder="e.g. 12"
-                  value={groupData.duration}
-                  onChangeText={(value) => handleInputChange('duration', value)}
-                  icon="calendar-month"
-                  keyboardType="numeric"
-                  required
-                />
-              </View>
+
+              <InputField
+                label="Group Amount (₹)"
+                placeholder="Enter total group amount (e.g., 100000 for 1 Lakh)"
+                value={groupData.groupAmount}
+                onChangeText={(value) => handleInputChange('groupAmount', value)}
+                icon="currency-inr"
+                keyboardType="numeric"
+                required
+              />
+
+              <DateField
+                label="Start Date"
+                value={groupData.startDate}
+                onOpenPicker={openDatePicker}
+                icon="calendar"
+                required
+              />
+
+              {showDatePicker && (
+                Platform.OS === 'ios' ? (
+                  <View style={styles.iosPickerContainer}>
+                    <View style={styles.iosPickerHeader}>
+                      <TouchableOpacity onPress={cancelIOSDate} style={styles.iosPickerButton}>
+                        <Text style={styles.iosPickerButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.iosPickerTitle}>Select Date</Text>
+                      <TouchableOpacity onPress={confirmIOSDate} style={styles.iosPickerButton}>
+                        <Text style={[styles.iosPickerButtonText, { color: '#2842C4' }]}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={pickerDate}
+                      mode="date"
+                      display="spinner"
+                      onChange={onIOSDateChange}
+                    />
+                  </View>
+                ) : (
+                  <DateTimePicker
+                    value={pickerDate}
+                    mode="date"
+                    display="default"
+                    onChange={onAndroidDateChange}
+                  />
+                )
+              )}
+
+              {/* Summary Card */}
+              {groupData.totalMembers && groupData.groupAmount && (
+                <View style={styles.summaryCard}>
+                  <Text style={styles.summaryTitle}>Group Summary</Text>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Total Group Amount:</Text>
+                    <Text style={styles.summaryValue}>
+                      ₹{parseFloat(groupData.groupAmount || 0).toLocaleString()}
+                    </Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Per Member Contribution:</Text>
+                    <Text style={styles.summaryValue}>
+                      ₹{(parseFloat(groupData.groupAmount || 0) / parseInt(groupData.totalMembers || 1)).toLocaleString()}
+                    </Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Total Members:</Text>
+                    <Text style={styles.summaryValue}>{groupData.totalMembers}</Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Duration:</Text>
+                    <Text style={styles.summaryValue}>{groupData.duration} months</Text>
+                  </View>
+                </View>
+              )}
             </View>
-
-            <InputField
-              label="Group Amount (₹)"
-              placeholder="Enter total group amount (e.g., 100000 for 1 Lakh)"
-              value={groupData.groupAmount}
-              onChangeText={(value) => handleInputChange('groupAmount', value)}
-              icon="currency-inr"
-              keyboardType="numeric"
-              required
-            />
-
-            <InputField
-              label="Start Date"
-              placeholder="DD/MM/YYYY"
-              value={groupData.startDate}
-              onChangeText={(value) => handleInputChange('startDate', value)}
-              icon="calendar"
-              required
-            />
-
-            {/* Summary Card */}
-            {groupData.totalMembers && groupData.groupAmount && (
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryTitle}>Group Summary</Text>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Total Group Amount:</Text>
-                  <Text style={styles.summaryValue}>
-                    ₹{parseFloat(groupData.groupAmount || 0).toLocaleString()}
-                  </Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Per Member Contribution:</Text>
-                  <Text style={styles.summaryValue}>
-                    ₹{(parseFloat(groupData.groupAmount || 0) / parseInt(groupData.totalMembers || 1)).toLocaleString()}
-                  </Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Total Members:</Text>
-                  <Text style={styles.summaryValue}>{groupData.totalMembers}</Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Duration:</Text>
-                  <Text style={styles.summaryValue}>{groupData.duration} months</Text>
-                </View>
-              </View>
-            )}
-          </View>
           </View>
         </View>
       </ScrollView>
@@ -267,12 +321,12 @@ const CreateGroup = ({ onBack }) => {
   );
 };
 
-const InputField = ({ 
-  label, 
-  placeholder, 
-  value, 
-  onChangeText, 
-  icon, 
+const InputField = ({
+  label,
+  placeholder,
+  value,
+  onChangeText,
+  icon,
   keyboardType = 'default',
   multiline = false,
   numberOfLines = 1,
@@ -296,6 +350,25 @@ const InputField = ({
       numberOfLines={numberOfLines}
       textAlignVertical={multiline ? 'top' : 'center'}
     />
+  </View>
+);
+
+
+const DateField = ({ label, value, onOpenPicker, icon, required = false }) => (
+  <View style={styles.inputContainer}>
+    <View style={styles.labelContainer}>
+      <MaterialCommunityIcons name={icon} size={20} color="#212121" />
+      <Text style={styles.inputLabel}>
+        {label} {required && <Text style={styles.required}>*</Text>}
+      </Text>
+    </View>
+    <TouchableOpacity onPress={onOpenPicker} activeOpacity={0.8}>
+      <View style={[styles.textInput, { justifyContent: 'center' }]}>
+        <Text style={{ color: value ? '#212121' : '#999999' }}>
+          {value || 'DD/MM/YYYY'}
+        </Text>
+      </View>
+    </TouchableOpacity>
   </View>
 );
 

@@ -93,7 +93,8 @@ class ApiService {
       if (token) {
         headers.Authorization = `Bearer ${token}`;
       }
-
+      console.log(`${this.baseURL}${url}`);
+      
       return fetch(`${this.baseURL}${url}`, {
         ...options,
         headers,
