@@ -35,13 +35,10 @@ const Routes = () => {
                 {/* Admin Tabs */}
                 <Stack.Screen name="AdminTabs" component={AdminTab} />
 
-                {/* User Profile Pages */}
                 <Stack.Screen name="AccountD" component={AccountD} />
                 <Stack.Screen name="LinkBA" component={LinkBA} />
                 <Stack.Screen name="Nominee" component={Nominee} />
                 <Stack.Screen name="SecurityPerm" component={SecurPermis} />
-
-                {/* Admin Pages */}
                 <Stack.Screen name="MembersDetails" component={MemberDetails} />
             </Stack.Navigator>
         </NavigationContainer>

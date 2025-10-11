@@ -86,52 +86,24 @@ const Login = () => {
         }
     };
 
-    // const handleLogin = async () => {
-    //     if (!phoneNumber || !password) {
-    //         Alert.alert("Missing Info", "Please enter all required fields.");
-    //         return;
-    //     }
-
-    //     setLoading(true);
-    //     try {
-    //         // ✅ If user entered email, use email as username for login
-    //         const phone = phoneNumber;
-
-    //         const response = await AuthContext.login(phone, password);
-    //         if (!response.success) {
-    //             throw new Error(response.message || "Login failed");
-    //         }
-
-    //         await AsyncStorage.setItem("userEmail", user.get("email") || "");
-    //         await AsyncStorage.setItem("userName", user.get("username"));
-    //         await AsyncStorage.setItem("userFullName", user.get("name") || "");
-    //         await AsyncStorage.setItem("userState", user.get("state") || "");
-    //         await AsyncStorage.setItem("userLoginMethod", "EmailPassword");
-
-    //         navigation.reset({
-    //             index: 0,
-    //             routes: [{ name: "TabRouting" }],
-    //         });
-    //     } catch (error) {
-    //         console.error("Login Error:", error);
-    //         Alert.alert("Login Failed", error.message || "Invalid username or password.");
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-
     const handleLogin = async () => {
         if (!phoneNumber || !password) {
             Alert.alert("Missing Info", "Please enter all required fields.");
             return;
         }
 
+        if (phoneError || passwordError) {
+            Alert.alert("Validation Error", "Please fix the errors before continuing.");
+            return;
+        }
+
         setLoading(true);
         try {
-            // ✅ If user entered email, use email as username for login
             const phone = phoneNumber;
-
-            const response = await AuthContext.login(phone, password);
+            // If your backend expects plain password (bcrypt compare), send `password` directly.
+            // If it expects encrypted password and decrypts server-side, use the next line instead.
+            const encryptedPassword = encryptPassword(password);
+            const response = await login(phone, encryptedPassword);
             if (!response.success) {
                 throw new Error(response.message || "Login failed");
             }
