@@ -136,15 +136,16 @@ const Login = () => {
                 throw new Error(response.message || "Login failed");
             }
 
-            await AsyncStorage.setItem("userEmail", user.get("email") || "");
-            await AsyncStorage.setItem("userName", user.get("username"));
-            await AsyncStorage.setItem("userFullName", user.get("name") || "");
-            await AsyncStorage.setItem("userState", user.get("state") || "");
-            await AsyncStorage.setItem("userLoginMethod", "EmailPassword");
+            const user = response.data.user;
 
+            await AsyncStorage.setItem("userPhone", user.phone ? String(user.phone) : "");
+            await AsyncStorage.setItem("userName", user.username ? String(user.username) : "");
+            await AsyncStorage.setItem("userRole", user.role ? String(user.role) : "");
+            await AsyncStorage.setItem("userLoginMethod", "jwt");
+            
             navigation.reset({
-                index: 0,
-                routes: [{ name: "TabRouting" }],
+                index: 0, 
+                routes: [{ name: "TabRouter", params: { role: user.role } }],
             });
         } catch (error) {
             console.error("Login Error:", error);
