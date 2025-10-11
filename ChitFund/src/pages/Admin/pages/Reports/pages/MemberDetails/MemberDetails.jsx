@@ -71,10 +71,10 @@ const MemberDetails = ({ route, navigation }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'paid': return '#10B981';
-      case 'pending': return '#F59E0B';
-      case 'overdue': return '#EF4444';
-      default: return '#6B7280';
+      case 'paid': return '#10B981';      // Light green
+      case 'pending': return '#F59E0B';   // Light orange
+      case 'overdue': return '#EF4444';   // Light red
+      default: return '#6B7280';          // Light gray
     }
   };
 
@@ -157,37 +157,36 @@ const MemberDetails = ({ route, navigation }) => {
   const renderMemberCard = ({ item }) => {
     const stats = getMonthlyStats();
     return (
-      <TouchableOpacity
+      <TouchableOpacity 
         style={styles.memberCard}
         onPress={() => setSelectedMember(item)}
         activeOpacity={0.7}
       >
+        {/* Member Info Section */}
         <View style={styles.memberHeader}>
+          <View style={styles.memberAvatarContainer}>
+            <View style={styles.memberAvatar}>
+              <Text style={styles.memberAvatarText}>
+                {item.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+              </Text>
+            </View>
+          </View>
           <View style={styles.memberInfo}>
             <Text style={styles.memberName}>{item.name}</Text>
             <Text style={styles.memberPhone}>{item.phone}</Text>
+            <Text style={styles.memberAmount}>{formatCurrency(item.currentPayment.amount)}</Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.currentPayment.status) }]}>
-            <MaterialCommunityIcons 
-              name={getStatusIcon(item.currentPayment.status)} 
-              size={12} 
-              color="#FFFFFF" 
-            />
-            <Text style={styles.statusText}>{item.currentPayment.status.toUpperCase()}</Text>
+          <View style={styles.statusAndArrowContainer}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.currentPayment.status) }]}>
+              <MaterialCommunityIcons 
+                name={getStatusIcon(item.currentPayment.status)} 
+                size={10} 
+                color="#FFFFFF" 
+              />
+              <Text style={styles.statusText}>{item.currentPayment.status}</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={20} color="#9CA3AF" style={styles.arrowIcon} />
           </View>
-        </View>
-        
-        <View style={styles.memberDetails}>
-          <View style={styles.paymentInfo}>
-            <Text style={styles.amountText}>{formatCurrency(item.currentPayment.amount)}</Text>
-            <Text style={styles.dateText}>
-              {item.currentPayment.status === 'paid' 
-                ? `Paid: ${formatDate(item.currentPayment.paidDate)}`
-                : `Due: ${formatDate(item.currentPayment.dueDate)}`
-              }
-            </Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={20} color="#9CA3AF" />
         </View>
       </TouchableOpacity>
     );
@@ -311,25 +310,17 @@ const MemberDetails = ({ route, navigation }) => {
             {/* Quick Actions */}
             <View style={styles.quickActions}>
               <TouchableOpacity 
-                style={[styles.actionButton, { backgroundColor: '#10B981' }]}
+                style={[styles.modalActionButton, styles.markPaidButton]}
                 onPress={() => {
                   updatePaymentStatus(selectedMember.id, 'paid');
                   Alert.alert('Success', 'Payment marked as paid');
                 }}
+                disabled={selectedMember?.currentPayment?.status === 'paid'}
               >
-                <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Mark Paid</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.actionButton, { backgroundColor: '#F59E0B' }]}
-                onPress={() => {
-                  updatePaymentStatus(selectedMember.id, 'pending');
-                  Alert.alert('Updated', 'Payment marked as pending');
-                }}
-              >
-                <MaterialCommunityIcons name="clock" size={16} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Mark Pending</Text>
+                <MaterialCommunityIcons name="check-circle" size={18} color="#FFFFFF" />
+                <Text style={styles.modalActionButtonText}>
+                  {selectedMember?.currentPayment?.status === 'paid' ? 'Already Paid' : 'Mark as Paid'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

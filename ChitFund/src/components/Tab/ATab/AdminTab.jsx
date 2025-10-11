@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import styles from './AdminTabsty.jsx'; // Adjust path if needed
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import Dashboard from '../../../pages/Admin/pages/Dashboard/Dashboard.jsx';
 import Reports from '../../../pages/Admin/pages/Reports/Reports.jsx';
+import AdminMoreModal from '../../../pages/Admin/Modals/more.jsx';
 
 export const ADMIN_PHONE = '123456789';
 export const ADMIN_PASSWORD = 'abc';
@@ -103,15 +104,19 @@ const CustomTabBarButton = ({ children, onPress }) => (
 );
 
 const AdminTab = () => {
+  const navigation = useNavigation();
+  const [showMoreModal, setShowMoreModal] = useState(false);
+
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarStyle: styles.tabBar,
-        tabBarHideOnKeyboard: true,
-      }}
-    >
+    <>
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: false,
+          tabBarStyle: styles.tabBar,
+          tabBarHideOnKeyboard: true,
+        }}
+      >
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
@@ -163,7 +168,10 @@ const AdminTab = () => {
             />
           ),
           tabBarButton: (props) => (
-            <CustomTabBarButton {...props} />
+            <CustomTabBarButton 
+              {...props} 
+              onPress={() => setShowMoreModal(true)}
+            />
           ),
         }}
       />
@@ -205,7 +213,14 @@ const AdminTab = () => {
           ),
         }}
       />
-    </Tab.Navigator>
+      </Tab.Navigator>
+      
+      <AdminMoreModal 
+        visible={showMoreModal}
+        onClose={() => setShowMoreModal(false)}
+        navigation={navigation}
+      />
+    </>
   );
 };
 
