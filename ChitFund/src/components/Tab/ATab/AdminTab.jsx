@@ -51,7 +51,10 @@ function SettingsScreen() {
   
   const handleLogout = async () => {
     await AsyncStorage.clear();
-    navigation.navigate('Welcome');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Welcome' }],
+    });
   };
 
   return (
