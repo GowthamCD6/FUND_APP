@@ -55,12 +55,12 @@ export const AuthProvider = ({ children }) => {
       if (response.success) {
         setUser(response.data.user);
         setIsAuthenticated(true);
-        
-  // Save user details to AsyncStorage (for backward compatibility)
-  await AsyncStorage.setItem('userName', response.data.user.username ? String(response.data.user.username) : '');
-  await AsyncStorage.setItem('userPhone', response.data.user.phone ? String(response.data.user.phone) : '');
+
+        // Save user details to AsyncStorage (for backward compatibility)
+        await AsyncStorage.setItem('userName', response.data.user.username ? String(response.data.user.username) : '');
+        await AsyncStorage.setItem('userPhone', response.data.user.phone ? String(response.data.user.phone) : '');
         await AsyncStorage.setItem('userLoginMethod', 'jwt');
-        
+
         return response;
       } else {
         throw new Error(response.message);
@@ -76,14 +76,14 @@ export const AuthProvider = ({ children }) => {
   //     if (response.success) {
   //       setUser(response.data.user);
   //       setIsAuthenticated(true);
-        
+
   //       // Save user details to AsyncStorage (for backward compatibility)
   //       await AsyncStorage.setItem('userFullName', response.data.user.fullName);
   //       await AsyncStorage.setItem('userName', response.data.user.username);
   //       await AsyncStorage.setItem('userEmail', response.data.user.email);
   //       await AsyncStorage.setItem('userState', response.data.user.state || '');
   //       await AsyncStorage.setItem('userLoginMethod', 'jwt');
-        
+
   //       return response;
   //     } else {
   //       throw new Error(response.message);
@@ -95,18 +95,24 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await ApiService.logout();
-      
-      // Clear user data from AsyncStorage
-      await AsyncStorage.clear();
-      
-      setUser(null);
-      setIsAuthenticated(false);
+      const response = await ApiService.logout();
+
+      if (!response.success) {
+        console.error('Logout failed on server:', response.message);
+        return ({ success: false, message: 'Logout failed' });
+      } else {
+
+        await AsyncStorage.clear();
+
+        setUser(null);
+        setIsAuthenticated(false);
+
+        return ({ success: true, message: 'Logout successful' });
+      }
     } catch (error) {
-      console.error('Logout error:', error);
-      // Even if logout fails on backend, clear local state
       setUser(null);
       setIsAuthenticated(false);
+      return ({ success: false, message: 'Logout error' });
     }
   };
 

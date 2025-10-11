@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import styles from './AdminTabsty.jsx'; // Adjust path if needed
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,6 +8,8 @@ import { useNavigation } from '@react-navigation/native';
 import Dashboard from '../../../pages/Admin/pages/Dashboard/Dashboard.jsx';
 import Reports from '../../../pages/Admin/pages/Reports/Reports.jsx';
 import AdminMoreModal from '../../../pages/Admin/Modals/more.jsx';
+import { API_URL } from '../../../utils/env.js';
+import { useAuth } from '../../../utils/AuthContext.js';
 
 export const ADMIN_PHONE = '123456789';
 export const ADMIN_PASSWORD = 'abc';
@@ -49,13 +51,22 @@ function ReportsScreen() {
 
 function SettingsScreen() {
   const navigation = useNavigation();
-  
+  const AuthContext = useAuth();
+
   const handleLogout = async () => {
-    await AsyncStorage.clear();
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Welcome' }],
-    });
+
+    try {
+      const response = await AuthContext.logout();
+      if (response.success) {
+        await AsyncStorage.clear();
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Welcome' }],
+        });
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
@@ -69,14 +80,14 @@ function SettingsScreen() {
           <Text style={{ fontSize: 14, color: '#666' }}>Admin Phone: {ADMIN_PHONE}</Text>
           <Text style={{ fontSize: 14, color: '#666' }}>Admin Password: {ADMIN_PASSWORD}</Text>
         </View>
-        <TouchableOpacity 
-          style={{ 
-            marginTop: 30, 
-            backgroundColor: '#EF4444', 
-            paddingHorizontal: 20, 
-            paddingVertical: 12, 
-            borderRadius: 8 
-          }} 
+        <TouchableOpacity
+          style={{
+            marginTop: 30,
+            backgroundColor: '#EF4444',
+            paddingHorizontal: 20,
+            paddingVertical: 12,
+            borderRadius: 8
+          }}
           onPress={handleLogout}
         >
           <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600', textAlign: 'center' }}>
@@ -117,105 +128,105 @@ const AdminTab = () => {
           tabBarHideOnKeyboard: true,
         }}
       >
-      <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.tabIconContainer}>
+        <Tab.Screen
+          name="Dashboard"
+          component={DashboardScreen}
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <View style={styles.tabIconContainer}>
+                <MaterialCommunityIcons
+                  name="view-dashboard-outline"
+                  size={28}
+                  color={focused ? '#6B46C1' : '#9CA3AF'}
+                  style={styles.iconStyle}
+                />
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
+                  Dashboard
+                </Text>
+              </View>
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Reports"
+          component={ReportsScreen}
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <View style={styles.tabIconContainer}>
+                <MaterialCommunityIcons
+                  name="chart-line"
+                  size={28}
+                  color={focused ? '#6B46C1' : '#9CA3AF'}
+                  style={styles.iconStyle}
+                />
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
+                  Reports
+                </Text>
+              </View>
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Add"
+          component={TransactionsScreen}
+          options={{
+            tabBarIcon: () => (
               <MaterialCommunityIcons
-                name="view-dashboard-outline"
-                size={28}
-                color={focused ? '#6B46C1' : '#9CA3AF'}
-                style={styles.iconStyle}
+                name="plus"
+                size={30}
+                color="#fff"
+                alignItems={'center'}
               />
-              <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
-                Dashboard
-              </Text>
-            </View>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Reports"
-        component={ReportsScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.tabIconContainer}>
-              <MaterialCommunityIcons
-                name="chart-line"
-                size={28}
-                color={focused ? '#6B46C1' : '#9CA3AF'}
-                style={styles.iconStyle}
+            ),
+            tabBarButton: (props) => (
+              <CustomTabBarButton
+                {...props}
+                onPress={() => setShowMoreModal(true)}
               />
-              <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
-                Reports
-              </Text>
-            </View>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Add"
-        component={TransactionsScreen}
-        options={{
-          tabBarIcon: () => (
-            <MaterialCommunityIcons
-              name="plus"
-              size={30}
-              color="#fff"
-              alignItems={'center'}
-            />
-          ),
-          tabBarButton: (props) => (
-            <CustomTabBarButton 
-              {...props} 
-              onPress={() => setShowMoreModal(true)}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Messages"
-        component={MembersScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.tabIconContainer}>
-              <MaterialCommunityIcons
-                name="chat-outline"
-                size={28}
-                color={focused ? '#6B46C1' : '#9CA3AF'}
-                style={styles.iconStyle}
-              />
-              <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
-                Messages
-              </Text>
-            </View>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.tabIconContainer}>
-              <MaterialCommunityIcons
-                name="cog-outline"
-                size={28}
-                color={focused ? '#6B46C1' : '#9CA3AF'}
-                style={styles.iconStyle}
-              />
-              <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
-                Settings
-              </Text>
-            </View>
-          ),
-        }}
-      />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Messages"
+          component={MembersScreen}
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <View style={styles.tabIconContainer}>
+                <MaterialCommunityIcons
+                  name="chat-outline"
+                  size={28}
+                  color={focused ? '#6B46C1' : '#9CA3AF'}
+                  style={styles.iconStyle}
+                />
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
+                  Messages
+                </Text>
+              </View>
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <View style={styles.tabIconContainer}>
+                <MaterialCommunityIcons
+                  name="cog-outline"
+                  size={28}
+                  color={focused ? '#6B46C1' : '#9CA3AF'}
+                  style={styles.iconStyle}
+                />
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#9CA3AF' }]}>
+                  Settings
+                </Text>
+              </View>
+            ),
+          }}
+        />
       </Tab.Navigator>
-      
-      <AdminMoreModal 
+
+      <AdminMoreModal
         visible={showMoreModal}
         onClose={() => setShowMoreModal(false)}
         navigation={navigation}

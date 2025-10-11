@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
-const db = require('../config/db');
-const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../middleware/auth');
-const { decryptAES } = require('../utils/decryptAES');
+const db = require('../../config/db');
+const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../../middleware/auth');
+const { decryptAES } = require('../../utils/decryptAES');
 
 // User Registration
 exports.register = async (req, res) => {
@@ -361,7 +361,7 @@ exports.getProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const getUserSql = 'SELECT id, name, email, full_name, state, created_at, last_login FROM users WHERE id = ?';
+    const getUserSql = 'SELECT id, name, mail, phone, last_login FROM users WHERE id = ?';
     db.query(getUserSql, [userId], (err, results) => {
       if (err) {
         console.error('Database error:', err);

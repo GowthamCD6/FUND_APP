@@ -33,6 +33,8 @@ class ApiService {
   // Save tokens to storage
   async saveTokens(accessToken, refreshToken) {
     await AsyncStorage.setItem('accessToken', accessToken);
+    // console.log(refreshToken);
+    
     if (refreshToken) {
       await AsyncStorage.setItem('refreshToken', refreshToken);
     }
@@ -170,13 +172,15 @@ class ApiService {
       const refreshToken = await this.getRefreshToken();
       
       if (refreshToken) {
-        await fetch(`${this.baseURL}/auth/logout`, {
+        const response = await fetch(`${this.baseURL}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ refreshToken }),
         });
+
+        return await response.json();
       }
     } catch (error) {
       console.error('Logout error:', error);
