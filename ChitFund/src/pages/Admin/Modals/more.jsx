@@ -3,7 +3,7 @@ import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform, Alert } from
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import CreateGroup from './page/CreateG.jsx';
+import CreateGroup from './page/CreateGroup/CreateG.jsx';
 
 const MoreModal = ({ visible, onClose }) => {
   const navigation = useNavigation();
