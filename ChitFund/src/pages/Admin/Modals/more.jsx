@@ -3,18 +3,19 @@ import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform, Alert } from
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import CreateGroup from './page/CreateG.jsx';
 
 const MoreModal = ({ visible, onClose }) => {
   const navigation = useNavigation();
   const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [showManageMembers, setShowManageMembers] = useState(false);
+  const [showManageGroups, setShowManageGroups] = useState(false);
 
   const handleCreateGroupPress = () => {
     setShowCreateGroup(true);
   };
 
-  const handleManageMembersPress = () => {
-    setShowManageMembers(true);
+  const handleManageGroupsPress = () => {
+    setShowManageGroups(true);
   };
 
   const handleBackupPress = () => {
@@ -48,35 +49,25 @@ const MoreModal = ({ visible, onClose }) => {
     setShowCreateGroup(false);
   };
 
-  const handleManageMembersBack = () => {
-    setShowManageMembers(false);
+  const handleManageGroupsBack = () => {
+    setShowManageGroups(false);
   };
 
   const handleModalClose = () => {
     setShowCreateGroup(false);
-    setShowManageMembers(false);
+    setShowManageGroups(false);
     onClose();
   };
 
-  // Placeholder components for future implementation
-  const CreateGroup = ({ onBack }) => (
-    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: 50 }}>
-      <TouchableOpacity onPress={onBack} style={{ padding: 20 }}>
-        <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
-      </TouchableOpacity>
-      <Text style={{ textAlign: 'center', fontSize: 18, marginTop: 100 }}>
-        Create Group Feature Coming Soon!
-      </Text>
-    </View>
-  );
 
-  const ManageMembers = ({ onBack }) => (
+
+  const ManageGroups = ({ onBack }) => (
     <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: 50 }}>
       <TouchableOpacity onPress={onBack} style={{ padding: 20 }}>
         <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
       </TouchableOpacity>
       <Text style={{ textAlign: 'center', fontSize: 18, marginTop: 100 }}>
-        Manage Members Feature Coming Soon!
+        Manage Groups Feature Coming Soon!
       </Text>
     </View>
   );
@@ -94,7 +85,7 @@ const MoreModal = ({ visible, onClose }) => {
     );
   }
 
-  if (showManageMembers) {
+  if (showManageGroups) {
     return (
       <Modal
         animationType="slide"
@@ -102,7 +93,7 @@ const MoreModal = ({ visible, onClose }) => {
         visible={visible}
         onRequestClose={handleModalClose}
       >
-        <ManageMembers onBack={handleManageMembersBack} />
+        <ManageGroups onBack={handleManageGroupsBack} />
       </Modal>
     );
   }
@@ -125,10 +116,10 @@ const MoreModal = ({ visible, onClose }) => {
             onPress={handleCreateGroupPress}
           />
           <MenuItem
-            icon={<MaterialCommunityIcons name="account-multiple-outline" size={26} color="#6B46C1" />}
-            title="Manage Members"
-            description="Add, remove or edit member details"
-            onPress={handleManageMembersPress}
+            icon={<MaterialCommunityIcons name="account-group" size={26} color="#6B46C1" />}
+            title="Manage Groups"
+            description="View, edit or manage existing groups"
+            onPress={handleManageGroupsPress}
           />
           <MenuItem
             icon={<MaterialCommunityIcons name="database-outline" size={26} color="#6B46C1" />}
