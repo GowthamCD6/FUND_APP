@@ -9,10 +9,8 @@ import {
   Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import styles from './createGsty';
-import { API_URL } from '../../../../../utils/env';
 import ApiService from '../../../../../services/ApiService';
 
 const CreateGroup = ({ onBack }) => {
@@ -131,22 +129,27 @@ const CreateGroup = ({ onBack }) => {
         currentMembers: 0,
       };
 
-      const response = await ApiService.makeRequest('/groups/createGroup', {
+      const response = await ApiService.makeRequest('/admin/groups/createGroup', {
         method: 'POST',
         body: JSON.stringify(newGroup),
       });
 
-      const result = await response.json();
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Failed to create group');
+      // Safely parse JSON or show response text for debugging
+      const contentType = response.headers.get('content-type') || '';
+      let result;
+      if (contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Unexpected response: ${text.substring(0, 200)}`);
       }
 
-      Alert.alert(
-        'Success!',
-        `Group "${result.data.group_name}" created successfully!`,
-        `Group ID: ${result.data.group_code}`,
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to create group');
+      }
 
-      );
+      const successMsg = `Group "${result.data.group_name}" created successfully!\nGroup ID: ${result.data.group_code}`;
+      Alert.alert('Success!', successMsg);
 
     } catch (error) {
       Alert.alert('Error', 'Failed to create group. Please try again.');
