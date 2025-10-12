@@ -4,11 +4,13 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import CreateGroup from './page/CreateGroup/CreateG.jsx';
+import AddUser from './page/AddUser/AddU.jsx';
 
 const MoreModal = ({ visible, onClose }) => {
   const navigation = useNavigation();
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showManageGroups, setShowManageGroups] = useState(false);
+  const [showAddUser, setShowAddUser] = useState(false);
 
   const handleCreateGroupPress = () => {
     setShowCreateGroup(true);
@@ -16,6 +18,10 @@ const MoreModal = ({ visible, onClose }) => {
 
   const handleManageGroupsPress = () => {
     setShowManageGroups(true);
+  };
+
+  const handleAddUserPress = () => {
+    setShowAddUser(true);
   };
 
   const handleBackupPress = () => {
@@ -53,9 +59,14 @@ const MoreModal = ({ visible, onClose }) => {
     setShowManageGroups(false);
   };
 
+  const handleAddUserBack = () => {
+    setShowAddUser(false);
+  };
+
   const handleModalClose = () => {
     setShowCreateGroup(false);
     setShowManageGroups(false);
+    setShowAddUser(false);
     onClose();
   };
 
@@ -98,6 +109,19 @@ const MoreModal = ({ visible, onClose }) => {
     );
   }
 
+  if (showAddUser) {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={visible}
+        onRequestClose={handleModalClose}
+      >
+        <AddUser onBack={handleAddUserBack} />
+      </Modal>
+    );
+  }
+
   return (
   <Modal
     animationType="slide"
@@ -122,10 +146,10 @@ const MoreModal = ({ visible, onClose }) => {
             onPress={handleManageGroupsPress}
           />
           <MenuItem
-            icon={<MaterialCommunityIcons name="database-outline" size={26} color="#6B46C1" />}
-            title="Backup Data"
-            description="Export and backup system data"
-            onPress={handleBackupPress}
+            icon={<MaterialCommunityIcons name="account-plus" size={26} color="#6B46C1" />}
+            title="Add User"
+            description="Add a new user to the system"
+            onPress={handleAddUserPress}
           />
           <MenuItem
             icon={<MaterialCommunityIcons name="logout" size={26} color="#EF4444" />}
