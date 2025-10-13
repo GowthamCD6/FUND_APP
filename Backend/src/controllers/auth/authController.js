@@ -106,145 +106,74 @@ const { passwordDecryptAES } = require('../../utils/decryptAES');
 exports.login = async (req, res) => {
   try {
     const { phone, password } = req.body;
-    // console.log('Login attempt for phone:', phone);
 
     if (!phone || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Phone and password are required'
-      });
+      return res.status(400).json({ success: false, message: 'Phone and password are required' });
     }
 
-    // Find user by phone
-    const findUserSql = 'SELECT * FROM users WHERE phone = ?';
+  // Use only `password` column (bcrypt hash) as source of truth
+  const findUserSql = 'SELECT id, name, phone, role, password FROM users WHERE phone = ?';
     db.query(findUserSql, [phone], async (err, results) => {
       if (err) {
         console.error('Database error:', err);
-        return res.status(500).json({
-          success: false,
-          message: 'Server error'
-        });
+        return res.status(500).json({ success: false, message: 'Server error' });
       }
-
       if (results.length === 0) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid phone or password'
-        });
+        return res.status(401).json({ success: false, message: 'Invalid phone or password' });
       }
 
       const user = results[0];
 
-      // Helper: detect bcrypt hash format
-      const isBcryptHash = (val) => typeof val === 'string' && val.startsWith('$2') && val.length >= 50;
-
-      // Get plain password from request (decrypt if AES-encrypted, else use as-is)
+      // Decrypt incoming AES (if client sent AES base64); fallback to plain if not
       let inputPlain = password;
       try {
-        const maybeDecrypted = passwordDecryptAES(password);
-        if (typeof maybeDecrypted === 'string' && maybeDecrypted.length > 0) {
-          inputPlain = maybeDecrypted;
+        const maybePlain = passwordDecryptAES(password);
+        if (typeof maybePlain === 'string' && maybePlain.length > 0) {
+          inputPlain = maybePlain;
         }
-      } catch (e) {
-        // Not encrypted or invalid base64 — assume plain text from client
+      } catch (_) {
+        // Not AES base64, treat as plain
       }
-
-      let isPasswordValid = false;
-      let usedBcrypt = false;
-
-      // 1) Preferred: bcrypt hash in password column
-      if (user.password && isBcryptHash(user.password)) {
-        isPasswordValid = await bcrypt.compare(inputPlain, user.password);
-        usedBcrypt = true;
-      // 2) Legacy (sometimes bcrypt stored in password column)
-      } else if (user.password && isBcryptHash(user.password)) {
-        isPasswordValid = await bcrypt.compare(inputPlain, user.password);
-        usedBcrypt = true;
-      // 3) Old legacy: AES-encrypted password stored (NOT recommended)
-      } else if (user.password && typeof user.password === 'string') {
-        try {
-          const storedPlain = decryptAES(user.password);
-          isPasswordValid = storedPlain === inputPlain;
-        } catch (e) {
-          isPasswordValid = false;
-        }
-      }
-
+      const isPasswordValid = await bcrypt.compare(inputPlain, user.password);
       if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid phone or password'
-        });
+        return res.status(401).json({ success: false, message: 'Invalid phone or password' });
       }
 
-      // Optional migration: if we authenticated using legacy AES, migrate to bcrypt
-      if (!usedBcrypt) {
-        try {
-          const newHash = await bcrypt.hash(inputPlain, 10);
-          const migrateSql = 'UPDATE users SET password = ?, password = NULL WHERE id = ?';
-          db.query(migrateSql, [newHash, user.id], (e) => {
-            if (e) {
-              console.error('Password migration error:', e);
-            }
-          });
-        } catch (e) {
-          console.error('Password rehash error:', e);
-        }
-      }
-
-      // Update last login
-      const updateLoginSql = 'UPDATE users SET last_login = NOW() WHERE id = ?';
-      db.query(updateLoginSql, [user.id], (err) => {
-        if (err) {
-          console.error('Error updating last login:', err);
-        }
-      });
-
-
-
-      // Generate tokens
       const tokenPayload = {
         userId: user.id,
         username: user.name,
-        // email: user.email,
         phone: user.phone,
-        role: user.role
+        role: user.role,
       };
 
-      const accessToken = generateToken(tokenPayload);
+  // Shorter-lived access token (15m) is recommended; refresh token handles longevity
+  const accessToken = generateToken(tokenPayload, '15m');
       const refreshToken = generateRefreshToken({ userId: user.id });
 
-      // Store refresh token
+      // Persist refresh token (optional but recommended)
       const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
-      db.query(storeTokenSql, [user.id, refreshToken], (err) => {
-        if (err) {
-          console.error('Error storing refresh token:', err);
-        }
+      db.query(storeTokenSql, [user.id, refreshToken], (e) => {
+        if (e) console.error('Error storing refresh token:', e);
       });
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Login successful',
         data: {
           user: {
             id: user.id,
             username: user.name,
-            // email: user.email,
             phone: user.phone,
             role: user.role,
           },
-          accessToken: accessToken,
-          refreshToken: refreshToken
-        }
+          accessToken,
+          refreshToken,
+        },
       });
     });
-
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 

@@ -1,6 +1,5 @@
 const db = require('../../config/db')
-const { decryptAES } = require('../../utils/decryptAES');
-const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 exports.createGroup = async (req, res) => {
     const { groupName, totalMembers, groupAmount, duration, startDate } = req.body;
@@ -50,31 +49,40 @@ exports.createGroup = async (req, res) => {
 };
 
 exports.addUser = async (req, res) => {
-    const { nick_name, phone, yob, role } = req.body;
+    const { name, phoneNumber, yearOfBirth, role } = req.body;
+    const nick_name = name || null;
+    const phone = phoneNumber || null;
+    const yob = yearOfBirth || null;
+
     try {
-        const checkUserSql = 'SELECT * FROM users WHERE phone = ?';
-        const [userRows] = await db.promise().query(checkUserSql, [phone]);
-        if (userRows.length === 0) {
-            const hashed_password = yob ? yob.toString() : null;
-            if (!hashed_password) {
-                return res.status(400).json({ success: false, message: 'Year of birth is required to set password' });
-            }
-            // Encrypt the password using AES before storing
-            const encryptedPassword = decryptAES(hashed_password);
-            const hash = crypto.createHash('sha256');
-            hash.update(encryptedPassword);
-            const finalHashedPassword = hash.digest('hex');
-
-            const insertMemberSql = 'INSERT INTO users (nick_name, phone, hashed_password, role) VALUES (?, ?, ?, ?)';
-            const [result] = await db.promise().query(insertMemberSql, [nick_name, phone, finalHashedPassword, role]);
-
-            if(result.affectedRows === 0){
-                return res.status(500).json({ success: false, message: 'Failed to add user' });
-            }
-            return res.status(200).json({ success: true, message: 'User added to group' });
-
+        if (!phone) {
+            return res.status(400).json({ success: false, message: 'Phone is required' });
         }
-        return res.status(404).json({ success: false, message: 'User already exists' });
+        if (!yob) {
+            return res.status(400).json({ success: false, message: 'Year of birth is required' });
+        }
+
+        const [userRows] = await db.promise().query('SELECT id FROM users WHERE phone = ?', [phone]);
+        if (userRows.length > 0) {
+            return res.status(409).json({ success: false, message: 'User already exists' });
+        }
+
+    // Hash plaintext password (YOB) using bcrypt
+    const plainPassword = String(yob);
+    const finalHashedPassword = await bcrypt.hash(plainPassword, 12);
+
+        const [result] = await db
+            .promise()
+            .query(
+                'INSERT INTO users (nick_name, phone, password, role) VALUES (?, ?, ?, ?)',
+                [nick_name, phone, finalHashedPassword, role || null]
+            );
+
+        if (result.affectedRows === 0) {
+            return res.status(500).json({ success: false, message: 'Failed to add user' });
+        }
+
+        return res.status(200).json({ success: true, message: 'User added to group' });
     } catch (error) {
         console.error('Error adding user to group:', error);
         return res.status(500).json({ success: false, message: 'Failed to add user to group' });

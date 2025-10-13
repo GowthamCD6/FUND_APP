@@ -5,17 +5,18 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
-  Platform,
-  StyleSheet,
+  Alert
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
+import styles from './AddUsty';
+import ApiService from '../../../../../services/ApiService';
 
 export default function AddUser({ onBack }) {
   const [formData, setFormData] = useState({
+    name: '',
     phoneNumber: '',
-    dateOfBirth: '',
+    yearOfBirth: '',
     role: 'user',
   });
 
@@ -24,45 +25,53 @@ export default function AddUser({ onBack }) {
 
   // Helpers
   const validatePhoneNumber = (phone) => /^[0-9]{10}$/.test(phone.replace(/\s/g, ''));
-  const validateDate = (date) =>
-    /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/.test(date);
+  const validateYear = (year) => {
+    const currentYear = new Date().getFullYear();
+    const yearNum = parseInt(year);
+    return /^\d{4}$/.test(year) && yearNum >= 1900 && yearNum <= currentYear;
+  };
 
   const formatPhoneNumber = (text) => {
     const cleaned = text.replace(/\D/g, '').slice(0, 10);
     if (cleaned.length <= 3) return cleaned;
     if (cleaned.length <= 6) return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
-    return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+    // return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+    return text;
   };
 
-  const formatDateOfBirth = (text) => {
-    const cleaned = text.replace(/\D/g, '').slice(0, 8);
-    if (cleaned.length <= 2) return cleaned;
-    if (cleaned.length <= 4) return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
-    return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4)}`;
+  const formatYear = (text) => {
+    return text.replace(/\D/g, '').slice(0, 4);
   };
 
   // Handlers
+  const handleNameChange = (text) => {
+    setFormData((s) => ({ ...s, name: text }));
+    if (errors.name) setErrors((e) => ({ ...e, name: '' }));
+  };
+
   const handlePhoneChange = (text) => {
     const formatted = formatPhoneNumber(text);
     setFormData((s) => ({ ...s, phoneNumber: formatted }));
     if (errors.phoneNumber) setErrors((e) => ({ ...e, phoneNumber: '' }));
   };
 
-  const handleDateChange = (text) => {
-    const formatted = formatDateOfBirth(text);
-    setFormData((s) => ({ ...s, dateOfBirth: formatted }));
-    if (errors.dateOfBirth) setErrors((e) => ({ ...e, dateOfBirth: '' }));
+  const handleYearChange = (text) => {
+    const formatted = formatYear(text);
+    setFormData((s) => ({ ...s, yearOfBirth: formatted }));
+    if (errors.yearOfBirth) setErrors((e) => ({ ...e, yearOfBirth: '' }));
   };
 
   const handleSubmit = async () => {
     const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+
     if (!formData.phoneNumber) newErrors.phoneNumber = 'Phone number is required';
     else if (!validatePhoneNumber(formData.phoneNumber))
       newErrors.phoneNumber = 'Enter a valid 10-digit phone number';
 
-    if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required';
-    else if (!validateDate(formData.dateOfBirth))
-      newErrors.dateOfBirth = 'Enter date as MM/DD/YYYY';
+    if (!formData.yearOfBirth) newErrors.yearOfBirth = 'Year of birth is required';
+    else if (!validateYear(formData.yearOfBirth))
+      newErrors.yearOfBirth = 'Enter a valid year (1900-2025)';
 
     if (Object.keys(newErrors).length) {
       setErrors(newErrors);
@@ -71,13 +80,31 @@ export default function AddUser({ onBack }) {
 
     try {
       setSubmitting(true);
-      // TODO: call API to add user
+
+      const response = await ApiService.makeRequest('/admin/users/addUser', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      let result;
+      if (contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Unexpected response: ${text.substring(0, 200)}`);
+      }
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to create group');
+      }
       Alert.alert(
         'Success',
-        `User added!\n\nPhone: ${formData.phoneNumber}\nDOB: ${formData.dateOfBirth}\nRole: ${formData.role}`
+        `User added!\n\nName: ${formData.name}\nPhone: ${formData.phoneNumber}\nYear of Birth: ${formData.yearOfBirth}\nRole: ${formData.role}`
       );
-      setFormData({ phoneNumber: '', dateOfBirth: '', role: 'user' });
+      setFormData({ name: '', phoneNumber: '', yearOfBirth: '', role: 'user' });
       setErrors({});
+      onBack();
     } finally {
       setSubmitting(false);
     }
@@ -110,8 +137,18 @@ export default function AddUser({ onBack }) {
             {/* Form Fields */}
             <View style={styles.formSection}>
               <InputField
+                label="User Name"
+                placeholder="Enter user's name"
+                value={formData.name}
+                onChangeText={handleNameChange}
+                icon="account-outline"
+                required
+                error={errors.name}
+              />
+
+              <InputField
                 label="Phone Number"
-                placeholder="123 456 7890"
+                placeholder="Enter phone number"
                 value={formData.phoneNumber}
                 onChangeText={handlePhoneChange}
                 icon="phone-outline"
@@ -124,23 +161,23 @@ export default function AddUser({ onBack }) {
               <View style={styles.row}>
                 <View style={[styles.halfWidth, { marginRight: 8 }]}>
                   <InputField
-                    label="Date of Birth"
-                    placeholder="MM/DD/YYYY"
-                    value={formData.dateOfBirth}
-                    onChangeText={handleDateChange}
+                    label="Year of Birth"
+                    placeholder="YYYY"
+                    value={formData.yearOfBirth}
+                    onChangeText={handleYearChange}
                     icon="calendar-blank-outline"
                     keyboardType="numeric"
-                    maxLength={10}
+                    maxLength={4}
                     required
-                    error={errors.dateOfBirth}
+                    error={errors.yearOfBirth}
                   />
                 </View>
                 <View style={[styles.halfWidth, { marginLeft: 8 }]}>
-                  <RoleField
+                  <RoleDropdown
                     label="Role"
                     value={formData.role}
                     onChangeRole={(role) => setFormData(s => ({ ...s, role }))}
-                    icon="account-badge-outline"
+                    icon="shield-account"
                     required
                   />
                 </View>
@@ -170,7 +207,7 @@ export default function AddUser({ onBack }) {
 
         <TouchableOpacity
           onPress={() => {
-            setFormData({ phoneNumber: '', dateOfBirth: '', role: 'user' });
+            setFormData({ name: '', phoneNumber: '', yearOfBirth: '', role: 'user' });
             setErrors({});
           }}
           activeOpacity={0.8}
@@ -214,206 +251,69 @@ const InputField = ({
   </View>
 );
 
-const RoleField = ({ label, value, onChangeRole, icon, required = false }) => (
-  <View style={styles.inputContainer}>
-    <View style={styles.labelContainer}>
-      <MaterialCommunityIcons name={icon} size={20} color="#212121" />
-      <Text style={styles.inputLabel}>
-        {label} {required && <Text style={styles.required}>*</Text>}
-      </Text>
-    </View>
-    <View style={styles.roleContainer}>
-      <TouchableOpacity
-        onPress={() => onChangeRole('user')}
-        activeOpacity={0.8}
-        style={[
-          styles.roleButton,
-          value === 'user' && styles.roleButtonActive,
-        ]}
-      >
-        <Text
-          style={[
-            styles.roleButtonText,
-            value === 'user' && styles.roleButtonTextActive,
-          ]}
-        >
-          User
+const RoleDropdown = ({ label, value, onChangeRole, icon, required = false }) => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const roles = [
+    { label: 'User', value: 'user' },
+    { label: 'Admin', value: 'admin' }
+  ];
+
+  const handleRoleSelect = (roleValue) => {
+    onChangeRole(roleValue);
+    setDropdownOpen(false);
+  };
+
+  return (
+    <View style={styles.inputContainer}>
+      <View style={styles.labelContainer}>
+        <MaterialCommunityIcons name={icon} size={20} color="#212121" />
+        <Text style={styles.inputLabel}>
+          {label} {required && <Text style={styles.required}>*</Text>}
         </Text>
-      </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
-        onPress={() => onChangeRole('admin')}
+        style={styles.dropdownContainer}
+        onPress={() => setDropdownOpen(!dropdownOpen)}
         activeOpacity={0.8}
-        style={[
-          styles.roleButton,
-          value === 'admin' && styles.roleButtonActive,
-        ]}
       >
-        <Text
-          style={[
-            styles.roleButtonText,
-            value === 'admin' && styles.roleButtonTextActive,
-          ]}
-        >
-          Admin
+        <Text style={styles.dropdownText}>
+          {roles.find(role => role.value === value)?.label || 'Select Role'}
         </Text>
+        <MaterialCommunityIcons
+          name={dropdownOpen ? "chevron-up" : "chevron-down"}
+          size={20}
+          color="#666666"
+        />
       </TouchableOpacity>
-    </View>
-  </View>
-);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    marginTop: -10,
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#d7dce4ff',
-  },
-  scrollContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  animationContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  animation: {
-    width: 120,
-    height: 120,
-  },
-  formContainer: {
-    paddingBottom: 40,
-  },
-  formSection: {
-    gap: 24,
-    marginTop: 8,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 16,
-    width: '100%',
-  },
-  halfWidth: {
-    flex: 1,
-  },
-  inputContainer: {
-    width: '100%',
-  },
-  labelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    gap: 8,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#212121',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-  },
-  required: {
-    color: '#EF4444',
-    fontSize: 14,
-  },
-  textInput: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    backgroundColor: '#F5F5F5',
-    color: '#212121',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
-    width: '100%',
-    marginTop: 8,
-  },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 12,
-    marginTop: 6,
-  },
-  roleContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginTop: 8,
-  },
-  roleButton: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  roleButtonActive: {
-    backgroundColor: '#007AFF',
-  },
-  roleButtonText: {
-    fontSize: 16,
-    color: '#212121',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
-  },
-  roleButtonTextActive: {
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-  },
-  buttonContainer: {
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  createButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    gap: 8,
-  },
-  createButtonDisabled: {
-    opacity: 0.6,
-  },
-  createButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-  },
-  clearButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    marginTop: 8,
-  },
-  clearButtonText: {
-    color: '#666666',
-    fontSize: 16,
-    fontWeight: '500',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
-  },
-});
+      {dropdownOpen && (
+        <View style={styles.dropdownOptions}>
+          {roles.map((role) => (
+            <TouchableOpacity
+              key={role.value}
+              style={[
+                styles.dropdownOption,
+                value === role.value && styles.dropdownOptionSelected
+              ]}
+              onPress={() => handleRoleSelect(role.value)}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.dropdownOptionText,
+                value === role.value && styles.dropdownOptionTextSelected
+              ]}>
+                {role.label}
+              </Text>
+              {value === role.value && (
+                <MaterialCommunityIcons name="check" size={16} color="#007AFF" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+

@@ -175,6 +175,19 @@ const Profile = () => {
     }
   }, [showHelpSupport, helpSupportAnim]);
 
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.clear();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Welcome' }],
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to logout. Please try again.');
+      console.error('Logout error:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -429,7 +442,7 @@ const Profile = () => {
                       />
                     </TouchableOpacity>
                   </View>
-                  <TouchableOpacity style={styles.logoutButton} onPress={async () => {await AsyncStorage.clear(); navigation.navigate('Welcome') }}>
+                  <TouchableOpacity style={styles.logoutButton} onPress={async () => handleLogout()}>
                     <Text style={styles.logoutText}>Logout</Text>
                   </TouchableOpacity>
                   <Text style={styles.versionText}>Version 3.1.4</Text>
