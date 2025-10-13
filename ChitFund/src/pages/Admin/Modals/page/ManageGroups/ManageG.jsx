@@ -11,7 +11,7 @@ import styles from './ManageGsty';
 import ApiService from '../../../../../services/ApiService';
 
 const ManageGroups = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState('active');
+  const [activeTab, setActiveTab] = useState('Active');
   const [refreshing, setRefreshing] = useState(false);
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
@@ -134,7 +134,7 @@ const ManageGroups = ({ onBack }) => {
       }
 
       setGroups(result.data);
-      console.log(result);
+      // console.log(result.data);
       
     }
     catch(error){
@@ -155,16 +155,16 @@ const ManageGroups = ({ onBack }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return '#10B981';
-      case 'not-started': return '#F59E0B';
+      case 'Active': return '#10B981';
+      case 'Not Started': return '#F59E0B';
       default: return '#6B7280';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'active': return 'progress-clock';
-      case 'not-started': return 'clock-outline';
+      case 'Active': return 'progress-clock';
+      case 'Not Started': return 'clock-outline';
       default: return 'help-circle';
     }
   };
@@ -214,7 +214,7 @@ const ManageGroups = ({ onBack }) => {
               color="#FFFFFF" 
             />
             <Text style={styles.statusText}>
-              {item.status === 'not-started' ? 'NOT STARTED' : 'ACTIVE'}
+              {item.status === 'Not Started' ? 'NOT STARTED' : 'ACTIVE'}
             </Text>
           </View>
         </View>
@@ -238,7 +238,7 @@ const ManageGroups = ({ onBack }) => {
         </View>
 
         {/* Progress Section - Only for Active Groups */}
-        {item.status === 'active' && (
+        {item.status === 'Active' && (
           <View style={styles.progressContainer}>
             <View style={styles.progressHeader}>
               <Text style={styles.progressText}>
@@ -262,13 +262,13 @@ const ManageGroups = ({ onBack }) => {
         {/* Footer with Date and Collection Amount */}
         <View style={styles.groupCardFooter}>
           <Text style={styles.groupDate}>
-            {item.status === 'active' 
+            {item.status === 'Active' 
               ? `Next Due: ${formatDate(item.nextDueDate)}`
               : `Start Date: ${formatDate(item.startDate)}`
             }
           </Text>
           <Text style={styles.groupAmount}>
-            {item.status === 'active' 
+            {item.status === 'Active' 
               ? `${formatCurrency(item.collectedAmount)} collected`
               : `${formatCurrency(item.groupAmount)} total`
             }
@@ -279,8 +279,8 @@ const ManageGroups = ({ onBack }) => {
   );
 
   const getTabCounts = () => {
-    const active = groups.filter(g => g.status === 'active').length;
-    const notStarted = groups.filter(g => g.status === 'not-started').length;
+    const active = groups.filter(g => g.status === 'Active').length;
+    const notStarted = groups.filter(g => g.status === 'Not Started').length;
     return { active, notStarted };
   };
 
@@ -310,18 +310,18 @@ const ManageGroups = ({ onBack }) => {
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'active' && styles.activeTab]}
-          onPress={() => setActiveTab('active')}
+          style={[styles.tab, activeTab === 'Active' && styles.activeTab]}
+          onPress={() => setActiveTab('Active')}
         >
-          <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'Active' && styles.activeTabText]}>
             Active Groups ({tabCounts.active})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'not-started' && styles.activeTab]}
-          onPress={() => setActiveTab('not-started')}
+          style={[styles.tab, activeTab === 'Not Started' && styles.activeTab]}
+          onPress={() => setActiveTab('Not Started')}
         >
-          <Text style={[styles.tabText, activeTab === 'not-started' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'Not Started' && styles.activeTabText]}>
             Not Started ({tabCounts.notStarted})
           </Text>
         </TouchableOpacity>
@@ -345,10 +345,10 @@ const ManageGroups = ({ onBack }) => {
               color="#D1D5DB" 
             />
             <Text style={styles.emptyText}>
-              No {activeTab === 'active' ? 'active' : 'pending'} groups found
+              No {activeTab === 'Active' ? 'Active' : 'Pending'} groups found
             </Text>
             <Text style={styles.emptySubText}>
-              {activeTab === 'active' 
+              {activeTab === 'Active' 
                 ? 'Create a new group to get started'
                 : 'Groups will appear here once created'
               }
@@ -382,16 +382,16 @@ const GroupDetailsPage = ({ group, onBack }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return '#10B981';
-      case 'not-started': return '#F59E0B';
+      case 'Active': return '#10B981';
+      case 'Not Started': return '#F59E0B';
       default: return '#6B7280';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'active': return 'progress-clock';
-      case 'not-started': return 'clock-outline';
+      case 'Active': return 'progress-clock';
+      case 'Not Started': return 'clock-outline';
       default: return 'help-circle';
     }
   };
