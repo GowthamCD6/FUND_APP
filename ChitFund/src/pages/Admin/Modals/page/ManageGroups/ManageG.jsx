@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './ManageGsty';
+import GroupInfoAdmin from './page/GroupInfo';
 
 const ManageGroups = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('active');
@@ -266,9 +267,14 @@ const ManageGroups = ({ onBack }) => {
 
   if (showGroupDetails && selectedGroup) {
     return (
-      <GroupDetailsPage 
+      <GroupInfoAdmin 
         group={selectedGroup} 
         onBack={() => setShowGroupDetails(false)} 
+        onSave={(data) => {
+          console.log('Group data updated:', data);
+          // Handle saving the data here
+          setShowGroupDetails(false);
+        }}
       />
     );
   }
@@ -338,80 +344,6 @@ const ManageGroups = ({ onBack }) => {
   );
 };
 
-// Group Details Page Component
-const GroupDetailsPage = ({ group, onBack }) => {
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not Set';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return '#10B981';
-      case 'not-started': return '#F59E0B';
-      default: return '#6B7280';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'active': return 'progress-clock';
-      case 'not-started': return 'clock-outline';
-      default: return 'help-circle';
-    }
-  };
-
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#212121" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Group Details</Text>
-        </View>
-      </View>
-
-      {/* Content will be added based on your requirements */}
-      <View style={styles.detailsContainer}>
-        <Text style={styles.comingSoonText}>
-          Group details content will be added here.
-          Please provide the content structure you want to include.
-        </Text>
-        
-        {/* Basic Group Info Preview */}
-        <View style={styles.previewCard}>
-          <Text style={styles.previewTitle}>{group.name}</Text>
-          <Text style={styles.previewCode}>#{group.groupCode}</Text>
-          
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(group.status) }]}>
-            <MaterialCommunityIcons 
-              name={getStatusIcon(group.status)} 
-              size={12} 
-              color="#FFFFFF" 
-            />
-            <Text style={styles.statusText}>
-              {group.status === 'not-started' ? 'NOT STARTED' : group.status.toUpperCase()}
-            </Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-};
 
 export default ManageGroups;
