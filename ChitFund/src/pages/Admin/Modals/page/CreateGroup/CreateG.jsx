@@ -13,7 +13,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import styles from './createGsty';
 import ApiService from '../../../../../services/ApiService';
 
-const CreateGroup = ({ onBack }) => {
+const CreateGroup = ({ onBack, navigation }) => {
   const [groupData, setGroupData] = useState({
     // groupId: '',
     groupName: '',
@@ -134,7 +134,6 @@ const CreateGroup = ({ onBack }) => {
         body: JSON.stringify(newGroup),
       });
 
-      // Safely parse JSON or show response text for debugging
       const contentType = response.headers.get('content-type') || '';
       let result;
       if (contentType.includes('application/json')) {
@@ -147,9 +146,10 @@ const CreateGroup = ({ onBack }) => {
       if (!response.ok || !result?.success) {
         throw new Error(result?.message || 'Failed to create group');
       }
-
+      
       const successMsg = `Group "${result.data.group_name}" created successfully!\nGroup ID: ${result.data.group_code}`;
       Alert.alert('Success!', successMsg);
+      onBack();
 
     } catch (error) {
       Alert.alert('Error', 'Failed to create group. Please try again.');
