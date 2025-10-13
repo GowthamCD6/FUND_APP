@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import CreateGroup from './page/CreateGroup/CreateG.jsx';
 import AddUser from './page/AddUser/AddU.jsx';
+import ManageGroups from './page/ManageGroups/ManageG.jsx';
 
 const MoreModal = ({ visible, onClose }) => {
   const navigation = useNavigation();
@@ -72,16 +73,7 @@ const MoreModal = ({ visible, onClose }) => {
 
 
 
-  const ManageGroups = ({ onBack }) => (
-    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: 50 }}>
-      <TouchableOpacity onPress={onBack} style={{ padding: 20 }}>
-        <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
-      </TouchableOpacity>
-      <Text style={{ textAlign: 'center', fontSize: 18, marginTop: 100 }}>
-        Manage Groups Feature Coming Soon!
-      </Text>
-    </View>
-  );
+
 
   if (showCreateGroup) {
     return (
