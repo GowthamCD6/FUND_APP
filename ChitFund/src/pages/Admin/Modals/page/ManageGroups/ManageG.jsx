@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './ManageGsty';
+import GroupInfoAdmin from './page/GroupInfo';
 import ApiService from '../../../../../services/ApiService';
 
 const ManageGroups = ({ onBack }) => {
@@ -288,9 +289,14 @@ const ManageGroups = ({ onBack }) => {
 
   if (showGroupDetails && selectedGroup) {
     return (
-      <GroupDetailsPage 
+      <GroupInfoAdmin 
         group={selectedGroup} 
         onBack={() => setShowGroupDetails(false)} 
+        onSave={(data) => {
+          console.log('Group data updated:', data);
+          // Handle saving the data here
+          setShowGroupDetails(false);
+        }}
       />
     );
   }
