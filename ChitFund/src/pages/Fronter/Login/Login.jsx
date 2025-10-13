@@ -27,7 +27,6 @@ import EyeOff from '../../../assets/login/eye-slash-svgrepo-com.svg';
 import Tickicon from '../../../assets/login/tick.svg';
 import Tickbox from '../../../assets/login/tickbox.svg';
 import Separator from '../../../assets/login/separator.svg';
-import { encryptPassword } from '../../../utils/encryptPassword.jsx';
 
 const Login = () => {
     const navigation = useNavigation();
@@ -100,10 +99,7 @@ const Login = () => {
         setLoading(true);
         try {
             const phone = phoneNumber;
-            // If your backend expects plain password (bcrypt compare), send `password` directly.
-            // If it expects encrypted password and decrypts server-side, use the next line instead.
-            const encryptedPassword = encryptPassword(password);
-            const response = await login(phone, encryptedPassword);
+            const response = await login(phone, password);
             if (!response.success) {
                 throw new Error(response.message || "Login failed");
             }

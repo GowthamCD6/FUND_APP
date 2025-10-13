@@ -6,6 +6,7 @@ const groupMessaging = require('../controllers/admin/groupMessaging');
 const monthlyCollection = require('../controllers/admin/monthlyCollection');
 
 router.post('/groups/createGroup', authenticateToken, groupManagement.createGroup);
+router.get('/groups/getGroups', authenticateToken, groupManagement.getGroups);
 router.post('/users/addUser', authenticateToken, groupManagement.addUser);
 // router.get('/groups', authenticateToken, groupManagement.getAllGroups);
 // router.get('/groups/:groupId', authenticateToken, groupManagement.getGroupById);

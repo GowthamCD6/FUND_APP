@@ -50,8 +50,8 @@ export default function AddUser({ onBack }) {
   };
 
   const handlePhoneChange = (text) => {
-    const formatted = formatPhoneNumber(text);
-    setFormData((s) => ({ ...s, phoneNumber: formatted }));
+    const formatted = text;
+    setFormData((s) => ({ ...s, phoneNumber: text }));
     if (errors.phoneNumber) setErrors((e) => ({ ...e, phoneNumber: '' }));
   };
 
@@ -153,7 +153,7 @@ export default function AddUser({ onBack }) {
                 onChangeText={handlePhoneChange}
                 icon="phone-outline"
                 keyboardType="phone-pad"
-                maxLength={12}
+                maxLength={10}
                 required
                 error={errors.phoneNumber}
               />

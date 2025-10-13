@@ -111,8 +111,8 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone and password are required' });
     }
 
-  // Use only `password` column (bcrypt hash) as source of truth
-  const findUserSql = 'SELECT id, name, phone, role, password FROM users WHERE phone = ?';
+    // Use only `password` column (bcrypt hash) as source of truth
+    const findUserSql = 'SELECT id, name, phone, role, password FROM users WHERE phone = ?';
     db.query(findUserSql, [phone], async (err, results) => {
       if (err) {
         console.error('Database error:', err);
@@ -124,7 +124,6 @@ exports.login = async (req, res) => {
 
       const user = results[0];
 
-      // Decrypt incoming AES (if client sent AES base64); fallback to plain if not
       let inputPlain = password;
       try {
         const maybePlain = passwordDecryptAES(password);
@@ -146,8 +145,8 @@ exports.login = async (req, res) => {
         role: user.role,
       };
 
-  // Shorter-lived access token (15m) is recommended; refresh token handles longevity
-  const accessToken = generateToken(tokenPayload, '15m');
+      // Shorter-lived access token (15m) is recommended; refresh token handles longevity
+      const accessToken = generateToken(tokenPayload, '15m');
       const refreshToken = generateRefreshToken({ userId: user.id });
 
       // Persist refresh token (optional but recommended)
