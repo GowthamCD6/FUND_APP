@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const db = require('../../config/db');
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../../middleware/auth');
-const { passwordDecryptAES } = require('../../utils/decryptAES');
+const { passwordEncryptAES } = require('../../utils/decryptAES');
 
 // User Registration
 // exports.register = async (req, res) => {
@@ -111,7 +111,6 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone and password are required' });
     }
 
-    // Use only `password` column (bcrypt hash) as source of truth
     const findUserSql = 'SELECT id, name, phone, role, password FROM users WHERE phone = ?';
     db.query(findUserSql, [phone], async (err, results) => {
       if (err) {
@@ -124,32 +123,23 @@ exports.login = async (req, res) => {
 
       const user = results[0];
 
-      let inputPlain = password;
+      let isPasswordValid = false;
       try {
-        const maybePlain = passwordDecryptAES(password);
-        if (typeof maybePlain === 'string' && maybePlain.length > 0) {
-          inputPlain = maybePlain;
-        }
-      } catch (_) {
-        // Not AES base64, treat as plain
+        const aesBase64 = passwordEncryptAES(password);
+        isPasswordValid = await bcrypt.compare(aesBase64, user.password);
+      } catch (e) {
+        console.error('AES encryption error:', e);
+        return res.status(500).json({ success: false, message: 'Server error' });
       }
-      const isPasswordValid = await bcrypt.compare(inputPlain, user.password);
+
       if (!isPasswordValid) {
         return res.status(401).json({ success: false, message: 'Invalid phone or password' });
       }
 
-      const tokenPayload = {
-        userId: user.id,
-        username: user.name,
-        phone: user.phone,
-        role: user.role,
-      };
-
-      // Shorter-lived access token (15m) is recommended; refresh token handles longevity
+      const tokenPayload = { userId: user.id, username: user.name, phone: user.phone, role: user.role };
       const accessToken = generateToken(tokenPayload, '15m');
       const refreshToken = generateRefreshToken({ userId: user.id });
 
-      // Persist refresh token (optional but recommended)
       const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
       db.query(storeTokenSql, [user.id, refreshToken], (e) => {
         if (e) console.error('Error storing refresh token:', e);
@@ -159,12 +149,7 @@ exports.login = async (req, res) => {
         success: true,
         message: 'Login successful',
         data: {
-          user: {
-            id: user.id,
-            username: user.name,
-            phone: user.phone,
-            role: user.role,
-          },
+          user: { id: user.id, username: user.name, phone: user.phone, role: user.role },
           accessToken,
           refreshToken,
         },

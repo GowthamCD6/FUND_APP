@@ -1,6 +1,6 @@
 const db = require('../../config/db')
 const bcrypt = require('bcryptjs');
-const { groupEncryptAES, groupDecryptAES } = require('../../utils/decryptAES');
+const { groupEncryptAES, groupDecryptAES, passwordEncryptAES } = require('../../utils/decryptAES');
 
 exports.createGroup = async (req, res) => {
     const { groupName, totalMembers, groupAmount, duration, startDate } = req.body;
@@ -22,7 +22,9 @@ exports.createGroup = async (req, res) => {
             : null;
 
 
-        const finalGroupCode = groupEncryptAES(String(groupId)); // AES base64 for reversible display
+        const plainGroupCode = String(groupId);
+        const finalGroupCode = groupEncryptAES(plainGroupCode);
+
 
         const sql = `
             INSERT INTO \`groups\`
@@ -42,7 +44,7 @@ exports.createGroup = async (req, res) => {
         const [result] = await db.promise().query(sql, params);
         const groupData = {
             id: result.insertId,
-            group_code: groupId, // return human-readable code
+            group_code: groupId,
             group_name: groupName
         };
         return res.status(201).json({ success: true, data: groupData });
@@ -56,7 +58,7 @@ exports.getGroups = async (req, res) => {
     try {
         const [rows] = await db
             .promise()
-            .query('SELECT id, group_code, group_name, total_members, group_amount, duration, start_date, end_date FROM `groups` ORDER BY created_at DESC');
+            .query('SELECT * FROM `groups` ORDER BY created_at DESC');
 
         if (!rows || rows.length === 0) {
             return res.status(200).json({ success: true, data: [] });
@@ -65,12 +67,23 @@ exports.getGroups = async (req, res) => {
         // Safely decrypt; skip rows that are not AES (e.g., old bcrypt data)
         rows.forEach(group => {
             try {
-                group.group_code = groupDecryptAES(group.group_code);
+                group.id = group.id;
+                group.name = group.group_name;
+                group.status = group.status;
+                group.totalMembers = group.total_members;
+                group.groupAmount = group.group_amount;
+                group.duration = group.duration;
+                group.currentMembers = group.current_members;
+                group.startDate = group.start_date;
+                group.endDate = group.end_date;
+                group.createdDate = group.created_at;
+                group.groupCode = groupDecryptAES(group.group_code);
             } catch {
                 // leave as-is if not AES-encrypted
             }
         });
-        console.log(rows);
+        // console.log(rows);
+        
         
         return res.status(200).json({ success: true, data: rows });
     } catch (error) {
@@ -100,7 +113,8 @@ exports.addUser = async (req, res) => {
 
         // Hash plaintext password (YOB) using bcrypt
         const plainPassword = String(yob);
-        const finalHashedPassword = await bcrypt.hash(plainPassword, 12);
+        const encryptAES = passwordEncryptAES(plainPassword);
+        const finalHashedPassword = await bcrypt.hash(encryptAES, 12);
 
         const [result] = await db
             .promise()
