@@ -116,34 +116,40 @@ const ManageGroups = ({ onBack }) => {
     loadGroups();
   }, []);
 
-  const loadGroups = async() => {
-    try{
-      const response = await ApiService.makeRequest('/admin/groups/getGroups', {
-        method: 'GET',
-      });
-      const contentType = response.headers.get('content-type') || '';
-      let result;
-      if (contentType.includes('application/json')) {
-        result = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error(`Unexpected response: ${text.substring(0, 200)}`);
-      }
+//   const loadGroups = async() => {
+//     try{
+//       const response = await ApiService.makeRequest('/admin/groups/getGroups', {
+//         method: 'GET',
+//       });
+//       const contentType = response.headers.get('content-type') || '';
+//       let result;
+//       if (contentType.includes('application/json')) {
+//         result = await response.json();
+//       } else {
+//         const text = await response.text();
+//         throw new Error(`Unexpected response: ${text.substring(0, 200)}`);
+//       }
 
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.message || 'Failed to create group');
-      }
+//       if (!response.ok || !result?.success) {
+//         throw new Error(result?.message || 'Failed to create group');
+//       }
 
-      setGroups(result.data);
-      console.log(result);
+//       setGroups(result.data);
+//       console.log(result);
       
-    }
-    catch(error){
-      console.error('Error fetching groups:', error);
-      setGroups([]); // Fallback to sample data on error
-    }
-  };
+//     }
+//     catch(error){
+//       console.error('Error fetching groups:', error);
+//       setGroups([]); // Fallback to sample data on error
+//     }
+//   };
 
+  //   const loadGroups = () => {
+  //   // Simulate API call delay
+  //   setTimeout(() => {
+  //     setGroups(sampleGroups);
+  //   }, 1000);
+  // }
   const onRefresh = () => {
     setRefreshing(true);
     loadGroups();

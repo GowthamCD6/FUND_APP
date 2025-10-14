@@ -17,7 +17,7 @@ const AuthLoader = () => {
           if(role === 'Admin') {
             navigation.navigate('AdminTabs');
           } else {
-            navigation.navigate('TabRouting');
+            navigation.navigate('TabRouter');
           }
         } else {
           navigation.reset({
