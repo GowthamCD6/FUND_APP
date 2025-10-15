@@ -23,7 +23,7 @@ const ManageGroups = ({onBack}) => {
     {
       id: 1,
       name: 'Business Investment Group',
-      status: 'active',
+      status: 'ctive',
       totalMembers: 20,
       currentMembers: 18,
       completedCycles: 8,
@@ -116,7 +116,7 @@ const ManageGroups = ({onBack}) => {
     loadGroups();
   }, []);
 
-  const loadGroups = async () => {
+   const loadGroups = async () => {
     try {
       const response = await ApiService.makeRequest('/admin/groups/getGroups', {
         method: 'GET',

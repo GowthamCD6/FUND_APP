@@ -15,6 +15,7 @@ import pageStyles from '../ManageGsty';
 const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [currentMonth, setCurrentMonth] = useState(0); // 0 = current, -1 = previous
   const [expandedSections, setExpandedSections] = useState({
+    groupInfo: true,
     payment: true,
     winner: true,
     members: true,
@@ -48,6 +49,9 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   ]);
 
   const [formData, setFormData] = useState({
+    groupName: group.name || '',
+    monthlyAmount: group.monthlyAmount?.toString() || '',
+    createdDate: group.createdDate || new Date().toISOString().split('T')[0],
     currentMonthAmount: group.currentMonthAmount?.toString() || group.monthlyAmount?.toString() || '',
     elathThalupadi: group.elathThalupadi?.toString() || '',
     commission: group.commission?.toString() || '',
@@ -60,6 +64,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [memberMappings, setMemberMappings] = useState([]);
   const [errors, setErrors] = useState({});
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCreatedDatePicker, setShowCreatedDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showMemberPicker, setShowMemberPicker] = useState(false);
   const [currentMappingId, setCurrentMappingId] = useState(null);
@@ -130,6 +135,15 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const validateForm = () => {
     const newErrors = {};
 
+    // Group Info validation
+    if (!formData.groupName || formData.groupName.trim() === '') {
+      newErrors.groupName = 'Group name is required';
+    }
+
+    if (!formData.monthlyAmount || parseFloat(formData.monthlyAmount) <= 0) {
+      newErrors.monthlyAmount = 'Please enter a valid monthly amount';
+    }
+
     if (!formData.currentMonthAmount || parseFloat(formData.currentMonthAmount) <= 0) {
       newErrors.currentMonthAmount = 'Please enter a valid amount';
     }
@@ -157,6 +171,12 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     }
 
     const dataToSave = {
+      // Group Info
+      groupName: formData.groupName,
+      monthlyAmount: parseFloat(formData.monthlyAmount),
+      createdDate: formData.createdDate,
+      
+      // Monthly Data
       month: currentMonth,
       date: new Date().toISOString().split('T')[0],
       currentMonthAmount: parseFloat(formData.currentMonthAmount),
@@ -217,6 +237,21 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     setShowDatePicker(true);
   };
 
+  const openCreatedDatePicker = () => {
+    if (formData.createdDate) {
+      setSelectedDate(new Date(formData.createdDate));
+    } else {
+      setSelectedDate(new Date());
+    }
+    setShowCreatedDatePicker(true);
+  };
+
+  const handleCreatedDateSelect = () => {
+    const formattedDate = formatDateForInput(selectedDate);
+    handleInputChange('createdDate', formattedDate);
+    setShowCreatedDatePicker(false);
+  };
+
   const getMonthLabel = (offset) => {
     const date = new Date();
     date.setMonth(date.getMonth() + offset);
@@ -261,7 +296,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
             {/* Header with Group Name */}
             <View style={pageStyles.groupCardHeader}>
               <View style={pageStyles.groupNameContainer}>
-                <Text style={pageStyles.groupName}>{group.name}</Text>
+                <Text style={pageStyles.groupName}>{formData.groupName || group.name}</Text>
                 <Text style={styles.groupCode}>#{group.groupCode}</Text>
               </View>
             </View>
@@ -286,17 +321,17 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                 </View>
                 <View style={pageStyles.groupInfoItem}>
                   <MaterialCommunityIcons name="currency-inr" size={16} color="#059669" />
-                  <Text style={pageStyles.groupInfoText}>{formatCurrency(group.monthlyAmount)}</Text>
+                  <Text style={pageStyles.groupInfoText}>{formatCurrency(formData.monthlyAmount || group.monthlyAmount)}</Text>
                 </View>
               </View>
 
               {/* Footer */}
               <View style={pageStyles.groupCardFooter}>
                 <Text style={pageStyles.groupDate}>
-                  Created: {new Date(group.createdDate).toLocaleDateString('en-IN')}
+                  Created: {new Date(formData.createdDate || group.createdDate).toLocaleDateString('en-IN')}
                 </Text>
                 <Text style={pageStyles.groupAmount}>
-                  Total Fund: {formatCurrency(group.monthlyAmount * memberMappings.length)}
+                  Total Fund: {formatCurrency((formData.monthlyAmount || group.monthlyAmount) * memberMappings.length)}
                 </Text>
               </View>
             </View>
@@ -305,6 +340,87 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
         {/* Content Container */}
         <View style={styles.contentContainer}>
+          {/* Group Information Edit Section */}
+          <View style={styles.section}>
+            <TouchableOpacity 
+              onPress={() => toggleSection('groupInfo')}
+              style={styles.sectionHeader}
+            >
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionIcon, { backgroundColor: '#E0E7FF' }]}>
+                  <MaterialCommunityIcons name="information" size={20} color="#6366F1" />
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>Group Information</Text>
+                  <Text style={styles.sectionSubtitle}>Edit group name, amount & details</Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons 
+                name={expandedSections.groupInfo ? "chevron-up" : "chevron-down"} 
+                size={24} 
+                color="#6B7280" 
+              />
+            </TouchableOpacity>
+
+            {expandedSections.groupInfo && (
+              <View style={styles.sectionContent}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Group Name *</Text>
+                  <TextInput
+                    style={[styles.input, errors.groupName && styles.inputError]}
+                    value={formData.groupName}
+                    onChangeText={(value) => handleInputChange('groupName', value)}
+                    placeholder="Enter group name"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                  {errors.groupName && (
+                    <Text style={styles.errorText}>{errors.groupName}</Text>
+                  )}
+                </View>
+
+                <View style={styles.inputRow}>
+                  <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.label}>Monthly Amount *</Text>
+                    <View style={styles.inputWithIcon}>
+                      <Text style={styles.inputPrefix}>₹</Text>
+                      <TextInput
+                        style={[styles.inputWithPrefix, errors.monthlyAmount && styles.inputError]}
+                        value={formData.monthlyAmount}
+                        onChangeText={(value) => handleInputChange('monthlyAmount', value)}
+                        placeholder="10000"
+                        keyboardType="numeric"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                    {errors.monthlyAmount && (
+                      <Text style={styles.errorText}>{errors.monthlyAmount}</Text>
+                    )}
+                  </View>
+
+                  <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.label}>Created Date</Text>
+                    <TouchableOpacity
+                      style={[styles.datePickerButton, errors.createdDate && styles.inputError]}
+                      onPress={openCreatedDatePicker}
+                    >
+                      <MaterialCommunityIcons name="calendar" size={18} color="#6B7280" />
+                      <Text style={[styles.datePickerText, !formData.createdDate && styles.placeholderText]}>
+                        {formData.createdDate ? formatDateForDisplay(formData.createdDate) : 'Select'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.infoBox}>
+                  <MaterialCommunityIcons name="information" size={16} color="#6366F1" />
+                  <Text style={styles.infoBoxText}>
+                    Changes to group name and monthly amount will be reflected across the entire group
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+
           {/* Month Navigation */}
           <View style={styles.monthNavigation}>
           <TouchableOpacity 
@@ -842,6 +958,98 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         </Modal>
       )}
 
+      {/* Created Date Picker Modal */}
+      {showCreatedDatePicker && (
+        <Modal
+          visible={showCreatedDatePicker}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowCreatedDatePicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.datePickerModal}>
+              <View style={styles.datePickerHeader}>
+                <Text style={styles.datePickerTitle}>Select Created Date</Text>
+                <TouchableOpacity onPress={() => setShowCreatedDatePicker(false)}>
+                  <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.datePickerContent}>
+                <View style={styles.datePickerControls}>
+                  <TouchableOpacity 
+                    style={styles.dateButton}
+                    onPress={() => {
+                      const newDate = new Date(selectedDate);
+                      newDate.setDate(newDate.getDate() - 1);
+                      setSelectedDate(newDate);
+                    }}
+                  >
+                    <MaterialCommunityIcons name="chevron-left" size={24} color="#6B46C1" />
+                  </TouchableOpacity>
+                  
+                  <View style={styles.dateDisplay}>
+                    <Text style={styles.selectedDateText}>
+                      {selectedDate.toLocaleDateString('en-IN', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </Text>
+                  </View>
+                  
+                  <TouchableOpacity 
+                    style={styles.dateButton}
+                    onPress={() => {
+                      const newDate = new Date(selectedDate);
+                      newDate.setDate(newDate.getDate() + 1);
+                      setSelectedDate(newDate);
+                    }}
+                  >
+                    <MaterialCommunityIcons name="chevron-right" size={24} color="#6B46C1" />
+                  </TouchableOpacity>
+                </View>
+                
+                <View style={styles.quickDateButtons}>
+                  <TouchableOpacity 
+                    style={styles.quickDateBtn}
+                    onPress={() => setSelectedDate(new Date())}
+                  >
+                    <Text style={styles.quickDateText}>Today</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.quickDateBtn}
+                    onPress={() => {
+                      const lastMonth = new Date();
+                      lastMonth.setMonth(lastMonth.getMonth() - 1);
+                      setSelectedDate(lastMonth);
+                    }}
+                  >
+                    <Text style={styles.quickDateText}>Last Month</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              <View style={styles.datePickerActions}>
+                <TouchableOpacity 
+                  style={styles.cancelDateButton}
+                  onPress={() => setShowCreatedDatePicker(false)}
+                >
+                  <Text style={styles.cancelDateText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.selectDateButton}
+                  onPress={handleCreatedDateSelect}
+                >
+                  <Text style={styles.selectDateText}>Select Date</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
       {/* Bottom Action Buttons */}
       <View style={styles.bottomActions}>
         <TouchableOpacity 
@@ -1097,6 +1305,23 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     color: '#9CA3AF',
+  },
+
+  // Info Box
+  infoBox: {
+    backgroundColor: '#EEF2FF',
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 8,
+  },
+  infoBoxText: {
+    fontSize: 12,
+    color: '#4338CA',
+    flex: 1,
+    lineHeight: 16,
   },
 
   // Date Picker Button
