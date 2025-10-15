@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 15,
     padding: 5,
-    marginTop: -10,
+    marginTop: -15,
   },
   headerTitle: {
     fontSize: 22,

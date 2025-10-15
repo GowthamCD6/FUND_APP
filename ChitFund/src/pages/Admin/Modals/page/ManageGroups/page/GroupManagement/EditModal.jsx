@@ -1,0 +1,468 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  StyleSheet,
+  Alert,
+  Modal,
+} from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
+const EditModal = ({ 
+  visible, 
+  onClose, 
+  initialData,
+  onSave 
+}) => {
+  const [editGroupData, setEditGroupData] = useState({
+    groupName: '',
+    totalAmount: '',
+    numberOfUsers: '',
+    createdDate: ''
+  });
+  const [editGroupErrors, setEditGroupErrors] = useState({});
+  const [showCreatedDatePicker, setShowCreatedDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Update form data when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setEditGroupData({
+        groupName: initialData.groupName || '',
+        totalAmount: initialData.totalAmount || initialData.monthlyAmount || '',
+        numberOfUsers: initialData.numberOfUsers || '',
+        createdDate: initialData.createdDate || ''
+      });
+    }
+  }, [initialData]);
+
+  const handleEditGroupChange = (field, value) => {
+    setEditGroupData(prev => ({ ...prev, [field]: value }));
+    if (editGroupErrors[field]) {
+      setEditGroupErrors(prev => ({ ...prev, [field]: null }));
+    }
+  };
+
+  const validateEditGroup = () => {
+    const newErrors = {};
+    if (!editGroupData.groupName || editGroupData.groupName.trim() === '') {
+      newErrors.groupName = 'Group name is required';
+    }
+    if (!editGroupData.totalAmount || parseFloat(editGroupData.totalAmount) <= 0) {
+      newErrors.totalAmount = 'Please enter a valid total amount';
+    }
+    if (!editGroupData.numberOfUsers || parseInt(editGroupData.numberOfUsers) <= 0) {
+      newErrors.numberOfUsers = 'Please enter a valid number of users';
+    }
+    if (!editGroupData.createdDate) {
+      newErrors.createdDate = 'Created date is required';
+    }
+    setEditGroupErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const saveEditGroup = () => {
+    if (!validateEditGroup()) {
+      return;
+    }
+    onSave(editGroupData);
+    onClose();
+    Alert.alert('Success', 'Group information updated successfully');
+  };
+
+  const formatDateForInput = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return 'Select Date';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const handleCreatedDateSelect = () => {
+    const formattedDate = formatDateForInput(selectedDate);
+    handleEditGroupChange('createdDate', formattedDate);
+    setShowCreatedDatePicker(false);
+  };
+
+  const handleClose = () => {
+    setEditGroupErrors({});
+    onClose();
+  };
+
+  return (
+    <>
+      {/* Edit Group Info Modal */}
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleClose}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.editGroupModalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Group Information</Text>
+              <TouchableOpacity onPress={handleClose}>
+                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.editGroupModalContent} showsVerticalScrollIndicator={false}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Group Name *</Text>
+                <TextInput
+                  style={[styles.input, editGroupErrors.groupName && styles.inputError]}
+                  value={editGroupData.groupName}
+                  onChangeText={(value) => handleEditGroupChange('groupName', value)}
+                  placeholder="Enter group name"
+                  placeholderTextColor="#9CA3AF"
+                />
+                {editGroupErrors.groupName && (
+                  <Text style={styles.errorText}>{editGroupErrors.groupName}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Total Amount *</Text>
+                <View style={styles.inputWithIcon}>
+                  <Text style={styles.inputPrefix}>₹</Text>
+                  <TextInput
+                    style={[styles.inputWithPrefix, editGroupErrors.totalAmount && styles.inputError]}
+                    value={editGroupData.totalAmount}
+                    onChangeText={(value) => handleEditGroupChange('totalAmount', value)}
+                    placeholder="100000"
+                    keyboardType="numeric"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+                {editGroupErrors.totalAmount && (
+                  <Text style={styles.errorText}>{editGroupErrors.totalAmount}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Number of Users *</Text>
+                <TextInput
+                  style={[styles.input, editGroupErrors.numberOfUsers && styles.inputError]}
+                  value={editGroupData.numberOfUsers}
+                  onChangeText={(value) => handleEditGroupChange('numberOfUsers', value)}
+                  placeholder="20"
+                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                />
+                {editGroupErrors.numberOfUsers && (
+                  <Text style={styles.errorText}>{editGroupErrors.numberOfUsers}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Created Date *</Text>
+                <TouchableOpacity
+                  style={[styles.datePickerButton, editGroupErrors.createdDate && styles.inputError]}
+                  onPress={() => {
+                    setSelectedDate(editGroupData.createdDate ? new Date(editGroupData.createdDate) : new Date());
+                    setShowCreatedDatePicker(true);
+                  }}
+                >
+                  <MaterialCommunityIcons name="calendar" size={18} color="#6B7280" />
+                  <Text style={[styles.datePickerText, !editGroupData.createdDate && styles.placeholderText]}>
+                    {editGroupData.createdDate ? formatDateForDisplay(editGroupData.createdDate) : 'Select date'}
+                  </Text>
+                </TouchableOpacity>
+                {editGroupErrors.createdDate && (
+                  <Text style={styles.errorText}>{editGroupErrors.createdDate}</Text>
+                )}
+              </View>
+            </ScrollView>
+
+            <View style={styles.editGroupModalActions}>
+              <TouchableOpacity 
+                style={styles.modalCancelButton}
+                onPress={handleClose}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.modalSaveButton}
+                onPress={saveEditGroup}
+              >
+                <MaterialCommunityIcons name="check" size={20} color="#FFFFFF" />
+                <Text style={styles.modalSaveText}>Save Changes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Date Picker Modal */}
+      {showCreatedDatePicker && (
+        <Modal
+          visible={showCreatedDatePicker}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowCreatedDatePicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.datePickerModal}>
+              <View style={styles.datePickerHeader}>
+                <Text style={styles.datePickerTitle}>Select Created Date</Text>
+                <TouchableOpacity onPress={() => setShowCreatedDatePicker(false)}>
+                  <MaterialCommunityIcons name="close" size={20} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.datePickerContent}>
+                <Text style={styles.selectedDateText}>
+                  {selectedDate.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </Text>
+              </View>
+              <View style={styles.datePickerActions}>
+                <TouchableOpacity 
+                  style={styles.cancelDateButton}
+                  onPress={() => setShowCreatedDatePicker(false)}
+                >
+                  <Text style={styles.cancelDateText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.selectDateButton}
+                  onPress={handleCreatedDateSelect}
+                >
+                  <Text style={styles.selectDateText}>Select Date</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </>
+  );
+};
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editGroupModalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '90%',
+    maxHeight: '80%',
+    maxWidth: 500,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#212121',
+  },
+  editGroupModalContent: {
+    padding: 20,
+    maxHeight: 400,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#212121',
+    backgroundColor: '#FFFFFF',
+  },
+  inputError: {
+    borderColor: '#EF4444',
+  },
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  inputPrefix: {
+    paddingLeft: 12,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#059669',
+  },
+  inputWithPrefix: {
+    flex: 1,
+    padding: 12,
+    paddingLeft: 8,
+    fontSize: 16,
+    color: '#212121',
+    borderWidth: 0,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+    gap: 8,
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: '#212121',
+  },
+  placeholderText: {
+    color: '#9CA3AF',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 4,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    backgroundColor: '#EEF2FF',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 8,
+  },
+  infoBoxText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#4F46E5',
+    lineHeight: 16,
+  },
+  editGroupModalActions: {
+    marginTop: 15,
+    flexDirection: 'row',
+    padding: 20,
+    paddingTop: 12,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  modalSaveButton: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: '#6B46C1',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  modalSaveText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  // Date Picker Modal Styles
+  datePickerModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    margin: 20,
+    maxWidth: 400,
+    width: '90%',
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  datePickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#212121',
+  },
+  datePickerContent: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  selectedDateText: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  datePickerActions: {
+    flexDirection: 'row',
+    padding: 20,
+    paddingTop: 0,
+    gap: 12,
+  },
+  cancelDateButton: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelDateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  selectDateButton: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: '#6B46C1',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  selectDateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+});
+
+export default EditModal;

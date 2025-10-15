@@ -10,7 +10,9 @@ import {
   Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import pageStyles from '../ManageGsty';
+import pageStyles from '../../ManageGsty';
+import EditModal from './EditModal';
+import MemberRegistration from './MemberRegistration';
 
 const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [currentMonth, setCurrentMonth] = useState(0); // 0 = current, -1 = previous
@@ -18,7 +20,6 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     groupInfo: true,
     payment: true,
     winner: true,
-    members: true,
     history: false
   });
 
@@ -68,11 +69,27 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showMemberPicker, setShowMemberPicker] = useState(false);
   const [currentMappingId, setCurrentMappingId] = useState(null);
+  const [showEditGroupModal, setShowEditGroupModal] = useState(false);
+  const [showMemberRegistration, setShowMemberRegistration] = useState(false);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
+    }));
+  };
+
+  const openEditGroupModal = () => {
+    setShowEditGroupModal(true);
+  };
+
+  const handleEditSave = (updatedData) => {
+    // Update the main formData
+    setFormData(prev => ({
+      ...prev,
+      groupName: updatedData.groupName,
+      monthlyAmount: updatedData.monthlyAmount,
+      createdDate: updatedData.createdDate
     }));
   };
 
@@ -224,15 +241,34 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
   const handleDateSelect = () => {
     const formattedDate = formatDateForInput(selectedDate);
-    handleInputChange('datePicked', formattedDate);
+    
+    // Check if we're updating a member's paid date or the chit winner date
+    if (currentMappingId !== null) {
+      // Find if it's for a member or for winner
+      const memberExists = memberMappings.find(m => m.id === currentMappingId);
+      if (memberExists) {
+        updateMemberMapping(currentMappingId, 'paidDate', formattedDate);
+      } else {
+        handleInputChange('datePicked', formattedDate);
+      }
+      setCurrentMappingId(null);
+    } else {
+      handleInputChange('datePicked', formattedDate);
+    }
+    
     setShowDatePicker(false);
   };
 
-  const openDatePicker = () => {
-    if (formData.datePicked) {
-      setSelectedDate(new Date(formData.datePicked));
+  const openDatePicker = (mappingId = null) => {
+    if (mappingId) {
+      // Opening for member paid date
+      const member = memberMappings.find(m => m.id === mappingId);
+      setCurrentMappingId(mappingId);
+      setSelectedDate(member?.paidDate ? new Date(member.paidDate) : new Date());
     } else {
-      setSelectedDate(new Date());
+      // Opening for winner date
+      setCurrentMappingId(null);
+      setSelectedDate(formData.datePicked ? new Date(formData.datePicked) : new Date());
     }
     setShowDatePicker(true);
   };
@@ -248,7 +284,11 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
   const handleCreatedDateSelect = () => {
     const formattedDate = formatDateForInput(selectedDate);
-    handleInputChange('createdDate', formattedDate);
+    if (showEditGroupModal) {
+      handleEditGroupChange('createdDate', formattedDate);
+    } else {
+      handleInputChange('createdDate', formattedDate);
+    }
     setShowCreatedDatePicker(false);
   };
 
@@ -284,7 +324,6 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           </TouchableOpacity>
           <View>
             <Text style={pageStyles.headerTitle}>Group Management</Text>
-            <Text style={styles.headerSubtitle}>Update monthly details & member payments</Text>
           </View>
         </View>
       </View>
@@ -293,21 +332,30 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         {/* Group Info Card */}
         <View style={styles.listContainer}>
           <View style={pageStyles.groupCard}>
-            {/* Header with Group Name */}
+            {/* Header with Group Name and Right Actions */}
             <View style={pageStyles.groupCardHeader}>
               <View style={pageStyles.groupNameContainer}>
                 <Text style={pageStyles.groupName}>{formData.groupName || group.name}</Text>
-                <Text style={styles.groupCode}>#{group.groupCode}</Text>
+                <Text style={styles.groupCodeText}>#{group.groupCode}</Text>
               </View>
-            </View>
-
-            {/* Status Badge */}
-            <View style={pageStyles.statusContainer}>
-              <View style={[pageStyles.statusBadge, { backgroundColor: getStatusColor(group.status) }]}>
-                <MaterialCommunityIcons name="progress-clock" size={12} color="#FFFFFF" />
-                <Text style={pageStyles.statusText}>
-                  {group.status === 'not-started' ? 'NOT STARTED' : group.status.toUpperCase()}
-                </Text>
+              
+              {/* Right Actions: Status and Edit */}
+              <View style={styles.rightActionsContainer}>
+                {/* Status Badge */}
+                <View style={[pageStyles.statusBadge, { backgroundColor: getStatusColor(group.status) }]}>
+                  <MaterialCommunityIcons name="progress-clock" size={12} color="#FFFFFF" />
+                  <Text style={pageStyles.statusText}>
+                    {group.status === 'not-started' ? 'NOT STARTED' : group.status.toUpperCase()}
+                  </Text>
+                </View>
+                
+                {/* Edit Icon Button */}
+                <TouchableOpacity 
+                  onPress={openEditGroupModal}
+                  style={styles.editIconButton}
+                >
+                  <MaterialCommunityIcons name="pencil" size={18} color="#6B46C1" />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -340,87 +388,6 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
         {/* Content Container */}
         <View style={styles.contentContainer}>
-          {/* Group Information Edit Section */}
-          <View style={styles.section}>
-            <TouchableOpacity 
-              onPress={() => toggleSection('groupInfo')}
-              style={styles.sectionHeader}
-            >
-              <View style={styles.sectionHeaderLeft}>
-                <View style={[styles.sectionIcon, { backgroundColor: '#E0E7FF' }]}>
-                  <MaterialCommunityIcons name="information" size={20} color="#6366F1" />
-                </View>
-                <View>
-                  <Text style={styles.sectionTitle}>Group Information</Text>
-                  <Text style={styles.sectionSubtitle}>Edit group name, amount & details</Text>
-                </View>
-              </View>
-              <MaterialCommunityIcons 
-                name={expandedSections.groupInfo ? "chevron-up" : "chevron-down"} 
-                size={24} 
-                color="#6B7280" 
-              />
-            </TouchableOpacity>
-
-            {expandedSections.groupInfo && (
-              <View style={styles.sectionContent}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Group Name *</Text>
-                  <TextInput
-                    style={[styles.input, errors.groupName && styles.inputError]}
-                    value={formData.groupName}
-                    onChangeText={(value) => handleInputChange('groupName', value)}
-                    placeholder="Enter group name"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                  {errors.groupName && (
-                    <Text style={styles.errorText}>{errors.groupName}</Text>
-                  )}
-                </View>
-
-                <View style={styles.inputRow}>
-                  <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={styles.label}>Monthly Amount *</Text>
-                    <View style={styles.inputWithIcon}>
-                      <Text style={styles.inputPrefix}>₹</Text>
-                      <TextInput
-                        style={[styles.inputWithPrefix, errors.monthlyAmount && styles.inputError]}
-                        value={formData.monthlyAmount}
-                        onChangeText={(value) => handleInputChange('monthlyAmount', value)}
-                        placeholder="10000"
-                        keyboardType="numeric"
-                        placeholderTextColor="#9CA3AF"
-                      />
-                    </View>
-                    {errors.monthlyAmount && (
-                      <Text style={styles.errorText}>{errors.monthlyAmount}</Text>
-                    )}
-                  </View>
-
-                  <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={styles.label}>Created Date</Text>
-                    <TouchableOpacity
-                      style={[styles.datePickerButton, errors.createdDate && styles.inputError]}
-                      onPress={openCreatedDatePicker}
-                    >
-                      <MaterialCommunityIcons name="calendar" size={18} color="#6B7280" />
-                      <Text style={[styles.datePickerText, !formData.createdDate && styles.placeholderText]}>
-                        {formData.createdDate ? formatDateForDisplay(formData.createdDate) : 'Select'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.infoBox}>
-                  <MaterialCommunityIcons name="information" size={16} color="#6366F1" />
-                  <Text style={styles.infoBoxText}>
-                    Changes to group name and monthly amount will be reflected across the entire group
-                  </Text>
-                </View>
-              </View>
-            )}
-          </View>
-
           {/* Month Navigation */}
           <View style={styles.monthNavigation}>
           <TouchableOpacity 
@@ -620,7 +587,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         {/* Member Registration */}
         <View style={styles.section}>
           <TouchableOpacity 
-            onPress={() => toggleSection('members')}
+            onPress={() => setShowMemberRegistration(true)}
             style={styles.sectionHeader}
           >
             <View style={styles.sectionHeaderLeft}>
@@ -633,58 +600,11 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
               </View>
             </View>
             <MaterialCommunityIcons 
-              name={expandedSections.members ? "chevron-up" : "chevron-down"} 
+              name="chevron-right" 
               size={24} 
               color="#6B7280" 
             />
           </TouchableOpacity>
-
-          {expandedSections.members && (
-            <View style={styles.sectionContent}>
-              {memberMappings.map((member) => (
-                <View key={member.id} style={styles.memberCard}>
-                  <View style={styles.memberCardHeader}>
-                    <TouchableOpacity
-                      style={styles.memberSelectButton}
-                      onPress={() => openMemberPicker(member.id)}
-                    >
-                      <MaterialCommunityIcons name="account" size={16} color="#6B7280" />
-                      <Text style={[styles.memberSelectText, !member.name && styles.placeholderText]}>
-                        {member.name || 'Select member'}
-                      </Text>
-                      <MaterialCommunityIcons name="chevron-down" size={16} color="#6B7280" />
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity
-                      onPress={() => removeMemberMapping(member.id)}
-                      style={styles.removeButton}
-                    >
-                      <MaterialCommunityIcons name="delete" size={20} color="#EF4444" />
-                    </TouchableOpacity>
-                  </View>
-
-
-                </View>
-              ))}
-
-              <TouchableOpacity
-                onPress={addMemberMapping}
-                style={styles.addMemberButton}
-              >
-                <MaterialCommunityIcons name="plus" size={20} color="#6B46C1" />
-                <Text style={styles.addMemberButtonText}>Add Member</Text>
-              </TouchableOpacity>
-
-              {memberMappings.length > 0 && (
-                <View style={styles.memberSummary}>
-                  <View style={styles.memberSummaryRow}>
-                    <Text style={styles.memberSummaryLabel}>Total Registered Members</Text>
-                    <Text style={styles.memberSummaryValue}>{memberMappings.length}</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
         </View>
 
         {/* Previous Month Data */}
@@ -776,54 +696,6 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
             )}
           </View>
         )}
-
-        {/* Summary Section */}
-        <View style={styles.summarySection}>
-          <Text style={styles.summaryTitle}>Monthly Summary</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Monthly Amount:</Text>
-            <Text style={styles.summaryValue}>
-              {formatCurrency(formData.currentMonthAmount || 0)}
-            </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Discount:</Text>
-            <Text style={styles.summaryValue}>
-              - {formatCurrency(formData.elathThalupadi || 0)}
-            </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Commission:</Text>
-            <Text style={styles.summaryValue}>
-              - {formatCurrency(formData.commission || 0)}
-            </Text>
-          </View>
-          {formData.amountTaken && (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Amount to Winner:</Text>
-              <Text style={[styles.summaryValue, styles.winnerAmountText]}>
-                {formatCurrency(formData.amountTaken || 0)}
-              </Text>
-            </View>
-          )}
-          {memberMappings.length > 0 && (
-            <>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Total Collected:</Text>
-                <Text style={[styles.summaryValue, { color: '#10B981' }]}>
-                  {formatCurrency(totalCollected)}
-                </Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Total Pending:</Text>
-                <Text style={[styles.summaryValue, { color: '#F59E0B' }]}>
-                  {formatCurrency(totalPending)}
-                </Text>
-              </View>
-            </>
-          )}
-        </View>
         </View>
 
         <View style={{ height: 100 }} />
@@ -1050,6 +922,33 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         </Modal>
       )}
 
+      {/* Edit Group Modal */}
+      <EditModal
+        visible={showEditGroupModal}
+        onClose={() => setShowEditGroupModal(false)}
+        initialData={{
+          groupName: formData.groupName,
+          monthlyAmount: formData.monthlyAmount,
+          createdDate: formData.createdDate
+        }}
+        onSave={handleEditSave}
+      />
+
+      {/* Member Registration Page */}
+      <MemberRegistration
+        visible={showMemberRegistration}
+        onClose={() => setShowMemberRegistration(false)}
+        group={{
+          groupName: formData.groupName,
+          monthlyAmount: formData.monthlyAmount,
+          memberMappings: memberMappings
+        }}
+        onSave={(updatedMemberMappings) => {
+          setMemberMappings(updatedMemberMappings);
+          setShowMemberRegistration(false);
+        }}
+      />
+
       {/* Bottom Action Buttons */}
       <View style={styles.bottomActions}>
         <TouchableOpacity 
@@ -1093,7 +992,35 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   
-  // Group Header
+  // Group Code Text (additional style)
+  groupCodeText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  
+  // Right Actions Container (for status + edit)
+  rightActionsContainer: {
+    alignItems: 'flex-end',
+    gap: 10,
+  },
+  
+  // Edit Icon Button
+  editIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3F0FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
+  // Group Header (keep for other uses)
   groupHeader: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -1120,9 +1047,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   groupCode: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
-    marginBottom: 12,
+    marginTop: 4,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -1558,44 +1485,6 @@ const styles = StyleSheet.create({
   historyMemberStatusText: {
     fontSize: 11,
     fontWeight: '600',
-  },
-
-  // Summary Section
-  summarySection: {
-    backgroundColor: '#EEF2FF',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-  },
-  summaryTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#212121',
-    marginBottom: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#212121',
-  },
-  winnerAmountText: {
-    color: '#10B981',
-    fontSize: 17,
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: '#C7D2FE',
-    marginVertical: 12,
   },
 
   // Modal Styles
