@@ -23,14 +23,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     history: false
   });
 
-  // Sample members data
-  const [allMembers] = useState([
-    { id: '9876543210', name: 'முருகன் குமார்', phone: '9876543210' },
-    { id: '9876543211', name: 'லட்சுமி செல்வி', phone: '9876543211' },
-    { id: '9876543212', name: 'ராஜேஷ் பாபு', phone: '9876543212' },
-    { id: '9876543213', name: 'பிரியா தேவி', phone: '9876543213' },
-    { id: '9876543214', name: 'கண்ணன் ராஜ்', phone: '9876543214' },
-  ]);
+
 
   // Month-wise data storage
   const [monthlyData] = useState([
@@ -67,8 +60,6 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCreatedDatePicker, setShowCreatedDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showMemberPicker, setShowMemberPicker] = useState(false);
-  const [currentMappingId, setCurrentMappingId] = useState(null);
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
   const [showMemberRegistration, setShowMemberRegistration] = useState(false);
 
@@ -100,54 +91,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     }
   };
 
-  const addMemberMapping = () => {
-    setMemberMappings([...memberMappings, {
-      id: Date.now(),
-      memberId: '',
-      name: '',
-      status: 'pending',
-      amount: formData.currentMonthAmount || '10000',
-      paidDate: null
-    }]);
-  };
 
-  const removeMemberMapping = (id) => {
-    Alert.alert(
-      'Remove Member',
-      'Are you sure you want to remove this member?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Remove', 
-          style: 'destructive',
-          onPress: () => setMemberMappings(memberMappings.filter(m => m.id !== id))
-        }
-      ]
-    );
-  };
-
-  const updateMemberMapping = (id, field, value) => {
-    setMemberMappings(memberMappings.map(m => {
-      if (m.id === id) {
-        if (field === 'memberId') {
-          const member = allMembers.find(mem => mem.id === value);
-          return { ...m, memberId: value, name: member?.name || '' };
-        }
-        return { ...m, [field]: value };
-      }
-      return m;
-    }));
-  };
-
-  const openMemberPicker = (mappingId) => {
-    setCurrentMappingId(mappingId);
-    setShowMemberPicker(true);
-  };
-
-  const selectMember = (memberId) => {
-    updateMemberMapping(currentMappingId, 'memberId', memberId);
-    setShowMemberPicker(false);
-  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -205,7 +149,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         amountTaken: parseFloat(formData.amountTaken),
         datePicked: formData.datePicked,
       } : null,
-      mappedMembers: memberMappings
+      memberMappings: memberMappings
     };
 
     onSave(dataToSave);
@@ -241,35 +185,12 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
   const handleDateSelect = () => {
     const formattedDate = formatDateForInput(selectedDate);
-    
-    // Check if we're updating a member's paid date or the chit winner date
-    if (currentMappingId !== null) {
-      // Find if it's for a member or for winner
-      const memberExists = memberMappings.find(m => m.id === currentMappingId);
-      if (memberExists) {
-        updateMemberMapping(currentMappingId, 'paidDate', formattedDate);
-      } else {
-        handleInputChange('datePicked', formattedDate);
-      }
-      setCurrentMappingId(null);
-    } else {
-      handleInputChange('datePicked', formattedDate);
-    }
-    
+    handleInputChange('datePicked', formattedDate);
     setShowDatePicker(false);
   };
 
-  const openDatePicker = (mappingId = null) => {
-    if (mappingId) {
-      // Opening for member paid date
-      const member = memberMappings.find(m => m.id === mappingId);
-      setCurrentMappingId(mappingId);
-      setSelectedDate(member?.paidDate ? new Date(member.paidDate) : new Date());
-    } else {
-      // Opening for winner date
-      setCurrentMappingId(null);
-      setSelectedDate(formData.datePicked ? new Date(formData.datePicked) : new Date());
-    }
+  const openDatePicker = () => {
+    setSelectedDate(formData.datePicked ? new Date(formData.datePicked) : new Date());
     setShowDatePicker(true);
   };
 
@@ -311,8 +232,6 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   };
 
   const currentMonthData = getCurrentMonthData();
-  const totalCollected = memberMappings.filter(m => m.status === 'paid').reduce((sum, m) => sum + parseFloat(m.amount || 0), 0);
-  const totalPending = memberMappings.filter(m => m.status === 'pending').reduce((sum, m) => sum + parseFloat(m.amount || 0), 0);
 
   return (
     <View style={styles.container}>
@@ -701,42 +620,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Member Picker Modal */}
-      <Modal
-        visible={showMemberPicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowMemberPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Member</Text>
-              <TouchableOpacity onPress={() => setShowMemberPicker(false)}>
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalContent}>
-              {allMembers.map((member) => (
-                <TouchableOpacity
-                  key={member.id}
-                  style={styles.memberOption}
-                  onPress={() => selectMember(member.id)}
-                >
-                  <View style={styles.memberOptionIcon}>
-                    <MaterialCommunityIcons name="account" size={24} color="#6B46C1" />
-                  </View>
-                  <View style={styles.memberOptionInfo}>
-                    <Text style={styles.memberOptionName}>{member.name}</Text>
-                    <Text style={styles.memberOptionPhone}>{member.phone}</Text>
-                  </View>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color="#9CA3AF" />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+
 
       {/* Date Picker Modal */}
       {showDatePicker && (
@@ -1268,134 +1152,6 @@ const styles = StyleSheet.create({
     color: '#212121',
   },
 
-  // Member Card Styles
-  memberCard: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  memberCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  memberSelectButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-    marginRight: 8,
-  },
-  memberSelectText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#212121',
-  },
-  removeButton: {
-    padding: 8,
-  },
-  memberCardRow: {
-    flexDirection: 'row',
-    marginHorizontal: -8,
-  },
-  memberCardInput: {
-    paddingHorizontal: 8,
-  },
-  memberCardLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6B7280',
-    marginBottom: 6,
-  },
-  memberCardInputField: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#212121',
-  },
-  statusPicker: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statusOption: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  statusOptionActive: {
-    backgroundColor: '#6B46C1',
-    borderColor: '#6B46C1',
-  },
-  statusOptionText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  statusOptionTextActive: {
-    color: '#FFFFFF',
-  },
-  paidDateContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  addMemberButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
-    paddingVertical: 16,
-    gap: 8,
-  },
-  addMemberButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B46C1',
-  },
-  memberSummary: {
-    marginTop: 16,
-    backgroundColor: '#EEF2FF',
-    borderRadius: 12,
-    padding: 16,
-  },
-  memberSummaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  memberSummaryLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  memberSummaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#212121',
-  },
-
   // History Styles
   historyGrid: {
     flexDirection: 'row',
@@ -1517,35 +1273,7 @@ const styles = StyleSheet.create({
   modalContent: {
     maxHeight: 400,
   },
-  memberOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  memberOptionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#EDE9FE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  memberOptionInfo: {
-    flex: 1,
-  },
-  memberOptionName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#212121',
-    marginBottom: 2,
-  },
-  memberOptionPhone: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
+
 
   // Date Picker Modal
   datePickerModal: {
