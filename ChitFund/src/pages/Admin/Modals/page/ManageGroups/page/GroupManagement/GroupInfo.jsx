@@ -3,27 +3,26 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   TextInput,
   StyleSheet,
   Alert,
   Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import pageStyles from '../../ManageGsty';
-import EditModal from './EditModal';
-import MemberRegistration from './MemberRegistration';
+import pageStyles from '../../ManageGsty'; // Assuming this path is correct
+import EditModal from './EditModal'; // Assuming this path is correct
+import MemberRegistration from './MemberRegistration'; // Assuming this path is correct
+import PaymentD from './PaymentD'; // Import the new PaymentD modal
+import AuctionW from './AuctionW'; // Import the new Auction Winner modal
 
 const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [currentMonth, setCurrentMonth] = useState(0); // 0 = current, -1 = previous
   const [expandedSections, setExpandedSections] = useState({
     groupInfo: true,
-    payment: true,
+    payment: true, // Keep payment section collapsed initially, or remove its toggle if it's always a modal
     winner: true,
     history: false
   });
-
-
 
   // Month-wise data storage
   const [monthlyData] = useState([
@@ -57,11 +56,12 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
   const [memberMappings, setMemberMappings] = useState([]);
   const [errors, setErrors] = useState({});
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCreatedDatePicker, setShowCreatedDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
   const [showMemberRegistration, setShowMemberRegistration] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false); // State for PaymentD modal
+  const [showAuctionModal, setShowAuctionModal] = useState(false); // State for AuctionW modal
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -91,7 +91,9 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     }
   };
 
-
+  const handleEditGroupChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -105,11 +107,13 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
       newErrors.monthlyAmount = 'Please enter a valid monthly amount';
     }
 
+    // Moved payment validation to PaymentD component, but keep currentMonthAmount for overall save
     if (!formData.currentMonthAmount || parseFloat(formData.currentMonthAmount) <= 0) {
       newErrors.currentMonthAmount = 'Please enter a valid amount';
     }
 
-    const hasChitWinnerData = formData.chitWinnerName || formData.chitWinnerMemberId || 
+
+    const hasChitWinnerData = formData.chitWinnerName || formData.chitWinnerMemberId ||
                                formData.amountTaken || formData.datePicked;
 
     if (hasChitWinnerData) {
@@ -125,6 +129,17 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Function to handle saving payment details from the modal
+  const handlePaymentSave = (paymentData) => {
+    setFormData(prev => ({
+      ...prev,
+      currentMonthAmount: paymentData.currentMonthAmount,
+      elathThalupadi: paymentData.elathThalupadi,
+      commission: paymentData.commission,
+    }));
+    setShowPaymentModal(false);
+  };
+
   const handleSave = () => {
     if (!validateForm()) {
       Alert.alert('Validation Error', 'Please fill all required fields correctly');
@@ -136,7 +151,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
       groupName: formData.groupName,
       monthlyAmount: parseFloat(formData.monthlyAmount),
       createdDate: formData.createdDate,
-      
+
       // Monthly Data
       month: currentMonth,
       date: new Date().toISOString().split('T')[0],
@@ -183,16 +198,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     });
   };
 
-  const handleDateSelect = () => {
-    const formattedDate = formatDateForInput(selectedDate);
-    handleInputChange('datePicked', formattedDate);
-    setShowDatePicker(false);
-  };
-
-  const openDatePicker = () => {
-    setSelectedDate(formData.datePicked ? new Date(formData.datePicked) : new Date());
-    setShowDatePicker(true);
-  };
+  // Auction winner date picker moved inside AuctionW modal
 
   const openCreatedDatePicker = () => {
     if (formData.createdDate) {
@@ -211,6 +217,18 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
       handleInputChange('createdDate', formattedDate);
     }
     setShowCreatedDatePicker(false);
+  };
+
+  // Function to handle saving auction winner details from the modal
+  const handleAuctionWinnerSave = (winnerData) => {
+    setFormData(prev => ({
+      ...prev,
+      chitWinnerName: winnerData.chitWinnerName,
+      chitWinnerMemberId: winnerData.chitWinnerMemberId,
+      amountTaken: winnerData.amountTaken,
+      datePicked: winnerData.datePicked,
+    }));
+    setShowAuctionModal(false);
   };
 
   const getMonthLabel = (offset) => {
@@ -247,7 +265,12 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollContainer}>
+        {/* Page intro below header (non-scrollable) */}
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageHeaderSubtext}>Manage your group details and settings</Text>
+        </View>
+
+  <View style={styles.scrollContainer}>
         {/* Group Info Card */}
         <View style={styles.listContainer}>
           <View style={pageStyles.groupCard}>
@@ -257,7 +280,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                 <Text style={pageStyles.groupName}>{formData.groupName || group.name}</Text>
                 <Text style={styles.groupCodeText}>#{group.groupCode}</Text>
               </View>
-              
+
               {/* Right Actions: Status and Edit */}
               <View style={styles.rightActionsContainer}>
                 {/* Status Badge */}
@@ -267,9 +290,9 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                     {group.status === 'not-started' ? 'NOT STARTED' : group.status.toUpperCase()}
                   </Text>
                 </View>
-                
+
                 {/* Edit Icon Button */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={openEditGroupModal}
                   style={styles.editIconButton}
                 >
@@ -307,412 +330,198 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
         {/* Content Container */}
         <View style={styles.contentContainer}>
-          {/* Month Navigation */}
-          <View style={styles.monthNavigation}>
-          <TouchableOpacity 
-            onPress={() => setCurrentMonth(currentMonth - 1)}
-            style={styles.monthNavButton}
-          >
-            <MaterialCommunityIcons name="chevron-left" size={20} color="#6B46C1" />
-            <Text style={styles.monthNavButtonText}>Previous</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.monthDisplay}>
-            <Text style={styles.monthLabel}>Viewing Month</Text>
-            <Text style={styles.monthValue}>{getMonthLabel(currentMonth)}</Text>
-            {currentMonth === 0 && <Text style={styles.currentMonthBadge}>(Current)</Text>}
-          </View>
-          
-          <TouchableOpacity 
-            onPress={() => setCurrentMonth(currentMonth + 1)}
-            disabled={currentMonth >= 0}
-            style={[styles.monthNavButton, currentMonth >= 0 && styles.monthNavButtonDisabled]}
-          >
-            <Text style={styles.monthNavButtonText}>Next</Text>
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#6B46C1" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Payment Details Section */}
-        <View style={styles.section}>
-          <TouchableOpacity 
-            onPress={() => toggleSection('payment')}
-            style={styles.sectionHeader}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <View style={[styles.sectionIcon, { backgroundColor: '#DBEAFE' }]}>
-                <MaterialCommunityIcons name="cash-multiple" size={20} color="#3B82F6" />
-              </View>
-              <View>
-                <Text style={styles.sectionTitle}>Payment Details</Text>
-                <Text style={styles.sectionSubtitle}>Monthly amount, discount & commission</Text>
-              </View>
-            </View>
-            <MaterialCommunityIcons 
-              name={expandedSections.payment ? "chevron-up" : "chevron-down"} 
-              size={24} 
-              color="#6B7280" 
-            />
-          </TouchableOpacity>
-
-          {expandedSections.payment && (
-            <View style={styles.sectionContent}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Amount to be Paid This Month *</Text>
-                <View style={styles.inputWithIcon}>
-                  <Text style={styles.inputPrefix}>₹</Text>
-                  <TextInput
-                    style={[styles.inputWithPrefix, errors.currentMonthAmount && styles.inputError]}
-                    value={formData.currentMonthAmount}
-                    onChangeText={(value) => handleInputChange('currentMonthAmount', value)}
-                    placeholder="10000"
-                    keyboardType="numeric"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
-                {errors.currentMonthAmount && (
-                  <Text style={styles.errorText}>{errors.currentMonthAmount}</Text>
-                )}
-              </View>
-
-              <View style={styles.inputRow}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.label}>
-                    <MaterialCommunityIcons name="trending-down" size={14} color="#6B7280" />
-                    {' '}எலத் தள்ளுபடி
-                  </Text>
-                  <View style={styles.inputWithIcon}>
-                    <Text style={styles.inputPrefix}>₹</Text>
-                    <TextInput
-                      style={[styles.inputWithPrefix, errors.elathThalupadi && styles.inputError]}
-                      value={formData.elathThalupadi}
-                      onChangeText={(value) => handleInputChange('elathThalupadi', value)}
-                      placeholder="0"
-                      keyboardType="numeric"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </View>
-                </View>
-
-                <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={styles.label}>
-                    <MaterialCommunityIcons name="percent" size={14} color="#6B7280" />
-                    {' '}கசர்
-                  </Text>
-                  <View style={styles.inputWithIcon}>
-                    <Text style={styles.inputPrefix}>₹</Text>
-                    <TextInput
-                      style={[styles.inputWithPrefix, errors.commission && styles.inputError]}
-                      value={formData.commission}
-                      onChangeText={(value) => handleInputChange('commission', value)}
-                      placeholder="0"
-                      keyboardType="numeric"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </View>
-                </View>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Chit Winner Section */}
-        <View style={styles.section}>
-          <TouchableOpacity 
-            onPress={() => toggleSection('winner')}
-            style={styles.sectionHeader}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <View style={[styles.sectionIcon, { backgroundColor: '#FEF3C7' }]}>
-                <MaterialCommunityIcons name="trophy" size={20} color="#F59E0B" />
-              </View>
-              <View>
-                <Text style={styles.sectionTitle}>Chit Auction Winner</Text>
-                <Text style={styles.sectionSubtitle}>Register monthly auction winner</Text>
-              </View>
-            </View>
-            <MaterialCommunityIcons 
-              name={expandedSections.winner ? "chevron-up" : "chevron-down"} 
-              size={24} 
-              color="#6B7280" 
-            />
-          </TouchableOpacity>
-
-          {expandedSections.winner && (
-            <View style={styles.sectionContent}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Winner Name</Text>
-                <TextInput
-                  style={[styles.input, errors.chitWinnerName && styles.inputError]}
-                  value={formData.chitWinnerName}
-                  onChangeText={(value) => handleInputChange('chitWinnerName', value)}
-                  placeholder="Enter winner's name"
-                  placeholderTextColor="#9CA3AF"
-                />
-                {errors.chitWinnerName && (
-                  <Text style={styles.errorText}>{errors.chitWinnerName}</Text>
-                )}
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Member Phone Number</Text>
-                <TextInput
-                  style={[styles.input, errors.chitWinnerMemberId && styles.inputError]}
-                  value={formData.chitWinnerMemberId}
-                  onChangeText={(value) => handleInputChange('chitWinnerMemberId', value)}
-                  placeholder="10-digit mobile number"
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  placeholderTextColor="#9CA3AF"
-                />
-                {errors.chitWinnerMemberId && (
-                  <Text style={styles.errorText}>{errors.chitWinnerMemberId}</Text>
-                )}
-              </View>
-
-              <View style={styles.inputRow}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.label}>Amount Taken</Text>
-                  <View style={styles.inputWithIcon}>
-                    <Text style={styles.inputPrefix}>₹</Text>
-                    <TextInput
-                      style={[styles.inputWithPrefix, errors.amountTaken && styles.inputError]}
-                      value={formData.amountTaken}
-                      onChangeText={(value) => handleInputChange('amountTaken', value)}
-                      placeholder="9300"
-                      keyboardType="numeric"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </View>
-                </View>
-
-                <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={styles.label}>Auction Date</Text>
-                  <TouchableOpacity
-                    style={[styles.datePickerButton, errors.datePicked && styles.inputError]}
-                    onPress={openDatePicker}
-                  >
-                    <MaterialCommunityIcons name="calendar" size={18} color="#6B7280" />
-                    <Text style={[styles.datePickerText, !formData.datePicked && styles.placeholderText]}>
-                      {formData.datePicked ? formatDateForDisplay(formData.datePicked) : 'Select'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Member Registration */}
-        <View style={styles.section}>
-          <TouchableOpacity 
-            onPress={() => setShowMemberRegistration(true)}
-            style={styles.sectionHeader}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <View style={[styles.sectionIcon, { backgroundColor: '#EDE9FE' }]}>
-                <MaterialCommunityIcons name="account-group" size={20} color="#6B46C1" />
-              </View>
-              <View>
-                <Text style={styles.sectionTitle}>Member Registration</Text>
-                <Text style={styles.sectionSubtitle}>Add and manage group members</Text>
-              </View>
-            </View>
-            <MaterialCommunityIcons 
-              name="chevron-right" 
-              size={24} 
-              color="#6B7280" 
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Previous Month Data */}
-        {currentMonthData && (
+          {/* Member Registration */}
           <View style={styles.section}>
-            <TouchableOpacity 
-              onPress={() => toggleSection('history')}
+            <TouchableOpacity
+              onPress={() => setShowMemberRegistration(true)}
               style={styles.sectionHeader}
             >
               <View style={styles.sectionHeaderLeft}>
-                <View style={[styles.sectionIcon, { backgroundColor: '#D1FAE5' }]}>
-                  <MaterialCommunityIcons name="history" size={20} color="#10B981" />
+                <View style={[styles.sectionIcon, { backgroundColor: '#EDE9FE' }]}>
+                  <MaterialCommunityIcons name="account-group" size={20} color="#6B46C1" />
                 </View>
                 <View>
-                  <Text style={styles.sectionTitle}>Saved Month Data</Text>
-                  <Text style={styles.sectionSubtitle}>Previously saved information</Text>
+                  <Text style={styles.sectionTitle}>Member Registration</Text>
+                  <Text style={styles.sectionSubtitle}>Add and manage group members</Text>
                 </View>
               </View>
-              <MaterialCommunityIcons 
-                name={expandedSections.history ? "chevron-up" : "chevron-down"} 
-                size={24} 
-                color="#6B7280" 
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={24}
+                color="#6B7280"
               />
             </TouchableOpacity>
+          </View>
 
-            {expandedSections.history && (
-              <View style={styles.sectionContent}>
-                <View style={styles.historyGrid}>
-                  <View style={styles.historyCard}>
-                    <Text style={styles.historyCardLabel}>Amount</Text>
-                    <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.amount)}</Text>
+          {/* Month Navigation */}
+          <View style={styles.monthNavigation}>
+            <TouchableOpacity
+              onPress={() => setCurrentMonth(currentMonth - 1)}
+              style={styles.monthNavButton}
+            >
+              <MaterialCommunityIcons name="chevron-left" size={20} color="#6B46C1" />
+              <Text style={styles.monthNavButtonText}>Previous</Text>
+            </TouchableOpacity>
+
+            <View style={styles.monthDisplay}>
+              <Text style={styles.monthLabel}>Viewing Month</Text>
+              <Text style={styles.monthValue}>{getMonthLabel(currentMonth)}</Text>
+              {currentMonth === 0 && <Text style={styles.currentMonthBadge}>(Current)</Text>}
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setCurrentMonth(currentMonth + 1)}
+              disabled={currentMonth >= 0}
+              style={[styles.monthNavButton, currentMonth >= 0 && styles.monthNavButtonDisabled]}
+            >
+              <Text style={styles.monthNavButtonText}>Next</Text>
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#6B46C1" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Payment Details Section (Now opens a modal) */}
+          <View style={styles.section}>
+            <TouchableOpacity
+              onPress={() => setShowPaymentModal(true)} // Open PaymentD modal
+              style={styles.sectionHeader}
+            >
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionIcon, { backgroundColor: '#DBEAFE' }]}>
+                  <MaterialCommunityIcons name="cash-multiple" size={20} color="#3B82F6" />
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>Payment Details</Text>
+                  <Text style={styles.sectionSubtitle}>Monthly amount, discount & commission</Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons
+                name="chevron-right" // Changed to chevron-right as it's a modal now
+                size={24}
+                color="#6B7280"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Chit Winner Section (opens AuctionW modal) */}
+          <View style={styles.section}>
+            <TouchableOpacity
+              onPress={() => setShowAuctionModal(true)}
+              style={styles.sectionHeader}
+            >
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionIcon, { backgroundColor: '#FEF3C7' }]}>
+                  <MaterialCommunityIcons name="trophy" size={20} color="#F59E0B" />
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>Chit Auction Winner</Text>
+                  <Text style={styles.sectionSubtitle}>
+                    {formData.chitWinnerName ? `Winner: ${formData.chitWinnerName}` : 'Register monthly auction winner'}
+                  </Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={24}
+                color="#6B7280"
+              />
+            </TouchableOpacity>
+          </View>
+
+
+          {/* Previous Month Data */}
+          {currentMonthData && (
+            <View style={styles.section}>
+              <TouchableOpacity
+                onPress={() => toggleSection('history')}
+                style={styles.sectionHeader}
+              >
+                <View style={styles.sectionHeaderLeft}>
+                  <View style={[styles.sectionIcon, { backgroundColor: '#D1FAE5' }]}>
+                    <MaterialCommunityIcons name="history" size={20} color="#10B981" />
                   </View>
-                  <View style={styles.historyCard}>
-                    <Text style={styles.historyCardLabel}>Discount</Text>
-                    <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.discount)}</Text>
-                  </View>
-                  <View style={styles.historyCard}>
-                    <Text style={styles.historyCardLabel}>Commission</Text>
-                    <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.commission)}</Text>
+                  <View>
+                    <Text style={styles.sectionTitle}>Saved Month Data</Text>
+                    <Text style={styles.sectionSubtitle}>Previously saved information</Text>
                   </View>
                 </View>
+                <MaterialCommunityIcons
+                  name={expandedSections.history ? "chevron-up" : "chevron-down"}
+                  size={24}
+                  color="#6B7280"
+                />
+              </TouchableOpacity>
 
-                {currentMonthData.winner && (
-                  <View style={styles.winnerDetailsCard}>
-                    <Text style={styles.winnerDetailsTitle}>Winner Details</Text>
-                    <Text style={styles.winnerDetailsText}>
-                      <Text style={styles.winnerDetailsLabel}>Name: </Text>
-                      {currentMonthData.winner.name}
-                    </Text>
-                    <Text style={styles.winnerDetailsText}>
-                      <Text style={styles.winnerDetailsLabel}>Amount: </Text>
-                      {formatCurrency(currentMonthData.winner.amountTaken)}
-                    </Text>
-                    <Text style={styles.winnerDetailsText}>
-                      <Text style={styles.winnerDetailsLabel}>Date: </Text>
-                      {formatDateForDisplay(currentMonthData.winner.date)}
-                    </Text>
+              {expandedSections.history && (
+                <View style={styles.sectionContent}>
+                  <View style={styles.historyGrid}>
+                    <View style={styles.historyCard}>
+                      <Text style={styles.historyCardLabel}>Amount</Text>
+                      <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.amount)}</Text>
+                    </View>
+                    <View style={styles.historyCard}>
+                      <Text style={styles.historyCardLabel}>Discount</Text>
+                      <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.discount)}</Text>
+                    </View>
+                    <View style={styles.historyCard}>
+                      <Text style={styles.historyCardLabel}>Commission</Text>
+                      <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.commission)}</Text>
+                    </View>
                   </View>
-                )}
 
-                <View style={styles.historyMembersContainer}>
-                  <Text style={styles.historyMembersTitle}>
-                    Member Payments ({currentMonthData.mappedMembers.length})
-                  </Text>
-                  {currentMonthData.mappedMembers.map((member, idx) => (
-                    <View key={idx} style={styles.historyMemberCard}>
-                      <View>
-                        <Text style={styles.historyMemberName}>{member.name}</Text>
-                        <Text style={styles.historyMemberPhone}>{member.memberId}</Text>
-                      </View>
-                      <View style={styles.historyMemberRight}>
-                        <Text style={styles.historyMemberAmount}>{formatCurrency(member.amount)}</Text>
-                        <View style={[
-                          styles.historyMemberStatus,
-                          { backgroundColor: member.status === 'paid' ? '#D1FAE5' : '#FEF3C7' }
-                        ]}>
-                          <Text style={[
-                            styles.historyMemberStatusText,
-                            { color: member.status === 'paid' ? '#10B981' : '#F59E0B' }
+                  {currentMonthData.winner && (
+                    <View style={styles.winnerDetailsCard}>
+                      <Text style={styles.winnerDetailsTitle}>Winner Details</Text>
+                      <Text style={styles.winnerDetailsText}>
+                        <Text style={styles.winnerDetailsLabel}>Name: </Text>
+                        {currentMonthData.winner.name}
+                      </Text>
+                      <Text style={styles.winnerDetailsText}>
+                        <Text style={styles.winnerDetailsLabel}>Amount: </Text>
+                        {formatCurrency(currentMonthData.winner.amountTaken)}
+                      </Text>
+                      <Text style={styles.winnerDetailsText}>
+                        <Text style={styles.winnerDetailsLabel}>Date: </Text>
+                        {formatDateForDisplay(currentMonthData.winner.date)}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.historyMembersContainer}>
+                    <Text style={styles.historyMembersTitle}>
+                      Member Payments ({currentMonthData.mappedMembers.length})
+                    </Text>
+                    {currentMonthData.mappedMembers.map((member, idx) => (
+                      <View key={idx} style={styles.historyMemberCard}>
+                        <View>
+                          <Text style={styles.historyMemberName}>{member.name}</Text>
+                          <Text style={styles.historyMemberPhone}>{member.memberId}</Text>
+                        </View>
+                        <View style={styles.historyMemberRight}>
+                          <Text style={styles.historyMemberAmount}>{formatCurrency(member.amount)}</Text>
+                          <View style={[
+                            styles.historyMemberStatus,
+                            { backgroundColor: member.status === 'paid' ? '#D1FAE5' : '#FEF3C7' }
                           ]}>
-                            {member.status}
-                          </Text>
+                            <Text style={[
+                              styles.historyMemberStatusText,
+                              { color: member.status === 'paid' ? '#10B981' : '#F59E0B' }
+                            ]}>
+                              {member.status}
+                            </Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
-                  ))}
+                    ))}
+                  </View>
                 </View>
-              </View>
-            )}
-          </View>
-        )}
+              )}
+            </View>
+          )}
         </View>
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
+      </View>
 
-
-
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <Modal
-          visible={showDatePicker}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowDatePicker(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.datePickerModal}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Auction Date</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.datePickerContent}>
-                <View style={styles.datePickerControls}>
-                  <TouchableOpacity 
-                    style={styles.dateButton}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(newDate.getDate() - 1);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <MaterialCommunityIcons name="chevron-left" size={24} color="#6B46C1" />
-                  </TouchableOpacity>
-                  
-                  <View style={styles.dateDisplay}>
-                    <Text style={styles.selectedDateText}>
-                      {selectedDate.toLocaleDateString('en-IN', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </Text>
-                  </View>
-                  
-                  <TouchableOpacity 
-                    style={styles.dateButton}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(newDate.getDate() + 1);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <MaterialCommunityIcons name="chevron-right" size={24} color="#6B46C1" />
-                  </TouchableOpacity>
-                </View>
-                
-                <View style={styles.quickDateButtons}>
-                  <TouchableOpacity 
-                    style={styles.quickDateBtn}
-                    onPress={() => setSelectedDate(new Date())}
-                  >
-                    <Text style={styles.quickDateText}>Today</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.quickDateBtn}
-                    onPress={() => {
-                      const yesterday = new Date();
-                      yesterday.setDate(yesterday.getDate() - 1);
-                      setSelectedDate(yesterday);
-                    }}
-                  >
-                    <Text style={styles.quickDateText}>Yesterday</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              
-              <View style={styles.datePickerActions}>
-                <TouchableOpacity 
-                  style={styles.cancelDateButton}
-                  onPress={() => setShowDatePicker(false)}
-                >
-                  <Text style={styles.cancelDateText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.selectDateButton}
-                  onPress={handleDateSelect}
-                >
-                  <Text style={styles.selectDateText}>Select Date</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
+      {/* Auction winner date picker moved into AuctionW modal */}
 
       {/* Created Date Picker Modal */}
       {showCreatedDatePicker && (
@@ -730,10 +539,10 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                   <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
-              
+
               <View style={styles.datePickerContent}>
                 <View style={styles.datePickerControls}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.dateButton}
                     onPress={() => {
                       const newDate = new Date(selectedDate);
@@ -743,7 +552,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                   >
                     <MaterialCommunityIcons name="chevron-left" size={24} color="#6B46C1" />
                   </TouchableOpacity>
-                  
+
                   <View style={styles.dateDisplay}>
                     <Text style={styles.selectedDateText}>
                       {selectedDate.toLocaleDateString('en-IN', {
@@ -754,8 +563,8 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                       })}
                     </Text>
                   </View>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.dateButton}
                     onPress={() => {
                       const newDate = new Date(selectedDate);
@@ -766,15 +575,15 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                     <MaterialCommunityIcons name="chevron-right" size={24} color="#6B46C1" />
                   </TouchableOpacity>
                 </View>
-                
+
                 <View style={styles.quickDateButtons}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.quickDateBtn}
                     onPress={() => setSelectedDate(new Date())}
                   >
                     <Text style={styles.quickDateText}>Today</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.quickDateBtn}
                     onPress={() => {
                       const lastMonth = new Date();
@@ -786,15 +595,15 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                   </TouchableOpacity>
                 </View>
               </View>
-              
+
               <View style={styles.datePickerActions}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.cancelDateButton}
                   onPress={() => setShowCreatedDatePicker(false)}
                 >
                   <Text style={styles.cancelDateText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.selectDateButton}
                   onPress={handleCreatedDateSelect}
                 >
@@ -833,15 +642,40 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         }}
       />
 
+      {/* Payment Details Modal */}
+      <PaymentD
+        visible={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        initialPaymentData={{
+          currentMonthAmount: formData.currentMonthAmount,
+          elathThalupadi: formData.elathThalupadi,
+          commission: formData.commission,
+        }}
+        onSave={handlePaymentSave}
+      />
+
+      {/* Chit Auction Winner Modal */}
+      <AuctionW
+        visible={showAuctionModal}
+        onClose={() => setShowAuctionModal(false)}
+        initialWinnerData={{
+          chitWinnerName: formData.chitWinnerName,
+          chitWinnerMemberId: formData.chitWinnerMemberId,
+          amountTaken: formData.amountTaken,
+          datePicked: formData.datePicked,
+        }}
+        onSave={handleAuctionWinnerSave}
+      />
+
       {/* Bottom Action Buttons */}
       <View style={styles.bottomActions}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.cancelButton}
           onPress={onBack}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.saveButton}
           onPress={handleSave}
         >
@@ -858,6 +692,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
+  
+  // Page Header Text (NEW)
+  pageHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 0,
+  },
+  pageHeaderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B46C1',
+    textAlign: 'center',
+  },
+  pageHeaderSubtext: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+
   headerSubtitle: {
     fontSize: 12,
     color: '#6B7280',
@@ -866,6 +720,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+    paddingBottom: 100, // keep content visible above bottom actions
   },
   listContainer: {
     paddingHorizontal: 20,
@@ -875,20 +730,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 0,
   },
-  
+
   // Group Code Text (additional style)
   groupCodeText: {
     fontSize: 14,
     color: '#6B7280',
     marginTop: 4,
   },
-  
+
   // Right Actions Container (for status + edit)
   rightActionsContainer: {
     alignItems: 'flex-end',
     gap: 10,
   },
-  
+
   // Edit Icon Button
   editIconButton: {
     width: 36,
@@ -1273,7 +1128,6 @@ const styles = StyleSheet.create({
   modalContent: {
     maxHeight: 400,
   },
-
 
   // Date Picker Modal
   datePickerModal: {

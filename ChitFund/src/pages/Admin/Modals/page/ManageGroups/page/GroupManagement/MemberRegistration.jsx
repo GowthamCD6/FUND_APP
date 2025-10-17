@@ -29,7 +29,6 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
     { id: '9876543217', name: 'மீனா குமாரி', phone: '9876543217' },
     { id: '9876543218', name: 'சிவன் ராஜு', phone: '9876543218' },
     { id: '9876543219', name: 'கமலா தேவி', phone: '9876543219' },
-    // Add more sample members to test the limit if needed
     { id: '9876543220', name: 'விஜய் குமார்', phone: '9876543220' },
     { id: '9876543221', name: 'சரண்யா தேவி', phone: '9876543221' },
     { id: '9876543222', name: 'சந்தீப் ராவ்', phone: '9876543222' },
