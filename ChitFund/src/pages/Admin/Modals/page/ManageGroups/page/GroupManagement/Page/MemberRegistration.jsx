@@ -17,7 +17,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 const MAX_MEMBERS = 20;
 
 const MemberRegistration = ({ visible, onClose, group, onSave }) => {
-  // Sample members data (unchanged)
+  // Sample members data
   const [allMembers] = useState([
     { id: '9876543210', name: 'முருகன் குமார்', phone: '9876543210' },
     { id: '9876543211', name: 'லட்சுமி செல்வி', phone: '9876543211' },
@@ -43,19 +43,19 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
 
   const [memberMappings, setMemberMappings] = useState([]);
   const [showMemberPicker, setShowMemberPicker] = useState(false);
-  const [currentMappingId, setCurrentMappingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMembers, setSelectedMembers] = useState([]); // Track selected members in picker
 
   // Track if changes have been made to enable/disable Save button
   const [hasChanges, setHasChanges] = useState(false);
-  const [initialMemberMappings, setInitialMemberMappings] = useState([]); // To compare for changes
+  const [initialMemberMappings, setInitialMemberMappings] = useState([]);
 
   useEffect(() => {
     if (visible && group) {
       const initial = group.memberMappings || [];
       setMemberMappings(initial);
-      setInitialMemberMappings(initial); // Store initial state
-      setHasChanges(false); // No changes initially
+      setInitialMemberMappings(initial);
+      setHasChanges(false);
     }
   }, [visible, group]);
 
@@ -66,17 +66,19 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
     setHasChanges(currentString !== initialString);
   }, [memberMappings, initialMemberMappings]);
 
-
   // Reset search when modal closes
   useEffect(() => {
     if (!showMemberPicker) {
       setSearchQuery('');
+      setSelectedMembers([]);
     }
   }, [showMemberPicker]);
 
-  const addMemberMapping = () => {
+  const addMultipleMembers = () => {
+    const membersPresentCount = memberMappings.filter(m => m.memberId).length;
+    
     // Check if the group has reached the maximum number of members
-    if (memberMappings.filter(m => m.memberId).length >= MAX_MEMBERS) {
+    if (membersPresentCount >= MAX_MEMBERS) {
       Alert.alert(
         'Group Full',
         `This group has reached the maximum of ${MAX_MEMBERS} members.`
@@ -84,18 +86,7 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
       return;
     }
 
-    const newMapping = {
-      id: Date.now(), // Use unique ID for the mapping itself
-      memberId: '', // memberId will be populated after selection
-      name: ''
-    };
-    setMemberMappings(prevMappings => {
-      const updated = [...prevMappings, newMapping];
-      return updated;
-    });
-    
-    // Immediately open picker for the new member
-    setCurrentMappingId(newMapping.id);
+    // Open picker for selecting multiple members
     setShowMemberPicker(true);
   };
 
@@ -109,42 +100,57 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
           text: 'Remove', 
           style: 'destructive',
           onPress: () => {
-            setMemberMappings(prevMappings => {
-              const updatedMappings = prevMappings.filter(mapping => mapping.id !== id);
-              // Do NOT call onSave here. It will be called by the parent 'Save' button.
-              return updatedMappings;
-            });
+            setMemberMappings(prevMappings => 
+              prevMappings.filter(mapping => mapping.id !== id)
+            );
           }
         }
       ]
     );
   };
 
-  const updateMemberMapping = (id, field, value) => {
-    setMemberMappings(prevMappings => prevMappings.map(mapping => 
-      mapping.id === id ? { ...mapping, [field]: value } : mapping
-    ));
-  };
-
-  const openMemberPicker = (mappingId) => {
-    setCurrentMappingId(mappingId);
-    setShowMemberPicker(true);
-  };
-
-  const selectMember = (member) => {
-    setMemberMappings(prevMappings => {
-      const updatedMappings = prevMappings.map(mapping => 
-        mapping.id === currentMappingId 
-          ? { ...mapping, memberId: member.id, name: member.name } 
-          : mapping
-      );
-      return updatedMappings;
+  const toggleMemberSelection = (member) => {
+    setSelectedMembers(prev => {
+      const isSelected = prev.some(m => m.id === member.id);
+      
+      if (isSelected) {
+        return prev.filter(m => m.id !== member.id);
+      } else {
+        // Check if adding this member would exceed the limit
+        const currentMembersCount = memberMappings.filter(m => m.memberId).length;
+        const totalAfterAdd = currentMembersCount + prev.length + 1;
+        
+        if (totalAfterAdd > MAX_MEMBERS) {
+          Alert.alert(
+            'Limit Reached',
+            `You can only add ${MAX_MEMBERS - currentMembersCount - prev.length} more member(s).`
+          );
+          return prev;
+        }
+        
+        return [...prev, member];
+      }
     });
+  };
+
+  const confirmAddMembers = () => {
+    if (selectedMembers.length === 0) {
+      Alert.alert('No Selection', 'Please select at least one member to add.');
+      return;
+    }
+
+    const newMappings = selectedMembers.map(member => ({
+      id: Date.now() + Math.random(), // Unique ID for each mapping
+      memberId: member.id,
+      name: member.name
+    }));
+
+    setMemberMappings(prevMappings => [...prevMappings, ...newMappings]);
     setShowMemberPicker(false);
+    setSelectedMembers([]);
   };
 
   const getAvailableMembers = () => {
-    // Get IDs of members currently assigned to a mapping in THIS group.
     const usedMemberIds = memberMappings
       .filter(mapping => mapping.memberId)
       .map(mapping => mapping.memberId);
@@ -173,8 +179,27 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
 
   const handleCloseMemberPicker = () => {
     setShowMemberPicker(false);
-    // Remove any empty member mappings (where no member was selected)
-    setMemberMappings(prevMappings => prevMappings.filter(m => m.memberId !== ''));
+    setSelectedMembers([]);
+  };
+
+  const selectAllFiltered = () => {
+    const filteredMembers = getFilteredMembers();
+    const currentMembersCount = memberMappings.filter(m => m.memberId).length;
+    const availableSlots = MAX_MEMBERS - currentMembersCount;
+    
+    if (filteredMembers.length > availableSlots) {
+      Alert.alert(
+        'Limit Reached',
+        `You can only add ${availableSlots} more member(s). Only the first ${availableSlots} members will be selected.`
+      );
+      setSelectedMembers(filteredMembers.slice(0, availableSlots));
+    } else {
+      setSelectedMembers(filteredMembers);
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedMembers([]);
   };
 
   // Calculate the actual number of members present in the group
@@ -239,7 +264,7 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Group Info Card (now just for name) */}
+        {/* Group Info Card */}
         <View style={styles.groupNameCard}>
           <View style={styles.groupInfoHeader}>
             <View style={styles.groupInfoIcon}>
@@ -251,18 +276,22 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
           </View>
         </View>
 
-        {/* New Cards for Member Counts */}
+        {/* Member Stats Cards - Improved Layout */}
         <View style={styles.memberStatsContainer}>
-            <View style={styles.statCard}>
-                <MaterialCommunityIcons name="account-multiple-check" size={24} color="#10B981" />
-                <Text style={styles.statCount}>{membersPresentCount}</Text>
-                <Text style={styles.statLabel}>Total Members</Text>
+          <View style={styles.statCard}>
+            <View style={styles.statContent}>
+              <MaterialCommunityIcons name="account-multiple-check" size={22} color="#10B981" />
+              <Text style={styles.statCount}>{membersPresentCount}</Text>
             </View>
-            <View style={styles.statCard}>
-                <MaterialCommunityIcons name="account-plus-outline" size={24} color="#F59E0B" />
-                <Text style={styles.statCount}>{availableSlotsCount}</Text>
-                <Text style={styles.statLabel}>Available Slots</Text>
+            <Text style={styles.statLabel}>Total Members</Text>
+          </View>
+          <View style={styles.statCard}>
+            <View style={styles.statContent}>
+              <MaterialCommunityIcons name="account-plus-outline" size={22} color="#F59E0B" />
+              <Text style={styles.statCount}>{availableSlotsCount}</Text>
             </View>
+            <Text style={styles.statLabel}>Available Slots</Text>
+          </View>
         </View>
 
         {/* Members List */}
@@ -290,13 +319,13 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
           ))}
 
           <TouchableOpacity
-            onPress={addMemberMapping}
+            onPress={addMultipleMembers}
             style={[styles.addMemberButton, isAddMemberButtonDisabled && styles.addMemberButtonDisabled]}
             disabled={isAddMemberButtonDisabled}
           >
-            <MaterialCommunityIcons name="plus" size={20} color={isAddMemberButtonDisabled ? "#9CA3AF" : "#6B46C1"} />
+            <MaterialCommunityIcons name="account-multiple-plus" size={20} color={isAddMemberButtonDisabled ? "#9CA3AF" : "#6B46C1"} />
             <Text style={[styles.addMemberButtonText, isAddMemberButtonDisabled && styles.addMemberButtonTextDisabled]}>
-              Add Member
+              Add Members
             </Text>
           </TouchableOpacity>
 
@@ -305,19 +334,9 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
               This group has reached its maximum of {MAX_MEMBERS} members.
             </Text>
           )}
-
-          {memberMappings.filter(m => !m.memberId).length > 0 && (
-            <Text style={styles.pendingSelectionText}>
-              Please select a member for the new slot, or close the picker to remove it.
-            </Text>
-          )}
-
         </ScrollView>
-        {/* This empty view ensures the Save button is always at the bottom if content is short */}
-        <View style={styles.bottomSpacer} />
 
-
-        {/* Member Picker Modal */}
+        {/* Member Picker Modal with Multi-Select */}
         <Modal
           visible={showMemberPicker}
           transparent={true}
@@ -330,10 +349,26 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
           >
             <View style={styles.memberPickerModal}>
               <View style={styles.memberPickerHeader}>
-                <Text style={styles.memberPickerTitle}>Select Member</Text>
-                <TouchableOpacity onPress={handleCloseMemberPicker}>
-                  <MaterialCommunityIcons name="close" size={20} color="#6B7280" />
-                </TouchableOpacity>
+                <View style={styles.pickerHeaderLeft}>
+                  <Text style={styles.memberPickerTitle}>Select Members</Text>
+                  {selectedMembers.length > 0 && (
+                    <View style={styles.selectionBadge}>
+                      <Text style={styles.selectionBadgeText}>
+                        {selectedMembers.length}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.pickerHeaderRight}>
+                  {selectedMembers.length > 0 && (
+                    <TouchableOpacity onPress={clearSelection} style={styles.clearButton}>
+                      <Text style={styles.clearButtonText}>Clear</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity onPress={handleCloseMemberPicker}>
+                    <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Search Input */}
@@ -353,23 +388,45 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
                 )}
               </View>
 
-              <ScrollView style={styles.memberPickerContent}>
-                {getFilteredMembers().map((member) => (
-                  <TouchableOpacity
-                    key={member.id}
-                    style={styles.memberPickerItem}
-                    onPress={() => selectMember(member)}
-                  >
-                    <View style={styles.memberPickerItemContent}>
-                      <MaterialCommunityIcons name="account" size={20} color="#6B46C1" />
-                      <View style={styles.memberPickerItemText}>
-                        <Text style={styles.memberPickerItemName}>{member.name}</Text>
-                        <Text style={styles.memberPickerItemPhone}>{member.phone}</Text>
-                      </View>
-                    </View>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color="#9CA3AF" />
+              {/* Select All Button */}
+              {getFilteredMembers().length > 0 && (
+                <View style={styles.selectAllContainer}>
+                  <TouchableOpacity onPress={selectAllFiltered} style={styles.selectAllButton}>
+                    <MaterialCommunityIcons name="checkbox-multiple-marked" size={18} color="#6B46C1" />
+                    <Text style={styles.selectAllText}>Select All</Text>
                   </TouchableOpacity>
-                ))}
+                </View>
+              )}
+
+              <ScrollView style={styles.memberPickerContent}>
+                {getFilteredMembers().map((member) => {
+                  const isSelected = selectedMembers.some(m => m.id === member.id);
+                  return (
+                    <TouchableOpacity
+                      key={member.id}
+                      style={[
+                        styles.memberPickerItem,
+                        isSelected && styles.memberPickerItemSelected
+                      ]}
+                      onPress={() => toggleMemberSelection(member)}
+                    >
+                      <View style={styles.memberPickerItemContent}>
+                        <View style={[
+                          styles.checkbox,
+                          isSelected && styles.checkboxSelected
+                        ]}>
+                          {isSelected && (
+                            <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" />
+                          )}
+                        </View>
+                        <View style={styles.memberInfoContainer}>
+                          <Text style={styles.memberPickerItemName}>{member.name}</Text>
+                          <Text style={styles.memberPickerItemPhone}>{member.phone}</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
                 {getFilteredMembers().length === 0 && (
                   <View style={styles.noResultsContainer}>
                     <MaterialCommunityIcons name="account-search" size={48} color="#D1D5DB" />
@@ -379,6 +436,22 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
                   </View>
                 )}
               </ScrollView>
+
+              {/* Add Members Button */}
+              <View style={styles.addMembersFooter}>
+                <TouchableOpacity
+                  onPress={confirmAddMembers}
+                  style={[
+                    styles.confirmAddButton,
+                    selectedMembers.length === 0 && styles.confirmAddButtonDisabled
+                  ]}
+                  disabled={selectedMembers.length === 0}
+                >
+                  <Text style={styles.confirmAddButtonText}>
+                    Add {selectedMembers.length > 0 ? `${selectedMembers.length} ` : ''}Member{selectedMembers.length !== 1 ? 's' : ''}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </KeyboardAvoidingView>
         </Modal>
@@ -440,7 +513,6 @@ const styles = StyleSheet.create({
   saveButtonDisabled: {
     backgroundColor: '#CBD5E0', 
   },
-  // Modified groupInfoCard to just show the name
   groupNameCard: {
     marginHorizontal: 20,
     marginTop: 20,
@@ -474,39 +546,41 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
-  // New Styles for Member Stats Cards
+  // Improved Member Stats Cards - Icon left, number below, text at bottom
   memberStatsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginHorizontal: 20,
-    marginTop: 16, // Space between group name card and stats cards
-    marginBottom: 20, // Space before the members list starts
+    marginTop: 16,
+    marginBottom: 20,
   },
   statCard: {
-    flex: 1, // Distribute space evenly
+    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+    marginHorizontal: 5,
+  },
+  statContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 5, // Small space between the two cards
+    marginBottom: 8,
   },
   statCount: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: '#111827',
-    marginTop: 8,
+    marginLeft: 10,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
-    marginTop: 4,
-    textAlign: 'center',
+    fontWeight: '500',
   },
   content: {
     flex: 1,
@@ -582,14 +656,6 @@ const styles = StyleSheet.create({
   addMemberButtonTextDisabled: {
     color: '#9CA3AF', 
   },
-  pendingSelectionText: {
-    fontSize: 14,
-    color: '#EF4444', 
-    textAlign: 'center',
-    marginTop: -10, 
-    marginBottom: 20,
-    paddingHorizontal: 10,
-  },
   groupLimitReachedText: {
     fontSize: 14,
     color: '#EF4444', 
@@ -598,10 +664,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontWeight: '500',
   },
-  bottomSpacer: {
-    paddingBottom: 20, 
-  },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -611,7 +673,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '80%',
+    maxHeight: '85%',
     flex: 1, 
   },
   memberPickerHeader: {
@@ -621,17 +683,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  pickerHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   memberPickerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
   },
+  selectionBadge: {
+    marginLeft: 10,
+    backgroundColor: '#6B46C1',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    minWidth: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectionBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  pickerHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  clearButton: {
+    marginRight: 16,
+  },
+  clearButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 20,
-    marginBottom: 12,
+    marginTop: 12,
+    marginBottom: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: '#F9FAFB',
@@ -645,6 +742,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
   },
+  selectAllContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  selectAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  selectAllText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B46C1',
+  },
   memberPickerContent: {
     flex: 1,
   },
@@ -657,13 +768,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
+  memberPickerItemSelected: {
+    backgroundColor: '#F9FAFB',
+  },
   memberPickerItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  memberPickerItemText: {
-    marginLeft: 12,
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  checkboxSelected: {
+    backgroundColor: '#6B46C1',
+    borderColor: '#6B46C1',
+  },
+  memberInfoContainer: {
     flex: 1,
   },
   memberPickerItemName: {
@@ -686,6 +813,27 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontSize: 16,
     marginTop: 12,
+  },
+  addMembersFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  confirmAddButton: {
+    backgroundColor: '#6B46C1',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  confirmAddButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  confirmAddButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

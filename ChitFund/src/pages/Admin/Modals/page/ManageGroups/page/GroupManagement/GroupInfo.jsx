@@ -3,17 +3,16 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   StyleSheet,
   Alert,
   Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import pageStyles from '../../ManageGsty'; // Assuming this path is correct
-import EditModal from './EditModal'; // Assuming this path is correct
-import MemberRegistration from './MemberRegistration'; // Assuming this path is correct
-import PaymentD from './PaymentD'; // Import the new PaymentD modal
-import AuctionW from './AuctionW'; // Import the new Auction Winner modal
+import pageStyles from '../../ManageGsty';
+import MemberRegistration from './Page/MemberRegistration'; 
+import EditModal from './Modal/EditModal'; 
+import PaymentD from './Modal/PaymentD';
+import AuctionW from './Modal/AuctionW'; 
 
 const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [currentMonth, setCurrentMonth] = useState(0); // 0 = current, -1 = previous
