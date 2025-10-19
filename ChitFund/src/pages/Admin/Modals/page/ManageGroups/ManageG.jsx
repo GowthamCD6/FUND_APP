@@ -5,6 +5,8 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  Modal,
+  Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './ManageGsty';
@@ -17,6 +19,8 @@ const ManageGroups = ({onBack}) => {
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [showGroupDetails, setShowGroupDetails] = useState(false);
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [longPressedGroup, setLongPressedGroup] = useState(null);
 
   // Sample data - replace with actual API calls
   const sampleGroups = [
@@ -116,7 +120,7 @@ const ManageGroups = ({onBack}) => {
     loadGroups();
   }, []);
 
-   const loadGroups = async () => {
+  const loadGroups = async () => {
     try {
       const response = await ApiService.makeRequest('/admin/groups/getGroups', {
         method: 'GET',
@@ -142,12 +146,6 @@ const ManageGroups = ({onBack}) => {
     }
   };
 
-  //   const loadGroups = () => {
-  //   // Simulate API call delay
-  //   setTimeout(() => {
-  //     setGroups(sampleGroups);
-  //   }, 1000);
-  // }
   const onRefresh = () => {
     setRefreshing(true);
     loadGroups();
@@ -185,6 +183,97 @@ const ManageGroups = ({onBack}) => {
     setShowGroupDetails(true);
   };
 
+  const handleLongPress = group => {
+    if (group.status === 'Not Started') {
+      setLongPressedGroup(group);
+      setShowActionModal(true);
+    }
+  };
+
+  const handleActivateGroup = async () => {
+    setShowActionModal(false);
+    
+    Alert.alert(
+      'Activate Group',
+      `Are you sure you want to activate "${longPressedGroup.name}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => setLongPressedGroup(null),
+        },
+        {
+          text: 'Activate',
+          style: 'default',
+          onPress: async () => {
+            try {
+              // Add your API call here to activate the group
+              // const response = await ApiService.makeRequest('/admin/groups/activate', {
+              //   method: 'POST',
+              //   body: JSON.stringify({ groupId: longPressedGroup.id }),
+              // });
+              
+              // For now, update locally
+              setGroups(prevGroups =>
+                prevGroups.map(g =>
+                  g.id === longPressedGroup.id
+                    ? {...g, status: 'Active'}
+                    : g
+                )
+              );
+              
+              Alert.alert('Success', 'Group activated successfully');
+              setLongPressedGroup(null);
+            } catch (error) {
+              console.error('Error activating group:', error);
+              Alert.alert('Error', 'Failed to activate group');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteGroup = async () => {
+    setShowActionModal(false);
+    
+    Alert.alert(
+      'Delete Group',
+      `Are you sure you want to delete "${longPressedGroup.name}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => setLongPressedGroup(null),
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Add your API call here to delete the group
+              // const response = await ApiService.makeRequest('/admin/groups/delete', {
+              //   method: 'DELETE',
+              //   body: JSON.stringify({ groupId: longPressedGroup.id }),
+              // });
+              
+              // For now, update locally
+              setGroups(prevGroups =>
+                prevGroups.filter(g => g.id !== longPressedGroup.id)
+              );
+              
+              Alert.alert('Success', 'Group deleted successfully');
+              setLongPressedGroup(null);
+            } catch (error) {
+              console.error('Error deleting group:', error);
+              Alert.alert('Error', 'Failed to delete group');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const formatDate = dateString => {
     if (!dateString) return 'Not Set';
     const date = new Date(dateString);
@@ -209,106 +298,112 @@ const ManageGroups = ({onBack}) => {
   };
 
   const renderGroupCard = ({item}) => (
-    <TouchableOpacity
-      style={styles.groupCard}
-      onPress={() => openGroupDetails(item)}
-      activeOpacity={0.7}>
-      {/* Header with Group Name and Arrow */}
-      <View style={styles.groupCardHeader}>
-        <View style={styles.groupNameContainer}>
-          <Text style={styles.groupName}>{item.name}</Text>
-          <View
-            style={[
-              styles.statusBadge,
-              {backgroundColor: getStatusColor(item.status)},
-            ]}>
-            <MaterialCommunityIcons
-              name="clock-outline"
-              size={10}
-              color="#FFFFFF"
-            />
-            <Text style={styles.statusText}>
-              {item.status === 'Not Started' ? 'NOT STARTED' : 'ACTIVE'}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.arrowButton}>
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={24}
-            color="#9CA3AF"
-          />
-        </View>
-      </View>
-
-      {/* Card Content */}
-      <View style={styles.groupCardContent}>
-        {/* Members and Amount Info */}
-        <View style={styles.groupInfoRow}>
-          <View style={styles.groupInfoItem}>
-            <MaterialCommunityIcons
-              name="account-group"
-              size={16}
-              color="#6B7280"
-            />
-            <Text style={styles.groupInfoText}>
-              {item.totalMembers} Members
-            </Text>
-          </View>
-          <View style={styles.groupInfoItem}>
-            <MaterialCommunityIcons
-              name="currency-inr"
-              size={16}
-              color="#6B7280"
-            />
-            <Text style={styles.groupInfoText}>
-              {formatCurrency(item.monthlyAmount)}/month
-            </Text>
-          </View>
-        </View>
-
-        {/* Progress Section - Only for Active Groups */}
-        {item.status === 'Active' && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressText}>
-                {item.completedCycles}/{item.totalCycles} Cycles
-              </Text>
-              <Text style={styles.progressPercentage}>
-                {getProgressPercentage(item.completedCycles, item.totalCycles)}%
-              </Text>
-            </View>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${getProgressPercentage(
-                      item.completedCycles,
-                      item.totalCycles,
-                    )}%`,
-                  },
-                ]}
+    <View style={styles.groupCard}>
+      <TouchableOpacity
+        onLongPress={() => handleLongPress(item)}
+        delayLongPress={500}
+        activeOpacity={1}
+        style={{flex: 1}}>
+        {/* Header with Group Name and Arrow */}
+        <View style={styles.groupCardHeader}>
+          <View style={styles.groupNameContainer}>
+            <Text style={styles.groupName}>{item.name}</Text>
+            <View
+              style={[
+                styles.statusBadge,
+                {backgroundColor: getStatusColor(item.status)},
+              ]}>
+              <MaterialCommunityIcons
+                name="clock-outline"
+                size={10}
+                color="#FFFFFF"
               />
+              <Text style={styles.statusText}>
+                {item.status === 'Not Started' ? 'NOT STARTED' : 'ACTIVE'}
+              </Text>
             </View>
           </View>
-        )}
-
-        {/* Footer with Date and Collection Amount */}
-        <View style={styles.groupCardFooter}>
-          <Text style={styles.groupDate}>
-            {item.status === 'Active'
-              ? `Next Due: ${formatDate(item.nextDueDate)}`
-              : `Start Date: ${formatDate(item.startDate)}`}
-          </Text>
-          <Text style={styles.groupAmount}>
-            {item.status === 'Active'
-              ? `${formatCurrency(item.collectedAmount)} collected`
-              : `${formatCurrency(item.groupAmount)} total`}
-          </Text>
+          <TouchableOpacity 
+            style={styles.arrowButton}
+            onPress={() => openGroupDetails(item)}
+            activeOpacity={0.6}>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={24}
+              color="#9CA3AF"
+            />
+          </TouchableOpacity>
         </View>
-      </View>
-    </TouchableOpacity>
+
+        {/* Card Content */}
+        <View style={styles.groupCardContent}>
+          {/* Members and Amount Info */}
+          <View style={styles.groupInfoRow}>
+            <View style={styles.groupInfoItem}>
+              <MaterialCommunityIcons
+                name="account-group"
+                size={16}
+                color="#6B7280"
+              />
+              <Text style={styles.groupInfoText}>
+                {item.totalMembers} Members
+              </Text>
+            </View>
+            <View style={styles.groupInfoItem}>
+              <MaterialCommunityIcons
+                name="currency-inr"
+                size={16}
+                color="#6B7280"
+              />
+              <Text style={styles.groupInfoText}>
+                {formatCurrency(item.monthlyAmount)}/month
+              </Text>
+            </View>
+          </View>
+
+          {/* Progress Section - Only for Active Groups */}
+          {item.status === 'Active' && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressText}>
+                  {item.completedCycles}/{item.totalCycles} Cycles
+                </Text>
+                <Text style={styles.progressPercentage}>
+                  {getProgressPercentage(item.completedCycles, item.totalCycles)}%
+                </Text>
+              </View>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${getProgressPercentage(
+                        item.completedCycles,
+                        item.totalCycles,
+                      )}%`,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* Footer with Date and Collection Amount */}
+          <View style={styles.groupCardFooter}>
+            <Text style={styles.groupDate}>
+              {item.status === 'Active'
+                ? `Next Due: ${formatDate(item.nextDueDate)}`
+                : `Start Date: ${formatDate(item.startDate)}`}
+            </Text>
+            <Text style={styles.groupAmount}>
+              {item.status === 'Active'
+                ? `${formatCurrency(item.collectedAmount)} collected`
+                : `${formatCurrency(item.groupAmount)} total`}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 
   const getTabCounts = () => {
@@ -403,6 +498,68 @@ const ManageGroups = ({onBack}) => {
           </View>
         )}
       />
+
+      {/* Action Modal */}
+      <Modal
+        visible={showActionModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowActionModal(false);
+          setLongPressedGroup(null);
+        }}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setShowActionModal(false);
+            setLongPressedGroup(null);
+          }}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Group Actions</Text>
+              <Text style={styles.modalSubtitle}>
+                {longPressedGroup?.name}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalActionButton}
+              onPress={handleActivateGroup}>
+              <MaterialCommunityIcons
+                name="play-circle"
+                size={24}
+                color="#10B981"
+              />
+              <Text style={styles.modalActionText}>Activate Group</Text>
+            </TouchableOpacity>
+
+            <View style={styles.modalDivider} />
+
+            <TouchableOpacity
+              style={styles.modalActionButton}
+              onPress={handleDeleteGroup}>
+              <MaterialCommunityIcons
+                name="delete"
+                size={24}
+                color="#EF4444"
+              />
+              <Text style={[styles.modalActionText, styles.deleteText]}>
+                Delete Group
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={() => {
+                setShowActionModal(false);
+                setLongPressedGroup(null);
+              }}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };

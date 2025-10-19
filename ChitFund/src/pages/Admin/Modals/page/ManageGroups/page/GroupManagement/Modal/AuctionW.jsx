@@ -7,6 +7,7 @@ import {
   Modal,
   StyleSheet,
   Alert,
+  Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -37,7 +38,7 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave }) => {
         datePicked: '',
       });
     }
-  }, [initialWinnerData, visible]); // Reset form when modal opens or initial data changes
+  }, [initialWinnerData, visible]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -193,7 +194,8 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave }) => {
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Save Details</Text>
+              <MaterialCommunityIcons name="check" size={20} color="#FFFFFF" />
+              <Text style={styles.saveButtonText}>Save</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -311,17 +313,20 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    marginBottom: -7,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '500',
     color: '#212121',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Roboto',
   },
   modalContent: {
     padding: 20,
+    paddingBottom: 0,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   label: {
     fontSize: 14,
@@ -389,17 +394,16 @@ const styles = StyleSheet.create({
   },
   modalActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     gap: 12,
   },
   cancelButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    flex: 1,
     backgroundColor: '#F3F4F6',
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
   },
   cancelButtonText: {
@@ -408,11 +412,14 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   saveButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    flex: 2,
     backgroundColor: '#6B46C1',
+    paddingVertical: 14,
+    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   saveButtonText: {
     fontSize: 16,
@@ -420,7 +427,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  // Date Picker Specific Styles (reused from GroupInfoAdmin)
+  // Date Picker Specific Styles
   datePickerModal: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,

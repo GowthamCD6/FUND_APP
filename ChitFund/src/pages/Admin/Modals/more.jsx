@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform, Alert } from 'react-native';
+import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
 import CreateGroup from './page/CreateGroup/CreateG.jsx';
 import AddUser from './page/AddUser/AddU.jsx';
 import ManageGroups from './page/ManageGroups/ManageG.jsx';
+import ManageU from './page/ManageUser/ManageU.jsx';
 
 const MoreModal = ({ visible, onClose }) => {
-  const navigation = useNavigation();
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showManageGroups, setShowManageGroups] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [showManageUser, setShowManageUser] = useState(false);
 
   const handleCreateGroupPress = () => {
     setShowCreateGroup(true);
@@ -25,31 +24,8 @@ const MoreModal = ({ visible, onClose }) => {
     setShowAddUser(true);
   };
 
-  const handleBackupPress = () => {
-    Alert.alert('Backup Data', 'This feature will be available soon!');
-    onClose();
-  };
-
-  const handleLogoutPress = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await AsyncStorage.clear();
-            onClose();
-            navigation.navigate('Welcome');
-          }
-        }
-      ]
-    );
+  const handleManageUserPress = () => {
+    setShowManageUser(true);
   };
 
   const handleCreateGroupBack = () => {
@@ -63,17 +39,17 @@ const MoreModal = ({ visible, onClose }) => {
   const handleAddUserBack = () => {
     setShowAddUser(false);
   };
+  const handleManageUserBack = () => {
+    setShowManageUser(false);
+  };
 
   const handleModalClose = () => {
     setShowCreateGroup(false);
     setShowManageGroups(false);
     setShowAddUser(false);
+    setShowManageUser(false);
     onClose();
   };
-
-
-
-
 
   if (showCreateGroup) {
     return (
@@ -114,6 +90,19 @@ const MoreModal = ({ visible, onClose }) => {
     );
   }
 
+  if (showManageUser) {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={visible}
+        onRequestClose={handleModalClose}
+      >
+        <ManageU onBack={handleManageUserBack} />
+      </Modal>
+    );
+  }
+
   return (
   <Modal
     animationType="slide"
@@ -138,16 +127,16 @@ const MoreModal = ({ visible, onClose }) => {
             onPress={handleManageGroupsPress}
           />
           <MenuItem
+            icon={<MaterialCommunityIcons name="account-cog" size={26} color="#6B46C1" />}
+            title="Manage User"
+            description="View or manage existing users"
+            onPress={handleManageUserPress}
+          />
+          <MenuItem
             icon={<MaterialCommunityIcons name="account-plus" size={26} color="#6B46C1" />}
             title="Add User"
             description="Add a new user to the system"
             onPress={handleAddUserPress}
-          />
-          <MenuItem
-            icon={<MaterialCommunityIcons name="logout" size={26} color="#EF4444" />}
-            title="Logout"
-            description="Sign out from admin account"
-            onPress={handleLogoutPress}
           />
         </View>
         {/* X Button */}

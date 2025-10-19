@@ -268,6 +268,86 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
+
+// Modal Overlay and Content
+modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: 20,
+},
+modalContent: {
+  backgroundColor: '#FFFFFF',
+  borderRadius: 16,
+  width: '100%',
+  maxWidth: 400,
+  elevation: 8,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.25,
+  shadowRadius: 12,
+  overflow: 'hidden',
+},
+modalHeader: {
+  paddingHorizontal: 20,
+  paddingTop: 24,
+  paddingBottom: 16,
+  borderBottomWidth: 1,
+  borderBottomColor: '#E5E7EB',
+  backgroundColor: '#F9FAFB',
+},
+modalTitle: {
+  fontSize: 22,
+  fontWeight: '500',
+  color: '#1F2937',
+  marginBottom: 6,
+  fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+},
+modalSubtitle: {
+  fontSize: 15,
+  color: '#6B7280',
+  fontWeight: '500',
+  fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
+},
+modalActionButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 18,
+  paddingHorizontal: 20,
+  backgroundColor: '#FFFFFF',
+},
+modalActionText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#1F2937',
+  marginLeft: 12,
+  flex: 1,
+  fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
+},
+deleteText: {
+  color: '#EF4444',
+},
+modalDivider: {
+  height: 1,
+  backgroundColor: '#E5E7EB',
+  marginHorizontal: 0,
+},
+modalCancelButton: {
+  paddingVertical: 16,
+  paddingHorizontal: 20,
+  borderTopWidth: 1,
+  borderTopColor: '#E5E7EB',
+  alignItems: 'center',
+  backgroundColor: '#F9FAFB',
+  marginTop: 0,
+},
+modalCancelText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#6B7280',
+  fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
+},
 });
 
 export default styles;

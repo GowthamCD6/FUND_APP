@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -26,7 +27,7 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
         elathThalupadi: initialPaymentData.elathThalupadi?.toString() || '',
         commission: initialPaymentData.commission?.toString() || '',
       });
-      setErrors({}); // Clear errors when modal opens
+      setErrors({});
     }
   }, [visible, initialPaymentData]);
 
@@ -43,7 +44,6 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
     if (!paymentFormData.currentMonthAmount || parseFloat(paymentFormData.currentMonthAmount) <= 0) {
       newErrors.currentMonthAmount = 'Please enter a valid monthly amount';
     }
-    // Elath Thalupadi and Commission are optional, so no strict validation for empty
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -72,7 +72,9 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
               <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
           </View>
+          
           <ScrollView contentContainerStyle={styles.modalContent}>
+            {/* Amount to be Paid This Month */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Amount to be Paid This Month *</Text>
               <View style={styles.inputWithIcon}>
@@ -91,8 +93,10 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
               )}
             </View>
 
+            {/* Discount and Commission Row */}
             <View style={styles.inputRow}>
-              <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+              {/* Discount */}
+              <View style={styles.halfInputGroup}>
                 <Text style={styles.label}>
                   <MaterialCommunityIcons name="trending-down" size={14} color="#6B7280" />
                   {' '}எலத் தள்ளுபடி (Discount)
@@ -110,7 +114,8 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
                 </View>
               </View>
 
-              <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+              {/* Commission */}
+              <View style={styles.halfInputGroup}>
                 <Text style={styles.label}>
                   <MaterialCommunityIcons name="percent" size={14} color="#6B7280" />
                   {' '}கசர் (Commission)
@@ -129,6 +134,8 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
               </View>
             </View>
           </ScrollView>
+
+          {/* Action Buttons */}
           <View style={styles.modalActions}>
             <TouchableOpacity
               style={styles.cancelButton}
@@ -173,27 +180,33 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '500',
     color: '#212121',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Roboto',
   },
   modalContent: {
     padding: 20,
-    paddingBottom: 0, // Adjusted to prevent extra padding above buttons
+    paddingBottom: 0,
   },
   inputGroup: {
     marginBottom: 20,
   },
   inputRow: {
     flexDirection: 'row',
-    marginHorizontal: -8, // Counteract internal padding if any
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  halfInputGroup: {
+    flex: 1,
+    marginHorizontal: 6,
   },
   label: {
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
     marginBottom: 8,
+    lineHeight: 20,
   },
   inputWithIcon: {
     position: 'relative',
@@ -211,7 +224,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 8,
-    paddingLeft: 36, // Make space for the prefix
+    paddingLeft: 36,
     paddingRight: 16,
     paddingVertical: 12,
     fontSize: 16,

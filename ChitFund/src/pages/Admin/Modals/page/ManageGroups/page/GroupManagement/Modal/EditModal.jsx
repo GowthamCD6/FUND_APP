@@ -278,9 +278,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 21,
+    fontWeight: '500',
     color: '#212121',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Roboto',
+    
   },
   editGroupModalContent: {
     padding: 20,
