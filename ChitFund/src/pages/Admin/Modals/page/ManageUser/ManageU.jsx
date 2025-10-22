@@ -290,65 +290,116 @@ const ManageU = ({onBack}) => {
         onRequestClose={() => setShowEditModal(false)}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={customStyles.modalOverlay}>
+          style={customStyles.centeredModalOverlay}> 
           <View style={customStyles.modalContainer}>
             <View style={customStyles.modalHeader}>
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <MaterialCommunityIcons
-                  name="account-edit-outline"
-                  size={28}
-                  color="#6B7280"
-                  style={{marginRight: 10}}
-                />
-                <Text style={customStyles.modalTitle}>Edit User</Text>
-              </View>
               <TouchableOpacity onPress={() => setShowEditModal(false)}>
                 <MaterialCommunityIcons
-                  name="close"
+                  name="arrow-left"
                   size={24}
-                  color="#6B7280"
+                  color="#000000"
                 />
               </TouchableOpacity>
+              <Text style={customStyles.modalTitle}>Edit User</Text>
+              <View style={{width: 24}} />
             </View>
             <View style={customStyles.modalHeaderSeparator} />
-            <View style={customStyles.modalContent}>
+            
+            <ScrollView style={customStyles.modalContent}>
+              {/* Full Name */}
               <View style={customStyles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name</Text>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="account-outline"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Full Name</Text>
+                  <Text style={styles.requiredStar}>*</Text>
+                </View>
                 <TextInput
                   style={styles.textInput}
                   value={editedName}
                   onChangeText={setEditedName}
+                  placeholder="Enter full name"
+                  placeholderTextColor="#9CA3AF"
                 />
               </View>
+
+              {/* Phone Number */}
               <View style={customStyles.inputGroup}>
-                <Text style={styles.inputLabel}>Phone Number</Text>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="phone-outline"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Phone Number</Text>
+                  <Text style={styles.requiredStar}>*</Text>
+                </View>
                 <TextInput
                   style={styles.textInput}
                   value={editedPhone}
                   onChangeText={setEditedPhone}
                   keyboardType="phone-pad"
+                  placeholder="Enter phone number"
+                  placeholderTextColor="#9CA3AF"
                 />
               </View>
+
+              {/* Nickname */}
               <View style={customStyles.inputGroup}>
-                <Text style={styles.inputLabel}>Nickname</Text>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="card-account-details-outline"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Nickname</Text>
+                  <Text style={styles.requiredStar}>*</Text>
+                </View>
                 <TextInput
                   style={styles.textInput}
                   value={editedNickname}
                   onChangeText={setEditedNickname}
+                  placeholder="Enter nickname"
+                  placeholderTextColor="#9CA3AF"
                 />
               </View>
+
+              {/* Birth Year */}
               <View style={customStyles.inputGroup}>
-                <Text style={styles.inputLabel}>Birth Year</Text>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="calendar-blank"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Birth Year</Text>
+                  <Text style={styles.requiredStar}>*</Text>
+                </View>
                 <TextInput
                   style={styles.textInput}
                   value={editedDateOfYear}
                   onChangeText={setEditedDateOfYear}
                   keyboardType="numeric"
                   maxLength={4}
+                  placeholder="YYYY"
+                  placeholderTextColor="#9CA3AF"
                 />
               </View>
+
+              {/* User Role */}
               <View style={customStyles.inputGroup}>
-                <Text style={styles.inputLabel}>User Role</Text>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="account-group-outline"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>User Role</Text>
+                  <Text style={styles.requiredStar}>*</Text>
+                </View>
                 <View style={customStyles.typeSelector}>
                   <TouchableOpacity
                     style={[
@@ -390,18 +441,19 @@ const ManageU = ({onBack}) => {
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
+            </ScrollView>
+
             <View style={customStyles.modalActions}>
               <TouchableOpacity
-                style={customStyles.cancelButton}
-                onPress={() => setShowEditModal(false)}>
-                <Text style={customStyles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={customStyles.saveButton}
+                style={customStyles.saveButtonFull}
                 onPress={confirmEdit}>
+                <MaterialCommunityIcons
+                  name="plus-circle"
+                  size={20}
+                  color="#FFFFFF"
+                />
                 <Text style={[customStyles.buttonText, {color: '#FFFFFF'}]}>
-                  Save Changes
+                  Update User
                 </Text>
               </TouchableOpacity>
             </View>
@@ -409,60 +461,89 @@ const ManageU = ({onBack}) => {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* ===== VIEW MODAL (Styled to match the image) ===== */}
+      {/* ===== VIEW MODAL ===== */}
       <Modal
         visible={showViewModal}
         transparent={true}
         animationType="slide"
         onRequestClose={() => setShowViewModal(false)}>
-        <View style={customStyles.modalOverlay}>
+        <View style={customStyles.centeredModalOverlay}> 
           <View style={customStyles.viewModalContainer}>
             <View style={customStyles.modalHeader}>
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <MaterialCommunityIcons
-                  name="card-account-details-outline"
-                  size={28}
-                  color="#6B7280"
-                  style={{marginRight: 10}}
-                />
-                <Text style={customStyles.viewModalTitle}>User Details</Text>
-              </View>
               <TouchableOpacity onPress={() => setShowViewModal(false)}>
                 <MaterialCommunityIcons
-                  name="close"
+                  name="arrow-left"
                   size={24}
-                  color="#6B7280"
+                  color="#000000"
                 />
               </TouchableOpacity>
+              <Text style={customStyles.viewModalTitle}>User Details</Text>
+              <View style={{width: 24}} />
             </View>
             <View style={customStyles.modalHeaderSeparator} />
-            <View style={customStyles.modalContent}>
+            
+            <ScrollView style={customStyles.modalContent}>
+              {/* Full Name */}
               <View style={customStyles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name</Text>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="account-outline"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Full Name</Text>
+                </View>
                 <View style={customStyles.viewDataContainer}>
                   <Text style={customStyles.viewDataText}>
                     {selectedUser?.name}
                   </Text>
                 </View>
               </View>
+
+              {/* Phone Number */}
               <View style={customStyles.inputGroup}>
-                <Text style={styles.inputLabel}>Phone Number</Text>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="phone-outline"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Phone Number</Text>
+                </View>
                 <View style={customStyles.viewDataContainer}>
                   <Text style={customStyles.viewDataText}>
                     {selectedUser?.phone}
                   </Text>
                 </View>
               </View>
+
+              {/* Nickname */}
               <View style={customStyles.inputGroup}>
-                <Text style={styles.inputLabel}>Nickname</Text>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="card-account-details-outline"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Nickname</Text>
+                </View>
                 <View style={customStyles.viewDataContainer}>
                   <Text style={customStyles.viewDataText}>
                     {selectedUser?.nickname || 'N/A'}
                   </Text>
                 </View>
               </View>
+
+              {/* Birth Year */}
               <View style={customStyles.inputGroup}>
-                <Text style={styles.inputLabel}>Birth Year</Text>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="calendar-blank"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Birth Year</Text>
+                </View>
                 <View style={customStyles.viewDataContainer}>
                   <Text style={customStyles.viewDataText}>
                     {selectedUser?.dateOfBirth
@@ -471,18 +552,28 @@ const ManageU = ({onBack}) => {
                   </Text>
                 </View>
               </View>
+
+              {/* Member Since */}
               <View style={customStyles.inputGroup}>
-                <Text style={styles.inputLabel}>Member Since</Text>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="calendar-check"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Member Since</Text>
+                </View>
                 <View style={customStyles.viewDataContainer}>
                   <Text style={customStyles.viewDataText}>
                     {selectedUser?.joinedDate}
                   </Text>
                 </View>
               </View>
-            </View>
-            <View style={customStyles.viewModalActions}>
+            </ScrollView>
+
+            <View style={customStyles.modalActions}> 
               <TouchableOpacity
-                style={customStyles.closeButton}
+                style={customStyles.saveButtonFull} // Reusing the saveButtonFull style for consistency
                 onPress={() => setShowViewModal(false)}>
                 <Text style={[customStyles.buttonText, {color: '#FFFFFF'}]}>
                   Close
@@ -499,7 +590,7 @@ const ManageU = ({onBack}) => {
         transparent={true}
         animationType="fade"
         onRequestClose={() => setShowDeleteModal(false)}>
-        <View style={customStyles.modalOverlay}>
+        <View style={customStyles.centeredModalOverlay}>
           <View style={customStyles.deleteModal}>
             <MaterialCommunityIcons
               name="alert-circle-outline"
@@ -561,18 +652,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
   },
   inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 8,
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#000000',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
+  },
+  requiredStar: {
+    fontSize: 15,
+    color: '#EF4444',
+    marginLeft: 2,
   },
   textInput: {
     height: 52,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 15,
     color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
 });
 
@@ -580,7 +677,6 @@ const customStyles = StyleSheet.create({
   searchContainer: {
     padding: 16,
     backgroundColor: '#FFFFFF',
-    // borderBottomWidth and borderBottomColor removed
   },
   searchBar: {
     flexDirection: 'row',
@@ -630,11 +726,15 @@ const customStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+
   },
   userPhone: {
     fontSize: 14,
     color: '#6B7280',
     marginTop: 2,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+
   },
   menuButton: {
     padding: 4,
@@ -655,23 +755,26 @@ const customStyles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  centeredModalOverlay: { 
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    width: '90%',
+    width: '90%', // Reduced width
     maxHeight: '85%',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 5,
+      height: -5,
     },
     shadowOpacity: 0.1,
     shadowRadius: 15,
     elevation: 10,
-    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -684,7 +787,7 @@ const customStyles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#000000',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   modalHeaderSeparator: {
@@ -693,10 +796,17 @@ const customStyles = StyleSheet.create({
   },
   modalContent: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 15,
+  },
+  labelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 6,
   },
   typeSelector: {
     flexDirection: 'row',
@@ -709,27 +819,29 @@ const customStyles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
   },
   typeOptionActive: {
     borderColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
   },
   typeOptionText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
   },
   modalActions: {
-    flexDirection: 'row',
     padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    gap: 12,
+    paddingTop: 0,
+    marginTop: -5,
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
   },
   cancelButton: {
     flex: 1,
@@ -744,6 +856,15 @@ const customStyles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     backgroundColor: '#3B82F6',
+  },
+  saveButtonFull: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#0066FF',
   },
 
   // Menu Modal
@@ -818,16 +939,16 @@ const customStyles = StyleSheet.create({
     gap: 12,
   },
 
-  // --- View Modal Styles ---
+  // View Modal Styles
   viewModalContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: 24, 
     width: '90%',
-    maxHeight: '82%',
+    maxHeight: '85%',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 5,
+      height: -5,
     },
     shadowOpacity: 0.1,
     shadowRadius: 15,
@@ -850,16 +971,18 @@ const customStyles = StyleSheet.create({
     fontSize: 16,
     color: '#1F2937',
   },
-  viewModalActions: {
+  viewModalActions: { 
     padding: 20,
     marginTop: 8,
   },
-  closeButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 14,
-    paddingVertical: 16,
+  closeButtonFull: { 
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -25,
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#0066FF',
   },
 });
 
