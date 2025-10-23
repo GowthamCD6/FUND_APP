@@ -22,14 +22,50 @@ const MemberDetails = ({ route, navigation }) => {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [isCurrentMonth, setIsCurrentMonth] = useState(true);
   
-  // Extended sample data with payment history
+  // Extended sample data with payment history and auction winners
   const [groupData, setGroupData] = useState({
     ...group,
     members: group?.members?.map(member => ({
       ...member,
-      paymentHistory: generatePaymentHistory(member.id)
+      paymentHistory: generatePaymentHistory(member.id),
+      auctionWins: generateAuctionWins(member.id) // New: Auction wins data
     })) || []
   });
+
+  // Generate auction wins for each member
+  function generateAuctionWins(memberId) {
+    const wins = [];
+    const startDate = new Date(group.startDate);
+    const currentDate = new Date();
+    
+    let date = new Date(startDate);
+    let winCount = 0;
+    
+    while (date <= currentDate && winCount < 3) { // Simulate up to 3 wins per member
+      const month = date.getMonth();
+      const year = date.getFullYear();
+      const monthName = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      
+      // Randomly decide if member won auction this month (20% chance)
+      if (Math.random() > 0.8) {
+        const auctionAmount = group.monthlyAmount * group.members.length;
+        wins.push({
+          month: month,
+          year: year,
+          monthName: monthName,
+          auctionAmount: auctionAmount,
+          bidAmount: Math.floor(auctionAmount * (0.85 + Math.random() * 0.1)), // 85-95% of total
+          receivedAmount: Math.floor(auctionAmount * (0.85 + Math.random() * 0.1)),
+          auctionDate: new Date(year, month, Math.floor(Math.random() * 28) + 1).toISOString(),
+        });
+        winCount++;
+      }
+      
+      date.setMonth(date.getMonth() + 1);
+    }
+    
+    return wins;
+  }
 
   // Generate payment history for each member
   function generatePaymentHistory(memberId) {
@@ -71,10 +107,10 @@ const MemberDetails = ({ route, navigation }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'paid': return '#10B981';      // Light green
-      case 'pending': return '#F59E0B';   // Light orange
-      case 'overdue': return '#EF4444';   // Light red
-      default: return '#6B7280';          // Light gray
+      case 'paid': return '#10B981';
+      case 'pending': return '#F59E0B';
+      case 'overdue': return '#EF4444';
+      default: return '#6B7280';
     }
   };
 
@@ -105,18 +141,29 @@ const MemberDetails = ({ route, navigation }) => {
     });
   };
 
+  // Check if member is auction winner for selected month
+  const isAuctionWinnerForMonth = (member) => {
+    return member.auctionWins?.find(
+      win => win.month === selectedMonth && win.year === selectedYear
+    );
+  };
+
   const getCurrentMonthPayments = () => {
     return groupData.members.map(member => {
       const currentMonthPayment = member.paymentHistory.find(
         payment => payment.month === selectedMonth && payment.year === selectedYear
       );
+      const auctionWin = isAuctionWinnerForMonth(member);
+      
       return {
         ...member,
         currentPayment: currentMonthPayment || {
           status: 'pending',
           amount: group.monthlyAmount,
           monthName: `${months[selectedMonth]} ${selectedYear}`
-        }
+        },
+        isAuctionWinner: !!auctionWin,
+        auctionDetails: auctionWin || null
       };
     });
   };
@@ -155,26 +202,60 @@ const MemberDetails = ({ route, navigation }) => {
   };
 
   const renderMemberCard = ({ item }) => {
-    const stats = getMonthlyStats();
     return (
       <TouchableOpacity 
-        style={styles.memberCard}
+        style={[
+          styles.memberCard,
+          item.isAuctionWinner && styles.auctionWinnerCard
+        ]}
         onPress={() => setSelectedMember(item)}
         activeOpacity={0.7}
       >
         {/* Member Info Section */}
         <View style={styles.memberHeader}>
           <View style={styles.memberAvatarContainer}>
-            <View style={styles.memberAvatar}>
+            <View style={[
+              styles.memberAvatar,
+              item.isAuctionWinner && styles.auctionWinnerAvatar
+            ]}>
               <Text style={styles.memberAvatarText}>
                 {item.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
               </Text>
             </View>
+            {/* Crown Icon for Auction Winner */}
+            {item.isAuctionWinner && (
+              <View style={styles.crownContainer}>
+                <MaterialCommunityIcons 
+                  name="crown" 
+                  size={18} 
+                  color="#FFD700" 
+                />
+              </View>
+            )}
           </View>
           <View style={styles.memberInfo}>
-            <Text style={styles.memberName}>{item.name}</Text>
+            <View style={styles.nameRow}>
+              <Text style={styles.memberName}>{item.name}</Text>
+              {item.isAuctionWinner && (
+                <View style={styles.winnerBadge}>
+                  <Text style={styles.winnerBadgeText}>Winner</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.memberPhone}>{item.phone}</Text>
-            <Text style={styles.memberAmount}>{formatCurrency(item.currentPayment.amount)}</Text>
+            <View style={styles.amountRow}>
+              <Text style={styles.memberAmount}>{formatCurrency(item.currentPayment.amount)}</Text>
+              
+              {/* Auction Amount Display */}
+              {item.isAuctionWinner && item.auctionDetails && (
+                <View style={styles.auctionAmountContainer}>
+                  <MaterialCommunityIcons name="trophy" size={12} color="#F59E0B" />
+                  <Text style={styles.auctionAmountText}>
+                    {formatCurrency(item.auctionDetails.receivedAmount)}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
           <View style={styles.statusAndArrowContainer}>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.currentPayment.status) }]}>
@@ -213,8 +294,43 @@ const MemberDetails = ({ route, navigation }) => {
     </View>
   );
 
+  const renderAuctionHistoryItem = ({ item }) => (
+    <View style={styles.auctionHistoryItem}>
+      <View style={styles.auctionHistoryHeader}>
+        <View style={styles.auctionHistoryTitleRow}>
+          <MaterialCommunityIcons name="trophy" size={16} color="#F59E0B" />
+          <Text style={styles.auctionHistoryMonth}>{item.monthName}</Text>
+        </View>
+        <View style={styles.auctionWinBadge}>
+          <MaterialCommunityIcons name="crown" size={10} color="#FFFFFF" />
+          <Text style={styles.auctionWinBadgeText}>WON</Text>
+        </View>
+      </View>
+      <View style={styles.auctionHistoryDetails}>
+        <View style={styles.auctionAmountRow}>
+          <Text style={styles.auctionLabel}>Auction Amount:</Text>
+          <Text style={styles.auctionAmount}>{formatCurrency(item.auctionAmount)}</Text>
+        </View>
+        <View style={styles.auctionAmountRow}>
+          <Text style={styles.auctionLabel}>Bid Amount:</Text>
+          <Text style={styles.auctionBidAmount}>{formatCurrency(item.bidAmount)}</Text>
+        </View>
+        <View style={styles.auctionAmountRow}>
+          <Text style={styles.auctionLabel}>Received:</Text>
+          <Text style={styles.auctionReceivedAmount}>{formatCurrency(item.receivedAmount)}</Text>
+        </View>
+        <Text style={styles.auctionDate}>Won on: {formatDate(item.auctionDate)}</Text>
+      </View>
+    </View>
+  );
+
   const stats = getMonthlyStats();
-  const currentMonthPayments = getCurrentMonthPayments();
+  // Sort to put auction winners at the top
+  const currentMonthPayments = getCurrentMonthPayments().sort((a, b) => {
+    if (a.isAuctionWinner && !b.isAuctionWinner) return -1;
+    if (!a.isAuctionWinner && b.isAuctionWinner) return 1;
+    return 0;
+  });
 
   return (
     <View style={styles.container}>
@@ -285,8 +401,13 @@ const MemberDetails = ({ route, navigation }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>{selectedMember?.name}</Text>
+              <View style={styles.modalHeaderLeft}>
+                <View style={styles.modalTitleRow}>
+                  <Text style={styles.modalTitle}>{selectedMember?.name}</Text>
+                  {selectedMember?.isAuctionWinner && (
+                    <MaterialCommunityIcons name="crown" size={20} color="#FFD700" />
+                  )}
+                </View>
                 <Text style={styles.modalSubtitle}>{selectedMember?.phone}</Text>
               </View>
               <TouchableOpacity

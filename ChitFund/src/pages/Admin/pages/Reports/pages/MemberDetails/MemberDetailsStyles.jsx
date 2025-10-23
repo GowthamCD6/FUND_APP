@@ -5,7 +5,7 @@ const {width} = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     backgroundColor: '#FFFFFF',
@@ -13,7 +13,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f1ff',
+    borderBottomColor: '#e8e8e8ff',
   },
   headerContent: {
     flexDirection: 'row',
@@ -34,10 +34,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   monthSelector: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 12,
+    paddingBottom: 14,
   },
   monthHeader: {
     flexDirection: 'row',
@@ -84,8 +84,8 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    paddingBottom: 16,
-    backgroundColor: '#F8FAFC',
+    paddingBottom: 6,
+    backgroundColor: '#FFFFFF',
     gap: 12,
   },
   statCard: {
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 8,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     flexGrow: 1,
   },
   memberCard: {
@@ -269,10 +269,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '600',
     color: '#1F2937',
     marginBottom: 4,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+
   },
   modalSubtitle: {
     fontSize: 14,
@@ -285,11 +287,13 @@ const styles = StyleSheet.create({
   },
   historyTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#1F2937',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 15,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+
   },
   historyList: {
     paddingHorizontal: 20,
@@ -311,8 +315,10 @@ const styles = StyleSheet.create({
   },
   historyMonth: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+
   },
   historyStatusBadge: {
     flexDirection: 'row',
@@ -349,7 +355,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 20,
     gap: 8,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
   },
@@ -370,9 +376,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   pickerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '500',
     color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+
   },
   monthList: {
     paddingHorizontal: 20,
@@ -382,19 +390,96 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     marginBottom: 8,
+
   },
   selectedMonthItem: {
     backgroundColor: '#6B46C1',
   },
   monthItemText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '500',
     color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+
   },
   selectedMonthItemText: {
     color: '#FFFFFF',
     fontWeight: '600',
   },
+
+
+// Auction Winner Card Styles
+auctionWinnerCard: {
+  borderWidth: 2,
+  borderColor: '#FFD700',
+  backgroundColor: '#FFFBF0',
+},
+auctionWinnerAvatar: {
+  backgroundColor: '#F59E0B',
+},
+crownContainer: {
+  position: 'absolute',
+  top: -8,
+  right: -4,
+  backgroundColor: '#FFFFFF',
+  borderRadius: 10,
+  padding: 2,
+  elevation: 3,
+  shadowColor: '#FFD700',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 3,
+},
+nameRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  marginBottom: 2,
+},
+winnerBadge: {
+  backgroundColor: '#F59E0B',
+  paddingHorizontal: 6,
+  paddingVertical: 2,
+  borderRadius: 8,
+},
+winnerBadgeText: {
+  fontSize: 9,
+  fontWeight: '700',
+  color: '#FFFFFF',
+  fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Roboto',
+},
+amountRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 8,
+},
+auctionAmountContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 4,
+  backgroundColor: '#FEF3C7',
+  paddingHorizontal: 8,
+  paddingVertical: 3,
+  borderRadius: 6,
+},
+auctionAmountText: {
+  fontSize: 11,
+  fontWeight: '600',
+  color: '#92400E',
+  fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Roboto',
+},
+
+// Modal Styles
+modalHeaderLeft: {
+  flex: 1,
+},
+modalTitleRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  marginBottom: 4,
+},
 });
 
 export default styles;

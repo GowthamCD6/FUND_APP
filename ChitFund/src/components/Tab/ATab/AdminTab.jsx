@@ -11,8 +11,8 @@ import AdminMoreModal from '../../../pages/Admin/Modals/more.jsx';
 import { API_URL } from '../../../utils/env.js';
 import { useAuth } from '../../../utils/AuthContext.js';
 
-export const ADMIN_PHONE = '123456789';
-export const ADMIN_PASSWORD = 'abc';
+export const ADMIN_PHONE = '1234567890';
+export const ADMIN_PASSWORD = '2000';
 
 // Admin Dashboard Screens
 function DashboardScreen() {
