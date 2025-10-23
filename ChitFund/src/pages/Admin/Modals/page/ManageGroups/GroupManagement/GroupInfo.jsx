@@ -8,7 +8,7 @@ import {
   Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import pageStyles from '../../ManageGsty';
+import pageStyles from '../ManageGsty';
 import MemberRegistration from './Page/MemberRegistration'; 
 import EditModal from './Modal/EditModal'; 
 import PaymentD from './Modal/PaymentD';

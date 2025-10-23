@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './ManageGsty';
-import GroupInfoAdmin from './page/GroupManagement/GroupInfo.jsx';
+import GroupInfoAdmin from './GroupManagement/GroupInfo.jsx';
 import ApiService from '../../../../../services/ApiService';
 
 const ManageGroups = ({onBack}) => {
