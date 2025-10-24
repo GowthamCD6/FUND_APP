@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import Dashboard from '../../../pages/Admin/pages/Dashboard/Dashboard.jsx';
 import Reports from '../../../pages/Admin/pages/Reports/Reports.jsx';
 import AdminMoreModal from '../../../pages/Admin/Modals/more.jsx';
+import Settings from '../../../pages/Admin/pages/Settings/setting.jsx';
 import { API_URL } from '../../../utils/env.js';
 import { useAuth } from '../../../utils/AuthContext.js';
 
@@ -50,53 +51,7 @@ function ReportsScreen() {
 }
 
 function SettingsScreen() {
-  const navigation = useNavigation();
-  const AuthContext = useAuth();
-
-  const handleLogout = async () => {
-
-    try {
-      const response = await AuthContext.logout();
-      if (response.success) {
-        await AsyncStorage.clear();
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Welcome' }],
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  return (
-    <View style={styles.screenContainer}>
-      <View style={styles.gradientHeader}>
-        <Text style={styles.headerTitle}>Admin Settings</Text>
-      </View>
-      <View style={styles.screenContent}>
-        <Text style={styles.screenText}>System configuration</Text>
-        <View style={{ marginTop: 20, alignItems: 'center' }}>
-          <Text style={{ fontSize: 14, color: '#666' }}>Admin Phone: {ADMIN_PHONE}</Text>
-          <Text style={{ fontSize: 14, color: '#666' }}>Admin Password: {ADMIN_PASSWORD}</Text>
-        </View>
-        <TouchableOpacity
-          style={{
-            marginTop: 30,
-            backgroundColor: '#EF4444',
-            paddingHorizontal: 20,
-            paddingVertical: 12,
-            borderRadius: 8
-          }}
-          onPress={handleLogout}
-        >
-          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600', textAlign: 'center' }}>
-            Logout
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  return <Settings />;
 }
 
 const Tab = createBottomTabNavigator();
