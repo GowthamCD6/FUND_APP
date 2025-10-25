@@ -12,19 +12,20 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BlockU from './pages/BlockUser/BlockU';
+import UserL from './pages/UserLocation/UserL'
 
-const SettingsScreen = () => {
-  // Navigation hook is preserved from your code
+const Settings = () => {
+  const [showBlockU, setShowBlockU] = useState(false);
+  const [showUserL, setShowUserL] = useState(false);
   const navigation = useNavigation();
 
-  // State management for user data is preserved from your code
   const [userData, setUserData] = useState({
     name: 'Admin',
     role: 'Super Admin',
     phone: '+91 XXXXXXXXXX',
   });
 
-  // useEffect and data loading logic are preserved from your code
   useEffect(() => {
     loadUserData();
   }, []);
@@ -44,7 +45,6 @@ const SettingsScreen = () => {
     }
   };
 
-  // Logout logic is preserved from your code
   const handleLogout = async () => {
     try {
       await AsyncStorage.clear();
@@ -57,7 +57,6 @@ const SettingsScreen = () => {
     }
   };
 
-  // The entire settings data structure is preserved from your code
   const settingSections = [
     {
       title: 'Account',
@@ -154,6 +153,38 @@ const SettingsScreen = () => {
           iconColor: '#555555',
           onPress: () => {},
         },
+        {
+          icon: 'account-cancel',
+          title: 'Block User',
+          subtitle: 'Manage blocked users list',
+          iconColor: '#EF4444',
+          onPress: () => {
+            setShowBlockU(true);
+          },
+        },
+      ],
+    },
+    {
+      title: 'Location & Tracking',
+      items: [
+        {
+          icon: 'map-marker-radius',
+          title: 'User Location Map',
+          subtitle: 'View locations of group members',
+          iconColor: '#10B981',
+          onPress: () => {
+            setShowUserL(true);
+          },
+        },
+        {
+          icon: 'crosshairs-gps',
+          title: 'Location Sharing',
+          subtitle: 'Control location sharing preferences',
+          iconColor: '#555555',
+          onPress: () => {
+            // navigation.navigate('LocationS')
+          },
+        },
       ],
     },
     {
@@ -194,22 +225,25 @@ const SettingsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      {/* HEADER: Styled like the image */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
-        {/* PROFILE SECTION: Styled like the image, using data from your state */}
-        <View style={styles.profileSection}>
+      
+      {showBlockU ? (
+        <BlockU onClose={() => setShowBlockU(false)} />
+      ) : showUserL ? (
+        <UserL onClose={() => setShowUserL(false)} />
+      ) : (
+        <View style={{flex: 1}}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Settings</Text>
+          </View>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}>
+          <View style={styles.profileSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarInitial}>
               {userData.name.charAt(0).toUpperCase()}
@@ -220,7 +254,6 @@ const SettingsScreen = () => {
           <Text style={styles.userStatus}>{userData.role}</Text>
         </View>
 
-        {/* SETTINGS SECTIONS: Styled like the image, rendering content from your data */}
         {settingSections.map((section, sectionIndex) => (
           <View key={sectionIndex} style={styles.settingsContainer}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
@@ -238,7 +271,6 @@ const SettingsScreen = () => {
                       />
                       <View style={styles.menuItemTextBox}>
                         <Text style={styles.menuItemText}>{item.title}</Text>
-                        {/* Subtitle from your code is included */}
                         {item.subtitle && (
                           <Text style={styles.menuItemSubtitle}>
                             {item.subtitle}
@@ -261,7 +293,6 @@ const SettingsScreen = () => {
           </View>
         ))}
 
-        {/* FOLLOW & LOGOUT SECTIONS: Preserved from your code, styled to match */}
         <View style={styles.followSection}>
           <Text style={styles.followText}>Follow us, to stay updated</Text>
           <View style={styles.socialIcons}>
@@ -292,9 +323,9 @@ const SettingsScreen = () => {
           </TouchableOpacity>
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>
-      </ScrollView>
-
-      {/* BOTTOM NAVIGATION: Styled exactly like the image */}
+          </ScrollView>
+        </View>
+      )}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem}>
           <MaterialCommunityIcons name="home" size={28} color="#555" />
@@ -320,8 +351,11 @@ const SettingsScreen = () => {
   );
 };
 
-// STYLESHEET: Completely re-written to match the target UI from the image
 const styles = StyleSheet.create({
+  blockUserContainer: {
+    flex: 1,
+    backgroundColor: '#F7F7F7',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F7F7F7',
@@ -335,7 +369,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EFEFEF',
     marginTop: 20,
-
   },
   backButton: {marginRight: 16},
   headerTitle: {fontSize: 20, fontWeight: 'bold', color: '#000'},
@@ -446,7 +479,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     bottom: 25,
     borderWidth: 4,
-    borderColor: '#FFFFFF', // Use white to create the cutout effect against the grey body
+    borderColor: '#FFFFFF',
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
@@ -455,4 +488,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SettingsScreen;
+export default Settings;

@@ -51,7 +51,7 @@ function ReportsScreen() {
 }
 
 function SettingsScreen() {
-  return <Settings />;
+  return <Settings/>;
 }
 
 const Tab = createBottomTabNavigator();
