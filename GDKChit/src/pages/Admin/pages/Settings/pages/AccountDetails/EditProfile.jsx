@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
 	},
 	backButton: {
 		padding: 4,
-        marginTop: -6,
+        marginTop: 9,
 
 	},
 	headerTitle: {
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 		color: '#212121',
 		marginLeft: 16,
-        marginTop: -6,
+        marginTop: 6,
 		fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
 	},
 	separator: {
