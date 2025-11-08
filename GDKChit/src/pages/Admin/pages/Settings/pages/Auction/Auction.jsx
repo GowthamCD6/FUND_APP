@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,18 @@ import {
   Dimensions,
   Modal,
   FlatList,
+  Vibration,
+  Easing,
+  PermissionsAndroid,
 } from 'react-native';
+
+// Create animation values outside the component
+const createDiceAnimations = () => ({
+  scale: new Animated.Value(1),
+  rotateX: new Animated.Value(0),
+  rotateY: new Animated.Value(0),
+  rotateZ: new Animated.Value(0)
+});
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { width, height } = Dimensions.get('window');
@@ -32,13 +43,22 @@ const AuctionScreen = ({ onBack }) => {
   const [diceValue, setDiceValue] = useState(1);
   const [isDiceRolling, setIsDiceRolling] = useState(false);
   
+  // Animation refs
+  // Additional component state goes here
+  
   // Modal state
   const [showResultModal, setShowResultModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [auctionResult, setAuctionResult] = useState(null);
   
-  // Animation
-  const rotateAnim = new Animated.Value(0);
+  // Animation Values
+  // Animation Values
+  const diceAnimations = useMemo(() => ({
+    scale: new Animated.Value(1),
+    rotateX: new Animated.Value(0),
+    rotateY: new Animated.Value(0),
+    rotateZ: new Animated.Value(0)
+  }), []);
 
   // Mock data - Based on app structure
   const availableGroups = [
@@ -156,8 +176,16 @@ const AuctionScreen = ({ onBack }) => {
 
   const startAuction = () => {
     if (activeTab === 'betting') {
+      // Reset all bids to initial amount when starting auction
+      const initialBid = 90000; // Starting bid amount
+      const updatedParticipants = participants.map(p => ({
+        ...p,
+        bid: initialBid,
+        canBid: true // Flag to track if participant can still bid
+      }));
+      setParticipants(updatedParticipants);
       setIsAuctionActive(true);
-      setTimeRemaining(300);
+      setTimeRemaining(300); // 5 minutes
     } else {
       rollDice();
     }
@@ -166,8 +194,9 @@ const AuctionScreen = ({ onBack }) => {
   const endAuction = () => {
     setIsAuctionActive(false);
     if (activeTab === 'betting') {
+      // Find the winner with lowest bid
       const winner = participants.reduce((prev, current) => 
-        (prev.bid > current.bid) ? prev : current
+        (prev.bid < current.bid) ? prev : current
       );
       setAuctionResult({
         type: 'betting',
@@ -179,33 +208,127 @@ const AuctionScreen = ({ onBack }) => {
   };
 
   const rollDice = () => {
+    if (isDiceRolling) return; // Prevent multiple rolls
     setIsDiceRolling(true);
-    
-    Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      { iterations: 10 }
-    ).start();
 
-    setTimeout(() => {
-      const randomValue = Math.floor(Math.random() * 6) + 1;
-      setDiceValue(randomValue);
-      setIsDiceRolling(false);
+    // Vibration feedback
+    if (Platform.OS === 'ios') {
+      Vibration.vibrate(500);
+    } else if (Platform.OS === 'android') {
+      Vibration.vibrate([0, 50, 50, 50, 50, 50]);
+    }
+
+    // Generate final dice value
+    const finalValue = Math.floor(Math.random() * 6) + 1;
+
+    // Create a sequence of rapid rotations
+    const spinAnimations = [];
+    const spins = 5; // Number of complete spins
+    const spinDuration = 200; // Duration of each spin in ms
+
+    for (let i = 0; i < spins; i++) {
+      // Add scale animation
+      spinAnimations.push(
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(diceAnimations.scale, {
+              toValue: 1.2,
+              duration: spinDuration / 2,
+              useNativeDriver: true,
+              easing: Easing.inOut(Easing.cubic),
+            }),
+            Animated.timing(diceAnimations.scale, {
+              toValue: 1,
+              duration: spinDuration / 2,
+              useNativeDriver: true,
+              easing: Easing.inOut(Easing.cubic),
+            }),
+          ]),
+          // Rotation animations
+          Animated.timing(diceAnimations.rotateX, {
+            toValue: (i + 1) * 4 * Math.PI, // Multiple full rotations
+            duration: spinDuration,
+            useNativeDriver: true,
+            easing: Easing.inOut(Easing.cubic),
+          }),
+          Animated.timing(diceAnimations.rotateY, {
+            toValue: (i + 1) * 4 * Math.PI,
+            duration: spinDuration,
+            useNativeDriver: true,
+            easing: Easing.inOut(Easing.cubic),
+          }),
+          Animated.timing(diceAnimations.rotateZ, {
+            toValue: (i + 1) * 4 * Math.PI,
+            duration: spinDuration,
+            useNativeDriver: true,
+            easing: Easing.inOut(Easing.cubic),
+          }),
+        ])
+      );
+    }
+
+    // Add final landing animation with bounce effect
+    spinAnimations.push(
+      Animated.parallel([
+        Animated.spring(diceAnimations.scale, {
+          toValue: 1,
+          friction: 3,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.spring(diceAnimations.rotateX, {
+          toValue: 0,
+          friction: 3,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.spring(diceAnimations.rotateY, {
+          toValue: 0,
+          friction: 3,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.spring(diceAnimations.rotateZ, {
+          toValue: 0,
+          friction: 3,
+          tension: 40,
+          useNativeDriver: true,
+        })
+      ])
+    );
+
+    // Animate dice values rapidly during spin
+    let rollCount = 0;
+    const maxRolls = 20;
+    const valueChangeInterval = setInterval(() => {
+      if (rollCount < maxRolls) {
+        setDiceValue(Math.floor(Math.random() * 6) + 1);
+        rollCount++;
+      } else {
+        clearInterval(valueChangeInterval);
+      }
+    }, 100);
+
+    // Run the animation sequence
+    Animated.sequence(spinAnimations).start(() => {
+      clearInterval(valueChangeInterval);
+      setDiceValue(finalValue);
       
-      const winnerIndex = (randomValue - 1) % participants.length;
+      // Determine winner
+      const winnerIndex = (finalValue - 1) % participants.length;
       const winner = participants[winnerIndex];
-      
-      setAuctionResult({
-        type: 'random',
-        winner: winner,
-        diceValue: randomValue
-      });
-      setShowResultModal(true);
-      rotateAnim.setValue(0);
-    }, 1000);
+
+      // Short pause before showing result
+      setTimeout(() => {
+        setIsDiceRolling(false);
+        setAuctionResult({
+          type: 'random',
+          winner: winner,
+          diceValue: finalValue
+        });
+        setShowResultModal(true);
+      }, 500);
+    });
   };
 
   const submitBid = () => {
@@ -213,6 +336,35 @@ const AuctionScreen = ({ onBack }) => {
       Alert.alert('Error', 'Please enter a valid bid amount');
       return;
     }
+
+    const newBid = parseFloat(bettingAmount);
+    const lowestCurrentBid = Math.min(...participants.map(p => p.bid));
+
+    // Check if bid is valid (must be lower than current lowest bid)
+    if (newBid >= lowestCurrentBid) {
+      Alert.alert('Error', `Bid must be lower than current lowest bid (${formatCurrency(lowestCurrentBid)})`);
+      return;
+    }
+
+    // Check if bid is a valid decrement (must be in 1000s)
+    if (newBid % 1000 !== 0) {
+      Alert.alert('Error', 'Bid amount must be in multiples of 1,000');
+      return;
+    }
+
+    // Update the participant's bid
+    const updatedParticipants = participants.map(p => {
+      if (p.id === selectedMembers[0].id) { // Update for the current user
+        return {
+          ...p,
+          bid: newBid,
+          canBid: true
+        };
+      }
+      return p;
+    });
+
+    setParticipants(updatedParticipants);
     Alert.alert('Success', 'Bid submitted successfully!');
     setBettingAmount('');
   };
@@ -511,25 +663,46 @@ const AuctionScreen = ({ onBack }) => {
       <Text style={styles.diceTitle}>Lucky Draw</Text>
       <Text style={styles.diceSubtitle}>Roll the dice to select winner</Text>
       
-      <Animated.View 
-        style={[
-          styles.dice,
-          {
-            transform: [{
-              rotate: rotateAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '360deg'],
-              })
-            }]
-          }
-        ]}
-      >
-        <MaterialCommunityIcons 
-          name={`dice-${diceValue}`} 
-          size={60} 
-          color={isDiceRolling ? "#6B46C1" : "#2D1B69"} 
-        />
-      </Animated.View>
+      <View style={styles.diceWrapper}>
+        <Animated.View 
+          style={[
+            styles.dice,
+            {
+              transform: [
+                { scale: diceAnimations.scale },
+                {
+                  rotateX: diceAnimations.rotateX.interpolate({
+                    inputRange: [0, 2 * Math.PI],
+                    outputRange: ['0deg', '360deg']
+                  })
+                },
+                {
+                  rotateY: diceAnimations.rotateY.interpolate({
+                    inputRange: [0, 2 * Math.PI],
+                    outputRange: ['0deg', '360deg']
+                  })
+                },
+                {
+                  rotateZ: diceAnimations.rotateZ.interpolate({
+                    inputRange: [0, 2 * Math.PI],
+                    outputRange: ['0deg', '360deg']
+                  })
+                }
+              ]
+            }
+          ]}
+        >
+          <MaterialCommunityIcons 
+            name={`dice-${diceValue}`} 
+            size={60} 
+            color={isDiceRolling ? "#6B46C1" : "#2D1B69"} 
+          />
+        </Animated.View>
+        
+        {isDiceRolling && (
+          <View style={styles.diceShadow} />
+        )}
+      </View>
       
       <TouchableOpacity 
         style={[styles.rollButton, isDiceRolling && styles.disabledButton]}
@@ -597,51 +770,124 @@ const AuctionScreen = ({ onBack }) => {
     </ScrollView>
   );
 
-  const renderResultModal = () => (
-    <Modal
-      visible={showResultModal}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={() => setShowResultModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.resultModal}>
-          <View style={styles.resultHeader}>
-            <MaterialCommunityIcons 
-              name={auctionResult?.type === 'betting' ? "trophy" : "dice-6"} 
-              size={50} 
-              color="#FFD700" 
-            />
-            <Text style={styles.resultTitle}>
-              {auctionResult?.type === 'betting' ? 'Auction Winner!' : 'Lucky Winner!'}
-            </Text>
-          </View>
-          
-          <View style={styles.winnerSection}>
-            <View style={styles.winnerAvatar}>
-              <Text style={styles.winnerAvatarText}>{auctionResult?.winner?.avatar}</Text>
+  const renderResultModal = () => {
+    const [adminSelectedWinner, setAdminSelectedWinner] = useState(null);
+    
+    return (
+      <Modal
+        visible={showResultModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowResultModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.resultModal}>
+            <View style={styles.resultHeader}>
+              <MaterialCommunityIcons 
+                name={auctionResult?.type === 'betting' ? "trophy" : "dice-6"} 
+                size={50} 
+                color="#FFD700" 
+              />
+              <Text style={styles.resultTitle}>
+                {auctionResult?.type === 'betting' ? 'Auction Result' : 'Lucky Winner!'}
+              </Text>
             </View>
-            <Text style={styles.winnerName}>{auctionResult?.winner?.name}</Text>
-            {auctionResult?.type === 'betting' ? (
-              <Text style={styles.winningAmount}>{formatCurrency(auctionResult?.amount)}</Text>
-            ) : (
-              <Text style={styles.diceResult}>Dice Value: {auctionResult?.diceValue}</Text>
+            
+            {auctionResult?.type === 'betting' && (
+              <View style={styles.winnerListSection}>
+                <Text style={styles.winnerListTitle}>Select Winner</Text>
+                <ScrollView style={styles.winnerList}>
+                  {participants
+                    .sort((a, b) => a.bid - b.bid) // Sort by lowest bid
+                    .map((participant) => (
+                      <TouchableOpacity
+                        key={participant.id}
+                        style={[
+                          styles.winnerOption,
+                          adminSelectedWinner?.id === participant.id && styles.selectedWinner
+                        ]}
+                        onPress={() => setAdminSelectedWinner(participant)}
+                      >
+                        <View style={styles.winnerAvatar}>
+                          <Text style={styles.winnerAvatarText}>{participant.avatar}</Text>
+                        </View>
+                        <View style={styles.winnerDetails}>
+                          <Text style={styles.winnerName}>{participant.name}</Text>
+                          <Text style={styles.winnerBid}>{formatCurrency(participant.bid)}</Text>
+                        </View>
+                        {adminSelectedWinner?.id === participant.id && (
+                          <MaterialCommunityIcons name="check-circle" size={24} color="#10B981" />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                </ScrollView>
+              </View>
             )}
-          </View>
 
-          <TouchableOpacity 
-            style={styles.continueButton}
-            onPress={() => {
-              setShowResultModal(false);
-              resetAuction();
-            }}
-          >
-            <Text style={styles.continueButtonText}>Continue</Text>
-          </TouchableOpacity>
+            {auctionResult?.type === 'random' && (
+              <View style={styles.winnerSection}>
+                <View style={styles.winnerAvatar}>
+                  <Text style={styles.winnerAvatarText}>{auctionResult?.winner?.avatar}</Text>
+                </View>
+                <Text style={styles.winnerName}>{auctionResult?.winner?.name}</Text>
+                <Text style={styles.diceResult}>Dice Value: {auctionResult?.diceValue}</Text>
+              </View>
+            )}
+
+            <View style={styles.modalActions}>
+              {auctionResult?.type === 'betting' ? (
+                <>
+                  <TouchableOpacity 
+                    style={[styles.actionButton, !adminSelectedWinner && styles.disabledButton]}
+                    onPress={() => {
+                      if (adminSelectedWinner) {
+                        // Update the auction result with admin's selection
+                        setAuctionResult({
+                          ...auctionResult,
+                          winner: adminSelectedWinner,
+                          amount: adminSelectedWinner.bid,
+                          isConfirmed: true
+                        });
+                        Alert.alert(
+                          'Winner Confirmed',
+                          `${adminSelectedWinner.name} has been declared as the winner with a bid of ${formatCurrency(adminSelectedWinner.bid)}`
+                        );
+                        setShowResultModal(false);
+                        resetAuction();
+                      }
+                    }}
+                    disabled={!adminSelectedWinner}
+                  >
+                    <Text style={styles.actionButtonText}>Confirm Winner</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowResultModal(false);
+                      setIsAuctionActive(true); // Resume auction
+                      setTimeRemaining(300); // Reset timer
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>Resume Auction</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.actionButton}
+                  onPress={() => {
+                    setShowResultModal(false);
+                    resetAuction();
+                  }}
+                >
+                  <Text style={styles.actionButtonText}>Continue</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
         </View>
-      </View>
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   // Main render
   return (
@@ -1175,6 +1421,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
   },
+  diceWrapper: {
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    perspective: 1000,
+  },
   dice: {
     width: 100,
     height: 100,
@@ -1182,12 +1436,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
     elevation: 3,
     shadowColor: '#6B46C1',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
+    backfaceVisibility: 'hidden',
+  },
+  diceShadow: {
+    position: 'absolute',
+    bottom: -10,
+    width: 80,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    transform: [{ scaleX: 0.8 }],
   },
   rollButton: {
     backgroundColor: '#6B46C1',
@@ -1240,9 +1503,9 @@ const styles = StyleSheet.create({
   resultModal: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 28,
-    alignItems: 'center',
-    width: width * 0.85,
+    padding: 24,
+    width: width * 0.9,
+    maxHeight: height * 0.8,
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -1259,50 +1522,100 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginTop: 10,
   },
-  winnerSection: {
-    alignItems: 'center',
+  winnerListSection: {
+    width: '100%',
     marginBottom: 20,
   },
+  winnerListTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  winnerList: {
+    maxHeight: height * 0.4,
+  },
+  winnerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    marginBottom: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  selectedWinner: {
+    borderColor: '#10B981',
+    backgroundColor: '#F0FDF4',
+  },
   winnerAvatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#6B46C1',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginRight: 12,
   },
   winnerAvatarText: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  winnerName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 6,
+  winnerDetails: {
+    flex: 1,
   },
-  winningAmount: {
+  winnerName: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  winnerBid: {
+    fontSize: 14,
+    fontWeight: '500',
     color: '#10B981',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    width: '100%',
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  actionButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  cancelButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   diceResult: {
     fontSize: 16,
     fontWeight: '600',
     color: '#6B46C1',
-  },
-  continueButton: {
-    backgroundColor: '#6B46C1',
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-  continueButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
 });
 
