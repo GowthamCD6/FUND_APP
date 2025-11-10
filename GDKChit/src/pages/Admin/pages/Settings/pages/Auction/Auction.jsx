@@ -14,21 +14,23 @@ import {
   FlatList,
   Vibration,
   Easing,
-  PermissionsAndroid,
+  PermissionsAndroid, // Although not strictly used in this snippet, kept as per original
 } from 'react-native';
 
-// Create animation values outside the component
-const createDiceAnimations = () => ({
-  scale: new Animated.Value(1),
-  rotateX: new Animated.Value(0),
-  rotateY: new Animated.Value(0),
-  rotateZ: new Animated.Value(0)
-});
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AnimationDebugPanel from '../../../../components/AnimationDebugger/AnimationDebugPanel';
 
 const { width, height } = Dimensions.get('window');
 
 const AuctionScreen = ({ onBack }) => {
+  // Debug state
+  const [showDebugger, setShowDebugger] = useState(false);
+  const [animationState, setAnimationState] = useState({
+    scale: 1,
+    rotateX: 0,
+    rotateY: 0,
+    rotateZ: 0
+  });
   // Main state
   const [activeTab, setActiveTab] = useState('betting');
   const [currentStep, setCurrentStep] = useState('setup');
@@ -39,12 +41,9 @@ const AuctionScreen = ({ onBack }) => {
   // Auction state
   const [bettingAmount, setBettingAmount] = useState('');
   const [isAuctionActive, setIsAuctionActive] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(300);
+  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes
   const [diceValue, setDiceValue] = useState(1);
   const [isDiceRolling, setIsDiceRolling] = useState(false);
-  
-  // Animation refs
-  // Additional component state goes here
   
   // Modal state
   const [showResultModal, setShowResultModal] = useState(false);
@@ -52,13 +51,20 @@ const AuctionScreen = ({ onBack }) => {
   const [auctionResult, setAuctionResult] = useState(null);
   
   // Animation Values
-  // Animation Values
   const diceAnimations = useMemo(() => ({
     scale: new Animated.Value(1),
     rotateX: new Animated.Value(0),
     rotateY: new Animated.Value(0),
     rotateZ: new Animated.Value(0)
   }), []);
+
+  // Convert degree to interpolated rotation string
+  const getInterpolatedRotation = (animatedValue) => {
+    return animatedValue.interpolate({
+      inputRange: [0, 360],
+      outputRange: ['0deg', '360deg'],
+    });
+  };
 
   // Mock data - Based on app structure
   const availableGroups = [
@@ -108,18 +114,18 @@ const AuctionScreen = ({ onBack }) => {
     }
   ];
 
-  // Timer effect
+  // Timer effect for betting auction
   useEffect(() => {
     let timer;
-    if (isAuctionActive && timeRemaining > 0) {
+    if (isAuctionActive && activeTab === 'betting' && timeRemaining > 0) {
       timer = setTimeout(() => {
         setTimeRemaining(timeRemaining - 1);
       }, 1000);
-    } else if (timeRemaining === 0 && isAuctionActive) {
+    } else if (timeRemaining === 0 && isAuctionActive && activeTab === 'betting') {
       endAuction();
     }
     return () => clearTimeout(timer);
-  }, [isAuctionActive, timeRemaining]);
+  }, [isAuctionActive, timeRemaining, activeTab]);
 
   // Utility functions
   const formatTime = (seconds) => {
@@ -150,7 +156,7 @@ const AuctionScreen = ({ onBack }) => {
       if (isSelected) {
         return prev.filter(m => m.id !== member.id);
       } else {
-        return [...prev, { ...member, currentBid: 0 }];
+        return [...prev, { ...member, currentBid: 0 }]; // Initialize currentBid
       }
     });
   };
@@ -167,7 +173,8 @@ const AuctionScreen = ({ onBack }) => {
 
     const auctionParticipants = selectedMembers.map(member => ({
       ...member,
-      bid: activeTab === 'betting' ? Math.floor(Math.random() * 5000) + 35000 : 0
+      // Initialize bid for betting, 0 for random (will be assigned a number later)
+      bid: activeTab === 'betting' ? 90000 : 0 // Starting bid for betting auction
     }));
     
     setParticipants(auctionParticipants);
@@ -176,18 +183,15 @@ const AuctionScreen = ({ onBack }) => {
 
   const startAuction = () => {
     if (activeTab === 'betting') {
-      // Reset all bids to initial amount when starting auction
-      const initialBid = 90000; // Starting bid amount
-      const updatedParticipants = participants.map(p => ({
-        ...p,
-        bid: initialBid,
-        canBid: true // Flag to track if participant can still bid
-      }));
-      setParticipants(updatedParticipants);
+      if (isAuctionActive) {
+        Alert.alert('Auction Running', 'The betting auction is already in progress.');
+        return;
+      }
       setIsAuctionActive(true);
       setTimeRemaining(300); // 5 minutes
     } else {
-      rollDice();
+      // For random, "Start Auction" button initiates the roll
+      rollDice(); 
     }
   };
 
@@ -195,6 +199,12 @@ const AuctionScreen = ({ onBack }) => {
     setIsAuctionActive(false);
     if (activeTab === 'betting') {
       // Find the winner with lowest bid
+      if (participants.length === 0) {
+        Alert.alert("Auction Ended", "No participants in the auction.");
+        setShowResultModal(false); // Don't show modal if no participants
+        resetAuction();
+        return;
+      }
       const winner = participants.reduce((prev, current) => 
         (prev.bid < current.bid) ? prev : current
       );
@@ -204,123 +214,189 @@ const AuctionScreen = ({ onBack }) => {
         amount: winner.bid
       });
     }
+    // For random, the result is set directly in rollDice function
     setShowResultModal(true);
   };
 
-  const rollDice = () => {
-    if (isDiceRolling) return; // Prevent multiple rolls
+  // Animation control functions
+  const [animationSpeed, setAnimationSpeed] = useState(1);
+  const [isAnimationPaused, setIsAnimationPaused] = useState(false);
+  const animationDuration = 2000; // Total animation duration in ms
+
+  const updateAnimationState = () => {
+    setAnimationState({
+      scale: diceAnimations.scale._value,
+      rotateX: diceAnimations.rotateX._value,
+      rotateY: diceAnimations.rotateY._value,
+      rotateZ: diceAnimations.rotateZ._value
+    });
+  };
+
+  const rollDice = (debugMode = false) => {
+    if (isDiceRolling && !debugMode) return;
     setIsDiceRolling(true);
 
     // Vibration feedback
-    if (Platform.OS === 'ios') {
-      Vibration.vibrate(500);
-    } else if (Platform.OS === 'android') {
-      Vibration.vibrate([0, 50, 50, 50, 50, 50]);
+    if (!debugMode) {
+      if (Platform.OS === 'ios') {
+        Vibration.vibrate([0, 30, 20, 30, 20, 30, 20]);
+      } else if (Platform.OS === 'android') {
+        Vibration.vibrate([0, 20, 15, 20, 15, 20, 15]);
+      }
     }
 
-    // Generate final dice value
+    // Generate final dice value and set initial position
     const finalValue = Math.floor(Math.random() * 6) + 1;
+    
+    // Reset animations to starting position
+    diceAnimations.scale.setValue(1.2); // Start slightly larger
+    diceAnimations.rotateX.setValue(0);
+    diceAnimations.rotateY.setValue(0);
+    diceAnimations.rotateZ.setValue(0);
 
-    // Create a sequence of rapid rotations
-    const spinAnimations = [];
-    const spins = 5; // Number of complete spins
-    const spinDuration = 200; // Duration of each spin in ms
-
-    for (let i = 0; i < spins; i++) {
-      // Add scale animation
-      spinAnimations.push(
-        Animated.parallel([
-          Animated.sequence([
-            Animated.timing(diceAnimations.scale, {
-              toValue: 1.2,
-              duration: spinDuration / 2,
-              useNativeDriver: true,
-              easing: Easing.inOut(Easing.cubic),
-            }),
-            Animated.timing(diceAnimations.scale, {
-              toValue: 1,
-              duration: spinDuration / 2,
-              useNativeDriver: true,
-              easing: Easing.inOut(Easing.cubic),
-            }),
-          ]),
-          // Rotation animations
-          Animated.timing(diceAnimations.rotateX, {
-            toValue: (i + 1) * 4 * Math.PI, // Multiple full rotations
-            duration: spinDuration,
+    // Helper function to create a single roll phase
+    const createRollPhase = (phase, totalPhases) => {
+      const progress = phase / totalPhases;
+      const intensity = 1 - progress; // Rolls become less intense over time
+      
+      return Animated.parallel([
+        // Scale bounce effect
+        Animated.sequence([
+          Animated.timing(diceAnimations.scale, {
+            toValue: 1 + (0.3 * intensity),
+            duration: 150,
+            easing: Easing.inOut(Easing.quad),
             useNativeDriver: true,
-            easing: Easing.inOut(Easing.cubic),
           }),
-          Animated.timing(diceAnimations.rotateY, {
-            toValue: (i + 1) * 4 * Math.PI,
-            duration: spinDuration,
+          Animated.timing(diceAnimations.scale, {
+            toValue: 0.8,
+            duration: 150,
+            easing: Easing.bounce,
             useNativeDriver: true,
-            easing: Easing.inOut(Easing.cubic),
+          })
+        ]),
+        // Horizontal rolling (mainly Y-axis)
+        Animated.timing(diceAnimations.rotateY, {
+          toValue: diceAnimations.rotateY._value + (360 * (1 + intensity)),
+          duration: 300,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        // Slight forward roll (X-axis)
+        Animated.timing(diceAnimations.rotateX, {
+          toValue: diceAnimations.rotateX._value + (90 * intensity),
+          duration: 300,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        // Small wobble (Z-axis)
+        Animated.sequence([
+          Animated.timing(diceAnimations.rotateZ, {
+            toValue: 30 * intensity,
+            duration: 150,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
           }),
           Animated.timing(diceAnimations.rotateZ, {
-            toValue: (i + 1) * 4 * Math.PI,
-            duration: spinDuration,
+            toValue: -30 * intensity,
+            duration: 150,
+            easing: Easing.inOut(Easing.quad),
             useNativeDriver: true,
-            easing: Easing.inOut(Easing.cubic),
-          }),
+          })
         ])
-      );
+      ]);
+    };
+
+    // Create the main rolling sequence
+    const rollPhases = [];
+    const numPhases = 4;
+    
+    for (let i = 0; i < numPhases; i++) {
+      rollPhases.push(createRollPhase(i, numPhases));
     }
 
-    // Add final landing animation with bounce effect
-    spinAnimations.push(
-      Animated.parallel([
-        Animated.spring(diceAnimations.scale, {
-          toValue: 1,
-          friction: 3,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-        Animated.spring(diceAnimations.rotateX, {
-          toValue: 0,
-          friction: 3,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-        Animated.spring(diceAnimations.rotateY, {
-          toValue: 0,
-          friction: 3,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-        Animated.spring(diceAnimations.rotateZ, {
-          toValue: 0,
-          friction: 3,
-          tension: 40,
-          useNativeDriver: true,
-        })
-      ])
-    );
+    // Final settling animation
+    const settleSequence = Animated.parallel([
+      // Return to normal scale with a small bounce
+      Animated.spring(diceAnimations.scale, {
+        toValue: 1,
+        friction: 4,
+        tension: 50,
+        useNativeDriver: true,
+      }),
+      // Settle to the final rotation for the correct dice face
+      Animated.spring(diceAnimations.rotateX, {
+        toValue: finalValue <= 3 ? 0 : 180,
+        friction: 5,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.spring(diceAnimations.rotateY, {
+        toValue: [1, 4].includes(finalValue) ? 0 : ([2, 5].includes(finalValue) ? 90 : -90),
+        friction: 5,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      // Stabilize any wobble
+      Animated.spring(diceAnimations.rotateZ, {
+        toValue: 0,
+        friction: 4,
+        tension: 45,
+        useNativeDriver: true,
+      })
+    ]);
 
-    // Animate dice values rapidly during spin
+    // Combine all animations into the final sequence
+    const ludoRollAnimation = Animated.sequence([
+      ...rollPhases,
+      settleSequence
+    ]);
+
+    // Rapid face changes during rolling
     let rollCount = 0;
-    const maxRolls = 20;
-    const valueChangeInterval = setInterval(() => {
-      if (rollCount < maxRolls) {
+    const faceChangeInterval = setInterval(() => {
+      if (rollCount < 12) {
         setDiceValue(Math.floor(Math.random() * 6) + 1);
         rollCount++;
       } else {
-        clearInterval(valueChangeInterval);
+        clearInterval(faceChangeInterval);
       }
     }, 100);
 
-    // Run the animation sequence
-    Animated.sequence(spinAnimations).start(() => {
-      clearInterval(valueChangeInterval);
+      // Run the animation with rapid face changes
+    let currentFace = 1;
+    const faceInterval = setInterval(() => {
+      if (isDiceRolling) {
+        currentFace = (currentFace % 6) + 1;
+        setDiceValue(currentFace);
+      }
+    }, 100);
+
+    ludoRollAnimation.start(() => {
+      clearInterval(faceInterval);
       setDiceValue(finalValue);
       
-      // Determine winner
-      const winnerIndex = (finalValue - 1) % participants.length;
-      const winner = participants[winnerIndex];
-
-      // Short pause before showing result
+      // Add a small delay before showing the result
       setTimeout(() => {
         setIsDiceRolling(false);
+        
+        if (participants.length === 0) {
+          Alert.alert("Error", "No participants available for the random draw.");
+          setShowResultModal(false);
+          resetAuction();
+          return;
+        }
+
+        const winnerIndex = (finalValue - 1) % participants.length;
+        const winner = participants[winnerIndex];
+
+        // Vibrate to indicate completion
+        if (Platform.OS === 'ios') {
+          Vibration.vibrate([0, 50]);
+        } else {
+          Vibration.vibrate(50);
+        }
+
         setAuctionResult({
           type: 'random',
           winner: winner,
@@ -336,13 +412,44 @@ const AuctionScreen = ({ onBack }) => {
       Alert.alert('Error', 'Please enter a valid bid amount');
       return;
     }
+    if (!isAuctionActive) {
+      Alert.alert('Error', 'Auction is not active. Please start the auction first.');
+      return;
+    }
 
     const newBid = parseFloat(bettingAmount);
-    const lowestCurrentBid = Math.min(...participants.map(p => p.bid));
+    
+    // Find the participant representing the "current user" to update their bid
+    // For a real app, you'd have a userId for the current user.
+    // Here, we assume the first selected member is the "user" submitting the bid.
+    if (selectedMembers.length === 0) {
+        Alert.alert('Error', 'No user selected to place a bid.');
+        return;
+    }
+    const currentUser = participants.find(p => p.id === selectedMembers[0].id);
+    if (!currentUser) {
+        Alert.alert('Error', 'Current user not found in participants.');
+        return;
+    }
 
-    // Check if bid is valid (must be lower than current lowest bid)
-    if (newBid >= lowestCurrentBid) {
-      Alert.alert('Error', `Bid must be lower than current lowest bid (${formatCurrency(lowestCurrentBid)})`);
+    const lowestCurrentBid = participants.reduce((minBid, p) => 
+        p.id !== currentUser.id && p.bid > 0 ? Math.min(minBid, p.bid) : minBid, 
+        Infinity
+    );
+    
+    // If it's the first bid for the user, no need to compare with others yet, just validate format
+    if (currentUser.bid === 0 && newBid % 1000 !== 0) {
+        Alert.alert('Error', 'Bid amount must be in multiples of 1,000');
+        return;
+    }
+
+
+    // Check if bid is valid (must be lower than current lowest bid from *other* participants)
+    // or if it's the very first bid, it should be below the initial set bid (e.g., 90000)
+    const currentHighestPossibleBid = lowestCurrentBid === Infinity ? selectedGroup.groupAmount : lowestCurrentBid;
+
+    if (newBid >= currentHighestPossibleBid) {
+      Alert.alert('Error', `Bid must be lower than the current lowest bid (${formatCurrency(currentHighestPossibleBid)})`);
       return;
     }
 
@@ -354,11 +461,10 @@ const AuctionScreen = ({ onBack }) => {
 
     // Update the participant's bid
     const updatedParticipants = participants.map(p => {
-      if (p.id === selectedMembers[0].id) { // Update for the current user
+      if (p.id === currentUser.id) { // Update for the current user
         return {
           ...p,
           bid: newBid,
-          canBid: true
         };
       }
       return p;
@@ -391,7 +497,7 @@ const AuctionScreen = ({ onBack }) => {
         <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>
-        {currentStep === 'setup' ? 'Auction Setup' : `${selectedGroup?.name}`}
+        {currentStep === 'setup' ? 'Auction Setup' : `${selectedGroup?.name || 'Auction'}`}
       </Text>
       {currentStep === 'auction' && (
         <TouchableOpacity style={styles.resetButton} onPress={resetAuction}>
@@ -590,10 +696,10 @@ const AuctionScreen = ({ onBack }) => {
     <View style={styles.timerCard}>
       <MaterialCommunityIcons name="timer-outline" size={24} color="#6B46C1" />
       <Text style={styles.timerText}>
-        {isAuctionActive ? formatTime(timeRemaining) : '05:00'}
+        {isAuctionActive && activeTab === 'betting' ? formatTime(timeRemaining) : '05:00'}
       </Text>
       <Text style={styles.timerLabel}>
-        {isAuctionActive ? 'Time Remaining' : 'Auction Duration'}
+        {isAuctionActive && activeTab === 'betting' ? 'Time Remaining' : 'Auction Duration'}
       </Text>
     </View>
   );
@@ -602,7 +708,7 @@ const AuctionScreen = ({ onBack }) => {
     <View style={styles.bidsCard}>
       <Text style={styles.cardTitle}>Current Bids</Text>
       {participants
-        .sort((a, b) => b.bid - a.bid)
+        .sort((a, b) => a.bid - b.bid) // Sort by lowest bid for display
         .map((participant, index) => (
         <View key={participant.id} style={styles.bidItem}>
           <View style={styles.bidLeft}>
@@ -636,13 +742,13 @@ const AuctionScreen = ({ onBack }) => {
           placeholder="Enter amount"
           keyboardType="numeric"
           placeholderTextColor="#999"
-          editable={!isAuctionActive}
+          editable={isAuctionActive} // Only allow bidding when auction is active
         />
       </View>
       <TouchableOpacity 
-        style={[styles.submitButton, isAuctionActive && styles.disabledButton]} 
+        style={[styles.submitButton, !isAuctionActive && styles.disabledButton]} 
         onPress={submitBid}
-        disabled={isAuctionActive}
+        disabled={!isAuctionActive} // Disable if auction is not active
       >
         <MaterialCommunityIcons name="gavel" size={18} color="#FFFFFF" />
         <Text style={styles.submitButtonText}>Submit Bid</Text>
@@ -664,28 +770,30 @@ const AuctionScreen = ({ onBack }) => {
       <Text style={styles.diceSubtitle}>Roll the dice to select winner</Text>
       
       <View style={styles.diceWrapper}>
-        <Animated.View 
+        <TouchableOpacity
+          onLongPress={handleDiceLongPress}
+          delayLongPress={800}
+        >
+          <View style={styles.diceContainer}>
+            <Animated.View 
           style={[
             styles.dice,
             {
               transform: [
                 { scale: diceAnimations.scale },
-                {
-                  rotateX: diceAnimations.rotateX.interpolate({
-                    inputRange: [0, 2 * Math.PI],
-                    outputRange: ['0deg', '360deg']
+                { rotateX: diceAnimations.rotateX.interpolate({
+                    inputRange: [-720, 0, 720, 1440, 2160],
+                    outputRange: ['-720deg', '0deg', '720deg', '1440deg', '2160deg']
                   })
                 },
-                {
-                  rotateY: diceAnimations.rotateY.interpolate({
-                    inputRange: [0, 2 * Math.PI],
-                    outputRange: ['0deg', '360deg']
+                { rotateY: diceAnimations.rotateY.interpolate({
+                    inputRange: [-720, 0, 720, 1440, 2160],
+                    outputRange: ['-720deg', '0deg', '720deg', '1440deg', '2160deg']
                   })
                 },
-                {
-                  rotateZ: diceAnimations.rotateZ.interpolate({
-                    inputRange: [0, 2 * Math.PI],
-                    outputRange: ['0deg', '360deg']
+                { rotateZ: diceAnimations.rotateZ.interpolate({
+                    inputRange: [-720, 0, 720, 1440],
+                    outputRange: ['-720deg', '0deg', '720deg', '1440deg']
                   })
                 }
               ]
@@ -697,11 +805,12 @@ const AuctionScreen = ({ onBack }) => {
             size={60} 
             color={isDiceRolling ? "#6B46C1" : "#2D1B69"} 
           />
-        </Animated.View>
-        
-        {isDiceRolling && (
-          <View style={styles.diceShadow} />
-        )}
+            </Animated.View>
+            {isDiceRolling && (
+              <View style={styles.diceShadow} />
+            )}
+          </View>
+        </TouchableOpacity>
       </View>
       
       <TouchableOpacity 
@@ -752,27 +861,67 @@ const AuctionScreen = ({ onBack }) => {
       {renderAuctionInfo()}
       {activeTab === 'betting' ? renderBettingScreen() : renderRandomScreen()}
       
-      <TouchableOpacity 
-        style={[styles.startButton, isAuctionActive && styles.activeButton]}
-        onPress={startAuction}
-        disabled={activeTab === 'betting' && isAuctionActive}
-      >
-        <MaterialCommunityIcons 
-          name={activeTab === 'betting' ? 'play' : 'dice-multiple'} 
-          size={20} 
-          color="#FFFFFF" 
-        />
-        <Text style={styles.startButtonText}>
-          {isAuctionActive ? 'Auction Running...' : 
-           activeTab === 'betting' ? 'Start Auction' : 'Roll for Winner'}
-        </Text>
-      </TouchableOpacity>
+      {/* Only show "Start Auction" for betting, or a general message for random */}
+      {activeTab === 'betting' && (
+        <TouchableOpacity 
+          style={[styles.startButton, isAuctionActive && styles.activeButton]}
+          onPress={startAuction}
+          disabled={isAuctionActive}
+        >
+          <MaterialCommunityIcons 
+            name={'play'} 
+            size={20} 
+            color="#FFFFFF" 
+          />
+          <Text style={styles.startButtonText}>
+            {isAuctionActive ? 'Auction Running...' : 'Start Betting Auction'}
+          </Text>
+        </TouchableOpacity>
+      )}
+      {activeTab === 'random' && !isDiceRolling && (
+        <TouchableOpacity 
+          style={styles.startButton}
+          onPress={rollDice} // Directly call rollDice for random
+          disabled={isDiceRolling}
+        >
+          <MaterialCommunityIcons 
+            name={'dice-multiple'} 
+            size={20} 
+            color="#FFFFFF" 
+          />
+          <Text style={styles.startButtonText}>
+            Roll for Winner
+          </Text>
+        </TouchableOpacity>
+      )}
+      {activeTab === 'random' && isDiceRolling && (
+        <View style={[styles.startButton, styles.disabledButton]}>
+          <MaterialCommunityIcons 
+            name={'loading'} 
+            size={20} 
+            color="#FFFFFF" 
+          />
+          <Text style={styles.startButtonText}>
+            Rolling...
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 
   const renderResultModal = () => {
     const [adminSelectedWinner, setAdminSelectedWinner] = useState(null);
     
+    useEffect(() => {
+      // Pre-select the lowest bidder if betting and result is available
+      if (auctionResult?.type === 'betting' && participants.length > 0) {
+        const sortedParticipants = [...participants].sort((a, b) => a.bid - b.bid);
+        setAdminSelectedWinner(sortedParticipants[0]);
+      } else {
+        setAdminSelectedWinner(null);
+      }
+    }, [auctionResult, participants]);
+
     return (
       <Modal
         visible={showResultModal}
@@ -793,9 +942,9 @@ const AuctionScreen = ({ onBack }) => {
               </Text>
             </View>
             
-            {auctionResult?.type === 'betting' && (
+            {auctionResult?.type === 'betting' ? (
               <View style={styles.winnerListSection}>
-                <Text style={styles.winnerListTitle}>Select Winner</Text>
+                <Text style={styles.winnerListTitle}>Lowest Bidders</Text>
                 <ScrollView style={styles.winnerList}>
                   {participants
                     .sort((a, b) => a.bid - b.bid) // Sort by lowest bid
@@ -822,9 +971,7 @@ const AuctionScreen = ({ onBack }) => {
                     ))}
                 </ScrollView>
               </View>
-            )}
-
-            {auctionResult?.type === 'random' && (
+            ) : (
               <View style={styles.winnerSection}>
                 <View style={styles.winnerAvatar}>
                   <Text style={styles.winnerAvatarText}>{auctionResult?.winner?.avatar}</Text>
@@ -841,19 +988,13 @@ const AuctionScreen = ({ onBack }) => {
                     style={[styles.actionButton, !adminSelectedWinner && styles.disabledButton]}
                     onPress={() => {
                       if (adminSelectedWinner) {
-                        // Update the auction result with admin's selection
-                        setAuctionResult({
-                          ...auctionResult,
-                          winner: adminSelectedWinner,
-                          amount: adminSelectedWinner.bid,
-                          isConfirmed: true
-                        });
+                        // This action confirms the winner and ends the auction flow.
                         Alert.alert(
                           'Winner Confirmed',
                           `${adminSelectedWinner.name} has been declared as the winner with a bid of ${formatCurrency(adminSelectedWinner.bid)}`
                         );
                         setShowResultModal(false);
-                        resetAuction();
+                        resetAuction(); // Reset for a new auction
                       }
                     }}
                     disabled={!adminSelectedWinner}
@@ -865,7 +1006,7 @@ const AuctionScreen = ({ onBack }) => {
                     onPress={() => {
                       setShowResultModal(false);
                       setIsAuctionActive(true); // Resume auction
-                      setTimeRemaining(300); // Reset timer
+                      setTimeRemaining(timeRemaining > 0 ? timeRemaining : 300); // Resume remaining time or reset if 0
                     }}
                   >
                     <Text style={styles.cancelButtonText}>Resume Auction</Text>
@@ -890,6 +1031,31 @@ const AuctionScreen = ({ onBack }) => {
   };
 
   // Main render
+  // Animation debug controls
+  const handlePlayPause = () => {
+    setIsAnimationPaused(!isAnimationPaused);
+  };
+
+  const handleRestart = () => {
+    rollDice(true);
+  };
+
+  const handleSpeedChange = (newSpeed) => {
+    setAnimationSpeed(newSpeed);
+    // Update animation speed logic here
+  };
+
+  const handleSeek = (value) => {
+    // Seek animation to specific point
+    const progress = value / animationDuration;
+    // Update animation values based on progress
+  };
+
+  // Long press handler for dice to show debugger
+  const handleDiceLongPress = () => {
+    setShowDebugger(true);
+  };
+
   return (
     <View style={styles.container}>
       {renderHeader()}
@@ -899,6 +1065,19 @@ const AuctionScreen = ({ onBack }) => {
       
       {renderGroupModal()}
       {renderResultModal()}
+
+      <AnimationDebugPanel
+        isVisible={showDebugger}
+        onClose={() => setShowDebugger(false)}
+        animationProgress={0} // Add animation progress calculation
+        animationDuration={animationDuration}
+        animationState={animationState}
+        onPlayPause={handlePlayPause}
+        onRestart={handleRestart}
+        onSpeedChange={handleSpeedChange}
+        onSeek={handleSeek}
+        isPlaying={isDiceRolling && !isAnimationPaused}
+      />
     </View>
   );
 };
@@ -1409,6 +1588,13 @@ const styles = StyleSheet.create({
   },
 
   // Dice Styles
+  diceContainer: {
+    position: 'relative',
+    width: 100,
+    height: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   diceTitle: {
     fontSize: 20,
     fontWeight: '600',
@@ -1432,25 +1618,27 @@ const styles = StyleSheet.create({
   dice: {
     width: 100,
     height: 100,
-    backgroundColor: '#F8F8FF',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#6B46C1',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
     backfaceVisibility: 'hidden',
+    borderWidth: 2,
+    borderColor: '#6B46C1',
   },
   diceShadow: {
     position: 'absolute',
-    bottom: -10,
-    width: 80,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    transform: [{ scaleX: 0.8 }],
+    bottom: -5,
+    width: 90,
+    height: 15,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    transform: [{ scaleX: 0.9 }],
   },
   rollButton: {
     backgroundColor: '#6B46C1',
@@ -1609,9 +1797,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6B7280',
   },
-  disabledButton: {
-    opacity: 0.6,
-  },
+  // Reusing disabledButton style for consistency
+  // disabledButton: {
+  //   opacity: 0.6,
+  // },
   diceResult: {
     fontSize: 16,
     fontWeight: '600',
