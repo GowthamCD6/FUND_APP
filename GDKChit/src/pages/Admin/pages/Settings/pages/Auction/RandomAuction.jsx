@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Easing,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Svg, { Polygon, G, Circle } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,240 +23,506 @@ const RandomAuction = ({
   
   const [diceValue, setDiceValue] = useState(1);
   const [isDiceRolling, setIsDiceRolling] = useState(false);
+  const [showResult, setShowResult] = useState(false);
   
-  // Animation Values
+  // 3D Cube Animation Values
   const diceAnimations = useMemo(() => ({
     scale: new Animated.Value(1),
+    translateY: new Animated.Value(0),
+    translateX: new Animated.Value(0),
     rotateX: new Animated.Value(0),
     rotateY: new Animated.Value(0),
-    rotateZ: new Animated.Value(0)
+    rotateZ: new Animated.Value(0),
   }), []);
 
-  const rollDice = (debugMode = false) => {
-    if (isDiceRolling && !debugMode) return;
-    setIsDiceRolling(true);
+  // 3D Cube Geometry
+  const create3DCube = (size, rotX, rotY, rotZ, translateX, translateY, scale) => {
+    const s = size / 2;
+    
+    // Define vertices of cube
+    let vertices = [
+      [-s, -s, -s], [s, -s, -s], [s, s, -s], [-s, s, -s], // Front face indices: 0, 1, 2, 3
+      [-s, -s, s], [s, -s, s], [s, s, s], [-s, s, s]      // Back face indices: 4, 5, 6, 7
+    ];
 
-    // Vibration feedback
-    if (!debugMode) {
-      if (Platform.OS === 'ios') {
-        Vibration.vibrate([0, 30, 20, 30, 20, 30, 20]);
-      } else if (Platform.OS === 'android') {
-        Vibration.vibrate([0, 20, 15, 20, 15, 20, 15]);
-      }
+    // Apply 3D transformations
+    vertices = vertices.map(([x, y, z]) => {
+      // Rotate X
+      let y1 = y * Math.cos(rotX) - z * Math.sin(rotX);
+      let z1 = y * Math.sin(rotX) + z * Math.cos(rotX);
+      
+      // Rotate Y
+      let x2 = x * Math.cos(rotY) + z1 * Math.sin(rotY);
+      let z2 = -x * Math.sin(rotY) + z1 * Math.cos(rotY);
+      
+      // Rotate Z
+      let x3 = x2 * Math.cos(rotZ) - y1 * Math.sin(rotZ);
+      let y3 = x2 * Math.sin(rotZ) + y1 * Math.cos(rotZ);
+      
+      // Apply scale and translation
+      return [
+        x3 * scale + translateX,
+        y3 * scale + translateY,
+        z2 * scale
+      ];
+    });
+
+    // Define faces with vertices indices - Mapped to standard dice values
+    // Critical: Ensure these mappings correctly correspond to the visual representation
+    const faces = [
+      { name: 'front', indices: [0, 1, 2, 3], color: '#6B46C1', dots: 1, initialRot: { x: 0, y: 0 } },
+      { name: 'back', indices: [5, 4, 7, 6], color: '#7C3AED', dots: 6, initialRot: { x: 0, y: Math.PI } },
+      { name: 'left', indices: [4, 0, 3, 7], color: '#8B5CF6', dots: 4, initialRot: { x: 0, y: -Math.PI / 2 } },
+      { name: 'right', indices: [1, 5, 6, 2], color: '#9333EA', dots: 3, initialRot: { x: 0, y: Math.PI / 2 } },
+      { name: 'top', indices: [3, 2, 6, 7], color: '#A855F7', dots: 5, initialRot: { x: -Math.PI / 2, y: 0 } },
+      { name: 'bottom', indices: [4, 5, 1, 0], color: '#C084FC', dots: 2, initialRot: { x: Math.PI / 2, y: 0 } },
+    ];
+
+    // Calculate face centers and depth for sorting
+    return faces.map(face => {
+      const faceVertices = face.indices.map(i => vertices[i]);
+      const center = faceVertices.reduce(
+        (acc, v) => [acc[0] + v[0], acc[1] + v[1], acc[2] + v[2]],
+        [0, 0, 0]
+      ).map(c => c / 4);
+      
+      return {
+        ...face,
+        vertices: faceVertices,
+        depth: center[2],
+        visible: center[2] > -s // Back-face culling adjusted for perspective
+      };
+    }).sort((a, b) => a.depth - b.depth); // Sort by depth
+  };
+
+  const renderDots = (dots, vertices) => {
+    // Calculate the center of the face
+    const center = vertices.reduce(
+      (acc, v) => [acc[0] + v[0], acc[1] + v[1]],
+      [0, 0]
+    ).map(c => c / 4);
+
+    const s = 80 / 2; // Half the size of the cube for relative positioning
+    const dotOffset = s * 0.35; // Offset from center for corner dots
+    const dotRadius = 4.5; 
+    
+    // Standard dice dot positions relative to face center
+    const dotPositions = {
+      1: [[0, 0]],
+      2: [[-dotOffset, -dotOffset], [dotOffset, dotOffset]],
+      3: [[-dotOffset, -dotOffset], [0, 0], [dotOffset, dotOffset]],
+      4: [[-dotOffset, -dotOffset], [dotOffset, -dotOffset], [-dotOffset, dotOffset], [dotOffset, dotOffset]],
+      5: [[-dotOffset, -dotOffset], [dotOffset, -dotOffset], [0, 0], [-dotOffset, dotOffset], [dotOffset, dotOffset]],
+      6: [[-dotOffset, -dotOffset], [dotOffset, -dotOffset], [-dotOffset, 0], [dotOffset, 0], [-dotOffset, dotOffset], [dotOffset, dotOffset]],
+    };
+    
+    return (dotPositions[dots] || []).map((pos, i) => (
+      <Circle
+        key={i}
+        cx={center[0] + pos[0]}
+        cy={center[1] + pos[1]}
+        r={dotRadius}
+        fill="white"
+      />
+    ));
+  };
+
+  const rollDice = () => {
+    if (isDiceRolling) return;
+    setIsDiceRolling(true);
+    setShowResult(false);
+
+    // Haptic feedback
+    if (Platform.OS === 'ios') {
+      Vibration.vibrate([0, 50, 30, 50]);
+    } else {
+      Vibration.vibrate([0, 40, 25, 40]);
     }
 
-    // Generate final dice value and set initial position
     const finalValue = Math.floor(Math.random() * 6) + 1;
     
-    // Reset animations to starting position
-    diceAnimations.scale.setValue(1.2); // Start slightly larger
+    // Reset animations
+    diceAnimations.scale.setValue(1);
+    diceAnimations.translateY.setValue(0);
+    diceAnimations.translateX.setValue(0);
     diceAnimations.rotateX.setValue(0);
     diceAnimations.rotateY.setValue(0);
     diceAnimations.rotateZ.setValue(0);
 
-    // Helper function to create a single roll phase
-    const createRollPhase = (phase, totalPhases) => {
-      const progress = phase / totalPhases;
-      const intensity = 1 - progress; // Rolls become less intense over time
+    const ROLL_DURATION = 2500;
+    const BOUNCE_COUNT = 15; // Reduced bounce count for smoother animation
+
+    // Calculate target rotation to show the correct face
+    const getTargetRotation = (value) => {
+      const fullRotations = Math.PI * (8 + Math.floor(Math.random() * 4)); // More dramatic, random full rotations
+      let x = fullRotations;
+      let y = fullRotations;
+
+      // Adjust to align the correct face upwards/forwards
+      switch(value) {
+        case 1: x += 0; y += 0; break; // Front
+        case 6: x += 0; y += Math.PI; break; // Back
+        case 4: x += 0; y += -Math.PI / 2; break; // Left
+        case 3: x += 0; y += Math.PI / 2; break; // Right
+        case 5: x += -Math.PI / 2; y += 0; break; // Top
+        case 2: x += Math.PI / 2; y += 0; break; // Bottom
+        default: break;
+      }
+      return { x, y };
+    };
+
+    const targetRotation = getTargetRotation(finalValue);
+    
+    const createRealisticRoll = () => {
+      const animations = [];
+      const totalBounceTime = ROLL_DURATION * 0.75; // Time for bounces
+      const bounceDuration = totalBounceTime / BOUNCE_COUNT;
       
+      for (let i = 0; i < BOUNCE_COUNT; i++) {
+        const progress = i / BOUNCE_COUNT;
+        const intensity = 1 - (progress * 0.9); // Reduce intensity over time
+        
+        const randomX = (Math.random() - 0.5) * 40 * intensity;
+        const randomHeight = 50 + Math.random() * 40 * intensity;
+        const spinSpeedX = (Math.PI * 3 + Math.random() * Math.PI) * intensity;
+        const spinSpeedY = (Math.PI * 3 + Math.random() * Math.PI) * intensity;
+        const spinSpeedZ = (Math.random() - 0.5) * Math.PI * 2 * intensity;
+        
+        animations.push(
+          Animated.parallel([
+            // Vertical bounce
+            Animated.sequence([
+              Animated.timing(diceAnimations.translateY, {
+                toValue: -randomHeight,
+                duration: bounceDuration * 0.45,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+              }),
+              Animated.timing(diceAnimations.translateY, {
+                toValue: 0,
+                duration: bounceDuration * 0.55,
+                easing: Easing.in(Easing.cubic),
+                useNativeDriver: true,
+              }),
+            ]),
+            
+            // Horizontal wobble
+            Animated.sequence([
+              Animated.timing(diceAnimations.translateX, {
+                toValue: randomX,
+                duration: bounceDuration * 0.5,
+                easing: Easing.inOut(Easing.sin),
+                useNativeDriver: true,
+              }),
+              Animated.timing(diceAnimations.translateX, {
+                toValue: -randomX * 0.3,
+                duration: bounceDuration * 0.5,
+                easing: Easing.inOut(Easing.sin),
+                useNativeDriver: true,
+              }),
+            ]),
+            
+            // Continuous rotation (accumulate current value)
+            Animated.timing(diceAnimations.rotateX, {
+              toValue: diceAnimations.rotateX._value + spinSpeedX,
+              duration: bounceDuration,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(diceAnimations.rotateY, {
+              toValue: diceAnimations.rotateY._value + spinSpeedY,
+              duration: bounceDuration,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(diceAnimations.rotateZ, {
+              toValue: spinSpeedZ, // Random Z-axis wobble
+              duration: bounceDuration,
+              easing: Easing.inOut(Easing.sin),
+              useNativeDriver: true,
+            }),
+            
+            // Scale variation
+            Animated.sequence([
+              Animated.timing(diceAnimations.scale, {
+                toValue: 1 + (0.2 * intensity),
+                duration: bounceDuration * 0.45,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+              }),
+              Animated.timing(diceAnimations.scale, {
+                toValue: 0.9,
+                duration: bounceDuration * 0.1,
+                easing: Easing.in(Easing.quad),
+                useNativeDriver: true,
+              }),
+              Animated.timing(diceAnimations.scale, {
+                toValue: 1,
+                duration: bounceDuration * 0.45,
+                easing: Easing.out(Easing.bounce),
+                useNativeDriver: true,
+              }),
+            ]),
+          ])
+        );
+        
+        if (i % 3 === 0 && i > 0) { // Less frequent haptic feedback during roll
+          setTimeout(() => {
+            if (Platform.OS === 'android') {
+              Vibration.vibrate(20);
+            }
+          }, i * bounceDuration);
+        }
+      }
+      
+      return Animated.sequence(animations);
+    };
+
+    const createFinalSettle = () => {
+      const settleDuration = ROLL_DURATION * 0.25; // Time for final settle
       return Animated.parallel([
-        // Scale bounce effect
         Animated.sequence([
-          Animated.timing(diceAnimations.scale, {
-            toValue: 1 + (0.3 * intensity),
-            duration: 150,
-            easing: Easing.inOut(Easing.quad),
+          Animated.timing(diceAnimations.translateY, {
+            toValue: -40,
+            duration: settleDuration * 0.2,
+            easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),
-          Animated.timing(diceAnimations.scale, {
-            toValue: 0.8,
-            duration: 150,
-            easing: Easing.bounce,
+          Animated.timing(diceAnimations.translateY, {
+            toValue: 0,
+            duration: settleDuration * 0.8,
+            easing: Easing.bounce, // Use bounce easing for realistic settle
             useNativeDriver: true,
-          })
+          }),
         ]),
-        // Horizontal rolling (mainly Y-axis)
-        Animated.timing(diceAnimations.rotateY, {
-          toValue: diceAnimations.rotateY._value + (360 * (1 + intensity)),
-          duration: 300,
-          easing: Easing.out(Easing.quad),
+        
+        Animated.spring(diceAnimations.translateX, {
+          toValue: 0,
+          friction: 8,
+          tension: 80,
           useNativeDriver: true,
         }),
-        // Slight forward roll (X-axis)
-        Animated.timing(diceAnimations.rotateX, {
-          toValue: diceAnimations.rotateX._value + (90 * intensity),
-          duration: 300,
-          easing: Easing.inOut(Easing.quad),
+        
+        Animated.spring(diceAnimations.rotateX, {
+          toValue: targetRotation.x,
+          friction: 12,
+          tension: 50,
           useNativeDriver: true,
         }),
-        // Small wobble (Z-axis)
+        Animated.spring(diceAnimations.rotateY, {
+          toValue: targetRotation.y,
+          friction: 12,
+          tension: 50,
+          useNativeDriver: true,
+        }),
+        Animated.spring(diceAnimations.rotateZ, {
+          toValue: 0, // Ensure Z rotation settles to 0
+          friction: 12,
+          tension: 50,
+          useNativeDriver: true,
+        }),
+        
         Animated.sequence([
-          Animated.timing(diceAnimations.rotateZ, {
-            toValue: 30 * intensity,
-            duration: 150,
-            easing: Easing.inOut(Easing.quad),
+          Animated.timing(diceAnimations.scale, {
+            toValue: 0.9,
+            duration: settleDuration * 0.2,
+            easing: Easing.in(Easing.quad),
             useNativeDriver: true,
           }),
-          Animated.timing(diceAnimations.rotateZ, {
-            toValue: -30 * intensity,
-            duration: 150,
-            easing: Easing.inOut(Easing.quad),
+          Animated.spring(diceAnimations.scale, {
+            toValue: 1,
+            friction: 5,
+            tension: 100,
             useNativeDriver: true,
-          })
-        ])
+          }),
+        ]),
       ]);
     };
 
-    // Create the main rolling sequence
-    const rollPhases = [];
-    const numPhases = 4;
+    const completeAnimation = Animated.sequence([
+      createRealisticRoll(),
+      createFinalSettle(),
+    ]);
+
+    let faceChangeCount = 0;
+    const totalFaceChanges = Math.floor(ROLL_DURATION / 100); // Slower face changes
     
-    for (let i = 0; i < numPhases; i++) {
-      rollPhases.push(createRollPhase(i, numPhases));
-    }
-
-    // Final settling animation
-    const settleSequence = Animated.parallel([
-      // Return to normal scale with a small bounce
-      Animated.spring(diceAnimations.scale, {
-        toValue: 1,
-        friction: 4,
-        tension: 50,
-        useNativeDriver: true,
-      }),
-      // Settle to the final rotation for the correct dice face
-      Animated.spring(diceAnimations.rotateX, {
-        toValue: finalValue <= 3 ? 0 : 180,
-        friction: 5,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-      Animated.spring(diceAnimations.rotateY, {
-        toValue: [1, 4].includes(finalValue) ? 0 : ([2, 5].includes(finalValue) ? 90 : -90),
-        friction: 5,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-      // Stabilize any wobble
-      Animated.spring(diceAnimations.rotateZ, {
-        toValue: 0,
-        friction: 4,
-        tension: 45,
-        useNativeDriver: true,
-      })
-    ]);
-
-    // Combine all animations into the final sequence
-    const ludoRollAnimation = Animated.sequence([
-      ...rollPhases,
-      settleSequence
-    ]);
-
-    // Rapid face changes during rolling
-    let rollCount = 0;
     const faceChangeInterval = setInterval(() => {
-      if (rollCount < 12) {
+      if (faceChangeCount < totalFaceChanges) {
         setDiceValue(Math.floor(Math.random() * 6) + 1);
-        rollCount++;
+        faceChangeCount++;
       } else {
         clearInterval(faceChangeInterval);
       }
-    }, 100);
+    }, 100); // Update dice value every 100ms
 
-      // Run the animation with rapid face changes
-    let currentFace = 1;
-    const faceInterval = setInterval(() => {
-      if (isDiceRolling) {
-        currentFace = (currentFace % 6) + 1;
-        setDiceValue(currentFace);
-      }
-    }, 100);
-
-    ludoRollAnimation.start(() => {
-      clearInterval(faceInterval);
-      setDiceValue(finalValue);
+    completeAnimation.start(() => {
+      clearInterval(faceChangeInterval);
       
-      // Add a small delay before showing the result
       setTimeout(() => {
-        setIsDiceRolling(false);
+        setDiceValue(finalValue);
+        setShowResult(true);
         
-        if (participants.length === 0) {
-          Alert.alert("Error", "No participants available for the random draw.");
-          return;
-        }
-
-        const winnerIndex = (finalValue - 1) % participants.length;
-        const winner = participants[winnerIndex];
-
-        // Vibrate to indicate completion
         if (Platform.OS === 'ios') {
-          Vibration.vibrate([0, 50]);
+          Vibration.vibrate([0, 70, 40, 70]);
         } else {
-          Vibration.vibrate(50);
+          Vibration.vibrate([0, 60, 30, 60]);
         }
+        
+        setTimeout(() => {
+          setIsDiceRolling(false);
+          
+          if (participants.length === 0) {
+            Alert.alert("Error", "No participants available for the random draw.");
+            return;
+          }
 
-        if (onAuctionComplete) {
-          onAuctionComplete({
-            type: 'random',
-            winner: winner,
-            diceValue: finalValue
-          });
-        }
-      }, 500);
+          const winnerIndex = (finalValue - 1) % participants.length;
+          const winner = participants[winnerIndex];
+
+          if (onAuctionComplete) {
+            onAuctionComplete({
+              type: 'random',
+              winner: winner,
+              diceValue: finalValue
+            });
+          }
+        }, 800);
+      }, 400);
     });
+  };
+
+  const Dice3D = () => {
+    const [cubeState, setCubeState] = useState(null);
+
+    React.useEffect(() => {
+      const updateCube = () => {
+        const rotX = diceAnimations.rotateX._value;
+        const rotY = diceAnimations.rotateY._value;
+        const rotZ = diceAnimations.rotateZ._value;
+        const transX = diceAnimations.translateX._value;
+        const transY = diceAnimations.translateY._value;
+        const scale = diceAnimations.scale._value;
+
+        const faces = create3DCube(80, rotX, rotY, rotZ, transX, transY, scale);
+        setCubeState(faces);
+      };
+
+      const listeners = [
+        diceAnimations.rotateX.addListener(updateCube),
+        diceAnimations.rotateY.addListener(updateCube),
+        diceAnimations.rotateZ.addListener(updateCube),
+        diceAnimations.translateX.addListener(updateCube),
+        diceAnimations.translateY.addListener(updateCube),
+        diceAnimations.scale.addListener(updateCube),
+      ];
+
+      updateCube(); // Initial render
+
+      return () => listeners.forEach(id => {
+        diceAnimations.rotateX.removeListener(id);
+        diceAnimations.rotateY.removeListener(id);
+        diceAnimations.rotateZ.removeListener(id);
+        diceAnimations.translateX.removeListener(id);
+        diceAnimations.translateY.removeListener(id);
+        diceAnimations.scale.removeListener(id);
+      });
+    }, []);
+
+    if (!cubeState) return null;
+
+    return (
+      <Svg width="200" height="200" viewBox="-100 -100 200 200">
+        {cubeState.map((face, i) => {
+          // Render only visible faces to optimize
+          if (!face.visible) return null;
+          
+          const points = face.vertices
+            .map(v => `${v[0]},${v[1]}`)
+            .join(' ');
+
+          const isMainFace = showResult && face.depth > 35; // Identify the most prominent face for result
+          
+          // When showing result, override face dots to match diceValue state
+          const displayDots = (showResult && isMainFace) ? diceValue : face.dots;
+
+          return (
+            <G key={i}>
+              <Polygon
+                points={points}
+                fill={isMainFace ? '#5B21B6' : (isDiceRolling ? face.color : '#6B46C1')}
+                stroke={isMainFace ? '#2D1B69' : '#4C1D95'}
+                strokeWidth={isMainFace ? 3.5 : 2.5}
+                // Add an ID for debugging if needed
+                // id={`face-${face.dots}-${i}`}
+              />
+              {renderDots(displayDots, face.vertices)}
+            </G>
+          );
+        })}
+      </Svg>
+    );
   };
 
   const renderDiceContainer = () => (
     <View style={styles.diceCard}>
       <Text style={styles.diceTitle}>Lucky Draw</Text>
-      <Text style={styles.diceSubtitle}>Roll the dice to select winner</Text>
       
       <View style={styles.diceWrapper}>
         <View style={styles.diceContainer}>
-            <Animated.View 
-          style={[
-            styles.dice,
-            {
-              transform: [
-                { scale: diceAnimations.scale },
-                { rotateX: diceAnimations.rotateX.interpolate({
-                    inputRange: [-720, 0, 720, 1440, 2160],
-                    outputRange: ['-720deg', '0deg', '720deg', '1440deg', '2160deg']
-                  })
-                },
-                { rotateY: diceAnimations.rotateY.interpolate({
-                    inputRange: [-720, 0, 720, 1440, 2160],
-                    outputRange: ['-720deg', '0deg', '720deg', '1440deg', '2160deg']
-                  })
-                },
-                { rotateZ: diceAnimations.rotateZ.interpolate({
-                    inputRange: [-720, 0, 720, 1440],
-                    outputRange: ['-720deg', '0deg', '720deg', '1440deg']
-                  })
-                }
-              ]
-            }
-          ]}
-        >
-          <MaterialCommunityIcons 
-            name={`dice-${diceValue}`} 
-            size={60} 
-            color={isDiceRolling ? "#6B46C1" : "#2D1B69"} 
+          <Dice3D />
+          
+          <Animated.View 
+            style={[
+              styles.diceShadow,
+              {
+                transform: [
+                  { 
+                    translateX: diceAnimations.translateX.interpolate({
+                      inputRange: [-60, 0, 60],
+                      outputRange: [-20, 0, 20]
+                    })
+                  },
+                  { 
+                    scaleX: diceAnimations.scale.interpolate({
+                      inputRange: [0.8, 1, 1.3],
+                      outputRange: [0.7, 1, 1.2]
+                    })
+                  },
+                  {
+                    scaleY: diceAnimations.translateY.interpolate({
+                      inputRange: [-100, 0],
+                      outputRange: [0.3, 1] // Shadow shrinks when dice is in air
+                    })
+                  }
+                ],
+                opacity: diceAnimations.translateY.interpolate({
+                  inputRange: [-100, -50, 0],
+                  outputRange: [0.05, 0.15, 0.3]
+                })
+              }
+            ]} 
           />
-            </Animated.View>
-            {isDiceRolling && (
-              <View style={styles.diceShadow} />
-            )}
-          </View>
+        </View>
       </View>
+      
+      {showResult && (
+        <View style={styles.resultContainer}>
+          <Text style={styles.resultLabel}>Rolled:</Text>
+          <View style={styles.resultValue}>
+            <Text style={styles.resultNumber}>{diceValue}</Text>
+          </View>
+        </View>
+      )}
       
       <TouchableOpacity 
         style={[styles.rollButton, isDiceRolling && styles.disabledButton]}
         onPress={rollDice}
         disabled={isDiceRolling}
+        activeOpacity={0.7}
       >
         <MaterialCommunityIcons 
-          name={isDiceRolling ? "loading" : "dice-multiple"} 
+          name={isDiceRolling ? "timer-sand" : "dice-multiple"} 
           size={20} 
           color="#FFFFFF" 
         />
@@ -275,7 +542,9 @@ const RandomAuction = ({
             <View style={styles.participantAvatar}>
               <Text style={styles.avatarText}>{participant.avatar}</Text>
             </View>
-            <Text style={styles.participantName}>{participant.name.split(' ')[0]}</Text>
+            <Text style={styles.participantName} numberOfLines={1}>
+              {participant.name.split(' ')[0]}
+            </Text>
             <View style={styles.participantNumber}>
               <Text style={styles.participantNumberText}>{index + 1}</Text>
             </View>
@@ -294,23 +563,23 @@ const RandomAuction = ({
         <TouchableOpacity 
           style={styles.startButton}
           onPress={rollDice}
-          disabled={isDiceRolling}
+          activeOpacity={0.8}
         >
           <MaterialCommunityIcons 
-            name={'dice-multiple'} 
-            size={20} 
+            name="dice-multiple" 
+            size={22} 
             color="#FFFFFF" 
           />
           <Text style={styles.startButtonText}>
-            Roll for Winner
+            Start Lucky Draw
           </Text>
         </TouchableOpacity>
       )}
       {isDiceRolling && (
         <View style={[styles.startButton, styles.disabledButton]}>
           <MaterialCommunityIcons 
-            name={'loading'} 
-            size={20} 
+            name="timer-sand" 
+            size={22} 
             color="#FFFFFF" 
           />
           <Text style={styles.startButtonText}>
@@ -328,96 +597,107 @@ const styles = StyleSheet.create({
   },
   diceCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
   },
   diceTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#1F2937',
     marginBottom: 6,
   },
-  diceSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 24,
-    textAlign: 'center',
+  resultContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#86EFAC',
   },
-  diceWrapper: {
-    width: 120,
-    height: 120,
+  resultLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#15803D',
+  },
+  resultValue: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#22C55E',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
-    perspective: 1000,
+  },
+  resultNumber: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  diceWrapper: {
+    width: 200,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 28,
   },
   diceContainer: {
     position: 'relative',
-    width: 100,
-    height: 100,
+    width: 200,
+    height: 200,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  dice: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    backfaceVisibility: 'hidden',
-    borderWidth: 2,
-    borderColor: '#6B46C1',
   },
   diceShadow: {
     position: 'absolute',
-    bottom: -5,
-    width: 90,
-    height: 15,
-    borderRadius: 15,
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
-    transform: [{ scaleX: 0.9 }],
+    bottom: 20,
+    width: 100,
+    height: 25,
+    borderRadius: 50,
+    backgroundColor: 'rgba(107, 70, 193, 0.25)',
   },
   rollButton: {
     backgroundColor: '#6B46C1',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    gap: 6,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 30,
+    gap: 10,
+    elevation: 5,
+    shadowColor: '#6B46C1',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
   },
   rollButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   participantsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     marginBottom: 16,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#1F2937',
     marginBottom: 16,
   },
@@ -429,69 +709,75 @@ const styles = StyleSheet.create({
   participantCard: {
     width: (width - 80) / 3,
     backgroundColor: '#F8F8FF',
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 12,
     alignItems: 'center',
     marginBottom: 12,
     position: 'relative',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   participantAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#6B46C1',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginBottom: 8,
   },
   avatarText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   participantName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#1F2937',
+    textAlign: 'center',
   },
   participantNumber: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    top: -8,
+    right: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#FFD700',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   participantNumberText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1F2937',
   },
   startButton: {
     backgroundColor: '#6B46C1',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    paddingVertical: 16,
     marginHorizontal: 16,
     marginVertical: 20,
-    borderRadius: 10,
-    gap: 8,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderRadius: 14,
+    gap: 10,
+    elevation: 5,
+    shadowColor: '#6B46C1',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   disabledButton: {
-    opacity: 0.6,
+    opacity: 0.7,
+    backgroundColor: '#9333EA',
   },
   startButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 });
