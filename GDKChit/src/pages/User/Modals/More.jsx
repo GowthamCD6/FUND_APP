@@ -3,10 +3,12 @@ import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform } from 'react
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Join from './Pages/Join';
 import GroupCard from './Pages/GroupCard';
+import Auction from './Pages/Auction/Auction';
 
 const MoreModal = ({ visible, onClose }) => {
   const [showJoinPage, setShowJoinPage] = useState(false);
   const [showGroupCard, setShowGroupCard] = useState(false);
+  const [showAuction, setShowAuction] = useState(false);
 
   const handleJoinPress = () => {
     setShowJoinPage(true);
@@ -14,6 +16,10 @@ const MoreModal = ({ visible, onClose }) => {
 
   const handleGroupCardPress = () => {
     setShowGroupCard(true);
+  };
+
+  const handleAuctionPress = () => {
+    setShowAuction(true);
   };
 
   const handleJoinBack = () => {
@@ -24,9 +30,14 @@ const MoreModal = ({ visible, onClose }) => {
     setShowGroupCard(false);
   };
 
+  const handleAuctionBack = () => {
+    setShowAuction(false);
+  };
+
   const handleModalClose = () => {
     setShowJoinPage(false);
     setShowGroupCard(false);
+    setShowAuction(false);
     onClose();
   };
 
@@ -56,6 +67,19 @@ const MoreModal = ({ visible, onClose }) => {
     );
   }
 
+  if (showAuction) {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={visible}
+        onRequestClose={handleModalClose}
+      >
+        <Auction onClose={handleAuctionBack} />
+      </Modal>
+    );
+  }
+
   return (
   <Modal
     animationType="slide"
@@ -80,9 +104,10 @@ const MoreModal = ({ visible, onClose }) => {
             onPress={handleGroupCardPress}
           />
           <MenuItem
-            icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#6B46C1" />}
-            title="Pay"
-            description="Click to pay for your group amount"
+            icon={<MaterialCommunityIcons name="gavel" size={26} color="#6B46C1" />}
+            title="Auction"
+            description="Participate in chit auction bidding"
+            onPress={handleAuctionPress}
           />
           <MenuItem
             icon={<MaterialCommunityIcons name="wallet-outline" size={26} color="#6B46C1" />}
