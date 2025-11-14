@@ -3,7 +3,7 @@ import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform } from 'react
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Join from './Pages/Join';
 import GroupCard from './Pages/GroupCard';
-import Auction from './Pages/Auction/Auction';
+// import Auction from './Pages/Auction/Auction';
 
 const MoreModal = ({ visible, onClose }) => {
   const [showJoinPage, setShowJoinPage] = useState(false);
