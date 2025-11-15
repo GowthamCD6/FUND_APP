@@ -15,9 +15,10 @@ import AccountD from './Page/AccountD';
 import Nominee from './Page/Nominee';
 import LinkBA from './Page/LinkBA';
 import IdentityV from './Page/IdentityV';
-import SecurPermis from './Page/SecurPermis';
+import SecurPermis from './Page/SecurityLock/SecurityPermision';
 import PrivacyPolicy from './Page/PrivacyPolicy';
 import HelpSupport from './Page/HelpSup';
+import MyLocation from './Page/MyLocation/MyLocation';
 import ShareModal from './Modals/Share';
 import RateModal from './Modals/Rate';
 import {Animated, Dimensions} from 'react-native';
@@ -32,6 +33,7 @@ const Profile = () => {
   const [showSecurPermis, setShowSecurPermis] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showHelpSupport, setShowHelpSupport] = useState(false);
+  const [showMyLocation, setShowMyLocation] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
   const navigation = useNavigation()
@@ -56,6 +58,9 @@ const Profile = () => {
     new Animated.Value(Dimensions.get('window').width),
   ).current;
   const helpSupportAnim = useRef(
+    new Animated.Value(Dimensions.get('window').width),
+  ).current;
+  const myLocationAnim = useRef(
     new Animated.Value(Dimensions.get('window').width),
   ).current;
 
@@ -175,6 +180,22 @@ const Profile = () => {
     }
   }, [showHelpSupport, helpSupportAnim]);
 
+  useEffect(() => {
+    if (showMyLocation) {
+      Animated.timing(myLocationAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(myLocationAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showMyLocation, myLocationAnim]);
+
   const handleLogout = async () => {
     try {
       await AsyncStorage.clear();
@@ -200,7 +221,8 @@ const Profile = () => {
           !showIdentityV &&
           !showSecurPermis &&
           !showPrivacyPolicy &&
-          !showHelpSupport && (
+          !showHelpSupport &&
+          !showMyLocation && (
             <>
               {/* Header - Portfolio style */}
               <View style={styles.header}>
@@ -347,6 +369,24 @@ const Profile = () => {
                           color="#666666"
                         />
                         <Text style={styles.menuItemText}>Privacy Policy</Text>
+                      </View>
+                      <MaterialCommunityIcons
+                        name="chevron-right"
+                        size={22}
+                        color="#CCCCCC"
+                      />
+                    </TouchableOpacity>
+                    <View style={styles.customDivider} />
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => setShowMyLocation(true)}>
+                      <View style={styles.menuItemLeft}>
+                        <MaterialCommunityIcons
+                          name="map-marker"
+                          size={22}
+                          color="#666666"
+                        />
+                        <Text style={styles.menuItemText}>My Location</Text>
                       </View>
                       <MaterialCommunityIcons
                         name="chevron-right"
@@ -649,6 +689,29 @@ const Profile = () => {
             />
           </Animated.View>
         )}
+
+        {/* My Location Page */}
+        {showMyLocation && (
+          <Animated.View
+            style={[
+              styles.fullScreenOverlay,
+              {
+                transform: [{translateX: myLocationAnim}],
+              },
+            ]}>
+            <MyLocation
+              onBack={() => {
+                Animated.timing(myLocationAnim, {
+                  toValue: Dimensions.get('window').width,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start(() => {
+                  setShowMyLocation(false);
+                });
+              }}
+            />
+          </Animated.View>
+        )}
       </View>
 
       {/* Share Modal */}
@@ -889,5 +952,6 @@ const styles = StyleSheet.create({
     zIndex: 1000, // Ensure it covers everything including bottom navigation
   },
 });
+
 
 export default Profile;
