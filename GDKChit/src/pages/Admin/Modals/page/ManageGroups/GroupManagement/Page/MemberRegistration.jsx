@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,34 +12,14 @@ import {
   Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import ApiService from '../../../../../../../services/ApiService';
 
 // Define the maximum number of members
 const MAX_MEMBERS = 20;
 
-const MemberRegistration = ({visible, onClose, group, onSave}) => {
+const MemberRegistration = ({ visible, onClose, group, onSave }) => {
   // Sample members data
-  const [allMembers] = useState([
-    {id: '9876543210', name: 'முருகன் குமார்', phone: '9876543210'},
-    {id: '9876543211', name: 'லட்சுமி செல்வி', phone: '9876543211'},
-    {id: '9876543212', name: 'ராஜேஷ் பாபு', phone: '9876543212'},
-    {id: '9876543213', name: 'பிரியா தேவி', phone: '9876543213'},
-    {id: '9876543214', name: 'கண்ணன் ராஜ்', phone: '9876543214'},
-    {id: '9876543215', name: 'சுந்தரி அம்மாள்', phone: '9876543215'},
-    {id: '9876543216', name: 'வேலு நாயுடு', phone: '9876543216'},
-    {id: '9876543217', name: 'மீனா குமாரி', phone: '9876543217'},
-    {id: '9876543218', name: 'சிவன் ராஜு', phone: '9876543218'},
-    {id: '9876543219', name: 'கமலா தேவி', phone: '9876543219'},
-    {id: '9876543220', name: 'விஜய் குமார்', phone: '9876543220'},
-    {id: '9876543221', name: 'சரண்யா தேவி', phone: '9876543221'},
-    {id: '9876543222', name: 'சந்தீப் ராவ்', phone: '9876543222'},
-    {id: '9876543223', name: 'நித்யா ஸ்ரீ', phone: '9876543223'},
-    {id: '9876543224', name: 'பிரகாஷ் ராஜ்', phone: '9876543224'},
-    {id: '9876543225', name: 'காயத்ரி', phone: '9876543225'},
-    {id: '9876543226', name: 'அஜய் குமார்', phone: '9876543226'},
-    {id: '9876543227', name: 'ரேகா', phone: '9876543227'},
-    {id: '9876543228', name: 'பாலாஜி', phone: '9876543228'},
-    {id: '9876543229', name: 'சுமதி', phone: '9876543229'},
-  ]);
+  const [allMembers, setAllMembers] = useState([]);
 
   const [memberMappings, setMemberMappings] = useState([]);
   const [showMemberPicker, setShowMemberPicker] = useState(false);
@@ -52,17 +32,63 @@ const MemberRegistration = ({visible, onClose, group, onSave}) => {
 
   useEffect(() => {
     if (visible && group) {
-      const initial = group.memberMappings || [];
-      setMemberMappings(initial);
-      setInitialMemberMappings(initial);
-      setHasChanges(false);
+      // When the modal opens, fetch current members for the group from backend
+      const fetchGroupMembers = async () => {
+        try {
+          const groupIdNum = getGroupDbId();
+          if (!groupIdNum) return;
+          const resp = await ApiService.makeRequest(`/admin/groups/getMembers?groupId=${groupIdNum}`, { method: 'GET' });
+          const json = await resp.json();
+          if (!json.success) {
+            console.warn('Failed to fetch group members');
+            return;
+          }
+          const mappings = json.data.map(m => ({
+            id: m.mappingId || (Date.now() + Math.random()),
+            memberId: m.userId,
+            name: m.name || m.nickname || 'Unnamed',
+          }));
+          setMemberMappings(mappings);
+          setInitialMemberMappings(mappings);
+          setHasChanges(false);
+        } catch (err) {
+          console.error('Error fetching group members:', err);
+        }
+      };
+      fetchGroupMembers();
     }
   }, [visible, group]);
+
+  const getGroupDbId = () => {
+    if (!group) return null;
+    if (typeof group.id === 'number' && !Number.isNaN(group.id)) return group.id;
+    if (group.id && !Number.isNaN(Number(group.id))) return Number(group.id);
+    if (group.groupId && !Number.isNaN(Number(group.groupId))) return Number(group.groupId);
+    return null;
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await ApiService.makeRequest('/admin/users/getAllUsers', {
+        method: 'GET',
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAllMembers(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   // Effect to compare current mappings with initial to set hasChanges
   useEffect(() => {
     const currentString = JSON.stringify(
-      memberMappings.map(m => ({id: m.id, memberId: m.memberId, name: m.name})),
+      memberMappings.map(m => ({ id: m.id, memberId: m.memberId, name: m.name })),
     );
     const initialString = JSON.stringify(
       initialMemberMappings.map(m => ({
@@ -98,19 +124,38 @@ const MemberRegistration = ({visible, onClose, group, onSave}) => {
     setShowMemberPicker(true);
   };
 
-  const removeMemberMapping = id => {
+  const removeMemberMapping = mapping => {
     Alert.alert(
       'Remove Member',
       'Are you sure you want to remove this member?',
       [
-        {text: 'Cancel', style: 'cancel'},
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => {
-            setMemberMappings(prevMappings =>
-              prevMappings.filter(mapping => mapping.id !== id),
-            );
+          onPress: async () => {
+            try {
+              const groupIdNum = getGroupDbId();
+              if (!groupIdNum) {
+                Alert.alert('Error', 'Invalid group id');
+                return;
+              }
+              console.log(mapping);
+              
+              const resp = await ApiService.makeRequest('/admin/groups/removeMembers', {
+                method: 'POST',
+                body: JSON.stringify({ groupId: groupIdNum, members: [mapping] }),
+              });
+              const json = await resp.json();
+              if (!json.success) {
+                Alert.alert('Error', 'Failed to remove member');
+                return;
+              }
+              setMemberMappings(prevMappings => prevMappings.filter(m => m.memberId !== mapping.memberId));
+            } catch (err) {
+              console.error('Error removing member:', err);
+              Alert.alert('Error', 'An error occurred while removing member.');
+            }
           },
         },
       ],
@@ -133,8 +178,7 @@ const MemberRegistration = ({visible, onClose, group, onSave}) => {
         if (totalAfterAdd > MAX_MEMBERS) {
           Alert.alert(
             'Limit Reached',
-            `You can only add ${
-              MAX_MEMBERS - currentMembersCount - prev.length
+            `You can only add ${MAX_MEMBERS - currentMembersCount - prev.length
             } more member(s).`,
           );
           return prev;
@@ -145,21 +189,45 @@ const MemberRegistration = ({visible, onClose, group, onSave}) => {
     });
   };
 
-  const confirmAddMembers = () => {
+  const confirmAddMembers = async () => {
     if (selectedMembers.length === 0) {
       Alert.alert('No Selection', 'Please select at least one member to add.');
       return;
     }
 
-    const newMappings = selectedMembers.map(member => ({
-      id: Date.now() + Math.random(), // Unique ID for each mapping
-      memberId: member.id,
-      name: member.name,
-    }));
+    try {
+      const groupIdNum = getGroupDbId();
+      if (!groupIdNum) {
+        Alert.alert('Error', 'Invalid group id');
+        return;
+      }
+      console.log('Adding to group', groupIdNum, selectedMembers.map(m => m.id));
+      const response = await ApiService.makeRequest('/admin/groups/addMembers', {
+        method: 'POST',
+        body: JSON.stringify({ groupId: groupIdNum, members: selectedMembers.map(m => m.id) }),
+      });
 
-    setMemberMappings(prevMappings => [...prevMappings, ...newMappings]);
-    setShowMemberPicker(false);
-    setSelectedMembers([]);
+      const data = await response.json();
+      if (!data.success) {
+        Alert.alert('Error', 'Failed to add members to the group.');
+        return;
+      }
+
+      const newMappings = selectedMembers.map(member => ({
+        id: Date.now() + Math.random(), // Unique ID for each mapping
+        memberId: member.id,
+        name: member.name,
+      }));
+      setMemberMappings(prevMappings => [...prevMappings, ...newMappings]);
+      setShowMemberPicker(false);
+      setSelectedMembers([]);
+      Alert.alert('Success', 'Members added successfully.');
+    } catch (error) {
+      console.error('Error adding members:', error);
+      Alert.alert('Error', 'An error occurred while adding members.');
+      return;
+    }
+
   };
 
   const getAvailableMembers = () => {
@@ -178,11 +246,11 @@ const MemberRegistration = ({visible, onClose, group, onSave}) => {
     }
 
     const query = searchQuery.toLowerCase();
-    return availableMembers.filter(
-      member =>
-        member.name.toLowerCase().includes(query) ||
-        member.phone.includes(query),
-    );
+    return availableMembers.filter(member => {
+      const name = (member.name || '').toString();
+      const phone = (member.phone || '').toString();
+      return name.toLowerCase().includes(query) || phone.includes(query);
+    });
   };
 
   const handleSave = () => {
@@ -231,8 +299,8 @@ const MemberRegistration = ({visible, onClose, group, onSave}) => {
             'Unsaved Changes',
             'You have unsaved changes. Do you want to discard them and close?',
             [
-              {text: 'Cancel', style: 'cancel'},
-              {text: 'Discard', style: 'destructive', onPress: onClose},
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Discard', style: 'destructive', onPress: onClose },
             ],
           );
         } else {
@@ -249,8 +317,8 @@ const MemberRegistration = ({visible, onClose, group, onSave}) => {
                   'Unsaved Changes',
                   'You have unsaved changes. Do you want to discard them and close?',
                   [
-                    {text: 'Cancel', style: 'cancel'},
-                    {text: 'Discard', style: 'destructive', onPress: onClose},
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Discard', style: 'destructive', onPress: onClose },
                   ],
                 );
               } else {
@@ -345,12 +413,12 @@ const MemberRegistration = ({visible, onClose, group, onSave}) => {
                         {member.name}
                       </Text>
                       <Text style={styles.selectedMemberPhone}>
-                        Phone: {member.memberId}
+                        Phone: {member.phone}
                       </Text>
                     </View>
                   </View>
                   <TouchableOpacity
-                    onPress={() => removeMemberMapping(member.id)}
+                    onPress={() => removeMemberMapping(member.memberId)}
                     style={styles.removeButton}>
                     <MaterialCommunityIcons
                       name="delete"
@@ -499,7 +567,7 @@ const MemberRegistration = ({visible, onClose, group, onSave}) => {
                         </View>
                         <View style={styles.memberInfoContainer}>
                           <Text style={styles.memberPickerItemName}>
-                            {member.name}
+                            {member.name ? member.name : member.nickname}
                           </Text>
                           <Text style={styles.memberPickerItemPhone}>
                             {member.phone}
@@ -532,7 +600,7 @@ const MemberRegistration = ({visible, onClose, group, onSave}) => {
                   style={[
                     styles.confirmAddButton,
                     selectedMembers.length === 0 &&
-                      styles.confirmAddButtonDisabled,
+                    styles.confirmAddButtonDisabled,
                   ]}
                   disabled={selectedMembers.length === 0}>
                   <Text style={styles.confirmAddButtonText}>
@@ -568,7 +636,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
@@ -616,7 +684,7 @@ const styles = StyleSheet.create({
     padding: 16,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
@@ -657,11 +725,11 @@ const styles = StyleSheet.create({
     padding: 14,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     marginHorizontal: 5,
-    alignItems: 'center', 
+    alignItems: 'center',
     justifyContent: 'center',
   },
   statContent: {
@@ -680,7 +748,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     fontWeight: '500',
-    textAlign: 'center', 
+    textAlign: 'center',
   },
   content: {
     flex: 1,
@@ -693,7 +761,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
