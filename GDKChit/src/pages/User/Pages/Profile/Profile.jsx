@@ -15,7 +15,7 @@ import AccountD from './Page/AccountD';
 import Nominee from './Page/Nominee';
 import LinkBA from './Page/LinkBA';
 import IdentityV from './Page/IdentityV';
-import SecurPermis from './Page/SecurPermis';
+import SecurPermis from './Page/SecurityLock/SecurityPermision';
 import PrivacyPolicy from './Page/PrivacyPolicy';
 import HelpSupport from './Page/HelpSup';
 import MyLocation from './Page/MyLocation/MyLocation';
