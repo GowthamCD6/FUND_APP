@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useRef} from 'react';
+import React, {useState, useMemo, useRef, useEffect} from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import ApiService from '../../../../../services/ApiService';
 
 const ManageU = ({onBack}) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,76 +30,74 @@ const ManageU = ({onBack}) => {
   const menuButtonRefs = useRef({});
 
   // Sample users data
-  const [users, setUsers] = useState([
-    {
-      id: '1',
-      name: 'Murugan Kumar',
-      phone: '9876543210',
-      type: 'user',
-      email: 'murugan@example.com',
-      joinedDate: '2024-01-15',
-      dateOfBirth: '1990-05-20',
-      nickname: 'MK',
-    },
-    {
-      id: '2',
-      name: 'Lakshmi Selvi',
-      phone: '9876543211',
-      type: 'admin',
-      email: 'lakshmi@example.com',
-      joinedDate: '2023-12-10',
-      dateOfBirth: '1988-08-15',
-      nickname: 'Laksha',
-    },
-    {
-      id: '3',
-      name: 'Rajesh Babu',
-      phone: '9876543212',
-      type: 'user',
-      email: 'rajesh@example.com',
-      joinedDate: '2024-02-20',
-      dateOfBirth: '1992-11-30',
-      nickname: 'Raji',
-    },
-  ]);
+  // Initialize as empty array to avoid `undefined` errors when filtering
+  const [users, setUsers] = useState([]);
+
+  const fetchUsers = async() => {
+    try{
+      const response = await ApiService.makeRequest('/admin/users/getAllUsers',{
+        method: 'GET',
+      });
+      const data = await response.json();
+      if(data.success){
+        setUsers(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   // Sort and filter users
   const filteredUsers = useMemo(() => {
-    let filtered = users.filter(
-      user =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.phone.includes(searchQuery),
-    );
+    const q = searchQuery.toLowerCase();
+    let filtered = users.filter(user => {
+      const name = (user.name || user.nickname || '').toString();
+      const phone = (user.phone || '').toString();
+      return name.toLowerCase().includes(q) || phone.includes(searchQuery);
+    });
     return filtered.sort((a, b) => {
-      if (a.type === 'admin' && b.type !== 'admin') return -1;
-      if (a.type !== 'admin' && b.type === 'admin') return 1;
-      return a.name.localeCompare(b.name);
+      const aType = (a.type || '').toString().toLowerCase();
+      const bType = (b.type || '').toString().toLowerCase();
+      if (aType === 'admin' && bType !== 'admin') return -1;
+      if (aType !== 'admin' && bType === 'admin') return 1;
+      const aName = (a.name || a.nickname || '').toString();
+      const bName = (b.name || b.nickname || '').toString();
+      return aName.localeCompare(bName);
     });
   }, [users, searchQuery]);
 
   // Handlers
   const handleMenuPress = (user, buttonRef) => {
     setSelectedUser(user);
-    if (buttonRef.current) {
-      buttonRef.current.measure((_x, _y, _width, _height, pageX, pageY) => {
+    // measure may not be available immediately; guard it
+    const refCurrent = buttonRef && buttonRef.current ? buttonRef.current : null;
+    if (refCurrent && typeof refCurrent.measure === 'function') {
+      refCurrent.measure((_x, _y, _width, _height, pageX, pageY) => {
         setMenuPosition({
-          top: pageY + _height + 5,
+          top: (pageY || 0) + (_height || 0) + 5,
           right: Platform.OS === 'ios' ? 16 : 24,
         });
         setShowMenu(true);
       });
+    } else {
+      // fallback position if measure isn't available
+      setMenuPosition({top: 120, right: Platform.OS === 'ios' ? 16 : 24});
+      setShowMenu(true);
     }
   };
 
   const handleEdit = () => {
     if (!selectedUser) return;
-    setEditedName(selectedUser.name);
-    setEditedPhone(selectedUser.phone);
-    setEditedType(selectedUser.type);
+    setEditedName(selectedUser.name || selectedUser.nickname || '');
+    setEditedPhone(selectedUser.phone || '');
+    setEditedType((selectedUser.type || '').toString().toLowerCase());
     setEditedNickname(selectedUser.nickname || '');
-    setEditedDateOfYear(
-      selectedUser.dateOfBirth ? selectedUser.dateOfBirth.substring(0, 4) : '',
-    );
+    const dob = selectedUser.dateOfBirth || '';
+    setEditedDateOfYear(dob && dob.length >= 4 ? dob.substring(0, 4) : '');
     setShowMenu(false);
     setShowEditModal(true);
   };
@@ -176,7 +175,12 @@ const ManageU = ({onBack}) => {
         showsVerticalScrollIndicator={false}>
         {filteredUsers.length > 0 ? (
           filteredUsers.map(user => {
-            const buttonRef = useRef(null);
+            const buttonRef =
+              menuButtonRefs.current[user.id] ||
+              (menuButtonRefs.current[user.id] = React.createRef());
+            const userType = (user.type || '').toString().toLowerCase();
+            const displayName = user.name || user.nickname || 'Unnamed';
+            const displayPhone = user.phone || 'N/A';
             return (
               <View key={user.id} style={customStyles.userCard}>
                 <View style={customStyles.userInfo}>
@@ -185,22 +189,18 @@ const ManageU = ({onBack}) => {
                       customStyles.userIconContainer,
                       {
                         backgroundColor:
-                          user.type === 'admin' ? '#EDE9FE' : '#DBEAFE',
+                          userType === 'admin' ? '#EDE9FE' : '#DBEAFE',
                       },
                     ]}>
                     <MaterialCommunityIcons
-                      name={
-                        user.type === 'admin'
-                          ? 'shield-crown'
-                          : 'account-circle'
-                      }
+                      name={userType === 'admin' ? 'shield-crown' : 'account-circle'}
                       size={24}
-                      color={user.type === 'admin' ? '#7C3AED' : '#3B82F6'}
+                      color={userType === 'admin' ? '#7C3AED' : '#3B82F6'}
                     />
                   </View>
                   <View>
-                    <Text style={customStyles.userName}>{user.name}</Text>
-                    <Text style={customStyles.userPhone}>{user.phone}</Text>
+                    <Text style={customStyles.userName}>{displayName}</Text>
+                    <Text style={customStyles.userPhone}>{displayPhone}</Text>
                   </View>
                 </View>
                 <TouchableOpacity
@@ -495,7 +495,7 @@ const ManageU = ({onBack}) => {
                 </View>
                 <View style={customStyles.viewDataContainer}>
                   <Text style={customStyles.viewDataText}>
-                    {selectedUser?.name}
+                    {selectedUser?.name || selectedUser?.nickname || 'N/A'}
                   </Text>
                 </View>
               </View>
@@ -600,7 +600,7 @@ const ManageU = ({onBack}) => {
             <Text style={customStyles.deleteTitle}>Confirm Deletion</Text>
             <Text style={customStyles.deleteMessage}>
               Are you sure you want to delete{' '}
-              <Text style={{fontWeight: 'bold'}}>{selectedUser?.name}</Text>?
+              <Text style={{fontWeight: 'bold'}}>{selectedUser?.name || selectedUser?.nickname || 'this user'}</Text>?
               This cannot be undone.
             </Text>
             <View style={customStyles.deleteActions}>

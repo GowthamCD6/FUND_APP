@@ -92,45 +92,101 @@ exports.getGroups = async (req, res) => {
     }
 };
 
-exports.addUser = async (req, res) => {
-    const { name, phoneNumber, yearOfBirth, role } = req.body;
-    const nick_name = name || null;
-    const phone = phoneNumber || null;
-    const yob = yearOfBirth || null;
+exports.addGroupMembers = async (req, res) => {
+    const { groupId, members } = req.body;
+    // Normalize members input: accept either an array of IDs (e.g. [3,4]) or
+    // an array of objects with `id` (e.g. [{id:3}, {id:4}])
+    if (!Array.isArray(members)) {
+        return res.status(400).json({ success: false, message: 'members must be an array' });
+    }
+
+    // Convert numbers or string ids and objects to numeric ids
+    const normalizedIds = members
+        .map(m => (m && typeof m === 'object' ? m.id : m))
+        .map(id => (id !== undefined && id !== null ? Number(id) : NaN))
+        .filter(id => !Number.isNaN(id));
+
+    if (normalizedIds.length === 0) {
+        return res.status(400).json({ success: false, message: 'No valid member ids provided' });
+    }
+    if (normalizedIds.length === 0) {
+        return res.status(400).json({ success: false, message: 'No valid member ids provided' });
+    }
+
+    // Validate groupId is numeric (DB group_id expects numeric id)
+    const groupIdNum = Number(groupId);
+    if (Number.isNaN(groupIdNum)) {
+        return res.status(400).json({ success: false, message: 'Invalid groupId' });
+    }
+
+    console.log('Adding members to group', groupIdNum, 'ids:', normalizedIds);
 
     try {
-        if (!phone) {
-            return res.status(400).json({ success: false, message: 'Phone is required' });
-        }
-        if (!yob) {
-            return res.status(400).json({ success: false, message: 'Year of birth is required' });
-        }
-
-        const [userRows] = await db.promise().query('SELECT id FROM users WHERE phone = ?', [phone]);
-        if (userRows.length > 0) {
-            return res.status(409).json({ success: false, message: 'User already exists' });
-        }
-
-        // Hash plaintext password (YOB) using bcrypt
-        const plainPassword = String(yob);
-        const encryptAES = passwordEncryptAES(plainPassword);
-        const finalHashedPassword = await bcrypt.hash(encryptAES, 12);
-
-        const [result] = await db
-            .promise()
-            .query(
-                'INSERT INTO users (nick_name, phone, password, role) VALUES (?, ?, ?, ?)',
-                [nick_name, phone, finalHashedPassword, role || null]
-            );
-
-        if (result.affectedRows === 0) {
-            return res.status(500).json({ success: false, message: 'Failed to add user' });
-        }
-
-        return res.status(200).json({ success: true, message: 'User added to group' });
+        const insertValues = normalizedIds.map(id => [groupIdNum, id]);
+        const sql = `
+            INSERT INTO user_grouping (group_id, user_id)
+            VALUES ?
+        `;
+        await db.promise().query(sql, [insertValues]);
+        return res.status(201).json({ success: true, message: 'Members added successfully' });
     } catch (error) {
-        console.error('Error adding user to group:', error);
-        return res.status(500).json({ success: false, message: 'Failed to add user to group' });
+        console.error('Error adding group members:', error);
+        return res.status(500).json({ success: false, message: 'Failed to add group members' });
     }
 };
 
+// Fetch members of a group
+exports.getGroupMembers = async (req, res) => {
+    const groupId = req.query.groupId;
+    const groupIdNum = Number(groupId);
+    if (Number.isNaN(groupIdNum)) {
+        return res.status(400).json({ success: false, message: 'Invalid groupId' });
+    }
+
+    try {
+        const sql = `
+            SELECT ug.id AS mappingId, ug.user_id AS userId, u.name, u.nick_name, u.phone
+            FROM user_grouping ug
+            LEFT JOIN users u ON u.id = ug.user_id
+            WHERE ug.group_id = ?
+        `;
+        const [rows] = await db.promise().query(sql, [groupIdNum]);
+        const data = rows.map(r => ({
+            mappingId: r.mappingId,
+            userId: r.userId,
+            name: r.name,
+            nickname: r.nickname,
+            phone: r.phone,
+        }));
+        return res.status(200).json({ success: true, data });
+    } catch (error) {
+        console.error('Error fetching group members:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch group members' });
+    }
+};
+
+// Remove members from a group (accepts array of user ids)
+exports.removeGroupMembers = async (req, res) => {
+    const { groupId, members } = req.body;
+    if (!Array.isArray(members) || members.length === 0) {
+        return res.status(400).json({ success: false, message: 'members must be a non-empty array' });
+    }
+    const groupIdNum = Number(groupId);
+    if (Number.isNaN(groupIdNum)) {
+        return res.status(400).json({ success: false, message: 'Invalid groupId' });
+    }
+
+    const ids = members.map(m => (m && typeof m === 'object' ? m.id : m)).map(id => Number(id)).filter(id => !Number.isNaN(id));
+    if (ids.length === 0) {
+        return res.status(400).json({ success: false, message: 'No valid member ids provided' });
+    }
+
+    try {
+        const sql = `DELETE FROM user_grouping WHERE group_id = ? AND user_id IN (?);`;
+        await db.promise().query(sql, [groupIdNum, ids]);
+        return res.status(200).json({ success: true, message: 'Members removed successfully' });
+    } catch (error) {
+        console.error('Error removing group members:', error);
+        return res.status(500).json({ success: false, message: 'Failed to remove group members' });
+    }
+};

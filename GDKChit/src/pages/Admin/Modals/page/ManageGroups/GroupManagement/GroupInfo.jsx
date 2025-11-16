@@ -22,6 +22,8 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     winner: true,
     history: false
   });
+  console.log(group.id);
+  
 
   // Month-wise data storage
   const [monthlyData] = useState([
@@ -42,6 +44,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
   const [formData, setFormData] = useState({
     groupName: group.name || '',
+    groupId: group.id || '',
     monthlyAmount: group.monthlyAmount?.toString() || '',
     createdDate: group.createdDate || new Date().toISOString().split('T')[0],
     currentMonthAmount: group.currentMonthAmount?.toString() || group.monthlyAmount?.toString() || '',
@@ -632,6 +635,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         onClose={() => setShowMemberRegistration(false)}
         group={{
           groupName: formData.groupName,
+          groupId: formData.groupId,
           monthlyAmount: formData.monthlyAmount,
           memberMappings: memberMappings
         }}

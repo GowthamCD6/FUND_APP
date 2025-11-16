@@ -4,13 +4,17 @@ const { authenticateToken } = require('../middleware/auth');
 const groupManagement = require('../controllers/admin/groupManagement');
 const groupMessaging = require('../controllers/admin/groupMessaging');
 const monthlyCollection = require('../controllers/admin/monthlyCollection');
+const userManagement = require('../controllers/admin/userManagement');
 
 router.post('/groups/createGroup', authenticateToken, groupManagement.createGroup);
 router.get('/groups/getGroups', authenticateToken, groupManagement.getGroups);
-router.post('/users/addUser', authenticateToken, groupManagement.addUser);
-// router.get('/groups', authenticateToken, groupManagement.getAllGroups);
-// router.get('/groups/:groupId', authenticateToken, groupManagement.getGroupById);
-// router.put('/groups/:groupId', authenticateToken, groupManagement.updateGroup);
-// router.delete('/groups/:groupId', authenticateToken, groupManagement.deleteGroup);
+
+router.post('/groups/addMembers', authenticateToken, groupManagement.addGroupMembers);
+router.get('/groups/getMembers', authenticateToken, groupManagement.getGroupMembers);
+router.post('/groups/removeMembers', authenticateToken, groupManagement.removeGroupMembers);
+
+router.post('/users/addUser', authenticateToken, userManagement.addUser);
+router.get('/users/getAllUsers', authenticateToken, userManagement.getAllUsers);
+
 
 module.exports = router;

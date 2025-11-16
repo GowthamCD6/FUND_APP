@@ -179,6 +179,8 @@ const ManageGroups = ({onBack}) => {
   };
 
   const openGroupDetails = group => {
+    // console.log(group);
+    
     setSelectedGroup(group);
     setShowGroupDetails(true);
   };
@@ -421,7 +423,6 @@ const ManageGroups = ({onBack}) => {
         onBack={() => setShowGroupDetails(false)}
         onSave={data => {
           console.log('Group data updated:', data);
-          // Handle saving the data here
           setShowGroupDetails(false);
         }}
       />
