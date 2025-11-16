@@ -9,22 +9,97 @@ class BiometricService {
   constructor() {
     this.isLocked = false;
     this.isSecurityEnabled = false;
+    this.isAuthenticated = false; // Track if user has authenticated in this session
+    this.lastActiveTime = null; // Track when user was last active
+    this.backgroundTime = null; // Track when app went to background
     this.listeners = [];
     this.appStateSubscription = null;
-    this.init();
+    this.lockTimeoutMinutes = 5; // 5 minutes timeout
+    this.isInitialized = false;
+    
+    console.log('BiometricService: Constructor called');
   }
 
   async init() {
+    if (this.isInitialized) {
+      console.log('BiometricService: Already initialized');
+      return;
+    }
+
     try {
+      console.log('BiometricService: Starting initialization...');
+      
       // Check if security is enabled
       const enabled = await AsyncStorage.getItem('securityEnabled');
       this.isSecurityEnabled = enabled === 'true';
+      console.log('BiometricService: Security enabled from storage:', this.isSecurityEnabled);
+      
+      // Check if user was authenticated in previous session
+      const wasAuthenticated = await AsyncStorage.getItem('wasAuthenticated');
+      this.isAuthenticated = wasAuthenticated === 'true';
+      console.log('BiometricService: Was authenticated from storage:', this.isAuthenticated);
+      
+      // Get last active time
+      const lastActiveStr = await AsyncStorage.getItem('lastActiveTime');
+      if (lastActiveStr) {
+        this.lastActiveTime = new Date(lastActiveStr);
+        console.log('BiometricService: Last active time:', this.lastActiveTime);
+      }
+      
+      // Determine if app should be locked
+      this.determineInitialLockState();
       
       if (this.isSecurityEnabled) {
         this.setupAppStateListener();
       }
+      
+      this.isInitialized = true;
+      console.log('BiometricService: Initialization complete');
+      
+      // Notify listeners about the initial state
+      this.notifyListeners();
     } catch (error) {
-      console.error('BiometricService init error:', error);
+      console.error('BiometricService: Init error:', error);
+      this.isInitialized = true; // Still mark as initialized to prevent infinite loops
+    }
+  }
+
+  determineInitialLockState() {
+    if (!this.isSecurityEnabled) {
+      console.log('BiometricService: Security disabled, not locking');
+      this.isLocked = false;
+      return;
+    }
+
+    // If never authenticated in this session, lock the app
+    if (!this.isAuthenticated) {
+      console.log('BiometricService: Never authenticated, locking app');
+      this.isLocked = true;
+      return;
+    }
+
+    // If was authenticated, check if enough time has passed since last active
+    if (this.lastActiveTime) {
+      const now = new Date();
+      const timeDiff = now - this.lastActiveTime;
+      const minutesDiff = timeDiff / (1000 * 60);
+      
+      console.log('BiometricService: Time since last active:', minutesDiff, 'minutes');
+      
+      if (minutesDiff > this.lockTimeoutMinutes) {
+        console.log('BiometricService: Timeout exceeded, locking app');
+        this.isLocked = true;
+        this.isAuthenticated = false;
+      } else {
+        console.log('BiometricService: Within timeout, not locking');
+        this.isLocked = false;
+        this.updateLastActiveTime();
+      }
+    } else {
+      // No last active time recorded, lock the app
+      console.log('BiometricService: No last active time, locking app');
+      this.isLocked = true;
+      this.isAuthenticated = false;
     }
   }
 
@@ -33,11 +108,59 @@ class BiometricService {
       this.appStateSubscription.remove();
     }
 
+    console.log('BiometricService: Setting up app state listener');
     this.appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'background' && this.isSecurityEnabled) {
-        this.lockApp();
+      console.log('BiometricService: App state changed to:', nextAppState);
+      
+      if (nextAppState === 'background') {
+        this.handleAppGoingToBackground();
+      } else if (nextAppState === 'active') {
+        this.handleAppComingToForeground();
       }
     });
+  }
+
+  handleAppGoingToBackground() {
+    if (!this.isSecurityEnabled || !this.isAuthenticated) return;
+    
+    console.log('BiometricService: App going to background');
+    this.backgroundTime = new Date();
+    this.updateLastActiveTime();
+    
+    // Save state to storage
+    AsyncStorage.setItem('lastActiveTime', this.backgroundTime.toISOString());
+    AsyncStorage.setItem('wasAuthenticated', this.isAuthenticated.toString());
+  }
+
+  handleAppComingToForeground() {
+    if (!this.isSecurityEnabled) return;
+    
+    console.log('BiometricService: App coming to foreground');
+    
+    // Only check timeout if user was previously authenticated and went to background
+    if (this.isAuthenticated && this.backgroundTime) {
+      const now = new Date();
+      const timeDiff = now - this.backgroundTime;
+      const minutesDiff = timeDiff / (1000 * 60);
+      
+      console.log('BiometricService: Background time:', minutesDiff, 'minutes');
+      
+      if (minutesDiff > this.lockTimeoutMinutes) {
+        console.log('BiometricService: Timeout exceeded, locking app');
+        this.lockApp();
+        this.isAuthenticated = false; // Reset authentication
+      } else {
+        console.log('BiometricService: Within timeout, staying unlocked');
+        this.updateLastActiveTime();
+      }
+    }
+    
+    this.backgroundTime = null;
+  }
+
+  updateLastActiveTime() {
+    this.lastActiveTime = new Date();
+    AsyncStorage.setItem('lastActiveTime', this.lastActiveTime.toISOString());
   }
 
   async checkBiometricAvailability() {
@@ -52,6 +175,13 @@ class BiometricService {
 
   async authenticate(reason = 'Authenticate to unlock app') {
     try {
+      console.log('BiometricService: Starting authentication...');
+      
+      if (!this.isSecurityEnabled) {
+        console.log('BiometricService: Security not enabled, skipping authentication');
+        return { success: true };
+      }
+
       const { available, biometryType } = await this.checkBiometricAvailability();
       
       if (available) {
@@ -64,6 +194,10 @@ class BiometricService {
 
         if (success) {
           this.unlockApp();
+          this.isAuthenticated = true; // Mark as authenticated for this session
+          this.updateLastActiveTime();
+          await AsyncStorage.setItem('wasAuthenticated', 'true');
+          console.log('BiometricService: Biometric authentication successful');
           return { success: true };
         } else {
           // If biometric fails, try device credentials
@@ -105,8 +239,12 @@ class BiometricService {
         
         if (result && result.username) {
           this.unlockApp();
+          this.isAuthenticated = true; // Mark as authenticated for this session
+          this.updateLastActiveTime();
+          await AsyncStorage.setItem('wasAuthenticated', 'true');
           // Clean up the dummy credential
           await Keychain.resetInternetCredentials('app_security_check');
+          console.log('BiometricService: Keychain authentication successful');
           return { success: true };
         }
       } catch (keychainError) {
@@ -126,12 +264,16 @@ class BiometricService {
 
           if (success) {
             this.unlockApp();
+            this.isAuthenticated = true; // Mark as authenticated for this session
+            this.updateLastActiveTime();
+            await AsyncStorage.setItem('wasAuthenticated', 'true');
             // Clean up the keys after successful authentication
             try {
               await rnBiometrics.deleteKeys();
             } catch (e) {
               // Ignore cleanup errors
             }
+            console.log('BiometricService: Biometric device authentication successful');
             return { success: true };
           } else {
             return { success: false, error: error || 'Device authentication failed' };
@@ -162,9 +304,13 @@ class BiometricService {
           },
           {
             text: 'OK',
-            onPress: (pin) => {
+            onPress: async (pin) => {
               if (pin === '1234') { // Default PIN
                 this.unlockApp();
+                this.isAuthenticated = true; // Mark as authenticated for this session
+                this.updateLastActiveTime();
+                await AsyncStorage.setItem('wasAuthenticated', 'true');
+                console.log('BiometricService: PIN authentication successful');
                 resolve({ success: true });
               } else {
                 Alert.alert('Error', 'Incorrect PIN. Please try again.');
@@ -184,6 +330,7 @@ class BiometricService {
     try {
       await AsyncStorage.setItem('securityEnabled', 'true');
       this.isSecurityEnabled = true;
+      this.isLocked = true; // Lock immediately when security is enabled
       this.setupAppStateListener();
       this.notifyListeners();
       return { success: true };
@@ -196,14 +343,22 @@ class BiometricService {
   async disableSecurity() {
     try {
       await AsyncStorage.setItem('securityEnabled', 'false');
+      // Clear session data when security is disabled
+      await AsyncStorage.removeItem('wasAuthenticated');
+      await AsyncStorage.removeItem('lastActiveTime');
+      
       this.isSecurityEnabled = false;
       this.isLocked = false;
+      this.isAuthenticated = false;
+      this.lastActiveTime = null;
+      this.backgroundTime = null;
       
       if (this.appStateSubscription) {
         this.appStateSubscription.remove();
         this.appStateSubscription = null;
       }
       
+      console.log('BiometricService: Security disabled and session data cleared');
       this.notifyListeners();
       return { success: true };
     } catch (error) {

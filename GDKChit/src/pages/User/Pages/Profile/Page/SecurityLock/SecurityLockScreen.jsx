@@ -64,7 +64,6 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
 
   const handlePinAuth = async () => {
     setIsAuthenticating(true);
-    setError('');
     
     try {
       const result = await BiometricService.authenticateWithDeviceCredentials('Use your device PIN, pattern or password to unlock');
@@ -73,12 +72,16 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
         if (onAuthenticationSuccess) {
           onAuthenticationSuccess();
         }
-      } else {
-        setError(result.error || 'Device authentication failed');
+      } else if (result.error !== 'user_cancel') {
+        Alert.alert(
+          'Authentication Failed',
+          result.error || 'Device authentication failed',
+          [{ text: 'OK', style: 'default' }]
+        );
       }
     } catch (error) {
       console.error('Device authentication error:', error);
-      setError('Device authentication error');
+      Alert.alert('Error', 'Device authentication error. Please try again.');
     } finally {
       setIsAuthenticating(false);
     }
