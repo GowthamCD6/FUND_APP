@@ -34,17 +34,13 @@ class BiometricService {
       this.isSecurityEnabled = enabled === 'true';
       console.log('BiometricService: Security enabled from storage:', this.isSecurityEnabled);
       
-      // Check if user was authenticated in previous session
-      const wasAuthenticated = await AsyncStorage.getItem('wasAuthenticated');
-      this.isAuthenticated = wasAuthenticated === 'true';
-      console.log('BiometricService: Was authenticated from storage:', this.isAuthenticated);
+      // Session data is memory-only - always start unauthenticated
+      this.isAuthenticated = false;
+      console.log('BiometricService: Starting fresh session - not authenticated');
       
-      // Get last active time
-      const lastActiveStr = await AsyncStorage.getItem('lastActiveTime');
-      if (lastActiveStr) {
-        this.lastActiveTime = new Date(lastActiveStr);
-        console.log('BiometricService: Last active time:', this.lastActiveTime);
-      }
+      // Session data is memory-only - no last active time on startup
+      this.lastActiveTime = null;
+      console.log('BiometricService: Starting fresh session - no last active time');
       
       // Determine if app should be locked
       this.determineInitialLockState();
@@ -127,9 +123,7 @@ class BiometricService {
     this.backgroundTime = new Date();
     this.updateLastActiveTime();
     
-    // Save state to storage
-    AsyncStorage.setItem('lastActiveTime', this.backgroundTime.toISOString());
-    AsyncStorage.setItem('wasAuthenticated', this.isAuthenticated.toString());
+    // Session data is memory-only - no persistent storage
   }
 
   handleAppComingToForeground() {
@@ -160,7 +154,7 @@ class BiometricService {
 
   updateLastActiveTime() {
     this.lastActiveTime = new Date();
-    AsyncStorage.setItem('lastActiveTime', this.lastActiveTime.toISOString());
+    // Session data is memory-only - no persistent storage
   }
 
   async checkBiometricAvailability() {
@@ -196,7 +190,7 @@ class BiometricService {
           this.unlockApp();
           this.isAuthenticated = true; // Mark as authenticated for this session
           this.updateLastActiveTime();
-          await AsyncStorage.setItem('wasAuthenticated', 'true');
+          // Session data is memory-only - no persistent storage
           console.log('BiometricService: Biometric authentication successful');
           return { success: true };
         } else {
@@ -241,7 +235,7 @@ class BiometricService {
           this.unlockApp();
           this.isAuthenticated = true; // Mark as authenticated for this session
           this.updateLastActiveTime();
-          await AsyncStorage.setItem('wasAuthenticated', 'true');
+          // Session data is memory-only - no persistent storage
           // Clean up the dummy credential
           await Keychain.resetInternetCredentials('app_security_check');
           console.log('BiometricService: Keychain authentication successful');
@@ -266,7 +260,7 @@ class BiometricService {
             this.unlockApp();
             this.isAuthenticated = true; // Mark as authenticated for this session
             this.updateLastActiveTime();
-            await AsyncStorage.setItem('wasAuthenticated', 'true');
+            // Session data is memory-only - no persistent storage
             // Clean up the keys after successful authentication
             try {
               await rnBiometrics.deleteKeys();
@@ -309,7 +303,7 @@ class BiometricService {
                 this.unlockApp();
                 this.isAuthenticated = true; // Mark as authenticated for this session
                 this.updateLastActiveTime();
-                await AsyncStorage.setItem('wasAuthenticated', 'true');
+                // Session data is memory-only - no persistent storage
                 console.log('BiometricService: PIN authentication successful');
                 resolve({ success: true });
               } else {
@@ -343,9 +337,7 @@ class BiometricService {
   async disableSecurity() {
     try {
       await AsyncStorage.setItem('securityEnabled', 'false');
-      // Clear session data when security is disabled
-      await AsyncStorage.removeItem('wasAuthenticated');
-      await AsyncStorage.removeItem('lastActiveTime');
+      // Session data is memory-only - no need to clear from storage
       
       this.isSecurityEnabled = false;
       this.isLocked = false;
@@ -374,9 +366,17 @@ class BiometricService {
     }
   }
 
-  unlockApp() {
+  async unlockApp() {
+    console.log('BiometricService: Unlocking app');
     this.isLocked = false;
+    await this.startSession();
     this.notifyListeners();
+  }
+
+  async startSession() {
+    // Initialize session - keep authentication state in memory only
+    this.updateLastActiveTime();
+    console.log('BiometricService: Session started');
   }
 
   addListener(callback) {
