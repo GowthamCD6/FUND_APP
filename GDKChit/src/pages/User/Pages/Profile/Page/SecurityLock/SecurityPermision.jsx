@@ -12,11 +12,14 @@ import {
   Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import LottieView from 'lottie-react-native';
 import BiometricService from '../../../../../../services/BiometricService';
+import LockInfo from './Lock-Info-Modal/LockInfo';
 
 const SecurPermis = ({ onBack }) => {
   const [securityEnabled, setSecurityEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [helpModalVisible, setHelpModalVisible] = useState(false);
 
   // Load security setting on component mount
   useEffect(() => {
@@ -128,6 +131,18 @@ const SecurPermis = ({ onBack }) => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.formContainer}>
           
+          {/* Lottie Animation */}
+          <View style={styles.animationContainer}>
+            <LottieView
+              source={require('../../../../../../animation/Lock_Authentication.1.json')}
+              autoPlay={true}
+              loop={true}
+              speed={0.5}
+              resizeMode="contain"
+              style={styles.lottieAnimation}
+            />
+          </View>
+          
           {/* Security Enable Card */}
           <View style={styles.inputContainer}>
             <View style={styles.labelContainer}>
@@ -164,30 +179,23 @@ const SecurPermis = ({ onBack }) => {
             </View>
           </View>
 
-          {/* Security Features Info */}
-          <View style={styles.inputContainer}>
-            <View style={styles.labelContainer}>
-              <MaterialCommunityIcons name="information" size={16} color="#6B7280" />
-              <Text style={styles.inputLabel}>Authentication Methods</Text>
-            </View>
-            <View style={styles.infoCard}>
-              <View style={styles.infoItem}>
-                <MaterialCommunityIcons name="fingerprint" size={20} color="#3B82F6" />
-                <Text style={styles.infoText}>Biometric (Fingerprint/Face ID)</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <MaterialCommunityIcons name="form-textbox-password" size={20} color="#3B82F6" />
-                <Text style={styles.infoText}>Device PIN/Pattern/Password</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <MaterialCommunityIcons name="shield-key" size={20} color="#3B82F6" />
-                <Text style={styles.infoText}>Automatic lock on app switch</Text>
-              </View>
-            </View>
-          </View>
+          {/* Help Button */}
+          <TouchableOpacity 
+            style={styles.helpButton}
+            onPress={() => setHelpModalVisible(true)}
+          >
+            <MaterialCommunityIcons name="help-circle-outline" size={20} color="#3B82F6" />
+            <Text style={styles.helpButtonText}>How this function works</Text>
+          </TouchableOpacity>
 
         </View>
       </ScrollView>
+
+      {/* Help Modal - LockInfo Component */}
+      <LockInfo 
+        visible={helpModalVisible}
+        onClose={() => setHelpModalVisible(false)}
+      />
     </View>
   );
 };
@@ -195,67 +203,74 @@ const SecurPermis = ({ onBack }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 12 : 20,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
   backButton: {
-    marginRight: 15,
+    padding: 4,
   },
   headerTitle: {
-    fontSize: 20,
+    marginTop: -10,
+    fontSize: 22,
     fontWeight: '600',
-    color: '#1F2937',
-    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
+    color: '#212121',
+    marginLeft: 16,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   separator: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#d7dce4ff',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    backgroundColor: '#FFFFFF',
   },
   formContainer: {
-    flex: 1,
+    paddingTop: 24,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  animationContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+    paddingVertical: 16,
+    backgroundColor: 'transparent',
+  },
+  lottieAnimation: {
+    width: 380,
+    height: 380,
+    marginTop: -80,
+    marginBottom: -70,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   labelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
+    gap: 8,
   },
   inputLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#374151',
-    marginLeft: 8,
-    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
+    color: '#212121',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   securityCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
     borderRadius: 12,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    borderWidth: 0,
+    elevation: 0,
+    shadowColor: 'transparent',
   },
   securityContent: {
     flexDirection: 'row',
@@ -274,14 +289,14 @@ const styles = StyleSheet.create({
   securityTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#212121',
     marginBottom: 4,
-    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   securitySubtitle: {
     fontSize: 14,
-    color: '#6B7280',
-    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
+    color: '#666666',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   infoCard: {
     backgroundColor: '#FFFFFF',
@@ -305,6 +320,25 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     marginLeft: 12,
     fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
+  },
+  helpButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 20,
+    borderRadius: 10,
+    backgroundColor: '#E3F2FD',
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+  },
+  helpButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3B82F6',
+    marginLeft: 12,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
 });
 
