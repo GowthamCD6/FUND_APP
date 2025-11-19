@@ -331,9 +331,9 @@ const Profile = () => {
                     </TouchableOpacity>
                   </View>
                 </View>
-                {/* General Section */}
+                {/* Advanced Features Section */}
                 <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>General</Text>
+                  <Text style={styles.sectionTitle}>Advanced Features</Text>
                   <View style={styles.menuSection}>
                     <TouchableOpacity
                       style={styles.menuItem}
@@ -357,6 +357,29 @@ const Profile = () => {
                     <View style={styles.customDivider} />
                     <TouchableOpacity
                       style={styles.menuItem}
+                      onPress={() => setShowMyLocation(true)}>
+                      <View style={styles.menuItemLeft}>
+                        <MaterialCommunityIcons
+                          name="map-marker"
+                          size={22}
+                          color="#666666"
+                        />
+                        <Text style={styles.menuItemText}>My Location</Text>
+                      </View>
+                      <MaterialCommunityIcons
+                        name="chevron-right"
+                        size={22}
+                        color="#CCCCCC"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {/* General Section */}
+                <View style={styles.sectionContainer}>
+                  <Text style={styles.sectionTitle}>General</Text>
+                  <View style={styles.menuSection}>
+                    <TouchableOpacity
+                      style={styles.menuItem}
                       onPress={() => {
                         console.log('Privacy Policy clicked!');
                         Alert.alert('Debug', 'Privacy Policy clicked!');
@@ -369,24 +392,6 @@ const Profile = () => {
                           color="#666666"
                         />
                         <Text style={styles.menuItemText}>Privacy Policy</Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={22}
-                        color="#CCCCCC"
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.customDivider} />
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => setShowMyLocation(true)}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="map-marker"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={styles.menuItemText}>My Location</Text>
                       </View>
                       <MaterialCommunityIcons
                         name="chevron-right"
@@ -836,7 +841,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F0F0F0',
     alignSelf: 'center',
-    width: '80%',
+    width: '100%',
     marginVertical: 0,
   },
   menuItemLeft: {
@@ -949,7 +954,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#FFFFFF',
-    zIndex: 1000, // Ensure it covers everything including bottom navigation
+    zIndex: 1000,
   },
 });
 

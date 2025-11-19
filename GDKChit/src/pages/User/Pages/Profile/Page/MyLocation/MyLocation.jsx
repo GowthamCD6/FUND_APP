@@ -12,8 +12,11 @@ import {
   ActivityIndicator,
   Share,
   BackHandler,
+  ScrollView,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import LottieView from 'lottie-react-native';
+import ShareLocationInfo from './Share_info_modal/ShareLocationInfo';
 import {
   getUserCurrentLocation,
   getUserCurrentLocationWithFallback,
@@ -43,6 +46,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
   const [permissionChecked, setPermissionChecked] = useState(false);
   const [hasSharedAddress, setHasSharedAddress] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [showShareLocationInfo, setShowShareLocationInfo] = useState(false);
 
   console.log('MyLocation component rendered');
 
@@ -531,45 +535,62 @@ const MyLocation = ({ onBack, animatedValue }) => {
       </View>
       <View style={styles.separator} />
 
-      <View style={styles.content}>
-        {/* Main Share Address Card */}
-        {!hasSharedAddress && !loading && (
-          <View style={styles.shareAddressCard}>
-            <View style={styles.shareAddressHeader}>
-              <MaterialCommunityIcons 
-                name="home-map-marker" 
-                size={48} 
-                color="#4CAF50" 
-              />
-              <Text style={styles.shareAddressTitle}>Share Your House Address</Text>
-              <Text style={styles.shareAddressSubtitle}>
-                Help us locate your house for better service delivery
-              </Text>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.shareAddressButton}
-              onPress={shareHouseAddress}
-              disabled={loading}
-            >
-              <MaterialCommunityIcons name="map-marker-plus" size={24} color="#ffffff" />
-              <Text style={styles.shareAddressButtonText}>
-                {loading ? 'Getting Location...' : 'Share My Address'}
-              </Text>
-            </TouchableOpacity>
-            
-            <View style={styles.privacyNote}>
-              <MaterialCommunityIcons name="shield-check-outline" size={16} color="#666" />
-              <Text style={styles.privacyText}>
-                Your location will be captured using your phone's GPS and saved securely
-              </Text>
-            </View>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.formContainer}>
+          {/* Lottie Animation */}
+          <View style={styles.animationContainer}>
+            <LottieView
+              source={require('../../../../../../animation/Share_Location.json')}
+              autoPlay={true}
+              loop={true}
+              speed={0.7}
+              resizeMode="contain"
+              style={styles.lottieAnimation}
+            />
           </View>
-        )}
+
+          {/* Share Address Card */}
+          {!hasSharedAddress && !loading && (
+            <View style={styles.inputContainer}>
+              <View style={styles.labelContainer}>
+                <MaterialCommunityIcons name="map-marker" size={16} color="#6B7280" />
+                <Text style={styles.inputLabel}>Share Your House Address</Text>
+              </View>
+              <View style={styles.shareAddressCard}>
+                <Text style={styles.shareAddressCardTitle}>Help us locate your house for better service delivery</Text>
+                <TouchableOpacity 
+                  style={styles.shareAddressButton}
+                  onPress={shareHouseAddress}
+                  disabled={loading}
+                >
+                  <MaterialCommunityIcons name="map-marker-plus" size={20} color="#ffffff" />
+                  <Text style={styles.shareAddressButtonText}>
+                    {loading ? 'Getting Location...' : 'Share My Address'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* How This Function Works Button */}
+          {!hasSharedAddress && !loading && (
+            <TouchableOpacity 
+              style={styles.helpButton}
+              onPress={() => setShowShareLocationInfo(true)}
+            >
+              <MaterialCommunityIcons name="help-circle-outline" size={20} color="#3B82F6" />
+              <Text style={styles.helpButtonText}>How this function works</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Loading State */}
         {loading && (
-          <View style={styles.loadingCard}>
+          <View style={styles.loadingContent}>
             <ActivityIndicator size="large" color="#4CAF50" />
             <Text style={styles.loadingTitle}>Getting Your Location...</Text>
             <Text style={styles.loadingSubtitle}>
@@ -580,7 +601,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
 
         {/* Success State - Address Shared */}
         {hasSharedAddress && currentLocation && (
-          <View style={styles.card}>
+          <View style={styles.successContent}>
             <View style={styles.cardHeader}>
               <MaterialCommunityIcons 
                 name="check-circle" 
@@ -665,7 +686,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
         )}
 
         {/* Information Card */}
-        <View style={styles.infoCard}>
+        <View style={styles.infoContent}>
           <MaterialCommunityIcons 
             name="information-outline" 
             size={20} 
@@ -678,7 +699,13 @@ const MyLocation = ({ onBack, animatedValue }) => {
             }
           </Text>
         </View>
-      </View>
+      </ScrollView>
+
+      {/* Share Location Info Modal */}
+      <ShareLocationInfo 
+        visible={showShareLocationInfo}
+        onClose={() => setShowShareLocationInfo(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -686,7 +713,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFFFFF', // Pure white background
   },
   header: {
     flexDirection: 'row',
@@ -696,25 +723,120 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: '#FFFFFF',
   },
+  backButton: {
+    padding: 4,
+    marginTop: -10,
+  },
   headerTitle: {
     fontSize: 22,
     fontWeight: '600',
     color: '#212121',
     marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
     marginTop: -10,
-  },
-  backButton: {
-    padding: 4,
-    marginTop: -5,
   },
   separator: {
     height: 1,
     backgroundColor: '#d7dce4ff',
   },
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    flexGrow: 1,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
   content: {
     flex: 1,
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  formContainer: {
+    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  animationContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingVertical: 8,
+    backgroundColor: 'transparent',
+  },
+  lottieAnimation: {
+    width: 370,
+    height: 280,
+    marginTop: -40,
+    marginBottom: -60,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  labelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 8,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#212121',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+  },
+  shareAddressCard: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 0,
+    elevation: 0,
+    shadowColor: 'transparent',
+  },
+  shareAddressCardTitle: {
+    fontSize: 14,
+    color: '#555555',
+    marginBottom: 12,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
+  },
+  shareAddressButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    elevation: 2,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+  },
+  shareAddressButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+  },
+  helpButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 20,
+    borderRadius: 10,
+    backgroundColor: '#E3F2FD',
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+  },
+  helpButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#3B82F6',
+    marginLeft: 10,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   card: {
     backgroundColor: '#ffffff',
@@ -726,6 +848,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    width: '100%',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -735,116 +858,55 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#212121',
     marginLeft: 12,
     flex: 1,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
-  // New Share Address Card Styles
-  shareAddressCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 32,
-    marginBottom: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
+  // Loading Content Styles (no card)
+  loadingContent: {
     alignItems: 'center',
-  },
-  shareAddressHeader: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  shareAddressTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#333',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  shareAddressSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  shareAddressButton: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    elevation: 2,
-    shadowColor: '#4CAF50',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  shareAddressButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  privacyNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-    paddingHorizontal: 16,
-  },
-  privacyText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 8,
-    textAlign: 'center',
-    flex: 1,
-    lineHeight: 16,
-  },
-  // Loading Card Styles
-  loadingCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 40,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    alignItems: 'center',
+    paddingVertical: 30,
+    width: '100%',
   },
   loadingTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#212121',
     marginTop: 16,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   loadingSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#555555',
     marginTop: 8,
     textAlign: 'center',
     lineHeight: 20,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
-  // Success State Styles
+  // Success Content Styles
+  successContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
   successSection: {
     marginTop: 8,
   },
   addressDisplay: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f9f9f9',
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
   },
   fullAddressText: {
     fontSize: 14,
-    color: '#333',
+    color: '#212121',
     marginLeft: 8,
     flex: 1,
     lineHeight: 18,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   databaseStatus: {
     flexDirection: 'row',
@@ -859,11 +921,13 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontWeight: '500',
     marginLeft: 6,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   // Action Buttons Row
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 12,
+    width: '100%',
   },
   updateAddressButton: {
     flex: 1,
@@ -871,7 +935,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#4CAF50',
     borderRadius: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -880,8 +944,9 @@ const styles = StyleSheet.create({
   updateAddressButtonText: {
     color: '#4CAF50',
     fontSize: 13,
-    fontWeight: '500',
-    marginLeft: 4,
+    fontWeight: '600',
+    marginLeft: 6,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   shareLocationButton: {
     flex: 1,
@@ -889,7 +954,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#2196F3',
     borderRadius: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -898,8 +963,9 @@ const styles = StyleSheet.create({
   shareLocationButtonText: {
     color: '#2196F3',
     fontSize: 13,
-    fontWeight: '500',
-    marginLeft: 4,
+    fontWeight: '600',
+    marginLeft: 6,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   openMapsButton: {
     flex: 1,
@@ -907,7 +973,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#FF9800',
     borderRadius: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -916,10 +982,30 @@ const styles = StyleSheet.create({
   openMapsButtonText: {
     color: '#FF9800',
     fontSize: 13,
-    fontWeight: '500',
-    marginLeft: 4,
+    fontWeight: '600',
+    marginLeft: 6,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
-  // Existing styles
+  // Info Content Styles (no card)
+  infoContent: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 16,
+    width: '100%',
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#2E7D32',
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 16,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
+  },
   coordinatesRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -927,9 +1013,9 @@ const styles = StyleSheet.create({
   },
   coordinatesText: {
     fontSize: 14,
-    color: '#333',
+    color: '#212121',
     marginLeft: 8,
-    fontFamily: 'monospace',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   addressRow: {
     flexDirection: 'row',
@@ -942,24 +1028,15 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    color: '#999',
+    color: '#999999',
     marginLeft: 8,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
-  infoCard: {
-    backgroundColor: '#e3f2fd',
-    borderRadius: 8,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: 8,
+  infoButton: {
+    padding: 4,
+    marginLeft: 'auto',
   },
-  infoText: {
-    fontSize: 12,
-    color: '#1976d2',
-    marginLeft: 8,
-    flex: 1,
-    lineHeight: 16,
-  },
+
 });
 
 export default MyLocation;
