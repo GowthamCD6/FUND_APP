@@ -12,6 +12,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LeftArrowIcon from '../../../../assets/Icon/left-arrow.svg';
 import RightViewIcon from '../../../../assets/Icon/right-view.svg';
 import ChitGroupDetails from './Portfolio-view/Portfolio-view';
+import GroupCard from '../../../../components/GroupCard/GroupCard';
 import styles from './Portfoliosty';
 
 const ChitfundPortfolio = () => {
@@ -45,7 +46,7 @@ const ChitfundPortfolio = () => {
       currentMonth: 12,
       totalMonths: 20,
     },
-     {
+    {
       id: 'CHT004',
       groupName: 'Group D',
       investmentAmount: 500000, // Added 5 lakh group for the example
@@ -99,6 +100,22 @@ const ChitfundPortfolio = () => {
       return { backgroundColor: '#DCFCE7', textColor: '#15803D' };
     }
     return { backgroundColor: '#FFEDD5', textColor: '#C2410C' };
+  };
+
+  // Function to transform Portfolio data to GroupCard format
+  const transformGroupData = (group) => {
+    return {
+      id: group.id,
+      name: group.groupName,
+      status: group.paymentStatus,
+      totalMembers: group.totalMembers,
+      monthlyAmount: group.monthlyContribution,
+      completedCycles: group.currentMonth,
+      totalCycles: group.totalMonths,
+      nextDueDate: group.estimatedPayDate,
+      totalAmount: group.investmentAmount,
+      groupId: group.groupId,
+    };
   };
 
   // Function to handle showing group details in modal
@@ -172,56 +189,19 @@ const ChitfundPortfolio = () => {
                 </ScrollView>
             </View>
 
-            {/* --- UPDATED CHIT GROUP CARDS --- */}
+            {/* --- CHIT GROUP CARDS USING REUSABLE COMPONENT --- */}
             <View style={styles.section}>
                 {/* Horizontal divider above section title */}
                 <View style={styles.sectionDivider} />
                 <Text style={styles.chitGroupSectionTitle}>Your Chit Groups</Text>
                 
                 {chitGroups.map((group) => (
-                    <View key={group.id} style={styles.updatedCard}>
-                        
-                        {/* TOP: Group Name & View Icon */}
-                        <View style={styles.cardHeader}>
-                            <Text style={styles.updatedGroupName}>{group.groupName}</Text>
-                            <TouchableOpacity 
-                                style={styles.viewIconTouchable} 
-                                activeOpacity={0.7}
-                                onPress={() => handleViewGroupDetails(group)}
-                            >
-                                <View style={styles.circleIcon}>
-                                    <RightViewIcon width={20} height={20}/>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* DIVIDER */}
-                        <View style={styles.divider} />
-
-                        {/* BOTTOM SECTION: Two rows with Group ID and Date on left, Chit Value spanning both rows on right */}
-                        <View style={styles.bottomSection}>
-                            {/* Left side - Group ID and Date in separate rows */}
-                            <View style={styles.leftColumn}>
-                                <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>Group ID : </Text>
-                                    <Text style={styles.detailValue}>{group.groupId}</Text>
-                                </View>
-                                <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>Date : </Text>
-                                    <Text style={styles.detailValue}>{formatDate(group.estimatedPayDate)}</Text>
-                                </View>
-                            </View>
-                            
-                            {/* Right side - Chit Value section */}
-                            <View style={styles.rightColumn}>
-                                <Text style={styles.chitValueLabel}>CHIT VALUE</Text>
-                                <Text style={styles.chitValueAmount}>
-                                    {formatCurrency(group.investmentAmount)}
-                                </Text>
-                            </View>
-                        </View>
-                        
-                    </View>
+                    <GroupCard 
+                        key={group.id}
+                        group={transformGroupData(group)}
+                        onPress={() => handleViewGroupDetails(group)}
+                        onArrowPress={() => handleViewGroupDetails(group)}
+                    />
                 ))}
             </View>
         </ScrollView>

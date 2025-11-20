@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import GroupCard from '../../../../components/GroupCard/GroupCard';
 import styles from './ReportsStyles';
 
 const { width } = Dimensions.get('window');
@@ -124,6 +125,32 @@ const Reports = () => {
     return groups.filter(group => group.status === activeTab);
   };
 
+  const openGroupDetails = (group) => {
+    navigation.navigate('MembersDetails', { group });
+  };
+
+  const openGroupModal = (group) => {
+    setSelectedGroup(group);
+    setModalVisible(true);
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return '#10B981';
@@ -146,94 +173,12 @@ const Reports = () => {
     }
   };
 
-  const openGroupDetails = (group) => {
-    navigation.navigate('MembersDetails', { group });
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const renderGroupCard = ({ item }) => (
-    <View style={styles.groupCard}>
-      <View style={styles.groupCardHeader}>
-        <View style={styles.groupNameContainer}>
-          <Text style={styles.groupName}>{item.name}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-            <MaterialCommunityIcons 
-              name={getStatusIcon(item.status)} 
-              size={12} 
-              color="#FFFFFF" 
-            />
-            <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
-          </View>
-        </View>
-        <TouchableOpacity 
-          onPress={() => openGroupDetails(item)}
-          style={styles.arrowButton}
-          activeOpacity={0.6}
-        >
-          <MaterialCommunityIcons name="chevron-right" size={24} color="#9CA3AF" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.groupCardContent}>
-        <View style={styles.groupInfoRow}>
-          <View style={styles.groupInfoItem}>
-            <MaterialCommunityIcons name="account-group" size={16} color="#6B7280" />
-            <Text style={styles.groupInfoText}>{item.totalMembers} Members</Text>
-          </View>
-          <View style={styles.groupInfoItem}>
-            <MaterialCommunityIcons name="currency-inr" size={16} color="#6B7280" />
-            <Text style={styles.groupInfoText}>{formatCurrency(item.monthlyAmount)}/month</Text>
-          </View>
-        </View>
-
-        <View style={styles.progressContainer}>
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressText}>
-              {item.completedCycles}/{item.totalCycles} Cycles
-            </Text>
-            <Text style={styles.progressPercentage}>
-              {Math.round((item.completedCycles / item.totalCycles) * 100)}%
-            </Text>
-          </View>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { width: `${(item.completedCycles / item.totalCycles) * 100}%` }
-              ]} 
-            />
-          </View>
-        </View>
-
-        <View style={styles.groupCardFooter}>
-          <Text style={styles.groupDate}>
-            {item.status === 'completed' 
-              ? `Completed: ${formatDate(item.completedDate)}`
-              : `Next Due: ${formatDate(item.nextDueDate)}`
-            }
-          </Text>
-          <Text style={styles.groupAmount}>
-            {formatCurrency(item.collectedAmount)} collected
-          </Text>
-        </View>
-      </View>
-    </View>
+    <GroupCard 
+      group={item}
+      onPress={openGroupDetails}
+      onArrowPress={openGroupModal}
+    />
   );
 
   const renderMemberItem = ({ item }) => (
