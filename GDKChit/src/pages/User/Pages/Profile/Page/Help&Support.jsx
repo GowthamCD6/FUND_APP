@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,28 @@ import {
   Linking,
   Alert,
   Dimensions,
+  BackHandler,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 
 const HelpSupport = ({ onBack }) => {
   const [expandedFAQ, setExpandedFAQ] = useState(null);
+
+  // Handle hardware back button to navigate back to profile page
+  useEffect(() => {
+    const backAction = () => {
+      if (onBack) {
+        onBack(); // Navigate back to profile page
+        return true; // Prevent default back action
+      }
+      return true; // Block default navigation
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, [onBack]);
 
   const faqData = [
     {

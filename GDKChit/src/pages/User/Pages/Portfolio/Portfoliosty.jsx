@@ -7,27 +7,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF', 
     marginTop: 30,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  fixedHeader: {
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    paddingBottom: 12,
+    paddingBottom: 10,
   },
-  backButton: {
-    padding: 4, 
+  stickyContent: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
-    marginTop: -10,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#d7dce4ff', // Darker gray color for better visibility
+  scrollableContent: {
+    flex: 1,
+    paddingHorizontal: 16,
+    marginBottom: 110,
+    paddingTop: 0,
   },
   scrollView: {
     paddingHorizontal: 16,
@@ -40,7 +34,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     color: '#757575',
-    marginBottom: 12,
+    marginBottom: 25,
+    marginTop: -15,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
   },
   summaryContainer: {
@@ -182,6 +177,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
 
+  // Group selector divider (better styling for below group amount values)
+  groupSelectorDivider: {
+    height: 1,
+    backgroundColor: '#D1D5DB',
+    marginTop: 16,
+    marginBottom: 12,
+    marginHorizontal: 0,
+  },
+
   // The main updated card container
   updatedCard: {
     backgroundColor: '#FFFFFF',
@@ -291,6 +295,70 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2D3748',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'System',
+  },
+
+  // Tab styles
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 5,
+    marginTop: -10,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeTab: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'System',
+  },
+  activeTabText: {
+    color: '#1F2937',
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
+  },
+
+  // Empty state styles
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4B5563',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 20,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'System',
   },
 });
 

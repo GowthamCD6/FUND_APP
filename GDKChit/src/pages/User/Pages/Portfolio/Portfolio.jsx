@@ -9,16 +9,18 @@ import {
   Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import LeftArrowIcon from '../../../../assets/Icon/left-arrow.svg';
-import RightViewIcon from '../../../../assets/Icon/right-view.svg';
-import ChitGroupDetails from './Portfolio-view/Portfolio-view';
+import GroupCardInfo from './GroupCardInfo/GroupCardInfo';
 import GroupCard from '../../../../components/GroupCard/GroupCard';
+import Header from '../../../../components/HeaderComponent/Header';
 import styles from './Portfoliosty';
 
 const ChitfundPortfolio = () => {
   // Modal state for showing group details
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedModalGroup, setSelectedModalGroup] = useState(null);
+  
+  // Tab state for switching between Active and Completed groups
+  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
   
   // --- DATA (from your original component) ---
   const [chitGroups] = useState([
@@ -102,6 +104,13 @@ const ChitfundPortfolio = () => {
     return { backgroundColor: '#FFEDD5', textColor: '#C2410C' };
   };
 
+  // Filter groups by status
+  const activeGroups = chitGroups.filter(group => group.paymentStatus !== 'completed');
+  const completedGroups = chitGroups.filter(group => group.paymentStatus === 'completed');
+  
+  // Get current groups based on active tab
+  const currentGroups = activeTab === 'active' ? activeGroups : completedGroups;
+
   // Function to transform Portfolio data to GroupCard format
   const transformGroupData = (group) => {
     return {
@@ -131,18 +140,13 @@ const ChitfundPortfolio = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-        {/* NEW HEADER */}
-        <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton}>
-                <LeftArrowIcon width={20} height={20} fill="#1F2937" marginTop={-10}/>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Portfolio</Text>
-        </View>
+        <Header 
+          title="Portfolio"
+          onBack={() => {/* Add your navigation back logic here */}}
+        />
 
-        {/* SEPARATOR LINE */}
-        <View style={styles.separator} />
-
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* FIXED HEADER - Above the divider */}
+        <View style={styles.fixedHeader}>
             {/* NEW SUMMARY SECTION */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Summary</Text>
@@ -167,7 +171,6 @@ const ChitfundPortfolio = () => {
 
             {/* VIEW GROUP SELECTOR */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>View Group</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     {chitGroups.map(group => (
                         <TouchableOpacity 
@@ -187,22 +190,84 @@ const ChitfundPortfolio = () => {
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
+                
+                {/* Divider below group amount values */}
+                <View style={styles.groupSelectorDivider} />
+            </View>
+        </View>
+
+        {/* SCROLLABLE CONTENT - Below the divider */}
+        <ScrollView style={styles.scrollableContent} showsVerticalScrollIndicator={false}>
+            {/* View Group title below the divider */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>View Group</Text>
+
+                {/* TABS SECTION */}
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity 
+                        style={[
+                            styles.tab, 
+                            activeTab === 'active' && styles.activeTab
+                        ]}
+                        onPress={() => setActiveTab('active')}
+                    >
+                        <Text style={[
+                            styles.tabText,
+                            activeTab === 'active' && styles.activeTabText
+                        ]}>
+                            Active Groups ({activeGroups.length})
+                        </Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                        style={[
+                            styles.tab, 
+                            activeTab === 'completed' && styles.activeTab
+                        ]}
+                        onPress={() => setActiveTab('completed')}
+                    >
+                        <Text style={[
+                            styles.tabText,
+                            activeTab === 'completed' && styles.activeTabText
+                        ]}>
+                            Completed Groups ({completedGroups.length})
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* --- CHIT GROUP CARDS USING REUSABLE COMPONENT --- */}
             <View style={styles.section}>
-                {/* Horizontal divider above section title */}
-                <View style={styles.sectionDivider} />
-                <Text style={styles.chitGroupSectionTitle}>Your Chit Groups</Text>
-                
-                {chitGroups.map((group) => (
-                    <GroupCard 
-                        key={group.id}
-                        group={transformGroupData(group)}
-                        onPress={() => handleViewGroupDetails(group)}
-                        onArrowPress={() => handleViewGroupDetails(group)}
-                    />
-                ))}
+                {currentGroups.length > 0 ? (
+                    currentGroups.map((group) => (
+                        <GroupCard 
+                            key={group.id}
+                            group={transformGroupData(group)}
+                            onPress={() => {}} // Disabled card press
+                            onArrowPress={() => handleViewGroupDetails(group)}
+                        />
+                    ))
+                ) : (
+                    <View style={styles.emptyState}>
+                        <MaterialCommunityIcons 
+                            name={activeTab === 'active' ? 'account-group-outline' : 'check-circle-outline'} 
+                            size={48} 
+                            color="#9CA3AF" 
+                        />
+                        <Text style={styles.emptyStateText}>
+                            {activeTab === 'active' 
+                                ? 'No active groups found' 
+                                : 'No completed groups found'
+                            }
+                        </Text>
+                        <Text style={styles.emptyStateSubtext}>
+                            {activeTab === 'active' 
+                                ? 'Join a chit group to start your investment journey' 
+                                : 'Complete your active groups to see them here'
+                            }
+                        </Text>
+                    </View>
+                )}
             </View>
         </ScrollView>
 
@@ -213,7 +278,7 @@ const ChitfundPortfolio = () => {
           visible={modalVisible}
           onRequestClose={closeModal}
         >
-          <ChitGroupDetails 
+          <GroupCardInfo 
             group={selectedModalGroup} 
             onClose={closeModal}
           />

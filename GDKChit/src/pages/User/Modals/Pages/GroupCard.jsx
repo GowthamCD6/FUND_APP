@@ -14,6 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Header from '../../../../components/HeaderComponent/Header';
 
 const { width } = Dimensions.get('window');
 
@@ -174,12 +175,10 @@ const GroupCard = ({ onBack }) => {
 
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#000000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Group</Text>
-        </View>
+        <Header 
+          title="My Group"
+          onBack={onBack}
+        />
 
         <View style={styles.groupListContainer}>
           {/* Summary Stats */}
@@ -236,15 +235,15 @@ const GroupCard = ({ onBack }) => {
 
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBackToGroupList}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#000000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{selectedGroup.groupName}</Text>
-          <TouchableOpacity style={styles.headerRight}>
-            <MaterialCommunityIcons name="information-outline" size={24} color="#6B46C1" />
-          </TouchableOpacity>
-        </View>
+        <Header 
+          title={selectedGroup.groupName}
+          onBack={handleBackToGroupList}
+          rightComponent={
+            <TouchableOpacity style={styles.headerRight}>
+              <MaterialCommunityIcons name="information-outline" size={24} color="#6B46C1" />
+            </TouchableOpacity>
+          }
+        />
 
         <ScrollView style={styles.groupDetailsContainer} showsVerticalScrollIndicator={false}>
 
@@ -406,31 +405,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
     marginTop: -27
-  },
-  header: {
-    marginTop:-10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#d5d6ddff',
-    elevation: 0,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 12,
-    marginBottom: -10,
-  },
-  headerTitle: {
-    marginBottom: -10,
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#000000',
-    flex: 1,
-    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Roboto',
-    letterSpacing: 0.5,
   },
   headerRight: {
     alignItems: 'flex-end',

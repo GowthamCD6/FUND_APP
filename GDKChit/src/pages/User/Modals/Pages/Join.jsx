@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, TextInput, Alert } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
+import Header from '../../../../components/HeaderComponent/Header';
 
 const Join = ({ onBack }) => {
   const [groupCode, setGroupCode] = useState('');
@@ -16,13 +17,11 @@ const Join = ({ onBack }) => {
   };
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Join Group</Text>
-      </View>
-      <View style={styles.separator} />
+      <Header 
+        title="Join Group"
+        onBack={onBack}
+      />
+      
       {/* Join Group Content */}
       <View style={styles.content}>
         <View style={styles.iconContainer}>
@@ -72,32 +71,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#d7dce4ff',
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    marginTop: -10,
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#F0F0F0',
-    width: '100%',
   },
   content: {
     flex: 1,

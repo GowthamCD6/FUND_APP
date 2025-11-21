@@ -11,13 +11,14 @@ import {
   Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import AccountD from './Page/AccountD';
+import Header from '../../../../components/HeaderComponent/Header';
+import AccountD from './Page/AccountDetails';
 import Nominee from './Page/Nominee';
-import LinkBA from './Page/LinkBA';
-import IdentityV from './Page/IdentityV';
+import LinkBA from './Page/LinkBankAccount';
+import IdentityV from './Page/IdentityVerification';
 import SecurPermis from './Page/SecurityLock/SecurityPermision';
 import PrivacyPolicy from './Page/PrivacyPolicy';
-import HelpSupport from './Page/HelpSup';
+import HelpSupport from './Page/Help&Support';
 import MyLocation from './Page/MyLocation/MyLocation';
 import ShareModal from './Modals/Share';
 import RateModal from './Modals/Rate';
@@ -224,18 +225,11 @@ const Profile = () => {
           !showHelpSupport &&
           !showMyLocation && (
             <>
-              {/* Header - Portfolio style */}
-              <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton}>
-                  <MaterialCommunityIcons
-                    name="arrow-left"
-                    size={24}
-                    color="#1F2937"
-                  />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Profile</Text>
-              </View>
-              <View style={styles.separator} />
+              <Header 
+                title="My Profile"
+                onBack={() => navigation.navigate('Home')}
+              />
+              
               <ScrollView
                 style={styles.content}
                 showsVerticalScrollIndicator={false}>
@@ -739,30 +733,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
     marginTop: 30,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    paddingBottom: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    padding: 4,
-    marginTop: -10,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
-    marginTop: -10,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#d7dce4ff',
   },
   content: {
     flex: 1,

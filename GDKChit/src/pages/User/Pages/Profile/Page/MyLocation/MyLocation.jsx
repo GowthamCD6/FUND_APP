@@ -17,6 +17,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 import ShareLocationInfo from './Share_info_modal/ShareLocationInfo';
+import Header from '../../../../../../components/HeaderComponent/Header';
 import {
   getUserCurrentLocation,
   getUserCurrentLocationWithFallback,
@@ -63,7 +64,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
         return true; // Prevent default back action
       }
       console.log('No onBack function available for hardware button');
-      return false; // Allow default back action
+      return true; // Block default navigation to ensure staying in profile context
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
@@ -514,26 +515,20 @@ const MyLocation = ({ onBack, animatedValue }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => {
-            console.log('Back button pressed in MyLocation');
-            if (onBack) {
-              console.log('Calling onBack function...');
-              onBack();
-            } else {
-              console.log('No onBack prop provided');
-              Alert.alert('Error', 'Back navigation not available');
-            }
-          }}
-          style={styles.backButton}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Location</Text>
-      </View>
-      <View style={styles.separator} />
+      <Header 
+        title="My Location"
+        onBack={() => {
+          console.log('Back button pressed in MyLocation');
+          if (onBack) {
+            console.log('Calling onBack function...');
+            onBack();
+          } else {
+            console.log('No onBack prop provided');
+            Alert.alert('Error', 'Back navigation not available');
+          }
+        }}
+        showBackButton={true}
+      />
 
       <ScrollView 
         style={styles.scrollView}
@@ -714,30 +709,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF', // Pure white background
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    padding: 4,
-    marginTop: -10,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-    marginTop: -10,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#d7dce4ff',
   },
   scrollView: {
     flex: 1,

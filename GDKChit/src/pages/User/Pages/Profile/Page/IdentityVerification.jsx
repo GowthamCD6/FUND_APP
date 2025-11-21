@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, BackHandler } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 
@@ -10,6 +10,20 @@ import LottieView from 'lottie-react-native';
  * @param {string} [props.pageName="This Page"] - The name of the page that is under construction.
  */
 const UnderConstruction = ({ onBack, pageName = "This Page" }) => {
+  // Handle hardware back button to navigate back to profile page
+  useEffect(() => {
+    const backAction = () => {
+      if (onBack) {
+        onBack(); // Navigate back to profile page
+        return true; // Prevent default back action
+      }
+      return true; // Block default navigation
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, [onBack]);
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F4F4F4" />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,29 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  BackHandler,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { width } = Dimensions.get('window');
 
-const PrivacyPolicy = ({ onBack }) => (
+const PrivacyPolicy = ({ onBack }) => {
+  // Handle hardware back button to navigate back to profile page
+  useEffect(() => {
+    const backAction = () => {
+      if (onBack) {
+        onBack(); // Navigate back to profile page
+        return true; // Prevent default back action
+      }
+      return true; // Block default navigation
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, [onBack]);
+
+  return (
   <SafeAreaView style={styles.safeArea}>
     <StatusBar barStyle="light-content" backgroundColor="#6B46C1" />
     {/* Modern Header with Gradient Effect */}
@@ -294,7 +311,8 @@ const PrivacyPolicy = ({ onBack }) => (
       </View>
     </ScrollView>
   </SafeAreaView>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   safeArea: {

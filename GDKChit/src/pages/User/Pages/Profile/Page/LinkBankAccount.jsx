@@ -1,31 +1,48 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, BackHandler } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 
 /**
- * A reusable "Under Construction" screen component for Identity Verification.
+ * A reusable "Under Construction" screen component.
  * @param {object} props - The component's props.
  * @param {function} props.onBack - A function to be called when the back button is pressed.
+ * @param {string} [props.pageName="This Page"] - The name of the page that is under construction.
  */
-const IdentyV = ({ onBack }) => {
+
+const LinkBA = ({ onBack, pageName = "This Page" }) => {
+  // Handle hardware back button to navigate back to profile page
+  useEffect(() => {
+    const backAction = () => {
+      if (onBack) {
+        onBack(); 
+        return true; 
+      }
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, [onBack]);
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F4F4F4" />
       <View style={styles.container}>
         <View style={styles.iconContainer}>
           <LottieView
-            source={require('../../../../../animation/Welcome.json')}
+            source={require('../../../../../animation/Maintenance web.json')}
             autoPlay
             loop
-            style={{ width: 120, height: 120 }}
+            style={{ width: 460, height: 260, marginRight: 90 }}
           />
-        </View>
+        </View>   
 
         <Text style={styles.title}>Under Construction</Text>
 
         <Text style={styles.message}>
-          We're working hard to bring you something amazing. {'\n'}
-          Identity Verification is not quite ready yet.
+          We're working hard to bring you something amazing. {"\n"}
+          {pageName} is not quite ready yet.
         </Text>
 
         <Text style={styles.subMessage}>
@@ -50,13 +67,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 90,
+    marginTop: -90,
   },
   iconContainer: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 80,
     padding: 30,
-    marginBottom: 32,
+    marginBottom: 0,
   },
   title: {
     fontSize: 28,
@@ -70,7 +86,7 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     textAlign: 'center',
     marginBottom: 12,
-    lineHeight: 24,
+    lineHeight: 24, 
   },
   subMessage: {
     fontSize: 14,
@@ -84,7 +100,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     borderRadius: 50,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: '#000', 
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -96,4 +112,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default IdentyV;
+export default LinkBA;

@@ -53,7 +53,7 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
     <TouchableOpacity 
       style={styles.groupCard}
       onPress={() => onPress && onPress(group)}
-      activeOpacity={0.7}
+      activeOpacity={1}
     >
       <View style={styles.groupCardHeader}>
         <View style={styles.groupNameContainer}>
