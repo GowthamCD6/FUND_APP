@@ -565,7 +565,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
-    // minHeight: '80%',
     flex: 1,
   },
   chitDetailsTitle: {
@@ -573,7 +572,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A2A4E',
     marginBottom: 16,
-    marginTop: 20,
+    marginTop: 2,
     textAlign: 'center',
   },
   tableContainer: {

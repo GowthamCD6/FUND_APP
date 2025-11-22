@@ -20,6 +20,7 @@ import SecurPermis from './Page/SecurityLock/SecurityPermision';
 import PrivacyPolicy from './Page/PrivacyPolicy';
 import HelpSupport from './Page/Help&Support';
 import MyLocation from './Page/MyLocation/MyLocation';
+import AdminLocation from './Page/AdminLocation/AdminLocation';
 import ShareModal from './Modals/Share';
 import RateModal from './Modals/Rate';
 import {Animated, Dimensions} from 'react-native';
@@ -35,6 +36,7 @@ const Profile = () => {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showHelpSupport, setShowHelpSupport] = useState(false);
   const [showMyLocation, setShowMyLocation] = useState(false);
+  const [showAdminLocation, setShowAdminLocation] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
   const navigation = useNavigation()
@@ -62,6 +64,9 @@ const Profile = () => {
     new Animated.Value(Dimensions.get('window').width),
   ).current;
   const myLocationAnim = useRef(
+    new Animated.Value(Dimensions.get('window').width),
+  ).current;
+  const adminLocationAnim = useRef(
     new Animated.Value(Dimensions.get('window').width),
   ).current;
 
@@ -197,6 +202,22 @@ const Profile = () => {
     }
   }, [showMyLocation, myLocationAnim]);
 
+  useEffect(() => {
+    if (showAdminLocation) {
+      Animated.timing(adminLocationAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(adminLocationAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showAdminLocation, adminLocationAnim]);
+
   const handleLogout = async () => {
     try {
       await AsyncStorage.clear();
@@ -223,7 +244,8 @@ const Profile = () => {
           !showSecurPermis &&
           !showPrivacyPolicy &&
           !showHelpSupport &&
-          !showMyLocation && (
+          !showMyLocation &&
+          !showAdminLocation && (
             <>
               <Header 
                 title="My Profile"
@@ -359,6 +381,24 @@ const Profile = () => {
                           color="#666666"
                         />
                         <Text style={styles.menuItemText}>My Location</Text>
+                      </View>
+                      <MaterialCommunityIcons
+                        name="chevron-right"
+                        size={22}
+                        color="#CCCCCC"
+                      />
+                    </TouchableOpacity>
+                    <View style={styles.customDivider} />
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => setShowAdminLocation(true)}>
+                      <View style={styles.menuItemLeft}>
+                        <MaterialCommunityIcons
+                          name="map-check"
+                          size={22}
+                          color="#666666"
+                        />
+                        <Text style={styles.menuItemText}>Admin Location</Text>
                       </View>
                       <MaterialCommunityIcons
                         name="chevron-right"
@@ -706,6 +746,29 @@ const Profile = () => {
                   useNativeDriver: true,
                 }).start(() => {
                   setShowMyLocation(false);
+                });
+              }}
+            />
+          </Animated.View>
+        )}
+
+        {/* Admin Location Page */}
+        {showAdminLocation && (
+          <Animated.View
+            style={[
+              styles.fullScreenOverlay,
+              {
+                transform: [{translateX: adminLocationAnim}],
+              },
+            ]}>
+            <AdminLocation
+              onBack={() => {
+                Animated.timing(adminLocationAnim, {
+                  toValue: Dimensions.get('window').width,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start(() => {
+                  setShowAdminLocation(false);
                 });
               }}
             />
