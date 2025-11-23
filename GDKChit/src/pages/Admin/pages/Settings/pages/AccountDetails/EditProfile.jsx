@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInput, Alert, Modal, FlatList } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Header from '../../../../../../components/HeaderComponent/Header';
 
 const SOUTH_INDIAN_STATES = [
   'Tamil Nadu',
@@ -130,14 +131,11 @@ const EditProfile = ({ onBack }) => {
 
 	return (
 		<View style={styles.container}>
-			{/* Header */}
-			<View style={styles.header}>
-				<TouchableOpacity style={styles.backButton} onPress={onBack}>
-					<MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-				</TouchableOpacity>
-				<Text style={styles.headerTitle}>Edit Profile</Text>
-			</View>
-			<View style={styles.separator} />
+			<Header 
+				title="Edit Profile"
+				onBack={onBack}
+				showBackButton={true}
+			/>
 			
 			{/* Form Content */}
 			<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -344,31 +342,6 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#FFFFFF',
-	},
-	header: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		paddingHorizontal: 16,
-		paddingTop: Platform.OS === 'ios' ? 12 : 20,
-		paddingBottom: 12,
-		backgroundColor: '#FFFFFF',
-	},
-	backButton: {
-		padding: 4,
-        marginTop: 9,
-
-	},
-	headerTitle: {
-		fontSize: 22,
-		fontWeight: '600',
-		color: '#212121',
-		marginLeft: 16,
-        marginTop: 6,
-		fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-	},
-	separator: {
-		height: 1,
-		backgroundColor: '#d7dce4ff',
 	},
 	content: {
 		flex: 1,

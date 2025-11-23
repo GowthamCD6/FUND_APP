@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Header from '../../../../../../components/HeaderComponent/Header';
 import BettingAuction from './BettingAuction';
 import RandomAuction from './RandomAuction';
 
@@ -143,22 +144,18 @@ const AuctionScreen = ({ onBack }) => {
 
   // Component render functions
   const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      <TouchableOpacity 
-        style={styles.backButton} 
-        onPress={currentStep === 'setup' ? onBack : resetAuction}
-      >
-        <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>
-        {currentStep === 'setup' ? 'Auction Setup' : `${selectedGroup?.name || 'Auction'}`}
-      </Text>
-      {currentStep === 'auction' && (
-        <TouchableOpacity style={styles.resetButton} onPress={resetAuction}>
-          <MaterialCommunityIcons name="refresh" size={20} color="#6B46C1" />
-        </TouchableOpacity>
-      )}
-    </View>
+    <Header 
+      title={currentStep === 'setup' ? 'Auction Setup' : `${selectedGroup?.name || 'Auction'}`}
+      onBack={currentStep === 'setup' ? onBack : resetAuction}
+      showBackButton={true}
+      rightComponent={
+        currentStep === 'auction' ? (
+          <TouchableOpacity style={styles.resetButton} onPress={resetAuction}>
+            <MaterialCommunityIcons name="refresh" size={20} color="#6B46C1" />
+          </TouchableOpacity>
+        ) : null
+      }
+    />
   );
 
   const renderTabSelector = () => (
@@ -493,7 +490,6 @@ const AuctionScreen = ({ onBack }) => {
   return (
     <View style={styles.container}>
       {renderHeader()}
-      <View style={styles.separator} />
       
       {currentStep === 'setup' ? renderSetupScreen() : renderAuctionScreen()}
       
@@ -508,33 +504,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-  },
-
-  // Header Styles
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 16,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginLeft: 12,
-    flex: 1,
-  },
-  resetButton: {
-    padding: 8,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
   },
 
   // Tab Container

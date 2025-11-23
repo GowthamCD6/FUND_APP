@@ -35,7 +35,7 @@ const AccountD = ({ onBack }) => {
 				onBack(); 
 				return true; 
 			}
-			return false; 
+			return false;
 		};
 
 		const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);

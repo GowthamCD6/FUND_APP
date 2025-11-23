@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, TextInput, Alert } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
-import Header from '../../../../components/HeaderComponent/Header';
+import Header from '../../../../../components/HeaderComponent/Header';
 
 const Join = ({ onBack }) => {
   const [groupCode, setGroupCode] = useState('');
@@ -26,7 +26,7 @@ const Join = ({ onBack }) => {
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <LottieView
-            source={require('../../../../animation/join a group.json')}
+            source={require('../../../../../animation/join a group.json')}
             autoPlay
             loop
             style={styles.lottieAnimation}

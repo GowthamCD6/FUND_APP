@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,8 +15,9 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Header from '../../../../../../components/HeaderComponent/Header';
 
-const BlockUserScreen = ({navigation, onClose}) => {
+const BlockUserScreen = ({ navigation, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('blocked');
   const [showBlockModal, setShowBlockModal] = useState(false);
@@ -78,49 +79,45 @@ const BlockUserScreen = ({navigation, onClose}) => {
   };
 
   const handleUnblock = userId => {
-    Alert.alert(
-      'Unblock User',
-      'Are you sure you want to unblock this user?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Unblock',
-          style: 'destructive',
-          onPress: async () => {
-            const user = blockedUsers.find(u => u.id === userId);
-            const updatedBlocked = blockedUsers.filter(u => u.id !== userId);
-            setBlockedUsers(updatedBlocked);
+    Alert.alert('Unblock User', 'Are you sure you want to unblock this user?', [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Unblock',
+        style: 'destructive',
+        onPress: async () => {
+          const user = blockedUsers.find(u => u.id === userId);
+          const updatedBlocked = blockedUsers.filter(u => u.id !== userId);
+          setBlockedUsers(updatedBlocked);
 
-            // Add the unblocked user back to allUsers (ensure unique ID handling in a real app)
-            if (user) {
-              setAllUsers(prev =>
-                [
-                  ...prev,
-                  {
-                    id: user.id,
-                    name: user.name,
-                    phone: user.phone,
-                    status: 'Active',
-                  },
-                ].sort((a, b) => a.name.localeCompare(b.name)),
-              ); // Sort to maintain consistency
-            }
+          // Add the unblocked user back to allUsers (ensure unique ID handling in a real app)
+          if (user) {
+            setAllUsers(prev =>
+              [
+                ...prev,
+                {
+                  id: user.id,
+                  name: user.name,
+                  phone: user.phone,
+                  status: 'Active',
+                },
+              ].sort((a, b) => a.name.localeCompare(b.name)),
+            ); // Sort to maintain consistency
+          }
 
-            try {
-              await AsyncStorage.setItem(
-                'blockedUsers',
-                JSON.stringify(updatedBlocked),
-              );
-            } catch (error) {
-              console.error('Error saving:', error);
-            }
-          },
+          try {
+            await AsyncStorage.setItem(
+              'blockedUsers',
+              JSON.stringify(updatedBlocked),
+            );
+          } catch (error) {
+            console.error('Error saving:', error);
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const handleBlockUser = user => {
@@ -162,7 +159,7 @@ const BlockUserScreen = ({navigation, onClose}) => {
     }
   };
 
-  const renderBlockedUser = ({item}) => (
+  const renderBlockedUser = ({ item }) => (
     <View style={styles.userCard}>
       <View style={styles.cardContent}>
         <View style={styles.userInfoWrapper}>
@@ -172,21 +169,32 @@ const BlockUserScreen = ({navigation, onClose}) => {
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{item.name}</Text>
             <Text style={styles.userPhone}>{item.phone}</Text>
-            <Text style={styles.blockReason}>Reason: {item.reason}</Text>
-            <Text style={styles.blockedDate}>Blocked on: {item.blockedOn}</Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.unblockButton}
-          onPress={() => handleUnblock(item.id)}>
-          <MaterialCommunityIcons name="account-check" size={18} color="#FFF" />
-          <Text style={styles.buttonTextSmall}>Unblock</Text>
-        </TouchableOpacity>
+        <View style={styles.rightSection}>
+          <View style={styles.statusContainer}>
+            <Text style={styles.statusLabel}>Status:</Text>
+            <Text style={[styles.statusText, styles.blockedStatus]}>
+              Blocked
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.unblockButton}
+            onPress={() => handleUnblock(item.id)}
+          >
+            <MaterialCommunityIcons
+              name="account-check"
+              size={18}
+              color="#FFF"
+            />
+            <Text style={styles.buttonTextSmall}>Unblock</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 
-  const renderAllUser = ({item}) => (
+  const renderAllUser = ({ item }) => (
     <View style={styles.userCard}>
       <View style={styles.cardContent}>
         <View style={styles.userInfoWrapper}>
@@ -196,19 +204,27 @@ const BlockUserScreen = ({navigation, onClose}) => {
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{item.name}</Text>
             <Text style={styles.userPhone}>{item.phone}</Text>
-            <Text style={styles.userStatus}>Status: {item.status}</Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.blockButton}
-          onPress={() => handleBlockUser(item)}>
-          <MaterialCommunityIcons
-            name="account-cancel"
-            size={18}
-            color="#FFF"
-          />
-          <Text style={styles.buttonTextSmall}>Block</Text>
-        </TouchableOpacity>
+        <View style={styles.rightSection}>
+          <View style={styles.statusContainer}>
+            <Text style={styles.statusLabel}>Status:</Text>
+            <Text style={[styles.statusText, styles.activeStatus]}>
+              {item.status}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.blockButton}
+            onPress={() => handleBlockUser(item)}
+          >
+            <MaterialCommunityIcons
+              name="account-cancel"
+              size={18}
+              color="#FFF"
+            />
+            <Text style={styles.buttonTextSmall}>Block</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -232,38 +248,37 @@ const BlockUserScreen = ({navigation, onClose}) => {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={onClose || (() => navigation?.goBack())}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Block User Management</Text>
-      </View>
-      <View style={styles.separator} />
+      <Header
+        title="Block User Management"
+        onBack={onClose || (() => navigation?.goBack())}
+      />
 
       {/* Tab Selector */}
       <View style={styles.tabOuterContainer}>
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'blocked' && styles.activeTab]}
-            onPress={() => setActiveTab('blocked')}>
+            onPress={() => setActiveTab('blocked')}
+          >
             <Text
               style={[
                 styles.tabText,
                 activeTab === 'blocked' && styles.activeTabText,
-              ]}>
+              ]}
+            >
               Blocked ({blockedUsers.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-            onPress={() => setActiveTab('all')}>
+            onPress={() => setActiveTab('all')}
+          >
             <Text
               style={[
                 styles.tabText,
                 activeTab === 'all' && styles.activeTabText,
-              ]}>
+              ]}
+            >
               All Users ({allUsers.length})
             </Text>
           </TouchableOpacity>
@@ -303,9 +318,7 @@ const BlockUserScreen = ({navigation, onClose}) => {
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
             <MaterialCommunityIcons
-              name={
-                activeTab === 'blocked' ? 'account-check' : 'account-group'
-              }
+              name={activeTab === 'blocked' ? 'account-check' : 'account-group'}
               size={64}
               color="#D1D5DB"
             />
@@ -323,10 +336,12 @@ const BlockUserScreen = ({navigation, onClose}) => {
         visible={showBlockModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowBlockModal(false)}>
+        onRequestClose={() => setShowBlockModal(false)}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.centeredModalOverlay}>
+          style={styles.centeredModalOverlay}
+        >
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setShowBlockModal(false)}>
@@ -337,7 +352,7 @@ const BlockUserScreen = ({navigation, onClose}) => {
                 />
               </TouchableOpacity>
               <Text style={styles.modalTitle}>Block User</Text>
-              <View style={{width: 24}} />
+              <View style={{ width: 24 }} />
             </View>
             <View style={styles.modalHeaderSeparator} />
 
@@ -386,7 +401,8 @@ const BlockUserScreen = ({navigation, onClose}) => {
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.confirmBlockButton}
-                onPress={confirmBlock}>
+                onPress={confirmBlock}
+              >
                 <MaterialCommunityIcons
                   name="account-cancel"
                   size={20}
@@ -406,30 +422,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    padding: 4,
-    marginTop: 18,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-    marginTop: 15,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
   },
   tabOuterContainer: {
     paddingHorizontal: 16,
@@ -495,16 +487,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  cardContent: { // New style to wrap the main content
+  cardContent: {
     flexDirection: 'row',
-    alignItems: 'flex-start', // Align items to the start of the cross axis
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
-  userInfoWrapper: { // New style to group avatar and user details
+  userInfoWrapper: {
     flexDirection: 'row',
-    alignItems: 'flex-start', // Align avatar and text content to the top
-    flex: 1, // Allow it to take up available space
-    marginRight: 10, // Space between user info and button
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
   },
   avatarContainer: {
     width: 44,
@@ -514,7 +506,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    marginTop: 2, // Slightly adjust avatar position
+    marginTop: 2,
   },
   avatarText: {
     fontSize: 18,
@@ -523,7 +515,37 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   userDetails: {
-    flex: 1, // Allow user details to take up remaining space
+    flex: 1,
+  },
+  rightSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+    gap: 8,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statusLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+    fontFamily:
+      Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
+  },
+  statusText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
+  },
+  activeStatus: {
+    color: '#10B981',
+  },
+  blockedStatus: {
+    color: '#EF4444',
   },
   userName: {
     fontSize: 16,
@@ -534,14 +556,13 @@ const styles = StyleSheet.create({
   userPhone: {
     fontSize: 14,
     color: '#6B7280',
-    marginTop: 2,
+    marginTop: 8,
     fontFamily:
       Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   blockReason: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#EF4444',
-    marginTop: 4,
     fontFamily:
       Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
@@ -550,26 +571,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#10B981',
-    paddingVertical: 8, // Adjusted padding for better fit
-    paddingHorizontal: 14, // Adjusted padding
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 8,
     gap: 6,
-    // Removed minWidth to let content define width
-    alignSelf: 'flex-start', // Align button to the top right
-    marginTop: 2, // Align with avatar/name
   },
   blockButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#EF4444',
-    paddingVertical: 8, // Adjusted padding for better fit
-    paddingHorizontal: 14, // Adjusted padding
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 8,
     gap: 6,
-    // Removed minWidth to let content define width
-    alignSelf: 'flex-start', // Align button to the top right
-    marginTop: 2, // Align with avatar/name
   },
   buttonTextSmall: {
     color: '#FFFFFF',
@@ -581,14 +596,13 @@ const styles = StyleSheet.create({
   blockedDate: {
     fontSize: 12,
     color: '#9CA3AF',
-    marginTop: 4, // Add margin to separate from reason
     fontFamily:
       Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   userStatus: {
     fontSize: 13,
     color: '#10B981',
-    marginTop: 4, // Add margin to separate from phone number
+    fontWeight: '500',
     fontFamily:
       Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
@@ -697,8 +711,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '400',
     color: '#000000',
-    fontFamily:
-      Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
   },
   requiredStar: {
     fontSize: 15,

@@ -15,6 +15,8 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import LottieView from 'lottie-react-native';
+import Header from '../../../../../../components/HeaderComponent/Header';
 import Clipboard from '@react-native-clipboard/clipboard'; // Import Clipboard
 
 // 🌟 Mock User Data (Replace with your actual database fetch)
@@ -174,18 +176,6 @@ const UserL = ({onClose}) => {
     }
   };
 
-
-
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-        <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>User Locations</Text>
-      <View style={{width: 24}} />
-    </View>
-  );
-
   const renderSearchBar = () => (
     <View style={styles.searchContainer}>
       <View style={styles.searchBar}>
@@ -223,11 +213,28 @@ const UserL = ({onClose}) => {
 
   const renderUserList = () => (
     <View style={styles.container}>
-      {renderHeader()}
+      <Header 
+        title="User Locations"
+        onBack={handleBackPress}
+      />
       <View style={styles.separator} />
       {renderSearchBar()}
 
       <View style={styles.content}>
+        {/* Navigation Animation */}
+        {filteredUsers.length > 0 && (
+          <View style={styles.animationContainer}>
+            <LottieView
+              source={require('../../../../../../animation/Navigate_House_Address.json')}
+              autoPlay={true}
+              loop={true}
+              speed={0.7}
+              resizeMode="contain"
+              style={styles.navigationLottie}
+            />
+          </View>
+        )}
+
         <FlatList
           data={filteredUsers}
           keyExtractor={item => item.id}
@@ -318,24 +325,20 @@ const UserL = ({onClose}) => {
 const styles = StyleSheet.create({
   mainContainer: {flex: 1, backgroundColor: '#FFF'},
   container: {flex: 1, backgroundColor: '#FFF'},
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFF',
-  },
-  backButton: {padding: 4},
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginLeft: 16,
-    // Add your desired font family
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold', 
-  },
   separator: {height: 1, backgroundColor: '#E5E7EB'},
+  animationContainer: {
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
+    paddingVertical: 8,
+    backgroundColor: 'transparent',
+  },
+  navigationLottie: {
+    width: 300,
+    height: 200,
+    marginTop: -40,
+    marginBottom: -40,
+  },
   searchContainer: {padding: 16, backgroundColor: '#FFF'},
   searchBar: {
     flexDirection: 'row',
@@ -353,7 +356,7 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   content: {flex: 1, paddingHorizontal: 16, paddingTop: 8},
-  listContent: {paddingBottom: 20},
+  listContent: {paddingBottom: 100},
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',

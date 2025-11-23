@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Join from './Pages/Join';
-import GroupCard from './Pages/GroupCard';
+import Join from './Pages/JoinGroup/JoinGroup';
+import GroupCards from './Pages/ChitGroupCard/GroupCards';
 // import Auction from './Pages/Auction/Auction';
 
 const MoreModal = ({ visible, onClose }) => {
@@ -62,7 +62,7 @@ const MoreModal = ({ visible, onClose }) => {
         visible={visible}
         onRequestClose={handleModalClose}
       >
-        <GroupCard onBack={handleGroupCardBack} />
+        <GroupCards onBack={handleGroupCardBack} />
       </Modal>
     );
   }

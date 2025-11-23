@@ -431,8 +431,8 @@ const styles = StyleSheet.create({
   navigationLottie: {
     width: 350,
     height: 250,
-    marginTop: -20,
-    marginBottom: -10,
+    marginTop: -35,
+    marginBottom: -35,
   },
   section: {
     backgroundColor: '#F5F5F5',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,19 @@ import {
   Platform,
   SafeAreaView,
   StatusBar,
+  Alert,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BlockU from './pages/BlockUser/BlockU';
+import Header from '../../../../components/HeaderComponent/Header';
+import BlockU from './pages/BlockUser/BlockUser';
 import UserL from './pages/UserLocation/UserL';
 import EditProfile from './pages/AccountDetails/EditProfile';
+import MyLocation from './pages/MyLocation/MyLocation';
+import SecurityLockScreen from './pages/SecurityLock/SecurityPermision';
 import Share from './Model/ShareApp/Share';
 import Rate from './Model/RateApp/Rate';
 import Auction from './pages/Auction/Auction';
@@ -23,10 +29,129 @@ const Settings = () => {
   const [showBlockU, setShowBlockU] = useState(false);
   const [showUserL, setShowUserL] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showMyLocation, setShowMyLocation] = useState(false);
+  const [showSecurityLock, setShowSecurityLock] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showRate, setShowRate] = useState(false);
   const [showAuction, setShowAuction] = useState(false);
   const navigation = useNavigation();
+
+  // Animation values for slide-in effects
+  const blockUAnim = useRef(
+    new Animated.Value(Dimensions.get('window').width),
+  ).current;
+  const userLAnim = useRef(
+    new Animated.Value(Dimensions.get('window').width),
+  ).current;
+  const editProfileAnim = useRef(
+    new Animated.Value(Dimensions.get('window').width),
+  ).current;
+  const myLocationAnim = useRef(
+    new Animated.Value(Dimensions.get('window').width),
+  ).current;
+  const securityLockAnim = useRef(
+    new Animated.Value(Dimensions.get('window').width),
+  ).current;
+  const auctionAnim = useRef(
+    new Animated.Value(Dimensions.get('window').width),
+  ).current;
+
+  // Animation effects
+  useEffect(() => {
+    if (showBlockU) {
+      Animated.timing(blockUAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(blockUAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showBlockU, blockUAnim]);
+
+  useEffect(() => {
+    if (showUserL) {
+      Animated.timing(userLAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(userLAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showUserL, userLAnim]);
+
+  useEffect(() => {
+    if (showEditProfile) {
+      Animated.timing(editProfileAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(editProfileAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showEditProfile, editProfileAnim]);
+
+  useEffect(() => {
+    if (showMyLocation) {
+      Animated.timing(myLocationAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(myLocationAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showMyLocation, myLocationAnim]);
+
+  useEffect(() => {
+    if (showSecurityLock) {
+      Animated.timing(securityLockAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(securityLockAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showSecurityLock, securityLockAnim]);
+
+  useEffect(() => {
+    if (showAuction) {
+      Animated.timing(auctionAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(auctionAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showAuction, auctionAnim]);
 
   const [userData, setUserData] = useState({
     name: 'Admin',
@@ -83,7 +208,9 @@ const Settings = () => {
           title: 'Security',
           subtitle: 'Password and authentication',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => {
+            setShowSecurityLock(true);
+          },
         },
       ],
     },
@@ -104,13 +231,6 @@ const Settings = () => {
           iconColor: '#555555',
           onPress: () => {},
         },
-        {
-          icon: 'currency-inr',
-          title: 'Currency',
-          subtitle: 'Set default currency (INR)',
-          iconColor: '#555555',
-          onPress: () => {},
-        },
       ],
     },
     {
@@ -120,13 +240,6 @@ const Settings = () => {
           icon: 'account-group',
           title: 'Default Group Rules',
           subtitle: 'Set contribution amounts and payment cycles',
-          iconColor: '#555555',
-          onPress: () => {},
-        },
-        {
-          icon: 'cash-multiple',
-          title: 'Payment Settings',
-          subtitle: 'Configure payment rules and reminders',
           iconColor: '#555555',
           onPress: () => {},
         },
@@ -145,23 +258,9 @@ const Settings = () => {
       title: 'Data & Privacy',
       items: [
         {
-          icon: 'backup-restore',
-          title: 'Backup & Sync',
-          subtitle: 'Automatically backup your data to cloud',
-          iconColor: '#555555',
-          onPress: () => {},
-        },
-        {
           icon: 'download',
           title: 'Data Export',
           subtitle: 'Download all your group data and history',
-          iconColor: '#555555',
-          onPress: () => {},
-        },
-        {
-          icon: 'lock-outline',
-          title: 'Privacy Controls',
-          subtitle: 'Control who can see your profile',
           iconColor: '#555555',
           onPress: () => {},
         },
@@ -190,11 +289,11 @@ const Settings = () => {
         },
         {
           icon: 'crosshairs-gps',
-          title: 'Location Sharing',
+          title: 'My Location',
           subtitle: 'Control location sharing preferences',
           iconColor: '#555555',
           onPress: () => {
-            // navigation.navigate('LocationS')
+            setShowMyLocation(true);
           },
         },
       ],
@@ -241,123 +340,233 @@ const Settings = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      {showBlockU ? (
-        <BlockU onClose={() => setShowBlockU(false)} />
-      ) : showUserL ? (
-        <UserL onClose={() => setShowUserL(false)} />
-      ) : showEditProfile ? (
-        <EditProfile onBack={() => setShowEditProfile(false)} />
-      ) : showAuction ? (
-        <Auction onBack={() => setShowAuction(false)} />
-      ) : (
-        <View style={{ flex: 1 }}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <MaterialCommunityIcons
-                name="arrow-left"
-                size={24}
-                color="#000"
+      
+      {/* Main Settings Content */}
+      <View style={{flex: 1}}>
+        {!showBlockU &&
+          !showUserL &&
+          !showEditProfile &&
+          !showMyLocation &&
+          !showSecurityLock &&
+          !showAuction && (
+            <>
+              <Header 
+                title="Settings"
+                onBack={() => navigation.goBack()}
               />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Settings</Text>
-          </View>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.profileSection}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarInitial}>
-                  {userData.name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <Text style={styles.userName}>{userData.name.toUpperCase()}</Text>
-              <Text style={styles.userPhone}>{userData.phone}</Text>
-              <Text style={styles.userStatus}>{userData.role}</Text>
-            </View>
 
-            {settingSections.map((section, sectionIndex) => (
-              <View key={sectionIndex} style={styles.settingsContainer}>
-                <Text style={styles.sectionTitle}>{section.title}</Text>
-                <View style={styles.menuCard}>
-                  {section.items.map((item, itemIndex) => (
-                    <React.Fragment key={itemIndex}>
-                      <TouchableOpacity
-                        style={styles.menuItem}
-                        onPress={item.onPress}
-                      >
-                        <View style={styles.menuItemContent}>
-                          <MaterialCommunityIcons
-                            name={item.icon}
-                            size={24}
-                            color={item.iconColor}
-                          />
-                          <View style={styles.menuItemTextBox}>
-                            <Text style={styles.menuItemText}>
-                              {item.title}
-                            </Text>
-                            {item.subtitle && (
-                              <Text style={styles.menuItemSubtitle}>
-                                {item.subtitle}
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-                        <MaterialCommunityIcons
-                          name="chevron-right"
-                          size={24}
-                          color="#B0B0B0"
-                        />
-                      </TouchableOpacity>
-                      {itemIndex < section.items.length - 1 && (
-                        <View style={styles.divider} />
-                      )}
-                    </React.Fragment>
-                  ))}
+              <ScrollView
+                style={styles.content}
+                showsVerticalScrollIndicator={false}>
+                
+                {/* Profile Section */}
+                <View style={styles.profileSection}>
+                  <View style={styles.profileImage}>
+                    <Text style={styles.profileInitial}>
+                      {userData.name.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text style={styles.userName}>{userData.name.toUpperCase()}</Text>
+                  <Text style={styles.userPhone}>{userData.phone}</Text>
+                  <Text style={styles.userStatus}>{userData.role}</Text>
                 </View>
-              </View>
-            ))}
 
-            <View style={styles.followSection}>
-              <Text style={styles.followText}>Follow us, to stay updated</Text>
-              <View style={styles.socialIcons}>
-                <TouchableOpacity style={styles.socialIcon}>
-                  <MaterialCommunityIcons
-                    name="instagram"
-                    size={24}
-                    color="#333333"
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.socialIcon}>
-                  <MaterialCommunityIcons
-                    name="youtube"
-                    size={24}
-                    color="#333333"
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.socialIcon}>
-                  <MaterialCommunityIcons
-                    name="whatsapp"
-                    size={24}
-                    color="#333333"
-                  />
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity
-                onPress={handleLogout}
-                style={styles.logoutButton}
-              >
-                <Text style={styles.logoutText}>Logout</Text>
-              </TouchableOpacity>
-              <Text style={styles.versionText}>Version 1.0.0</Text>
-            </View>
-          </ScrollView>
-        </View>
-      )}
+                {/* Settings Sections */}
+                {settingSections.map((section, sectionIndex) => (
+                  <View key={sectionIndex} style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>{section.title}</Text>
+                    <View style={styles.menuSection}>
+                      {section.items.map((item, itemIndex) => (
+                        <React.Fragment key={itemIndex}>
+                          <TouchableOpacity
+                            style={[styles.menuItem, itemIndex > 0 && styles.menuItemBorder]}
+                            onPress={item.onPress}
+                          >
+                            <View style={styles.menuItemLeft}>
+                              <MaterialCommunityIcons
+                                name={item.icon}
+                                size={22}
+                                color={item.iconColor}
+                              />
+                              <Text style={styles.menuItemText}>
+                                {item.title}
+                              </Text>
+                            </View>
+                            <MaterialCommunityIcons
+                              name="chevron-right"
+                              size={22}
+                              color="#CCCCCC"
+                            />
+                          </TouchableOpacity>
+                        </React.Fragment>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+
+                {/* Follow Section */}
+                <View style={styles.followSection}>
+                  <Text style={styles.followText}>
+                    Follow us, to stay updated
+                  </Text>
+                  <View style={styles.socialIcons}>
+                    <TouchableOpacity style={styles.socialIcon}>
+                      <MaterialCommunityIcons
+                        name="instagram"
+                        size={24}
+                        color="#333333"
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.socialIcon}>
+                      <MaterialCommunityIcons
+                        name="youtube"
+                        size={24}
+                        color="#333333"
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.socialIcon}>
+                      <MaterialCommunityIcons
+                        name="whatsapp"
+                        size={24}
+                        color="#333333"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                    <Text style={styles.logoutText}>Logout</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.versionText}>Version 1.0.0</Text>
+                </View>
+              </ScrollView>
+            </>
+          )}
+
+        {/* Block User Overlay */}
+        {showBlockU && (
+          <Animated.View
+            style={[
+              styles.fullScreenOverlay,
+              {transform: [{translateX: blockUAnim}]},
+            ]}>
+            <BlockU
+              onClose={() => {
+                Animated.timing(blockUAnim, {
+                  toValue: Dimensions.get('window').width,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start(() => {
+                  setShowBlockU(false);
+                });
+              }}
+            />
+          </Animated.View>
+        )}
+
+        {/* User Location Overlay */}
+        {showUserL && (
+          <Animated.View
+            style={[
+              styles.fullScreenOverlay,
+              {transform: [{translateX: userLAnim}]},
+            ]}>
+            <UserL
+              onClose={() => {
+                Animated.timing(userLAnim, {
+                  toValue: Dimensions.get('window').width,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start(() => {
+                  setShowUserL(false);
+                });
+              }}
+            />
+          </Animated.View>
+        )}
+
+        {/* Edit Profile Overlay */}
+        {showEditProfile && (
+          <Animated.View
+            style={[
+              styles.fullScreenOverlay,
+              {transform: [{translateX: editProfileAnim}]},
+            ]}>
+            <EditProfile
+              onBack={() => {
+                Animated.timing(editProfileAnim, {
+                  toValue: Dimensions.get('window').width,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start(() => {
+                  setShowEditProfile(false);
+                });
+              }}
+            />
+          </Animated.View>
+        )}
+
+        {/* My Location Overlay */}
+        {showMyLocation && (
+          <Animated.View
+            style={[
+              styles.fullScreenOverlay,
+              {transform: [{translateX: myLocationAnim}]},
+            ]}>
+            <MyLocation
+              onBack={() => {
+                Animated.timing(myLocationAnim, {
+                  toValue: Dimensions.get('window').width,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start(() => {
+                  setShowMyLocation(false);
+                });
+              }}
+            />
+          </Animated.View>
+        )}
+
+        {/* Security Lock Overlay */}
+        {showSecurityLock && (
+          <Animated.View
+            style={[
+              styles.fullScreenOverlay,
+              {transform: [{translateX: securityLockAnim}]},
+            ]}>
+            <SecurityLockScreen
+              onBack={() => {
+                Animated.timing(securityLockAnim, {
+                  toValue: Dimensions.get('window').width,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start(() => {
+                  setShowSecurityLock(false);
+                });
+              }}
+            />
+          </Animated.View>
+        )}
+
+        {/* Auction Overlay */}
+        {showAuction && (
+          <Animated.View
+            style={[
+              styles.fullScreenOverlay,
+              {transform: [{translateX: auctionAnim}]},
+            ]}>
+            <Auction
+              onBack={() => {
+                Animated.timing(auctionAnim, {
+                  toValue: Dimensions.get('window').width,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start(() => {
+                  setShowAuction(false);
+                });
+              }}
+            />
+          </Animated.View>
+        )}
+      </View>
 
       {/* Share Modal */}
       {showShare && (
@@ -373,107 +582,154 @@ const Settings = () => {
 };
 
 const styles = StyleSheet.create({
-  blockUserContainer: {
-    flex: 1,
-    backgroundColor: '#F7F7F7',
-  },
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#F5F5F5',
+    marginTop: 30,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EFEFEF',
-    marginTop: 20,
+  content: {
+    flex: 1,
   },
-  backButton: { marginRight: 16 },
-  headerTitle: { fontSize: 22, fontWeight: '600', color: '#000', fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
- },
-  scrollContent: { paddingBottom: 100 },
   profileSection: {
-    alignItems: 'center',
-    paddingVertical: 24,
     backgroundColor: '#FFFFFF',
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  profileImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: '#6B46C1',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  avatarInitial: { fontSize: 40, fontWeight: 'bold', color: '#FFFFFF' },
-  userName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 4,
-    letterSpacing: 1,
-  },
-  userPhone: { fontSize: 16, color: '#666', marginBottom: 4 },
-  userStatus: { fontSize: 14, color: '#888' },
-  settingsContainer: { paddingHorizontal: 16, marginTop: 24 },
-  sectionTitle: {
-    fontSize: 16,
+  profileInitial: {
+    fontSize: 28,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    color: '#FFFFFF',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
-  menuCard: { backgroundColor: '#FFFFFF', borderRadius: 8, overflow: 'hidden' },
+  userName: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+  },
+  userPhone: {
+    fontSize: 16,
+    color: '#666666',
+    marginBottom: 4,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+  },
+  userStatus: {
+    fontSize: 14,
+    color: '#999999',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+  },
+  sectionContainer: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+  },
+  menuSection: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    borderRadius: 12,
+  },
   menuItem: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 18,
   },
-  menuItemContent: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  menuItemTextBox: { marginLeft: 16, flex: 1 },
-  menuItemText: { fontSize: 16, color: '#000' },
-  menuItemSubtitle: { fontSize: 13, color: '#999999', marginTop: 2 },
-  divider: { height: 1, backgroundColor: '#F0F0F0', marginLeft: 56 },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuItemBorder: {
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: '#333333',
+    marginLeft: 12,
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+  },
   followSection: {
     alignItems: 'center',
-    marginVertical: 32,
+    marginVertical: 16,
     paddingHorizontal: 16,
   },
-  followText: { fontSize: 14, color: '#666666', marginBottom: 16 },
+  followText: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 12,
+    marginTop: -15,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+  },
   socialIcons: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
-    marginBottom: 24,
+    gap: 16,
+    marginBottom: 16,
   },
   socialIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  logoutButton: { marginBottom: 16 },
-  logoutText: { fontSize: 16, color: '#EF4444', fontWeight: '500' },
+  logoutButton: {
+    marginBottom: 12,
+  },
+  logoutText: {
+    fontSize: 16,
+    color: '#EF4444',
+    fontWeight: '500',
+    marginBottom: 65,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
+  },
   versionText: {
     fontSize: 12,
     color: '#999999',
     backgroundColor: '#E5E5E5',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: -15,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+  },
+  fullScreenOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#FFFFFF',
+    zIndex: 1000,
   },
 });
 
