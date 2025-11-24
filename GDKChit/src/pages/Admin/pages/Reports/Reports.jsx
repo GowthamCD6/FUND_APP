@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import Header from '../../../../components/HeaderComponent/Header';
 import GroupCard from '../../../../components/GroupCard/GroupCard';
 import styles from './ReportsStyles';
 
@@ -126,12 +127,12 @@ const Reports = () => {
   };
 
   const openGroupDetails = (group) => {
-    navigation.navigate('MembersDetails', { group });
+    // Do nothing - card press should not navigate
   };
 
   const openGroupModal = (group) => {
-    setSelectedGroup(group);
-    setModalVisible(true);
+    // Arrow press should navigate to MembersDetails page
+    navigation.navigate('MembersDetails', { group });
   };
 
   const formatDate = (dateString) => {
@@ -221,16 +222,11 @@ const Reports = () => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.navigate('Dashboard')}
-          >
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Reports</Text>
-        </View>
+      <View style={styles.headerWrapper}>
+        <Header 
+          title="Reports"
+          onBack={() => navigation.navigate('Dashboard')}
+        />
       </View>
 
       {/* Tab Navigation */}

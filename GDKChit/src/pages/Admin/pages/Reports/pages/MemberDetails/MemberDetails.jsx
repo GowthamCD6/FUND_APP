@@ -10,6 +10,9 @@ import {
   Dimensions,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Header from '../../../../../../components/HeaderComponent/Header';
+import MemberChitCard from '../MemberChitCard/MemberChitCard';
+import PaymentEditor from '../PaymentEditiorModal/PaymentStatusEditior';
 import styles from './MemberDetailsStyles';
 
 const { width } = Dimensions.get('window');
@@ -21,6 +24,8 @@ const MemberDetails = ({ route, navigation }) => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [isCurrentMonth, setIsCurrentMonth] = useState(true);
+  const [showMemberChitCard, setShowMemberChitCard] = useState(false);
+  const [selectedMemberForChitCard, setSelectedMemberForChitCard] = useState(null);
   
   // Extended sample data with payment history
   const [groupData, setGroupData] = useState({
@@ -115,7 +120,12 @@ const MemberDetails = ({ route, navigation }) => {
         currentPayment: currentMonthPayment || {
           status: 'pending',
           amount: group.monthlyAmount,
-          monthName: `${months[selectedMonth]} ${selectedYear}`
+          monthName: `${months[selectedMonth]} ${selectedYear}`,
+          month: selectedMonth,
+          year: selectedYear,
+          paidDate: null,
+          dueDate: new Date(selectedYear, selectedMonth, 15).toISOString(),
+          receiptNumber: null
         }
       };
     });
@@ -154,13 +164,42 @@ const MemberDetails = ({ route, navigation }) => {
     }));
   };
 
+  const removePaymentRecord = (memberId) => {
+    setGroupData(prev => ({
+      ...prev,
+      members: prev.members.map(member => {
+        if (member.id === memberId) {
+          const updatedHistory = member.paymentHistory.filter(payment => {
+            return !(payment.month === selectedMonth && payment.year === selectedYear);
+          });
+          return { ...member, paymentHistory: updatedHistory };
+        }
+        return member;
+      })
+    }));
+  };
+
   const renderMemberCard = ({ item }) => {
     const stats = getMonthlyStats();
+    const paymentStatus = item.currentPayment?.status || 'pending';
+    
+    const handleArrowPress = () => {
+      // Show MemberChitCard directly without navigating
+      setSelectedMemberForChitCard(item);
+      setShowMemberChitCard(true);
+    };
+
+    const handleLongPress = () => {
+      // Open Payment History Modal (no OTP needed)
+      setSelectedMember(item);
+    };
+    
     return (
       <TouchableOpacity 
         style={styles.memberCard}
-        onPress={() => setSelectedMember(item)}
-        activeOpacity={0.7}
+        onLongPress={handleLongPress}
+        activeOpacity={1}
+        delayLongPress={500}
       >
         {/* Member Info Section */}
         <View style={styles.memberHeader}>
@@ -173,19 +212,27 @@ const MemberDetails = ({ route, navigation }) => {
           </View>
           <View style={styles.memberInfo}>
             <Text style={styles.memberName}>{item.name}</Text>
-            <Text style={styles.memberPhone}>{item.phone}</Text>
-            <Text style={styles.memberAmount}>{formatCurrency(item.currentPayment.amount)}</Text>
+            <View style={styles.memberPhoneAmountRow}>
+              <Text style={styles.memberPhone}>{item.phone}</Text>
+              <View style={styles.phoneAmountDivider} />
+              <Text style={styles.memberAmount}>{formatCurrency(item.currentPayment?.amount || group.monthlyAmount)}</Text>
+            </View>
           </View>
           <View style={styles.statusAndArrowContainer}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.currentPayment.status) }]}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(paymentStatus) }]}>
               <MaterialCommunityIcons 
-                name={getStatusIcon(item.currentPayment.status)} 
+                name={getStatusIcon(paymentStatus)} 
                 size={10} 
                 color="#FFFFFF" 
               />
-              <Text style={styles.statusText}>{item.currentPayment.status}</Text>
+              <Text style={styles.statusText}>{paymentStatus}</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#9CA3AF" style={styles.arrowIcon} />
+            <TouchableOpacity 
+              onPress={handleArrowPress}
+              style={styles.arrowButton}
+            >
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#9CA3AF" style={styles.arrowIcon} />
+            </TouchableOpacity>
           </View>
         </View>
       </TouchableOpacity>
@@ -219,16 +266,11 @@ const MemberDetails = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{group?.name}</Text>
-        </View>
+      <View style={styles.headerWrapper}>
+        <Header 
+          title={group?.name}
+          onBack={() => navigation.goBack()}
+        />
       </View>
 
       {/* Month Selector */}
@@ -275,57 +317,19 @@ const MemberDetails = ({ route, navigation }) => {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Member Details Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
+      {/* Payment Editor Modal */}
+      <PaymentEditor
         visible={selectedMember !== null}
-        onRequestClose={() => setSelectedMember(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>{selectedMember?.name}</Text>
-                <Text style={styles.modalSubtitle}>{selectedMember?.phone}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setSelectedMember(null)}
-              >
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.historyTitle}>Payment History</Text>
-            
-            <FlatList
-              data={selectedMember?.paymentHistory || []}
-              renderItem={renderPaymentHistoryItem}
-              keyExtractor={(item, index) => `${item.year}-${item.month}-${index}`}
-              style={styles.historyList}
-              showsVerticalScrollIndicator={false}
-            />
-
-            {/* Quick Actions */}
-            <View style={styles.quickActions}>
-              <TouchableOpacity 
-                style={[styles.modalActionButton, styles.markPaidButton]}
-                onPress={() => {
-                  updatePaymentStatus(selectedMember.id, 'paid');
-                  Alert.alert('Success', 'Payment marked as paid');
-                }}
-                disabled={selectedMember?.currentPayment?.status === 'paid'}
-              >
-                <MaterialCommunityIcons name="check-circle" size={18} color="#FFFFFF" />
-                <Text style={styles.modalActionButtonText}>
-                  {selectedMember?.currentPayment?.status === 'paid' ? 'Already Paid' : 'Mark as Paid'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        selectedMember={selectedMember}
+        onClose={() => setSelectedMember(null)}
+        onUpdatePaymentStatus={updatePaymentStatus}
+        onRemovePaymentRecord={removePaymentRecord}
+        formatCurrency={formatCurrency}
+        getStatusColor={getStatusColor}
+        getStatusIcon={getStatusIcon}
+        formatDate={formatDate}
+        renderPaymentHistoryItem={renderPaymentHistoryItem}
+      />
 
       {/* Month Picker Modal */}
       <Modal
@@ -367,6 +371,20 @@ const MemberDetails = ({ route, navigation }) => {
             </ScrollView>
           </View>
         </View>
+      </Modal>
+
+      {/* Member Chit Card Modal */}
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showMemberChitCard}
+        onRequestClose={() => setShowMemberChitCard(false)}
+      >
+        <MemberChitCard 
+          selectedGroup={group}
+          selectedMember={selectedMemberForChitCard}
+          onBack={() => setShowMemberChitCard(false)}
+        />
       </Modal>
     </View>
   );

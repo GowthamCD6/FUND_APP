@@ -7,39 +7,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  header: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    marginRight: 15,
-    padding: 5,
-    marginTop: -2
-    ,
-
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '500',
-    color: '#1F2937',
-    marginTop: -5,
-    flex: 1,
-    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Roboto',
-    letterSpacing: -0.5,
+  headerWrapper: {
+    paddingTop: 25,
+    paddingBottom: 5,
   },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    marginTop: 15,
+    marginTop: 25,
     marginBottom: 5,
     borderRadius: 12,
     padding: 4,
