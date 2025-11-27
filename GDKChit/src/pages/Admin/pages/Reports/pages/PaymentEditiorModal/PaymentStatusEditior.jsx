@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   Modal,
   FlatList,
   Alert,
-  ScrollView,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ReactNativeBiometrics from 'react-native-biometrics';
@@ -19,58 +18,72 @@ const PaymentEditor = ({
   selectedMember,
   onClose,
   onUpdatePaymentStatus,
-  onRemovePaymentRecord,
   formatCurrency,
   getStatusColor,
   getStatusIcon,
   formatDate,
-  renderPaymentHistoryItem,
 }) => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [updatedPaymentStatus, setUpdatedPaymentStatus] = useState(null);
+
+  // Local state for instant UI updates
+  const [currentStatus, setCurrentStatus] = useState(null);
+  const [localHistory, setLocalHistory] = useState([]);
+
+  // Sync state when modal opens
+  useEffect(() => {
+    if (selectedMember) {
+      setCurrentStatus(selectedMember?.currentPayment?.status);
+      setLocalHistory(selectedMember?.paymentHistory || []);
+    }
+  }, [selectedMember, visible]);
 
   if (!selectedMember) return null;
 
-  // Get the current payment status considering recent updates
-  const currentPaymentStatus = updatedPaymentStatus || selectedMember?.currentPayment?.status;
+  const authenticateAndUpdateStatus = async targetStatus => {
+    // If we are already in this status, do nothing (Double safety)
+    if (currentStatus === targetStatus) return;
 
-  // Direct biometric authentication - bypasses BiometricService settings
-  const authenticateAndUpdateStatus = async status => {
     setIsAuthenticating(true);
     try {
-      // Call rnBiometrics directly to show the biometric prompt
       const { success, error } = await rnBiometrics.simplePrompt({
-        promptMessage: `Authenticate to mark payment as ${status.toUpperCase()} for ${
-          selectedMember.name
-        }`,
+        promptMessage: `Confirm ${targetStatus.toUpperCase()} Status`,
         fallbackPromptMessage: 'Use device PIN, pattern or password',
         cancelButtonText: 'Cancel',
       });
 
       if (success) {
-        // Update local state immediately for instant UI feedback
-        setUpdatedPaymentStatus(status);
-        
-        // Call parent update function
-        onUpdatePaymentStatus(selectedMember.id, status);
-        
-        // Show success alert but keep modal open to see instant update
+        // 1. INSTANT UI UPDATE
+        setCurrentStatus(targetStatus);
+
+        // 2. Update the history list instantly
+        const updatedHistory = localHistory.map((item, index) => {
+          // Update the latest record (assuming index 0 is latest)
+          if (index === 0) {
+            return {
+              ...item,
+              status: targetStatus,
+              paidDate:
+                targetStatus === 'paid' ? new Date().toISOString() : null,
+            };
+          }
+          return item;
+        });
+        setLocalHistory(updatedHistory);
+
+        // 3. Update Parent Data
+        onUpdatePaymentStatus(selectedMember.id, targetStatus);
+
+        // Show success alert with user details
         Alert.alert(
-          'Success',
-          `Payment marked as ${status.toUpperCase()}\n\nMember: ${
-            selectedMember.name
-          }`,
-          [{ text: 'OK' }], // Don't close modal, just dismiss alert
+          'Payment Status Updated',
+          `Member: ${selectedMember.name}\nStatus: ${targetStatus.toUpperCase()}\nAmount: ${formatCurrency(selectedMember?.currentPayment?.amount || 0)}\nDate: ${new Date().toLocaleDateString()}`,
         );
       } else {
-        Alert.alert(
-          'Authentication Failed',
-          error || 'Biometric authentication failed. Please try again.',
-        );
+        // User cancelled or failed bio
+        Alert.alert('Cancelled', 'Authentication was cancelled');
       }
     } catch (error) {
       console.error('Authentication error:', error);
-      Alert.alert('Error', 'Authentication failed. Please try again.');
     } finally {
       setIsAuthenticating(false);
     }
@@ -81,10 +94,7 @@ const PaymentEditor = ({
       animationType="slide"
       transparent={true}
       visible={visible}
-      onRequestClose={() => {
-        setUpdatedPaymentStatus(null); // Reset on close
-        onClose();
-      }}
+      onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
@@ -93,13 +103,7 @@ const PaymentEditor = ({
               <Text style={styles.modalTitle}>{selectedMember?.name}</Text>
               <Text style={styles.modalSubtitle}>{selectedMember?.phone}</Text>
             </View>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => {
-                setUpdatedPaymentStatus(null);
-                onClose();
-              }}
-            >
+            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
           </View>
@@ -107,7 +111,7 @@ const PaymentEditor = ({
           <Text style={styles.historyTitle}>Payment History</Text>
 
           <FlatList
-            data={selectedMember?.paymentHistory || []}
+            data={localHistory}
             renderItem={({ item }) => (
               <View style={styles.historyItem}>
                 <View style={styles.historyHeader}>
@@ -133,11 +137,6 @@ const PaymentEditor = ({
                     {formatCurrency(item.amount)}
                   </Text>
                   <View style={styles.bottomRow}>
-                    {item.receiptNumber && (
-                      <Text style={styles.receiptNumber}>
-                        Receipt: {item.receiptNumber}
-                      </Text>
-                    )}
                     <Text style={styles.historyDate}>
                       {item.status === 'paid'
                         ? `Paid: ${formatDate(item.paidDate)}`
@@ -147,65 +146,81 @@ const PaymentEditor = ({
                 </View>
               </View>
             )}
-            keyExtractor={(item, index) =>
-              `${item.year}-${item.month}-${index}`
-            }
+            keyExtractor={(item, index) => `${index}`}
             style={styles.historyList}
-            showsVerticalScrollIndicator={false}
           />
 
-          {/* Quick Actions */}
+          {/* --- PERFECTED QUICK ACTIONS --- */}
           <View style={styles.quickActionsContainer}>
             <View style={styles.quickActionsRow}>
+              {/* MARK PAID BUTTON */}
               <TouchableOpacity
                 style={[
                   styles.modalActionButton,
-                  styles.markPaidButton,
-                  (currentPaymentStatus === 'paid' ||
-                    isAuthenticating) &&
-                    styles.disabledButton,
+                  // If Paid: Gray Background (Disabled look). If Pending: Green Background.
+                  currentStatus === 'paid'
+                    ? { backgroundColor: '#E5E7EB', elevation: 0 }
+                    : { backgroundColor: '#10B981', elevation: 3 },
                 ]}
                 onPress={() => authenticateAndUpdateStatus('paid')}
-                disabled={
-                  currentPaymentStatus === 'paid' ||
-                  isAuthenticating
-                }
+                disabled={currentStatus === 'paid' || isAuthenticating}
               >
                 <MaterialCommunityIcons
-                  name={isAuthenticating ? 'fingerprint' : 'check-circle'}
-                  size={18}
-                  color="#FFFFFF"
+                  // If Paid: Check icon (static). If Pending: Check-circle (action).
+                  name={
+                    currentStatus === 'paid' ? 'check' : 'check-circle-outline'
+                  }
+                  size={20}
+                  // If Paid: Dark Gray icon. If Pending: White icon.
+                  color={currentStatus === 'paid' ? '#9CA3AF' : '#FFFFFF'}
                 />
-                <Text style={styles.modalActionButtonText}>
-                  {isAuthenticating ? 'Authenticating...' : 'Mark Paid'}
+                <Text
+                  style={[
+                    styles.modalActionButtonText,
+                    // If Paid: Dark Gray text. If Pending: White text.
+                    { color: currentStatus === 'paid' ? '#9CA3AF' : '#FFFFFF' },
+                  ]}
+                >
+                  {currentStatus === 'paid' ? 'Paid' : 'Mark Paid'}
                 </Text>
               </TouchableOpacity>
 
+              {/* MARK PENDING BUTTON */}
               <TouchableOpacity
                 style={[
                   styles.modalActionButton,
-                  styles.markPendingButton,
-                  (currentPaymentStatus === 'pending' ||
-                    isAuthenticating) &&
-                    styles.disabledButton,
+                  // If Pending: Gray Background (Disabled look). If Paid: Orange Background.
+                  currentStatus === 'pending'
+                    ? { backgroundColor: '#E5E7EB', elevation: 0 }
+                    : { backgroundColor: '#F59E0B', elevation: 3 },
                 ]}
                 onPress={() => authenticateAndUpdateStatus('pending')}
-                disabled={
-                  currentPaymentStatus === 'pending' ||
-                  isAuthenticating
-                }
+                disabled={currentStatus === 'pending' || isAuthenticating}
               >
                 <MaterialCommunityIcons
-                  name={isAuthenticating ? 'fingerprint' : 'clock-outline'}
-                  size={18}
-                  color="#FFFFFF"
+                  name={
+                    currentStatus === 'pending'
+                      ? 'clock'
+                      : 'clock-time-three-outline'
+                  }
+                  size={20}
+                  color={currentStatus === 'pending' ? '#9CA3AF' : '#FFFFFF'}
                 />
-                <Text style={styles.modalActionButtonText}>
-                  {isAuthenticating ? 'Authenticating...' : 'Mark Pending'}
+                <Text
+                  style={[
+                    styles.modalActionButtonText,
+                    {
+                      color:
+                        currentStatus === 'pending' ? '#9CA3AF' : '#FFFFFF',
+                    },
+                  ]}
+                >
+                  {currentStatus === 'pending' ? 'Pending' : 'Mark Pending'}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
+          {/* ----------------------------- */}
         </View>
       </View>
     </Modal>
