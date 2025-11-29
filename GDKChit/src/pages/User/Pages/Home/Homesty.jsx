@@ -181,7 +181,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-
   // Features Section
   featuresSection: {
     backgroundColor: '#FFFFFF',
@@ -226,90 +225,135 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Plans Section
+  // --- UPDATED PLANS SECTION FOR PERFECT SLIDER ---
   plansSection: {
-    marginHorizontal: 20,
+    // We kept margin bottom but moved horizontal handling to component logic
     marginBottom: 20,
   },
   plansSectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 15,
     marginTop: 10,
+    paddingHorizontal: 20, // Add padding here since main container padding was removed for full width slide
   },
   viewAllText: {
     fontSize: 14,
     color: '#6B46C1',
     fontWeight: '600',
   },
-  plansScrollView: {
-    flexDirection: 'row',
-  },
   planCard: {
-    marginBottom: 10,
-    marginTop: 10,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
-    marginRight: 16,
-    marginLeft: 5,
-    width: width * 0.7,
-    elevation: 4,
+    height: 240, 
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    position: 'relative',
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#6B46C1',
   },
-  planHeader: {
+  plansScrollContent: {
+    paddingVertical: 15,
+  },
+  planCardDynamic: {
+    marginRight: 12,
+    marginLeft: 0,
+  },
+  badge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+  },
+  planTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+  },
+  amountRow: {
+    marginBottom: 6,
+  },
+  mainAmount: {
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 2,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+  },
+  totalLabel: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
+  },
+  monthlyInfo: {
+    fontSize: 13,
+    color: '#4B5563',
+    marginBottom: 12,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+  },
+  returnSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
-  planName: {
-    fontSize: 18,
+  returnLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
+  },
+  returnAmount: {
+    fontSize: 16,
     fontWeight: '700',
-    color: '#1E293B',
+    color: '#10B981',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
-  planBadge: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+  decorativeCircle: {
+    position: 'absolute',
+    // bottom: -25, // Optional visual adjustment
+    right: -25,
+    width: 100,
+    height: 100,
+    borderRadius: 40,
+    opacity: 0.6,
   },
-  planBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#D97706',
-  },
-  planAmount: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#6B46C1',
-    marginBottom: 8,
-  },
-  planDuration: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 8,
-  },
-  planReturn: {
-    fontSize: 14,
-    color: '#059669',
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  planButton: {
-    backgroundColor: '#6B46C1',
-    paddingVertical: 12,
-    borderRadius: 8,
+
+  paginationDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+    gap: 6,
   },
-  planButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#D1D5DB',
+  },
+  activeDot: {
+    backgroundColor: '#6B46C1',
+    width: 20,
+    height: 6,
+    borderRadius: 3,
   },
 
   // Testimonials
