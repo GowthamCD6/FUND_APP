@@ -33,7 +33,7 @@ const Home = () => {
       amount: '₹1,00,000',
       monthly: '₹5,000',
       duration: '20 Months',
-      return: '₹1,95,000',
+      return: '₹95,000',
       color: '#FFD700',
       gradient: ['#FFD700', '#FFA500'],
     },
@@ -44,18 +44,18 @@ const Home = () => {
       amount: '₹2,00,000',
       monthly: '₹10,000',
       duration: '20 Months',
-      return: '₹3,90,000',
+      return: '₹1,90,000',
       color: '#E5E4E2',
       gradient: ['#E5E4E2', '#C0C0C0'],
     },
     {
       id: 3,
       name: '3 Lakh Plan',
-      badge: null,
+      badge: 'Trending',
       amount: '₹3,00,000',
       monthly: '₹15,000',
       duration: '20 Months',
-      return: '₹5,85,000',
+      return: '₹2,85,000',
       color: '#B9F2FF',
       gradient: ['#B9F2FF', '#87CEEB'],
     },
@@ -66,7 +66,7 @@ const Home = () => {
       amount: '₹5,00,000',
       monthly: '₹25,000',
       duration: '20 Months',
-      return: '₹9,75,000',
+      return: '₹4,75,000',
       color: '#DA70D6',
       gradient: ['#DA70D6', '#BA55D3'],
     },
@@ -189,38 +189,44 @@ const Home = () => {
       {/* Badge */}
       {item.badge && (
         <View style={[styles.badge, { backgroundColor: item.color }]}>
-          <Text style={styles.badgeText}>{item.badge}</Text>
+          <Text style={styles.planBadgeText}>{item.badge}</Text>
         </View>
       )}
 
-      {/* Plan Title */}
-      <Text style={styles.planTitle}>{item.name}</Text>
+      {/* Decorative Elements */}
+      <View
+        style={[styles.decorativeCircle, { backgroundColor: item.color }]}
+      />
+      <View
+        style={[styles.decorativeCircleSmall, { backgroundColor: item.color }]}
+      />
 
-      {/* Amount Section */}
-      <View style={styles.amountRow}>
-        <Text style={[styles.mainAmount, { color: item.color }]}>
-          {item.amount}
+      {/* Top Content */}
+      <View>
+        {/* Plan Title */}
+        <Text style={styles.planTitle}>{item.name}</Text>
+
+        {/* Amount Section */}
+        <View style={styles.amountRow}>
+          <Text style={[styles.mainAmount, { color: item.color === '#E5E4E2' ? '#9CA3AF' : item.color }]}>
+            {item.amount}
+          </Text>
+          <Text style={styles.totalLabel}>Total Value</Text>
+        </View>
+
+        {/* Monthly Info */}
+        <Text style={styles.monthlyInfo}>
+          {item.monthly} per month for {item.duration}
         </Text>
-        <Text style={styles.totalLabel}>Total Value</Text>
       </View>
 
-      {/* Monthly Info */}
-      <Text style={styles.monthlyInfo}>
-        {item.monthly} per month for {item.duration}
-      </Text>
-
-      {/* Return Info */}
+      {/* Return Info - Bottom Footer */}
       <View style={styles.returnSection}>
         <Text style={styles.returnLabel}>Expected Return</Text>
         <Text style={styles.returnAmount}>
           {item.return}
         </Text>
       </View>
-
-      {/* Decorative Element */}
-      <View
-        style={[styles.decorativeCircle, { backgroundColor: item.color + '30' }]}
-      />
     </View>
   );
 
