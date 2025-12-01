@@ -227,14 +227,13 @@ const styles = StyleSheet.create({
 
   // --- UPDATED PLANS SECTION FOR PERFECT SLIDER ---
   plansSection: {
-    // We kept margin bottom but moved horizontal handling to component logic
     marginBottom: 20,
   },
   plansSectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 0,
     marginTop: 10,
     paddingHorizontal: 20, // Add padding here since main container padding was removed for full width slide
   },
