@@ -22,8 +22,11 @@ const SNAP_INTERVAL = CARD_WIDTH + SPACING; // Total scroll distance per slide
 
 const Home = () => {
   const [activePlanSlide, setActivePlanSlide] = useState(0);
+  const [activeTestimonialSlide, setActiveTestimonialSlide] = useState(0);
   const flatListRef = useRef(null);
+  const testimonialListRef = useRef(null);
   const scrollTimer = useRef(null);
+  const testimonialTimer = useRef(null);
   const mainScrollRef = useRef(null);
   const plansLayoutY = useRef(0);
 
@@ -195,6 +198,131 @@ const Home = () => {
     { value: '25+', label: 'Years Legacy', icon: 'calendar-check' },
     { value: '100%', label: 'Trust Score', icon: 'star-circle' },
   ];
+
+  const testimonials = [
+    {
+      id: 1,
+      text: "Used my chit payout of ₹1.9 lakhs to start a small grocery store in Thirunelveli. The monthly contribution of ₹10,000 was affordable, and I received the amount exactly when I needed it for my business. No bank would give me a loan without collateral, but this chit fund made my dream possible.",
+      name: "Murugan K",
+      title: "Small Business Owner, Thirunelveli",
+    },
+    {
+      id: 2,
+      text: "My daughter's wedding was funded through the 3 Lakh plan. I won the auction in the 8th month and received ₹2.75 lakhs. The remaining EMIs were manageable with my salary. The entire process was transparent - I could see all bidding details in the app itself.",
+      name: "Lakshmi Devi S",
+      title: "Government School Teacher, Madurai",
+    },
+    {
+      id: 3,
+      text: "Being part of this chit fund for 8 years now. What I appreciate most is the personal touch - they call before every due date and the staff knows me by name. Received ₹4.5 lakhs last year which helped me renovate my ancestral home. Will continue for life!",
+      name: "Rajesh Babu M",
+      title: "Auto Parts Dealer, Tenkasi",
+    },
+  ];
+
+  // Create infinite loop data for testimonials
+  const infiniteTestimonials = [...testimonials, ...testimonials, ...testimonials];
+  const initialTestimonialIndex = testimonials.length; // Start from middle set
+
+  // Testimonial slider configuration
+  const TESTIMONIAL_CARD_WIDTH = width * 0.88;
+  const TESTIMONIAL_SPACING = 12;
+  const TESTIMONIAL_SNAP_INTERVAL = TESTIMONIAL_CARD_WIDTH + TESTIMONIAL_SPACING;
+
+  // Initialize testimonial scroll position to middle set
+  useEffect(() => {
+    if (testimonialListRef.current) {
+      setTimeout(() => {
+        testimonialListRef.current.scrollToIndex({
+          index: initialTestimonialIndex,
+          animated: false,
+        });
+      }, 150);
+    }
+  }, []);
+
+  // Auto scroll for testimonials - infinite loop
+  const startTestimonialAutoScroll = useCallback(() => {
+    stopTestimonialAutoScroll();
+    testimonialTimer.current = setInterval(() => {
+      if (testimonialListRef.current) {
+        setActiveTestimonialSlide((prev) => {
+          const nextIndex = prev + 1;
+          testimonialListRef.current.scrollToIndex({
+            index: nextIndex,
+            animated: true,
+          });
+          return nextIndex;
+        });
+      }
+    }, 4000);
+  }, []);
+
+  const stopTestimonialAutoScroll = () => {
+    if (testimonialTimer.current) {
+      clearInterval(testimonialTimer.current);
+      testimonialTimer.current = null;
+    }
+  };
+
+  // Reset to middle when reaching edges (seamless loop for testimonials)
+  const handleTestimonialScrollEnd = (event) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const currentIndex = Math.round(offsetX / TESTIMONIAL_SNAP_INTERVAL);
+    
+    // If we've scrolled past the middle set, reset to middle
+    if (currentIndex >= testimonials.length * 2) {
+      testimonialListRef.current.scrollToIndex({
+        index: currentIndex - testimonials.length,
+        animated: false,
+      });
+      setActiveTestimonialSlide(currentIndex - testimonials.length);
+    } else if (currentIndex < testimonials.length) {
+      testimonialListRef.current.scrollToIndex({
+        index: currentIndex + testimonials.length,
+        animated: false,
+      });
+      setActiveTestimonialSlide(currentIndex + testimonials.length);
+    } else {
+      setActiveTestimonialSlide(currentIndex);
+    }
+  };
+
+  const getTestimonialItemLayout = (data, index) => ({
+    length: TESTIMONIAL_SNAP_INTERVAL,
+    offset: TESTIMONIAL_SNAP_INTERVAL * index,
+    index,
+  });
+
+  // Start testimonial auto scroll
+  useEffect(() => {
+    setActiveTestimonialSlide(initialTestimonialIndex);
+    startTestimonialAutoScroll();
+    return () => stopTestimonialAutoScroll();
+  }, [startTestimonialAutoScroll]);
+
+  const renderTestimonialItem = ({ item }) => (
+    <View style={[styles.testimonialCard, { width: TESTIMONIAL_CARD_WIDTH, marginRight: TESTIMONIAL_SPACING }]}>
+      <MaterialCommunityIcons name="format-quote-open" size={24} color="#6B46C1" style={{ opacity: 0.3, marginBottom: 8 }} />
+      <Text style={styles.testimonialText}>{item.text}</Text>
+      <View style={styles.testimonialAuthor}>
+        <View style={styles.authorInfo}>
+          <Text style={styles.authorName}>{item.name}</Text>
+          <Text style={styles.authorTitle}>{item.title}</Text>
+        </View>
+        <View style={styles.ratingStars}>
+          {[...Array(5)].map((_, i) => (
+            <MaterialCommunityIcons
+              key={i}
+              name="star"
+              size={16}
+              color="#FFD700"
+            />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
 
   const renderPlanItem = ({ item }) => (
     <View
@@ -414,29 +542,40 @@ const Home = () => {
           </View>
         </View>
 
-        {/* Testimonials */}
+        {/* Testimonials Slider */}
         <View style={styles.testimonialsSection}>
           <Text style={styles.sectionTitle}>Member Testimonials</Text>
-          <View style={styles.testimonialCard}>
-            <Text style={styles.testimonialText}>
-              "I have been a member of ஸ்ரீ பெரியநாயகி அம்மன் ChitFunds for over 15 years. Their commitment to transparency and timely payouts has helped me achieve my financial goals. Highly recommended!"
-            </Text>
-            <View style={styles.testimonialAuthor}>
-              <View style={styles.authorInfo}>
-                <Text style={styles.authorName}>Devaraj P</Text>
-                <Text style={styles.authorTitle}>Member since 2010</Text>
-              </View>
-              <View style={styles.ratingStars}>
-                {[...Array(5)].map((_, i) => (
-                  <MaterialCommunityIcons
-                    key={i}
-                    name="star"
-                    size={16}
-                    color="#FFD700"
-                  />
-                ))}
-              </View>
-            </View>
+          
+          <FlatList
+            ref={testimonialListRef}
+            data={infiniteTestimonials}
+            renderItem={renderTestimonialItem}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={TESTIMONIAL_SNAP_INTERVAL}
+            decelerationRate="fast"
+            bounces={false}
+            contentContainerStyle={{ paddingHorizontal: (width - TESTIMONIAL_CARD_WIDTH) / 2 }}
+            snapToAlignment="center"
+            onScrollBeginDrag={() => stopTestimonialAutoScroll()}
+            onScrollEndDrag={() => startTestimonialAutoScroll()}
+            onMomentumScrollEnd={handleTestimonialScrollEnd}
+            getItemLayout={getTestimonialItemLayout}
+            initialScrollIndex={initialTestimonialIndex}
+          />
+
+          {/* Pagination Dots */}
+          <View style={styles.paginationDots}>
+            {testimonials.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.paginationDot,
+                  (activeTestimonialSlide % testimonials.length) === index && styles.paginationDotActive,
+                ]}
+              />
+            ))}
           </View>
         </View>
 

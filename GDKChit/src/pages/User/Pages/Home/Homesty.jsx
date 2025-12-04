@@ -491,23 +491,20 @@ const styles = StyleSheet.create({
 
   // Testimonials
   testimonialsSection: {
+    marginVertical: 20,
+    paddingHorizontal: 0,
+  },
+  testimonialCard: {
     backgroundColor: '#FFFFFF',
-    margin: 20,
-    marginTop: 0,
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 2,
-  },
-  testimonialCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
+    elevation: 3,
   },
   testimonialText: {
     fontSize: 14,
@@ -532,10 +529,21 @@ const styles = StyleSheet.create({
   authorTitle: {
     fontSize: 12,
     color: '#64748B',
+    marginTop: 2,
   },
   ratingStars: {
     flexDirection: 'row',
     gap: 2,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D1D5DB',
+  },
+  paginationDotActive: {
+    backgroundColor: '#6B46C1',
+    width: 24,
   },
 
   // Contact Section
