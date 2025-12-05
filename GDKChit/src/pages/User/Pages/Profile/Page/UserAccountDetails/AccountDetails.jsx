@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInput, Alert, Modal, FlatList, BackHandler } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Header from '../../../../../components/HeaderComponent/Header';
+import Header from '../../../../../../components/HeaderComponent/Header';
 
 const SOUTH_INDIAN_STATES = [
   'Tamil Nadu',
@@ -193,6 +193,7 @@ const AccountD = ({ onBack }) => {
 						<TextInput
 							style={[styles.textInput, errors.name && styles.errorInput]}
 							placeholder="Enter your name"
+							placeholderTextColor="#A0A0A0"
 							value={formData.name}
 							onChangeText={(value) => handleInputChange('name', value)}
 						/>
@@ -208,6 +209,7 @@ const AccountD = ({ onBack }) => {
 						<TextInput
 							style={[styles.textInput, errors.email && styles.errorInput]}
 							placeholder="Enter email address"
+							placeholderTextColor="#A0A0A0"
 							value={formData.email}
 							onChangeText={(value) => handleInputChange('email', value)}
 							keyboardType="email-address"
@@ -240,6 +242,7 @@ const AccountD = ({ onBack }) => {
 						<TextInput
 							style={[styles.textInput, styles.multilineInput, errors.streetAddress && styles.errorInput]}
 							placeholder="Enter your street address"
+							placeholderTextColor="#A0A0A0"
 							value={formData.streetAddress}
 							onChangeText={(value) => handleInputChange('streetAddress', value)}
 							multiline={true}
@@ -259,7 +262,7 @@ const AccountD = ({ onBack }) => {
 							onPress={() => setCityModalVisible(true)}
 							activeOpacity={0.7}
 						>
-							<Text style={{ color: formData.city ? '#212121' : '#A0A0A0', fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold', fontSize: 17 }}>
+							<Text style={{ color: formData.city ? '#6B7280' : '#A0A0A0', fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold', fontSize: 17 }}>
 								{formData.city || 'Select city'}
 							</Text>
 						</TouchableOpacity>
@@ -310,7 +313,7 @@ const AccountD = ({ onBack }) => {
 							onPress={() => setStateModalVisible(true)}
 							activeOpacity={0.7}
 						>
-							<Text style={{ color: formData.state ? '#212121' : '#A0A0A0', fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold', fontSize: 17 }}>
+							<Text style={{ color: formData.state ? '#6B7280' : '#A0A0A0', fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold', fontSize: 17 }}>
 								{formData.state || 'Select state'}
 							</Text>
 						</TouchableOpacity>
@@ -402,7 +405,7 @@ const styles = StyleSheet.create({
 			paddingVertical: 14,
 			fontSize: 17,
 			backgroundColor: '#F5F5F5', // Light gray for input box
-			color: '#212121',
+			color: '#6B7280',
 			fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
 		},
 	multilineInput: {
