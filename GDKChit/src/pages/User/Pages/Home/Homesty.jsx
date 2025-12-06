@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
 
   // Hero Section - Premium UI
-  heroSection: {
+    heroSection: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginTop: 20,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(107, 70, 193, 0.06)',
+    backgroundColor: 'rgba(107, 70, 193, 0.12)',
   },
   heroDecoCircle2: {
     position: 'absolute',
@@ -127,7 +127,43 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: 'rgba(16, 185, 129, 0.05)',
+    backgroundColor: 'rgba(16, 185, 129, 0.10)',
+  },
+  heroDecoCircle3: {
+    position: 'absolute',
+    top: 60,
+    left: -30,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(107, 70, 193, 0.08)',
+  },
+  heroDecoCircle4: {
+    position: 'absolute',
+    top: 150,
+    right: -25,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+  },
+  heroDecoCircle5: {
+    position: 'absolute',
+    bottom: 80,
+    right: 30,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+  },
+  heroDecoCircle6: {
+    position: 'absolute',
+    top: 40,
+    left: 80,
+    width: 35,
+    height: 35,
+    borderRadius: 17.5,
+    backgroundColor: 'rgba(107, 70, 193, 0.10)',
   },
   heroTopContent: {
     alignItems: 'center',
@@ -487,63 +523,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 6,
     borderRadius: 3,
-  },
-
-  // Testimonials
-  testimonialsSection: {
-    marginVertical: 20,
-    paddingHorizontal: 0,
-  },
-  testimonialCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  testimonialText: {
-    fontSize: 14,
-    color: '#475569',
-    lineHeight: 22,
-    marginBottom: 16,
-    fontStyle: 'italic',
-  },
-  testimonialAuthor: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  authorInfo: {
-    flex: 1,
-  },
-  authorName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-  authorTitle: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  ratingStars: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#D1D5DB',
-  },
-  paginationDotActive: {
-    backgroundColor: '#6B46C1',
-    width: 24,
   },
 
   // Contact Section
