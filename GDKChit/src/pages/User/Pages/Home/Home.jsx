@@ -8,6 +8,7 @@ import {
   Dimensions,
   FlatList,
   Linking,
+  Image,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
@@ -418,26 +419,13 @@ const Home = () => {
           </View>
         </View>
 
-        {/* Contact Section */}
-        <View style={styles.contactSection}>
-          <Text style={styles.sectionTitle}>Need Assistance?</Text>
-          <View style={styles.contactGrid}>
-            <TouchableOpacity
-              style={styles.contactCard}
-              onPress={() => Linking.openURL('tel:+918610696889')}>
-              <MaterialCommunityIcons name="phone" size={24} color="#6B46C1" />
-              <Text style={styles.contactText}>Call Us</Text>
-              <Text style={styles.contactValue}>+91 86106 96889</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.contactCard}
-              onPress={() => Linking.openURL('https://wa.me/918610696889')}>
-              <MaterialCommunityIcons name="whatsapp" size={24} color="#25D366" />
-              <Text style={styles.contactText}>WhatsApp</Text>
-              <Text style={styles.contactValue}>Chat with us</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Admin House Image Section */}
+        <View style={styles.adminHouseSection}>
+          <Image
+            source={require('../../../../assets/AdminHouse/adminHouse.png')}
+            style={styles.adminHouseImage}
+            resizeMode="cover"
+          />
         </View>
 
         {/* Footer */}

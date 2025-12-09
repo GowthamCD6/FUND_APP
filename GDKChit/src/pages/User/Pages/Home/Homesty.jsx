@@ -525,44 +525,15 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
 
-  // Contact Section
-  contactSection: {
-    backgroundColor: '#FFFFFF',
-    margin: 20,
+  // Admin House Section
+  adminHouseSection: {
     marginTop: 0,
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
   },
-  contactGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  contactCard: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    marginHorizontal: 6,
-  },
-  contactText: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  contactValue: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#1E293B',
-    textAlign: 'center',
+  adminHouseImage: {
+    width: '100%',
+    height: 260,
   },
 
   // Common Section Title
