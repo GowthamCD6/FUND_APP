@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,17 +13,17 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import BettingAuction from './BettingAuction';
 import RandomAuction from './RandomAuction';
 
-const Auction = ({onClose}) => {
+const Auction = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState('betting');
   const [participants, setParticipants] = useState([]);
-  
+
   // Mock data - replace with actual user data from your group
   const mockParticipants = [
-    {id: '1', name: 'You', bid: 0, bidTime: null, avatar: 'U'},
-    {id: '2', name: 'Pranesh', bid: 0, bidTime: null, avatar: 'PK'},
-    {id: '3', name: 'Rohith', bid: 0, bidTime: null, avatar: 'R'},
-    {id: '4', name: 'Sundar', bid: 0, bidTime: null, avatar: 'SR'},
-    {id: '5', name: 'Lakshmi', bid: 0, bidTime: null, avatar: 'LN'},
+    { id: '1', name: 'You', bid: 0, bidTime: null, avatar: 'U' },
+    { id: '2', name: 'Pranesh', bid: 0, bidTime: null, avatar: 'PK' },
+    { id: '3', name: 'Rohith', bid: 0, bidTime: null, avatar: 'R' },
+    { id: '4', name: 'Sundar', bid: 0, bidTime: null, avatar: 'SR' },
+    { id: '5', name: 'Lakshmi', bid: 0, bidTime: null, avatar: 'LN' },
   ];
 
   const mockGroup = {
@@ -36,19 +36,21 @@ const Auction = ({onClose}) => {
     setParticipants(mockParticipants);
   }, []);
 
-  const handleAuctionComplete = (result) => {
+  const handleAuctionComplete = result => {
     console.log('Auction completed:', result);
     Alert.alert(
       'Auction Complete!',
-      `Winner: ${result.winner.name}\nAmount: ₹${result.amount.toLocaleString()}`,
+      `Winner: ${
+        result.winner.name
+      }\nAmount: ₹${result.amount.toLocaleString()}`,
       [
         {
           text: 'OK',
           onPress: () => {
             // Handle auction completion - save to backend, etc.
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -61,7 +63,7 @@ const Auction = ({onClose}) => {
         <Text style={styles.headerTitle}>Chit Auction</Text>
         <Text style={styles.headerSubtitle}>{mockGroup.groupName}</Text>
       </View>
-      <View style={{width: 40}} />
+      <View style={{ width: 40 }} />
     </View>
   );
 
@@ -71,12 +73,17 @@ const Auction = ({onClose}) => {
         style={[styles.tab, activeTab === 'betting' && styles.activeTab]}
         onPress={() => setActiveTab('betting')}
       >
-        <MaterialCommunityIcons 
-          name="gavel" 
-          size={20} 
-          color={activeTab === 'betting' ? '#6B46C1' : '#6B7280'} 
+        <MaterialCommunityIcons
+          name="gavel"
+          size={20}
+          color={activeTab === 'betting' ? '#6B46C1' : '#6B7280'}
         />
-        <Text style={[styles.tabText, activeTab === 'betting' && styles.activeTabText]}>
+        <Text
+          style={[
+            styles.tabText,
+            activeTab === 'betting' && styles.activeTabText,
+          ]}
+        >
           Betting Auction
         </Text>
       </TouchableOpacity>
@@ -85,12 +92,17 @@ const Auction = ({onClose}) => {
         style={[styles.tab, activeTab === 'random' && styles.activeTab]}
         onPress={() => setActiveTab('random')}
       >
-        <MaterialCommunityIcons 
-          name="dice-5" 
-          size={20} 
-          color={activeTab === 'random' ? '#6B46C1' : '#6B7280'} 
+        <MaterialCommunityIcons
+          name="dice-5"
+          size={20}
+          color={activeTab === 'random' ? '#6B46C1' : '#6B7280'}
         />
-        <Text style={[styles.tabText, activeTab === 'random' && styles.activeTabText]}>
+        <Text
+          style={[
+            styles.tabText,
+            activeTab === 'random' && styles.activeTabText,
+          ]}
+        >
           Random Auction
         </Text>
       </TouchableOpacity>
@@ -101,18 +113,30 @@ const Auction = ({onClose}) => {
     <View style={styles.groupInfoCard}>
       <View style={styles.groupInfoRow}>
         <View style={styles.groupInfoItem}>
-          <MaterialCommunityIcons name="cash-multiple" size={20} color="#6B46C1" />
+          <MaterialCommunityIcons
+            name="cash-multiple"
+            size={20}
+            color="#6B46C1"
+          />
           <View style={styles.groupInfoText}>
             <Text style={styles.groupInfoLabel}>Total Amount</Text>
-            <Text style={styles.groupInfoValue}>₹{mockGroup.groupAmount.toLocaleString()}</Text>
+            <Text style={styles.groupInfoValue}>
+              ₹{mockGroup.groupAmount.toLocaleString()}
+            </Text>
           </View>
         </View>
         <View style={styles.groupInfoDivider} />
         <View style={styles.groupInfoItem}>
-          <MaterialCommunityIcons name="calendar-month" size={20} color="#6B46C1" />
+          <MaterialCommunityIcons
+            name="calendar-month"
+            size={20}
+            color="#6B46C1"
+          />
           <View style={styles.groupInfoText}>
             <Text style={styles.groupInfoLabel}>Duration</Text>
-            <Text style={styles.groupInfoValue}>{mockGroup.duration} Months</Text>
+            <Text style={styles.groupInfoValue}>
+              {mockGroup.duration} Months
+            </Text>
           </View>
         </View>
       </View>
@@ -126,7 +150,7 @@ const Auction = ({onClose}) => {
       <View style={styles.separator} />
       {renderGroupInfo()}
       {renderTabs()}
-      
+
       <View style={styles.contentContainer}>
         {activeTab === 'betting' ? (
           <BettingAuction
@@ -178,7 +202,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
     marginTop: 2,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
+    fontFamily:
+      Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   separator: {
     height: 1,
@@ -192,7 +217,7 @@ const styles = StyleSheet.create({
     padding: 16,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
@@ -212,7 +237,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     marginBottom: 4,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
+    fontFamily:
+      Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   groupInfoValue: {
     fontSize: 16,
@@ -235,7 +261,7 @@ const styles = StyleSheet.create({
     padding: 4,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
@@ -255,7 +281,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#6B7280',
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
+    fontFamily:
+      Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
   },
   activeTabText: {
     color: '#6B46C1',

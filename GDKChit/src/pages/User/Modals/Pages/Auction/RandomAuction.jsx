@@ -16,35 +16,48 @@ import Svg, { Polygon, G, Circle } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
 
-const RandomAuction = ({
-  participants = [],
-  onAuctionComplete,
-}) => {
-  
+const RandomAuction = ({ participants = [], onAuctionComplete }) => {
   const [diceValue, setDiceValue] = useState(1);
   const [isDiceRolling, setIsDiceRolling] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [drawInProgress, setDrawInProgress] = useState(true); // Draw is ongoing
-  
+
   // 3D Cube Animation Values
-  const diceAnimations = useMemo(() => ({
-    scale: new Animated.Value(1),
-    translateY: new Animated.Value(0),
-    translateX: new Animated.Value(0),
-    rotateX: new Animated.Value(0),
-    rotateY: new Animated.Value(0),
-    rotateZ: new Animated.Value(0),
-  }), []);
+  const diceAnimations = useMemo(
+    () => ({
+      scale: new Animated.Value(1),
+      translateY: new Animated.Value(0),
+      translateX: new Animated.Value(0),
+      rotateX: new Animated.Value(0),
+      rotateY: new Animated.Value(0),
+      rotateZ: new Animated.Value(0),
+    }),
+    [],
+  );
 
   // 3D Cube Geometry
-  const create3DCube = (size, rotX, rotY, rotZ, translateX, translateY, scale) => {
+  const create3DCube = (
+    size,
+    rotX,
+    rotY,
+    rotZ,
+    translateX,
+    translateY,
+    scale,
+  ) => {
     const s = size / 2;
-    
+
     // Define vertices of cube
     let vertices = [
-      [-s, -s, -s], [s, -s, -s], [s, s, -s], [-s, s, -s], // Front face indices: 0, 1, 2, 3
-      [-s, -s, s], [s, -s, s], [s, s, s], [-s, s, s]      // Back face indices: 4, 5, 6, 7
+      [-s, -s, -s],
+      [s, -s, -s],
+      [s, s, -s],
+      [-s, s, -s], // Front face indices: 0, 1, 2, 3
+      [-s, -s, s],
+      [s, -s, s],
+      [s, s, s],
+      [-s, s, s], // Back face indices: 4, 5, 6, 7
     ];
 
     // Apply 3D transformations
@@ -52,69 +65,129 @@ const RandomAuction = ({
       // Rotate X
       let y1 = y * Math.cos(rotX) - z * Math.sin(rotX);
       let z1 = y * Math.sin(rotX) + z * Math.cos(rotX);
-      
+
       // Rotate Y
       let x2 = x * Math.cos(rotY) + z1 * Math.sin(rotY);
       let z2 = -x * Math.sin(rotY) + z1 * Math.cos(rotY);
-      
+
       // Rotate Z
       let x3 = x2 * Math.cos(rotZ) - y1 * Math.sin(rotZ);
       let y3 = x2 * Math.sin(rotZ) + y1 * Math.cos(rotZ);
-      
+
       // Apply scale and translation
-      return [
-        x3 * scale + translateX,
-        y3 * scale + translateY,
-        z2 * scale
-      ];
+      return [x3 * scale + translateX, y3 * scale + translateY, z2 * scale];
     });
 
     // Define faces with vertices indices - Mapped to standard dice values
     const faces = [
-      { name: 'front', indices: [0, 1, 2, 3], color: '#6B46C1', dots: 1, initialRot: { x: 0, y: 0 } },
-      { name: 'back', indices: [5, 4, 7, 6], color: '#7C3AED', dots: 6, initialRot: { x: 0, y: Math.PI } },
-      { name: 'left', indices: [4, 0, 3, 7], color: '#8B5CF6', dots: 4, initialRot: { x: 0, y: -Math.PI / 2 } },
-      { name: 'right', indices: [1, 5, 6, 2], color: '#9333EA', dots: 3, initialRot: { x: 0, y: Math.PI / 2 } },
-      { name: 'top', indices: [3, 2, 6, 7], color: '#A855F7', dots: 5, initialRot: { x: -Math.PI / 2, y: 0 } },
-      { name: 'bottom', indices: [4, 5, 1, 0], color: '#C084FC', dots: 2, initialRot: { x: Math.PI / 2, y: 0 } },
+      {
+        name: 'front',
+        indices: [0, 1, 2, 3],
+        color: '#6B46C1',
+        dots: 1,
+        initialRot: { x: 0, y: 0 },
+      },
+      {
+        name: 'back',
+        indices: [5, 4, 7, 6],
+        color: '#7C3AED',
+        dots: 6,
+        initialRot: { x: 0, y: Math.PI },
+      },
+      {
+        name: 'left',
+        indices: [4, 0, 3, 7],
+        color: '#8B5CF6',
+        dots: 4,
+        initialRot: { x: 0, y: -Math.PI / 2 },
+      },
+      {
+        name: 'right',
+        indices: [1, 5, 6, 2],
+        color: '#9333EA',
+        dots: 3,
+        initialRot: { x: 0, y: Math.PI / 2 },
+      },
+      {
+        name: 'top',
+        indices: [3, 2, 6, 7],
+        color: '#A855F7',
+        dots: 5,
+        initialRot: { x: -Math.PI / 2, y: 0 },
+      },
+      {
+        name: 'bottom',
+        indices: [4, 5, 1, 0],
+        color: '#C084FC',
+        dots: 2,
+        initialRot: { x: Math.PI / 2, y: 0 },
+      },
     ];
 
     // Calculate face centers and depth for sorting
-    return faces.map(face => {
-      const faceVertices = face.indices.map(i => vertices[i]);
-      const center = faceVertices.reduce(
-        (acc, v) => [acc[0] + v[0], acc[1] + v[1], acc[2] + v[2]],
-        [0, 0, 0]
-      ).map(c => c / 4);
-      
-      return {
-        ...face,
-        vertices: faceVertices,
-        depth: center[2],
-        visible: center[2] > -s
-      };
-    }).sort((a, b) => a.depth - b.depth);
+    return faces
+      .map(face => {
+        const faceVertices = face.indices.map(i => vertices[i]);
+        const center = faceVertices
+          .reduce(
+            (acc, v) => [acc[0] + v[0], acc[1] + v[1], acc[2] + v[2]],
+            [0, 0, 0],
+          )
+          .map(c => c / 4);
+
+        return {
+          ...face,
+          vertices: faceVertices,
+          depth: center[2],
+          visible: center[2] > -s,
+        };
+      })
+      .sort((a, b) => a.depth - b.depth);
   };
 
   const renderDots = (dots, vertices) => {
-    const center = vertices.reduce(
-      (acc, v) => [acc[0] + v[0], acc[1] + v[1]],
-      [0, 0]
-    ).map(c => c / 4);
+    const center = vertices
+      .reduce((acc, v) => [acc[0] + v[0], acc[1] + v[1]], [0, 0])
+      .map(c => c / 4);
 
     const s = 80 / 2;
     const dotOffset = s * 0.35;
-    const dotRadius = 4.5; 
-    
+    const dotRadius = 4.5;
+
     const dotPositions = {
       1: [[0, 0]],
-      2: [[-dotOffset, -dotOffset], [dotOffset, dotOffset]],
-      3: [[-dotOffset, -dotOffset], [0, 0], [dotOffset, dotOffset]],
-      4: [[-dotOffset, -dotOffset], [dotOffset, -dotOffset], [-dotOffset, dotOffset], [dotOffset, dotOffset]],
-      5: [[-dotOffset, -dotOffset], [dotOffset, -dotOffset], [0, 0], [-dotOffset, dotOffset], [dotOffset, dotOffset]],
-      6: [[-dotOffset, -dotOffset], [dotOffset, -dotOffset], [-dotOffset, 0], [dotOffset, 0], [-dotOffset, dotOffset], [dotOffset, dotOffset]],
+      2: [
+        [-dotOffset, -dotOffset],
+        [dotOffset, dotOffset],
+      ],
+      3: [
+        [-dotOffset, -dotOffset],
+        [0, 0],
+        [dotOffset, dotOffset],
+      ],
+      4: [
+        [-dotOffset, -dotOffset],
+        [dotOffset, -dotOffset],
+        [-dotOffset, dotOffset],
+        [dotOffset, dotOffset],
+      ],
+      5: [
+        [-dotOffset, -dotOffset],
+        [dotOffset, -dotOffset],
+        [0, 0],
+        [-dotOffset, dotOffset],
+        [dotOffset, dotOffset],
+      ],
+      6: [
+        [-dotOffset, -dotOffset],
+        [dotOffset, -dotOffset],
+        [-dotOffset, 0],
+        [dotOffset, 0],
+        [-dotOffset, dotOffset],
+        [dotOffset, dotOffset],
+      ],
     };
-    
+
     return (dotPositions[dots] || []).map((pos, i) => (
       <Circle
         key={i}
@@ -131,14 +204,20 @@ const RandomAuction = ({
       Alert.alert('Draw Ended', 'This lucky draw has already concluded.');
       return;
     }
-    
+
     if (hasJoined) {
-      Alert.alert('Already Joined', 'You have already joined this lucky draw. Wait for the admin to roll the dice!');
+      Alert.alert(
+        'Already Joined',
+        'You have already joined this lucky draw. Wait for the admin to roll the dice!',
+      );
       return;
     }
-    
+
     setHasJoined(true);
-    Alert.alert('Joined Successfully!', 'You have joined the lucky draw. Wait for the admin to start the draw.');
+    Alert.alert(
+      'Joined Successfully!',
+      'You have joined the lucky draw. Wait for the admin to start the draw.',
+    );
   };
 
   const rollDice = () => {
@@ -155,7 +234,7 @@ const RandomAuction = ({
     }
 
     const finalValue = Math.floor(Math.random() * 6) + 1;
-    
+
     diceAnimations.scale.setValue(1);
     diceAnimations.translateY.setValue(0);
     diceAnimations.translateX.setValue(0);
@@ -166,40 +245,59 @@ const RandomAuction = ({
     const ROLL_DURATION = 2500;
     const BOUNCE_COUNT = 15;
 
-    const getTargetRotation = (value) => {
+    const getTargetRotation = value => {
       const fullRotations = Math.PI * (8 + Math.floor(Math.random() * 4));
       let x = fullRotations;
       let y = fullRotations;
 
-      switch(value) {
-        case 1: x += 0; y += 0; break;
-        case 6: x += 0; y += Math.PI; break;
-        case 4: x += 0; y += -Math.PI / 2; break;
-        case 3: x += 0; y += Math.PI / 2; break;
-        case 5: x += -Math.PI / 2; y += 0; break;
-        case 2: x += Math.PI / 2; y += 0; break;
-        default: break;
+      switch (value) {
+        case 1:
+          x += 0;
+          y += 0;
+          break;
+        case 6:
+          x += 0;
+          y += Math.PI;
+          break;
+        case 4:
+          x += 0;
+          y += -Math.PI / 2;
+          break;
+        case 3:
+          x += 0;
+          y += Math.PI / 2;
+          break;
+        case 5:
+          x += -Math.PI / 2;
+          y += 0;
+          break;
+        case 2:
+          x += Math.PI / 2;
+          y += 0;
+          break;
+        default:
+          break;
       }
       return { x, y };
     };
 
     const targetRotation = getTargetRotation(finalValue);
-    
+
     const createRealisticRoll = () => {
       const animations = [];
       const totalBounceTime = ROLL_DURATION * 0.75;
       const bounceDuration = totalBounceTime / BOUNCE_COUNT;
-      
+
       for (let i = 0; i < BOUNCE_COUNT; i++) {
         const progress = i / BOUNCE_COUNT;
-        const intensity = 1 - (progress * 0.9);
-        
+        const intensity = 1 - progress * 0.9;
+
         const randomX = (Math.random() - 0.5) * 40 * intensity;
         const randomHeight = 50 + Math.random() * 40 * intensity;
         const spinSpeedX = (Math.PI * 3 + Math.random() * Math.PI) * intensity;
         const spinSpeedY = (Math.PI * 3 + Math.random() * Math.PI) * intensity;
         const spinSpeedZ = (Math.random() - 0.5) * Math.PI * 2 * intensity;
-        
+
         animations.push(
           Animated.parallel([
             Animated.sequence([
@@ -216,7 +314,7 @@ const RandomAuction = ({
                 useNativeDriver: true,
               }),
             ]),
-            
+
             Animated.sequence([
               Animated.timing(diceAnimations.translateX, {
                 toValue: randomX,
@@ -231,7 +329,7 @@ const RandomAuction = ({
                 useNativeDriver: true,
               }),
             ]),
-            
+
             Animated.timing(diceAnimations.rotateX, {
               toValue: diceAnimations.rotateX._value + spinSpeedX,
               duration: bounceDuration,
@@ -250,10 +348,10 @@ const RandomAuction = ({
               easing: Easing.inOut(Easing.sin),
               useNativeDriver: true,
             }),
-            
+
             Animated.sequence([
               Animated.timing(diceAnimations.scale, {
-                toValue: 1 + (0.2 * intensity),
+                toValue: 1 + 0.2 * intensity,
                 duration: bounceDuration * 0.45,
                 easing: Easing.out(Easing.quad),
                 useNativeDriver: true,
@@ -271,9 +369,9 @@ const RandomAuction = ({
                 useNativeDriver: true,
               }),
             ]),
-          ])
+          ]),
         );
-        
+
         if (i % 3 === 0 && i > 0) {
           setTimeout(() => {
             if (Platform.OS === 'android') {
@@ -282,7 +380,7 @@ const RandomAuction = ({
           }, i * bounceDuration);
         }
       }
-      
+
       return Animated.sequence(animations);
     };
 
@@ -303,14 +401,14 @@ const RandomAuction = ({
             useNativeDriver: true,
           }),
         ]),
-        
+
         Animated.spring(diceAnimations.translateX, {
           toValue: 0,
           friction: 8,
           tension: 80,
           useNativeDriver: true,
         }),
-        
+
         Animated.spring(diceAnimations.rotateX, {
           toValue: targetRotation.x,
           friction: 12,
@@ -329,7 +427,7 @@ const RandomAuction = ({
           tension: 50,
           useNativeDriver: true,
         }),
-        
+
         Animated.sequence([
           Animated.timing(diceAnimations.scale, {
             toValue: 0.9,
@@ -354,7 +452,7 @@ const RandomAuction = ({
 
     let faceChangeCount = 0;
     const totalFaceChanges = Math.floor(ROLL_DURATION / 100);
-    
+
     const faceChangeInterval = setInterval(() => {
       if (faceChangeCount < totalFaceChanges) {
         setDiceValue(Math.floor(Math.random() * 6) + 1);
@@ -366,22 +464,25 @@ const RandomAuction = ({
 
     completeAnimation.start(() => {
       clearInterval(faceChangeInterval);
-      
+
       setTimeout(() => {
         setDiceValue(finalValue);
         setShowResult(true);
-        
+
         if (Platform.OS === 'ios') {
           Vibration.vibrate([0, 70, 40, 70]);
         } else {
           Vibration.vibrate([0, 60, 30, 60]);
         }
-        
+
         setTimeout(() => {
           setIsDiceRolling(false);
-          
+
           if (participants.length === 0) {
-            Alert.alert("Error", "No participants available for the random draw.");
+            Alert.alert(
+              'Error',
+              'No participants available for the random draw.',
+            );
             return;
           }
 
@@ -392,7 +493,7 @@ const RandomAuction = ({
             onAuctionComplete({
               type: 'random',
               winner: winner,
-              diceValue: finalValue
+              diceValue: finalValue,
             });
           }
         }, 800);
@@ -427,14 +528,15 @@ const RandomAuction = ({
 
       updateCube();
 
-      return () => listeners.forEach(id => {
-        diceAnimations.rotateX.removeListener(id);
-        diceAnimations.rotateY.removeListener(id);
-        diceAnimations.rotateZ.removeListener(id);
-        diceAnimations.translateX.removeListener(id);
-        diceAnimations.translateY.removeListener(id);
-        diceAnimations.scale.removeListener(id);
-      });
+      return () =>
+        listeners.forEach(id => {
+          diceAnimations.rotateX.removeListener(id);
+          diceAnimations.rotateY.removeListener(id);
+          diceAnimations.rotateZ.removeListener(id);
+          diceAnimations.translateX.removeListener(id);
+          diceAnimations.translateY.removeListener(id);
+          diceAnimations.scale.removeListener(id);
+        });
     }, []);
 
     if (!cubeState) return null;
@@ -443,19 +545,23 @@ const RandomAuction = ({
       <Svg width="200" height="200" viewBox="-100 -100 200 200">
         {cubeState.map((face, i) => {
           if (!face.visible) return null;
-          
-          const points = face.vertices
-            .map(v => `${v[0]},${v[1]}`)
-            .join(' ');
+
+          const points = face.vertices.map(v => `${v[0]},${v[1]}`).join(' ');
 
           const isMainFace = showResult && face.depth > 35;
-          const displayDots = (showResult && isMainFace) ? diceValue : face.dots;
+          const displayDots = showResult && isMainFace ? diceValue : face.dots;
 
           return (
             <G key={i}>
               <Polygon
                 points={points}
-                fill={isMainFace ? '#5B21B6' : (isDiceRolling ? face.color : '#6B46C1')}
+                fill={
+                  isMainFace
+                    ? '#5B21B6'
+                    : isDiceRolling
+                    ? face.color
+                    : '#6B46C1'
+                }
                 stroke={isMainFace ? '#2D1B69' : '#4C1D95'}
                 strokeWidth={isMainFace ? 3.5 : 2.5}
               />
@@ -470,63 +576,69 @@ const RandomAuction = ({
   const renderDiceContainer = () => (
     <View style={styles.diceCard}>
       <Text style={styles.diceTitle}>Lucky Draw</Text>
-      
+
       {hasJoined && drawInProgress && (
         <View style={styles.joinedMessage}>
-          <MaterialCommunityIcons name="check-circle" size={16} color="#10B981" />
+          <MaterialCommunityIcons
+            name="check-circle"
+            size={16}
+            color="#10B981"
+          />
           <Text style={styles.joinedText}>
             You've joined! Waiting for admin to roll...
           </Text>
         </View>
       )}
-      
+
       {!drawInProgress && (
         <View style={styles.endedMessage}>
-          <MaterialCommunityIcons name="flag-checkered" size={16} color="#6B7280" />
-          <Text style={styles.endedText}>
-            Lucky draw has ended
-          </Text>
+          <MaterialCommunityIcons
+            name="flag-checkered"
+            size={16}
+            color="#6B7280"
+          />
+          <Text style={styles.endedText}>Lucky draw has ended</Text>
         </View>
       )}
-      
+
       <View style={styles.diceWrapper}>
         <View style={styles.diceContainer}>
           <Dice3D />
-          
-          <Animated.View 
+
+          <Animated.View
             style={[
               styles.diceShadow,
               {
                 transform: [
-                  { 
+                  {
                     translateX: diceAnimations.translateX.interpolate({
                       inputRange: [-60, 0, 60],
-                      outputRange: [-20, 0, 20]
-                    })
+                      outputRange: [-20, 0, 20],
+                    }),
                   },
-                  { 
+                  {
                     scaleX: diceAnimations.scale.interpolate({
                       inputRange: [0.8, 1, 1.3],
-                      outputRange: [0.7, 1, 1.2]
-                    })
+                      outputRange: [0.7, 1, 1.2],
+                    }),
                   },
                   {
                     scaleY: diceAnimations.translateY.interpolate({
                       inputRange: [-100, 0],
-                      outputRange: [0.3, 1]
-                    })
-                  }
+                      outputRange: [0.3, 1],
+                    }),
+                  },
                 ],
                 opacity: diceAnimations.translateY.interpolate({
                   inputRange: [-100, -50, 0],
-                  outputRange: [0.05, 0.15, 0.3]
-                })
-              }
-            ]} 
+                  outputRange: [0.05, 0.15, 0.3],
+                }),
+              },
+            ]}
           />
         </View>
       </View>
-      
+
       {showResult && (
         <View style={styles.resultContainer}>
           <Text style={styles.resultLabel}>Rolled:</Text>
@@ -535,20 +647,33 @@ const RandomAuction = ({
           </View>
         </View>
       )}
-      
-      <TouchableOpacity 
-        style={[styles.rollButton, (isDiceRolling || hasJoined) && styles.disabledButton]}
+
+      <TouchableOpacity
+        style={[
+          styles.rollButton,
+          (isDiceRolling || hasJoined) && styles.disabledButton,
+        ]}
         onPress={hasJoined ? null : rollDice}
         disabled={isDiceRolling || hasJoined}
         activeOpacity={hasJoined ? 1 : 0.7}
       >
-        <MaterialCommunityIcons 
-          name={isDiceRolling ? "timer-sand" : hasJoined ? "check-circle" : "dice-multiple"} 
-          size={20} 
-          color="#FFFFFF" 
+        <MaterialCommunityIcons
+          name={
+            isDiceRolling
+              ? 'timer-sand'
+              : hasJoined
+              ? 'check-circle'
+              : 'dice-multiple'
+          }
+          size={20}
+          color="#FFFFFF"
         />
         <Text style={styles.rollButtonText}>
-          {isDiceRolling ? 'Rolling...' : hasJoined ? 'Joined Draw' : 'Preview Roll (Demo)'}
+          {isDiceRolling
+            ? 'Rolling...'
+            : hasJoined
+            ? 'Joined Draw'
+            : 'Preview Roll (Demo)'}
         </Text>
       </TouchableOpacity>
     </View>
@@ -579,47 +704,41 @@ const RandomAuction = ({
     <View style={styles.tabContent}>
       {renderDiceContainer()}
       {renderParticipantsGrid()}
-      
+
       {drawInProgress && !hasJoined && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.startButton}
           onPress={joinDraw}
           activeOpacity={0.8}
         >
-          <MaterialCommunityIcons 
-            name="account-plus" 
-            size={22} 
-            color="#FFFFFF" 
+          <MaterialCommunityIcons
+            name="account-plus"
+            size={22}
+            color="#FFFFFF"
           />
-          <Text style={styles.startButtonText}>
-            Join Lucky Draw
-          </Text>
+          <Text style={styles.startButtonText}>Join Lucky Draw</Text>
         </TouchableOpacity>
       )}
-      
+
       {hasJoined && drawInProgress && (
         <View style={[styles.startButton, styles.joinedButton]}>
-          <MaterialCommunityIcons 
-            name="check-circle" 
-            size={22} 
-            color="#FFFFFF" 
+          <MaterialCommunityIcons
+            name="check-circle"
+            size={22}
+            color="#FFFFFF"
           />
-          <Text style={styles.startButtonText}>
-            Joined - Waiting for Draw
-          </Text>
+          <Text style={styles.startButtonText}>Joined - Waiting for Draw</Text>
         </View>
       )}
-      
+
       {!drawInProgress && (
         <View style={[styles.startButton, styles.disabledButton]}>
-          <MaterialCommunityIcons 
-            name="flag-checkered" 
-            size={22} 
-            color="#FFFFFF" 
+          <MaterialCommunityIcons
+            name="flag-checkered"
+            size={22}
+            color="#FFFFFF"
           />
-          <Text style={styles.startButtonText}>
-            Lucky Draw Ended
-          </Text>
+          <Text style={styles.startButtonText}>Lucky Draw Ended</Text>
         </View>
       )}
     </View>
