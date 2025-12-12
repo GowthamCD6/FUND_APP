@@ -197,8 +197,7 @@ const Settings = () => {
         {
           icon: 'account-edit',
           title: 'Edit Profile',
-          subtitle: 'Update your personal information',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {
             setShowEditProfile(true);
           },
@@ -206,8 +205,7 @@ const Settings = () => {
         {
           icon: 'shield-account',
           title: 'Security',
-          subtitle: 'Password and authentication',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {
             setShowSecurityLock(true);
           },
@@ -220,15 +218,13 @@ const Settings = () => {
         {
           icon: 'bell-outline',
           title: 'Notifications',
-          subtitle: 'Manage notification preferences',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {},
         },
         {
           icon: 'earth',
           title: 'Language',
-          subtitle: 'English, Hindi, Tamil, Telugu, Kannada',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {},
         },
       ],
@@ -239,15 +235,13 @@ const Settings = () => {
         {
           icon: 'account-group',
           title: 'Default Group Rules',
-          subtitle: 'Set contribution amounts and payment cycles',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {},
         },
         {
           icon: 'gavel',
           title: 'Auction Settings',
-          subtitle: 'Set default auction rules and duration',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {
             setShowAuction(true);
           },
@@ -260,14 +254,12 @@ const Settings = () => {
         {
           icon: 'download',
           title: 'Data Export',
-          subtitle: 'Download all your group data and history',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {},
         },
         {
           icon: 'account-cancel',
           title: 'Block User',
-          subtitle: 'Manage blocked users list',
           iconColor: '#EF4444',
           onPress: () => {
             setShowBlockU(true);
@@ -281,7 +273,6 @@ const Settings = () => {
         {
           icon: 'map-marker-radius',
           title: 'User Location Map',
-          subtitle: 'View locations of group members',
           iconColor: '#10B981',
           onPress: () => {
             setShowUserL(true);
@@ -290,8 +281,7 @@ const Settings = () => {
         {
           icon: 'crosshairs-gps',
           title: 'My Location',
-          subtitle: 'Control location sharing preferences',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {
             setShowMyLocation(true);
           },
@@ -304,22 +294,19 @@ const Settings = () => {
         {
           icon: 'help-circle',
           title: 'Help & Support',
-          subtitle: 'FAQs, tutorials, contact support',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {},
         },
         {
           icon: 'information',
           title: 'About App',
-          subtitle: 'Version and legal information',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {},
         },
         {
           icon: 'share-variant-outline',
           title: 'Share App',
-          subtitle: 'Invite friends to join',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {
             setShowShare(true);
           },
@@ -327,8 +314,7 @@ const Settings = () => {
         {
           icon: 'star-outline',
           title: 'Rate App',
-          subtitle: 'Rate us on Play Store',
-          iconColor: '#555555',
+          iconColor: '#666666',
           onPress: () => {
             setShowRate(true);
           },
@@ -361,10 +347,12 @@ const Settings = () => {
                 
                 {/* Profile Section */}
                 <View style={styles.profileSection}>
-                  <View style={styles.profileImage}>
-                    <Text style={styles.profileInitial}>
-                      {userData.name.charAt(0).toUpperCase()}
-                    </Text>
+                  <View style={styles.profileImageContainer}>
+                    <View style={styles.profileImage}>
+                      <Text style={styles.profileInitial}>
+                        {userData.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
                   </View>
                   <Text style={styles.userName}>{userData.name.toUpperCase()}</Text>
                   <Text style={styles.userPhone}>{userData.phone}</Text>
@@ -379,7 +367,7 @@ const Settings = () => {
                       {section.items.map((item, itemIndex) => (
                         <React.Fragment key={itemIndex}>
                           <TouchableOpacity
-                            style={[styles.menuItem, itemIndex > 0 && styles.menuItemBorder]}
+                            style={styles.menuItem}
                             onPress={item.onPress}
                           >
                             <View style={styles.menuItemLeft}>
@@ -398,6 +386,9 @@ const Settings = () => {
                               color="#CCCCCC"
                             />
                           </TouchableOpacity>
+                          {itemIndex < section.items.length - 1 && (
+                            <View style={styles.customDivider} />
+                          )}
                         </React.Fragment>
                       ))}
                     </View>
@@ -597,6 +588,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
+  profileImageContainer: {
+    marginBottom: 16,
+  },
   profileImage: {
     width: 72,
     height: 72,
@@ -604,7 +598,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#6B46C1',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginTop: -13,
   },
   profileInitial: {
     fontSize: 28,
@@ -628,6 +622,7 @@ const styles = StyleSheet.create({
   userStatus: {
     fontSize: 14,
     color: '#999999',
+    marginBottom: -10,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
   },
   sectionContainer: {
@@ -639,6 +634,7 @@ const styles = StyleSheet.create({
     color: '#000000',
     paddingHorizontal: 16,
     marginBottom: 16,
+    marginTop: -7,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
   menuSection: {
@@ -653,13 +649,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 18,
   },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   menuItemBorder: {
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
+  },
+  customDivider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    alignSelf: 'center',
+    width: '100%',
+    marginVertical: 0,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   menuItemText: {
     fontSize: 16,
@@ -709,18 +712,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#EF4444',
     fontWeight: '500',
-    marginBottom: 65,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
   },
   versionText: {
     fontSize: 12,
     color: '#999999',
     backgroundColor: '#E5E5E5',
-    marginBottom: 10,
+    marginBottom: 95,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+  },
+  bottomNav: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    paddingVertical: 8,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  navItemCenter: {
+    position: 'relative',
+  },
+  centerNavButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#6B46C1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  navText: {
+    fontSize: 12,
+    color: '#999999',
+    marginTop: 4,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+  },
+  navTextCenter: {
+    fontSize: 12,
+    color: '#999999',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+  },
+  navTextActive: {
+    color: '#6B46C1',
   },
   fullScreenOverlay: {
     position: 'absolute',
