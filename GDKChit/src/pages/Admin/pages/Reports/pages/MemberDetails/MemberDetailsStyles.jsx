@@ -229,6 +229,11 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Roboto',
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
   pickerContainer: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
