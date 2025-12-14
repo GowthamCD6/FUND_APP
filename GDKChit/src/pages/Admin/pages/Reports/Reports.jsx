@@ -41,7 +41,7 @@ const Reports = () => {
       collectedAmount: 500000,
       remainingAmount: 1500000,
       members: [
-        { id: 1, name: 'Rajesh Kumar', phone: '9876543210', status: 'paid', amount: 5000, dueDate: '2024-11-15' },
+        { id: 1, name: 'Rajesh Kumar', phone: '8610696889', status: 'paid', amount: 5000, dueDate: '2024-11-15' },
         { id: 2, name: 'Priya Sharma', phone: '9876543211', status: 'pending', amount: 5000, dueDate: '2024-11-15' },
         { id: 3, name: 'Amit Singh', phone: '9876543212', status: 'paid', amount: 5000, dueDate: '2024-11-15' },
         { id: 4, name: 'Sunita Devi', phone: '9876543213', status: 'overdue', amount: 5000, dueDate: '2024-10-15' },

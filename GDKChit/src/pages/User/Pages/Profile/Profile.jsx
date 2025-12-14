@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../components/HeaderComponent/Header';
-import AccountD from './Page/AccountDetails';
+import AccountD from './Page/UserAccountDetails/AccountDetails';
 import Nominee from './Page/Nominee';
 import LinkBA from './Page/LinkBankAccount';
 import IdentityV from './Page/IdentityVerification';

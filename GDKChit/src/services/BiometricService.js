@@ -1,9 +1,9 @@
 import ReactNativeBiometrics from 'react-native-biometrics';
-import * as Keychain from 'react-native-keychain';
-import { Alert, AppState } from 'react-native';
+import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const rnBiometrics = new ReactNativeBiometrics();
+// Initialize with allowDeviceCredentials to show PIN option in the same biometric modal
+const rnBiometrics = new ReactNativeBiometrics({ allowDeviceCredentials: true });
 
 class BiometricService {
   constructor() {
@@ -179,145 +179,45 @@ class BiometricService {
       const { available, biometryType } = await this.checkBiometricAvailability();
       
       if (available) {
-        // Try biometric first with device credentials as fallback
+        // Try biometric with device credentials (PIN/pattern) as fallback in same modal
         const { success, error } = await rnBiometrics.simplePrompt({
           promptMessage: reason,
-          fallbackPromptMessage: 'Use device PIN, pattern or password',
-          cancelButtonText: 'Cancel'
+          fallbackPromptMessage: 'Use PIN',
+          cancelButtonText: 'Use PIN'
         });
 
         if (success) {
           this.unlockApp();
           this.isAuthenticated = true; // Mark as authenticated for this session
           this.updateLastActiveTime();
-          // Session data is memory-only - no persistent storage
-          console.log('BiometricService: Biometric authentication successful');
+          console.log('BiometricService: Authentication successful');
           return { success: true };
         } else {
-          // If biometric fails, try device credentials
-          return this.authenticateWithDeviceCredentials(reason);
+          // User cancelled
+          return { success: false, error: error || 'Authentication cancelled' };
         }
       } else {
-        // No biometric available, use device credentials directly
-        return this.authenticateWithDeviceCredentials(reason);
+        // No biometric available, try simplePrompt anyway - it will use device credentials
+        const { success, error } = await rnBiometrics.simplePrompt({
+          promptMessage: reason,
+          fallbackPromptMessage: 'Use PIN',
+          cancelButtonText: 'Cancel'
+        });
+
+        if (success) {
+          this.unlockApp();
+          this.isAuthenticated = true;
+          this.updateLastActiveTime();
+          console.log('BiometricService: Device credentials authentication successful');
+          return { success: true };
+        } else {
+          return { success: false, error: error || 'Authentication cancelled' };
+        }
       }
     } catch (error) {
       console.error('Authentication error:', error);
-      // Fallback to device credentials
-      return this.authenticateWithDeviceCredentials(reason);
+      return { success: false, error: error.message || 'Authentication failed' };
     }
-  }
-
-  async authenticateWithDeviceCredentials(reason = 'Authenticate to unlock app') {
-    try {
-      // First try using Keychain for device authentication
-      try {
-        // Set up a dummy credential to trigger device authentication
-        await Keychain.setInternetCredentials(
-          'app_security_check',
-          'user',
-          'dummy',
-          {
-            authenticationType: Keychain.AUTHENTICATION_TYPE.DEVICE_PASSCODE_OR_BIOMETRICS,
-            accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE,
-          }
-        );
-        
-        // Now try to get it - this will trigger device authentication
-        const result = await Keychain.getInternetCredentials('app_security_check', {
-          authenticationType: Keychain.AUTHENTICATION_TYPE.DEVICE_PASSCODE_OR_BIOMETRICS,
-          accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE,
-          showModal: true,
-          kLocalizedFallbackTitle: 'Use Device PIN/Pattern/Password',
-        });
-        
-        if (result && result.username) {
-          this.unlockApp();
-          this.isAuthenticated = true; // Mark as authenticated for this session
-          this.updateLastActiveTime();
-          // Session data is memory-only - no persistent storage
-          // Clean up the dummy credential
-          await Keychain.resetInternetCredentials('app_security_check');
-          console.log('BiometricService: Keychain authentication successful');
-          return { success: true };
-        }
-      } catch (keychainError) {
-        console.log('Keychain authentication failed, trying biometric fallback:', keychainError);
-        
-        // Clean up any partial credential
-        try {
-          await Keychain.resetInternetCredentials('app_security_check');
-        } catch (e) {}
-        
-        // If Keychain fails, try the biometric library's device authentication
-        try {
-          const { success, error } = await rnBiometrics.createKeys({
-            promptMessage: reason,
-            cancelButtonText: 'Cancel'
-          });
-
-          if (success) {
-            this.unlockApp();
-            this.isAuthenticated = true; // Mark as authenticated for this session
-            this.updateLastActiveTime();
-            // Session data is memory-only - no persistent storage
-            // Clean up the keys after successful authentication
-            try {
-              await rnBiometrics.deleteKeys();
-            } catch (e) {
-              // Ignore cleanup errors
-            }
-            console.log('BiometricService: Biometric device authentication successful');
-            return { success: true };
-          } else {
-            return { success: false, error: error || 'Device authentication failed' };
-          }
-        } catch (biometricError) {
-          console.error('Biometric device auth error:', biometricError);
-          // Final fallback to PIN
-          return this.authenticateWithPIN();
-        }
-      }
-    } catch (error) {
-      console.error('Device credentials authentication error:', error);
-      // Final fallback to custom PIN
-      return this.authenticateWithPIN();
-    }
-  }
-
-  authenticateWithPIN() {
-    return new Promise((resolve) => {
-      Alert.prompt(
-        'Enter Security PIN',
-        'Please enter your 4-digit PIN to unlock the app',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-            onPress: () => resolve({ success: false, error: 'User cancelled' })
-          },
-          {
-            text: 'OK',
-            onPress: async (pin) => {
-              if (pin === '1234') { // Default PIN
-                this.unlockApp();
-                this.isAuthenticated = true; // Mark as authenticated for this session
-                this.updateLastActiveTime();
-                // Session data is memory-only - no persistent storage
-                console.log('BiometricService: PIN authentication successful');
-                resolve({ success: true });
-              } else {
-                Alert.alert('Error', 'Incorrect PIN. Please try again.');
-                resolve({ success: false, error: 'Incorrect PIN' });
-              }
-            }
-          }
-        ],
-        'secure-text',
-        '',
-        'numeric'
-      );
-    });
   }
 
   async enableSecurity() {
