@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
+import ChitPlans from './Chit Plans/ChitPlans';
 import styles from './Homesty';
 
 const { width } = Dimensions.get('window');
@@ -22,6 +23,7 @@ const SPACING = 12; // Gap between cards
 const SNAP_INTERVAL = CARD_WIDTH + SPACING; // Total scroll distance per slide
 
 const Home = () => {
+  const [showAllPlans, setShowAllPlans] = useState(false);
   const [activePlanSlide, setActivePlanSlide] = useState(0);
   const flatListRef = useRef(null);
   const scrollTimer = useRef(null);
@@ -360,7 +362,7 @@ const Home = () => {
         >
           <View style={styles.plansSectionHeader}>
             <Text style={styles.plansSectionTitle}>Popular Plans</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowAllPlans(true)}>
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -435,6 +437,11 @@ const Home = () => {
           </Text>
         </View>
       </ScrollView>
+      {showAllPlans && (
+        <View style={styles.modalOverlay}>
+          <ChitPlans onClose={() => setShowAllPlans(false)} />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
