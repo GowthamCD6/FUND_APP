@@ -9,6 +9,7 @@ import {
   FlatList,
   Linking,
   Image,
+  Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
@@ -437,11 +438,14 @@ const Home = () => {
           </Text>
         </View>
       </ScrollView>
-      {showAllPlans && (
-        <View style={styles.modalOverlay}>
-          <ChitPlans onClose={() => setShowAllPlans(false)} />
-        </View>
-      )}
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showAllPlans}
+        onRequestClose={() => setShowAllPlans(false)}
+      >
+        <ChitPlans onClose={() => setShowAllPlans(false)} />
+      </Modal>
     </SafeAreaView>
   );
 };
