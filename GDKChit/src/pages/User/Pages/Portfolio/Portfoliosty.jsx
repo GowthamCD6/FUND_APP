@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
   scrollableContent: {
     flex: 1,
     paddingHorizontal: 16,
-    marginBottom: 110,
+    marginBottom: 90,
     paddingTop: 0,
   },
   scrollView: {

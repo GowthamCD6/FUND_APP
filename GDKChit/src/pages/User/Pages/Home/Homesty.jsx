@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E293B',
     padding: 20,
     alignItems: 'center',
-    paddingBottom: 130,
+    paddingBottom: 110,
     paddingTop: 25,
   },
   footerText: {

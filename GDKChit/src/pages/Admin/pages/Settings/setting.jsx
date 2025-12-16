@@ -23,7 +23,6 @@ import MyLocation from './pages/MyLocation/MyLocation';
 import SecurityLockScreen from './pages/SecurityLock/SecurityPermision';
 import Share from './Model/ShareApp/Share';
 import Rate from './Model/RateApp/Rate';
-import Auction from './pages/Auction/Auction';
 
 const Settings = () => {
   const [showBlockU, setShowBlockU] = useState(false);
@@ -33,7 +32,6 @@ const Settings = () => {
   const [showSecurityLock, setShowSecurityLock] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showRate, setShowRate] = useState(false);
-  const [showAuction, setShowAuction] = useState(false);
   const navigation = useNavigation();
 
   // Animation values for slide-in effects
@@ -50,9 +48,6 @@ const Settings = () => {
     new Animated.Value(Dimensions.get('window').width),
   ).current;
   const securityLockAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const auctionAnim = useRef(
     new Animated.Value(Dimensions.get('window').width),
   ).current;
 
@@ -136,22 +131,6 @@ const Settings = () => {
       }).start();
     }
   }, [showSecurityLock, securityLockAnim]);
-
-  useEffect(() => {
-    if (showAuction) {
-      Animated.timing(auctionAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(auctionAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showAuction, auctionAnim]);
 
   const [userData, setUserData] = useState({
     name: 'Admin',
@@ -243,7 +222,7 @@ const Settings = () => {
           title: 'Auction Settings',
           iconColor: '#666666',
           onPress: () => {
-            setShowAuction(true);
+            navigation.navigate('AuctionSettings');
           },
         },
       ],
@@ -333,8 +312,7 @@ const Settings = () => {
           !showUserL &&
           !showEditProfile &&
           !showMyLocation &&
-          !showSecurityLock &&
-          !showAuction && (
+          !showSecurityLock && (
             <>
               <Header 
                 title="Settings"
@@ -531,27 +509,6 @@ const Settings = () => {
                   useNativeDriver: true,
                 }).start(() => {
                   setShowSecurityLock(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Auction Overlay */}
-        {showAuction && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: auctionAnim}]},
-            ]}>
-            <Auction
-              onBack={() => {
-                Animated.timing(auctionAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowAuction(false);
                 });
               }}
             />

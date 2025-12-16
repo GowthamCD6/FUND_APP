@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../components/HeaderComponent/Header';
 
+// Helper to decide if a hex color is light or dark
+const isLightColor = (hex) => {
+  if (!hex || typeof hex !== 'string') return false;
+  const cleanHex = hex.replace('#', '');
+  if (cleanHex.length !== 6) return false;
+  const r = parseInt(cleanHex.slice(0, 2), 16);
+  const g = parseInt(cleanHex.slice(2, 4), 16);
+  const b = parseInt(cleanHex.slice(4, 6), 16);
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance > 186; // threshold: true for light colors
+};
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const ChitPlans = ({ onClose }) => {
+const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
   const insets = useSafeAreaInsets();
-  const [currentPlan, setCurrentPlan] = useState(0);
+  const [currentPlan, setCurrentPlan] = useState(initialPlanIndex);
   const scrollViewRef = useRef(null);
 
   const plans = [
@@ -28,8 +40,8 @@ const ChitPlans = ({ onClose }) => {
       monthly: '₹5,000',
       duration: '20 Months',
       members: '20',
-      color: '#8B5CF6',
-      lightColor: '#EDE9FE',
+      color: '#FFD700',
+      lightColor: '#FFF7CC',
       description: 'Perfect for first-time investors and small businesses',
       idealFor: [
         'First-time investors',
@@ -51,8 +63,8 @@ const ChitPlans = ({ onClose }) => {
       monthly: '₹10,000',
       duration: '20 Months',
       members: '20',
-      color: '#3B82F6',
-      lightColor: '#DBEAFE',
+      color: '#E5E4E2',
+      lightColor: '#F5F5F4',
       description: 'Ideal for medium-term savings and expansion needs',
       idealFor: [
         'Business expansion',
@@ -74,8 +86,8 @@ const ChitPlans = ({ onClose }) => {
       monthly: '₹15,000',
       duration: '20 Months',
       members: '20',
-      color: '#10B981',
-      lightColor: '#D1FAE5',
+      color: '#B9F2FF',
+      lightColor: '#E0F8FF',
       description: 'Great for substantial investments and long-term goals',
       idealFor: [
         'Property investment',
@@ -97,8 +109,8 @@ const ChitPlans = ({ onClose }) => {
       monthly: '₹25,000',
       duration: '20 Months',
       members: '20',
-      color: '#F59E0B',
-      lightColor: '#FEF3C7',
+      color: '#DA70D6',
+      lightColor: '#F5D4F5',
       description: 'Premium option for maximum returns and large projects',
       idealFor: [
         'Large investments',
@@ -128,35 +140,40 @@ const ChitPlans = ({ onClose }) => {
     });
   };
 
+  // On mount or when initialPlanIndex changes, jump to that plan
+  useEffect(() => {
+    setCurrentPlan(initialPlanIndex);
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo({
+        x: initialPlanIndex * SCREEN_WIDTH,
+        animated: false,
+      });
+    });
+  }, [initialPlanIndex]);
+
   const plan = plans[currentPlan];
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={onClose} style={styles.backButton}>
-            <MaterialCommunityIcons
-              name="chevron-left"
-              size={24}
-              color="#6B46C1"
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Chit Plans</Text>
-        </View>
-        <View style={styles.pagination}>
-          {plans.map((_, index) => (
-            <TouchableOpacity
-              key={index}
-              onPress={() => scrollToPlan(index)}
-              style={[
-                styles.paginationDot,
-                currentPlan === index && styles.paginationDotActive,
-              ]}
-            />
-          ))}
-        </View>
-      </View>
+      <Header
+        title="Chit Plans"
+        onBack={onClose}
+        showBackButton={true}
+        rightComponent={(
+          <View style={styles.pagination}>
+            {plans.map((_, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => scrollToPlan(index)}
+                style={[
+                  styles.paginationDot,
+                  currentPlan === index && styles.paginationDotActive,
+                ]}
+              />
+            ))}
+          </View>
+        )}
+      />
 
       {/* Full Screen Plan Cards */}
       <ScrollView
@@ -170,7 +187,21 @@ const ChitPlans = ({ onClose }) => {
         snapToInterval={SCREEN_WIDTH}
         snapToAlignment="center"
       >
-        {plans.map((planItem) => (
+        {plans.map((planItem) => {
+          const lightBg = isLightColor(planItem.color);
+
+          // Hero text colors
+          const primaryTextColor = lightBg ? '#1F2937' : '#FFFFFF';
+          const secondaryTextColor = lightBg
+            ? 'rgba(31, 41, 55, 0.8)'
+            : 'rgba(255, 255, 255, 0.9)';
+
+          // Stats: always white cards with dark text
+          const statCardBg = '#FFFFFF';
+          const statValueColor = '#111827';
+          const statLabelColor = '#4B5563';
+
+          return (
           <View key={planItem.id} style={styles.planContainer}>
             <ScrollView
               showsVerticalScrollIndicator={false}
@@ -179,28 +210,48 @@ const ChitPlans = ({ onClose }) => {
               {/* Plan Hero */}
               <View style={[styles.heroCard, { backgroundColor: planItem.color }]}>
                 <View style={styles.planBadge}>
-                  <Text style={styles.planBadgeText}>
+                  <Text style={[styles.planBadgeText, { color: primaryTextColor }]}>
                     Plan {planItem.id} of 4
                   </Text>
                 </View>
-                <Text style={styles.planName}>{planItem.name}</Text>
-                <Text style={styles.planDescription}>{planItem.description}</Text>
-                <Text style={styles.planAmount}>{planItem.amount}</Text>
-                <Text style={styles.planAmountLabel}>Total Chit Value</Text>
+                <Text style={[styles.planName, { color: primaryTextColor }]}>
+                  {planItem.name}
+                </Text>
+                <Text style={[styles.planDescription, { color: secondaryTextColor }]}>
+                  {planItem.description}
+                </Text>
+                <Text style={[styles.planAmount, { color: primaryTextColor }]}>
+                  {planItem.amount}
+                </Text>
+                <Text style={[styles.planAmountLabel, { color: secondaryTextColor }]}>
+                  Total Chit Value
+                </Text>
 
                 {/* Quick Stats */}
                 <View style={styles.statsGrid}>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{planItem.monthly}</Text>
-                    <Text style={styles.statLabel}>Monthly</Text>
+                  <View style={[styles.statCard, { backgroundColor: statCardBg }]}>
+                    <Text style={[styles.statValue, { color: statValueColor }]}>
+                      {planItem.monthly}
+                    </Text>
+                    <Text style={[styles.statLabel, { color: statLabelColor }]}>
+                      Monthly
+                    </Text>
                   </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{planItem.duration}</Text>
-                    <Text style={styles.statLabel}>Duration</Text>
+                  <View style={[styles.statCard, { backgroundColor: statCardBg }]}>
+                    <Text style={[styles.statValue, { color: statValueColor }]}>
+                      {planItem.duration}
+                    </Text>
+                    <Text style={[styles.statLabel, { color: statLabelColor }]}>
+                      Duration
+                    </Text>
                   </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{planItem.members}</Text>
-                    <Text style={styles.statLabel}>Members</Text>
+                  <View style={[styles.statCard, { backgroundColor: statCardBg }]}>
+                    <Text style={[styles.statValue, { color: statValueColor }]}>
+                      {planItem.members}
+                    </Text>
+                    <Text style={[styles.statLabel, { color: statLabelColor }]}>
+                      Members
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -282,8 +333,10 @@ const ChitPlans = ({ onClose }) => {
                     <Text style={styles.paymentValue}>{planItem.monthly}</Text>
                   </View>
                   <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Total Duration</Text>
-                    <Text style={styles.paymentValue}>{planItem.duration}</Text>
+                    <Text style={styles.paymentLabel}>Total Months</Text>
+                    <Text style={styles.paymentValue}>
+                      {planItem.duration.split(' ')[0]}
+                    </Text>
                   </View>
                   <View style={styles.paymentRow}>
                     <Text style={styles.paymentLabel}>Group Members</Text>
@@ -295,14 +348,10 @@ const ChitPlans = ({ onClose }) => {
                       { backgroundColor: planItem.lightColor },
                     ]}
                   >
-                    <Text
-                      style={[styles.paymentLabelBold, { color: planItem.color }]}
-                    >
+                    <Text style={styles.paymentLabelBold}>
                       Total Pool Amount
                     </Text>
-                    <Text
-                      style={[styles.paymentValueBold, { color: planItem.color }]}
-                    >
+                    <Text style={styles.paymentValueBold}>
                       {planItem.amount}
                     </Text>
                   </View>
@@ -372,7 +421,7 @@ const ChitPlans = ({ onClose }) => {
               </TouchableOpacity>
             </ScrollView>
           </View>
-        ))}
+        )})}
       </ScrollView>
 
       {/* Navigation Arrows */}
@@ -432,6 +481,9 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  durationRow: {
+    justifyContent: 'center',
+  },
     backgroundColor: '#D1D5DB',
   },
   paginationDotActive: {
@@ -444,7 +496,20 @@ const styles = StyleSheet.create({
   planScrollContent: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    paddingBottom: 40,
+    paddingBottom: 10,
+  },
+  durationCenter: {
+    alignItems: 'center',
+  },
+  durationValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  durationLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
   },
   heroCard: {
     borderRadius: 24,
@@ -465,27 +530,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   planName: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
   },
   planDescription: {
-    fontSize: 15,
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     marginBottom: 20,
   },
   planAmount: {
-    fontSize: 48,
+    fontSize: 38,
     fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 4,
   },
   planAmountLabel: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
     marginBottom: 24,
@@ -493,23 +558,28 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     gap: 12,
+    justifyContent: 'space-between',
   },
   statCard: {
-    flex: 1,
+    flex: 0,
+    width: '30%',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 4,
+    textAlign: 'center',
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -584,14 +654,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   paymentLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: '#4B5563',
+    flex: 1,
   },
   paymentValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#1F2937',
+    textAlign: 'right',
   },
   paymentRowHighlight: {
     flexDirection: 'row',
@@ -645,7 +717,7 @@ const styles = StyleSheet.create({
   ctaButtonText: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#111827',
   },
   navArrow: {
     position: 'absolute',
@@ -663,7 +735,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   navArrowLeft: {
-    left: 16,
+    left: 16, 
   },
   navArrowRight: {
     right: 16,

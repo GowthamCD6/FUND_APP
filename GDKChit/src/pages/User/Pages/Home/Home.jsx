@@ -26,6 +26,7 @@ const SNAP_INTERVAL = CARD_WIDTH + SPACING; // Total scroll distance per slide
 const Home = () => {
   const [showAllPlans, setShowAllPlans] = useState(false);
   const [activePlanSlide, setActivePlanSlide] = useState(0);
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const flatListRef = useRef(null);
   const scrollTimer = useRef(null);
   const mainScrollRef = useRef(null);
@@ -200,13 +201,25 @@ const Home = () => {
     { value: '100%', label: 'Trust Score', icon: 'star-circle' },
   ];
 
+  const openChitPlansForPlan = (planId) => {
+    const index = plans.findIndex((p) => p.id === planId);
+    const safeIndex = index >= 0 ? index : 0;
+    setSelectedPlanIndex(safeIndex);
+    setShowAllPlans(true);
+  };
+
   const renderPlanItem = ({ item }) => (
-    <View
-      style={[
-        styles.planCard,
-        styles.planCardDynamic,
-        { width: CARD_WIDTH },
-      ]}>
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => openChitPlansForPlan(item.id)}
+    >
+      <View
+        style={[
+          styles.planCard,
+          styles.planCardDynamic,
+          { width: CARD_WIDTH },
+        ]}
+      >
       {/* Badge */}
       {item.badge && (
         <View style={[styles.badge, { backgroundColor: item.color }]}>
@@ -248,7 +261,8 @@ const Home = () => {
           {item.return}
         </Text>
       </View>
-    </View>
+      </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -363,7 +377,13 @@ const Home = () => {
         >
           <View style={styles.plansSectionHeader}>
             <Text style={styles.plansSectionTitle}>Popular Plans</Text>
-            <TouchableOpacity onPress={() => setShowAllPlans(true)}>
+            <TouchableOpacity
+              onPress={() =>
+                openChitPlansForPlan(
+                  plans[activePlanSlide % plans.length]?.id || plans[0].id
+                )
+              }
+            >
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -444,7 +464,10 @@ const Home = () => {
         visible={showAllPlans}
         onRequestClose={() => setShowAllPlans(false)}
       >
-        <ChitPlans onClose={() => setShowAllPlans(false)} />
+        <ChitPlans
+          onClose={() => setShowAllPlans(false)}
+          initialPlanIndex={selectedPlanIndex}
+        />
       </Modal>
     </SafeAreaView>
   );

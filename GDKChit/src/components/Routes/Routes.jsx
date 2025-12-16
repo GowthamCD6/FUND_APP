@@ -9,6 +9,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Welcome from "../../pages/Fronter/Welcome/Welcome";
 import Login from "../../pages/Fronter/Login/Login";
 import MemberDetails from "../../pages/Admin/pages/Reports/pages/MemberDetails/MemberDetails";
+import Auction from "../../pages/Admin/pages/Settings/pages/Auction/Auction";
 import { StatusBar } from "react-native";
 import TabRouter from "../Tab/TabRouter";
 import UserTabs from "../Tab/UTab/UserTab";
@@ -30,16 +31,17 @@ const Routes = () => {
 
                 {/* User Tabs */}
                 <Stack.Screen name="UserTabs" component={UserTabs} />
+                <Stack.Screen name="LinkBA" component={LinkBA} />
 
 
                 {/* Admin Tabs */}
                 <Stack.Screen name="AdminTabs" component={AdminTab} />
 
                 <Stack.Screen name="AccountD" component={AccountD} />
-                <Stack.Screen name="LinkBA" component={LinkBA} />
                 <Stack.Screen name="Nominee" component={Nominee} />
                 <Stack.Screen name="SecurityPerm" component={SecurPermis} />
                 <Stack.Screen name="MembersDetails" component={MemberDetails} />
+                <Stack.Screen name="AuctionSettings" component={Auction} />
             </Stack.Navigator>
         </NavigationContainer>
     )
