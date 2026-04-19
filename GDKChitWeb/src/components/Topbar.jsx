@@ -1,48 +1,113 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { RiMenu2Line, RiLogoutBoxLine, RiUserLine } from '../icons.jsx';
+import {
+  RiMenu2Line, RiLogoutBoxLine, RiUserLine,
+  RiNotificationLine, RiSearchLine, RiSettings3Line,
+  RiShieldUserLine, RiArrowLeftLine,
+} from '../icons.jsx';
+
+/* Page title map */
+const PAGE_TITLES = {
+  '/admin/dashboard':              { title: 'Dashboard',      sub: 'Welcome back, manage everything from here' },
+  '/admin/reports':                { title: 'Reports',        sub: 'Live group monitoring & payment tracking' },
+  '/admin/groups':                 { title: 'Chit Plans',     sub: 'Explore available investment plans' },
+  '/admin/users':                  { title: 'Members',        sub: 'Manage all registered members' },
+  '/admin/actions':                { title: 'Quick Actions',  sub: 'All administrative actions' },
+  '/admin/actions/create-group':   { title: 'Create Group',   sub: 'Set up a new chit fund group' },
+  '/admin/actions/manage-groups':  { title: 'Manage Groups',  sub: 'View, edit and monitor existing groups' },
+  '/admin/actions/manage-users':   { title: 'Manage Members', sub: 'Edit member roles and details' },
+  '/admin/actions/add-user':       { title: 'Add Member',     sub: 'Add a new member or admin account' },
+  '/admin/settings':               { title: 'Settings',       sub: 'Manage your account and preferences' },
+};
+
+const NOW = () => {
+  const d = new Date();
+  return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+};
 
 const Topbar = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [time, setTime] = useState(NOW());
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  useEffect(() => {
+    const t = setInterval(() => setTime(NOW()), 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  const page = PAGE_TITLES[location.pathname] || { title: 'GDK Admin', sub: '' };
+  const initials = String(user?.name || user?.username || 'A').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+  const canGoBack = location.pathname !== '/admin/dashboard';
 
   return (
-    <header className="topbar">
-      <button
-        type="button"
-        className="topbar-menu"
-        onClick={onMenuClick}
-        aria-label="Open menu"
-      >
-        <RiMenu2Line size={20} />
-      </button>
-      <span className="topbar-title">GDK Chit Fund</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <RiUserLine size={15} color="var(--muted)" />
-          <span style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 500 }}>
-            {user?.name || user?.username || 'Admin'}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={logout}
-          style={{
-            border: 'none',
-            background: 'var(--surface2)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '8px 14px',
-            fontSize: 13,
-            fontWeight: 600,
-            color: 'var(--text)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
-        >
-          <RiLogoutBoxLine size={15} />
-          Sign out
+    <header className="topbar2">
+      {/* ── Left: hamburger + breadcrumb ── */}
+      <div className="tb-left">
+        <button className="tb-menu-btn" onClick={onMenuClick} aria-label="Open menu">
+          <RiMenu2Line size={20} />
         </button>
+
+        {canGoBack && (
+          <button className="tb-back-btn" onClick={() => navigate(-1)} aria-label="Go back">
+            <RiArrowLeftLine size={16} />
+          </button>
+        )}
+
+        <div className="tb-breadcrumb">
+          <h1 className="tb-page-title">{page.title}</h1>
+          {page.sub && <p className="tb-page-sub">{page.sub}</p>}
+        </div>
+      </div>
+
+      {/* ── Right: date + notification + user ── */}
+      <div className="tb-right">
+
+        {/* Live date */}
+        <span className="tb-date">{time}</span>
+
+        {/* Notification bell */}
+        <button className="tb-icon-btn" aria-label="Notifications">
+          <RiNotificationLine size={18} />
+          <span className="tb-notif-dot" />
+        </button>
+
+        {/* Divider */}
+        <div className="tb-divider-v" />
+
+        {/* User pill */}
+        <div className="tb-user-wrap">
+          <button className="tb-user-pill" onClick={() => setShowUserMenu(v => !v)}>
+            <div className="tb-user-avatar">{initials}</div>
+            <span className="tb-user-name">{user?.name || user?.username || 'Admin'}</span>
+            <span className="tb-role-badge">{user?.role || 'admin'}</span>
+          </button>
+
+          {/* Dropdown */}
+          {showUserMenu && (
+            <>
+              <div className="tb-dropdown-backdrop" onClick={() => setShowUserMenu(false)} />
+              <div className="tb-dropdown">
+                <div className="tb-dropdown-head">
+                  <div className="tb-dd-avatar">{initials}</div>
+                  <div>
+                    <p className="tb-dd-name">{user?.name || user?.username || 'Admin'}</p>
+                    <p className="tb-dd-role"><RiShieldUserLine size={11} /> {user?.role || 'admin'}</p>
+                  </div>
+                </div>
+                <div className="tb-dropdown-divider" />
+                <button className="tb-dd-item" onClick={() => { navigate('/admin/settings'); setShowUserMenu(false); }}>
+                  <RiSettings3Line size={15} /> Settings
+                </button>
+                <button className="tb-dd-item tb-dd-logout" onClick={logout}>
+                  <RiLogoutBoxLine size={15} /> Sign Out
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
