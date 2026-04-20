@@ -1,11 +1,12 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout.jsx';
-
+import { useAuth } from './context/AuthContext.jsx';
+import { RiLoader4Line } from './icons.jsx';
 import Actions from './pages/Admin/Actions.jsx';
 import AddUser from './pages/Admin/AddUser.jsx';
 import CreateGroup from './pages/Admin/CreateGroup.jsx';
 import Dashboard from './pages/Admin/Dashboard.jsx';
-import Groups from './pages/Admin/Groups.jsx';
+import Groups from './pages/Admin/GroupManagement/Groups.jsx';
 import Login from './pages/Login/Login.jsx';
 import ManageGroups from './pages/Admin/ManageGroups.jsx';
 import ManageUsers from './pages/Admin/ManageUsers.jsx';
@@ -14,7 +15,30 @@ import NotFound from './pages/Login/NotFound.jsx';
 import Reports from './pages/Admin/ReportsCard/Reports.jsx';
 import Settings from './pages/Admin/Settings.jsx';
 
+const ProtectedRoute = ({ children }) => {
+  const { status, user, isAdminRole } = useAuth();
 
+  if (status === 'loading') {
+    return (
+      <div className="page">
+        <div className="panel" style={{ textAlign: 'center' }}>
+          <RiLoader4Line size={40} color="var(--primary)" style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
+          <p style={{ color: 'var(--muted)' }}>Loading session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status !== 'authed') {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdminRole(user?.role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  return children;
+};
 
 function App() {
   return (
@@ -23,7 +47,11 @@ function App() {
       <Route path="/unauthorized" element={<NotAuthorized />} />
       <Route
         path="/admin"
-        element={<AppLayout />}
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />

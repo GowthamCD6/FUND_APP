@@ -62,27 +62,19 @@ const Topbar = ({ onMenuClick }) => {
         </div>
       </div>
 
-      {/* ── Right: date + notification + user ── */}
+      {/* ── Right: user profile ── */}
       <div className="tb-right">
-
-        {/* Live date */}
-        <span className="tb-date">{time}</span>
-
-        {/* Notification bell */}
-        <button className="tb-icon-btn" aria-label="Notifications">
-          <RiNotificationLine size={18} />
-          <span className="tb-notif-dot" />
-        </button>
-
-        {/* Divider */}
-        <div className="tb-divider-v" />
 
         {/* User pill */}
         <div className="tb-user-wrap">
-          <button className="tb-user-pill" onClick={() => setShowUserMenu(v => !v)}>
-            <div className="tb-user-avatar">{initials}</div>
-            <span className="tb-user-name">{user?.name || user?.username || 'Admin'}</span>
-            <span className="tb-role-badge">{user?.role || 'admin'}</span>
+          <button className="tb-user-pill" style={{ display: 'flex', alignItems: 'center', gap: '12px' }} onClick={() => setShowUserMenu(v => !v)}>
+            <div className="tb-user-info" style={{ textAlign: 'right' }}>
+              <div className="tb-user-name">{user?.name || user?.username || 'Gowtham CD'}</div>
+              <div className="tb-role-badge">{user?.role || 'Admin'}</div>
+            </div>
+            <div className="tb-user-avatar" style={{ backgroundColor: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: '50%', width: '40px', height: '40px', color: '#6b7280', fontSize: '13px', fontWeight: 600 }}>
+              {initials}
+            </div>
           </button>
 
           {/* Dropdown */}

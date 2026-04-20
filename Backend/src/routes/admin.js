@@ -12,6 +12,8 @@ router.get('/groups/getGroups', authenticateToken, groupManagement.getGroups);
 router.post('/groups/addMembers', authenticateToken, groupManagement.addGroupMembers);
 router.get('/groups/getMembers', authenticateToken, groupManagement.getGroupMembers);
 router.post('/groups/removeMembers', authenticateToken, groupManagement.removeGroupMembers);
+router.post('/groups/activate', authenticateToken, groupManagement.activateGroup);
+router.post('/groups/delete', authenticateToken, groupManagement.deleteGroup);
 
 router.post('/users/addUser', authenticateToken, userManagement.addUser);
 router.get('/users/getAllUsers', authenticateToken, userManagement.getAllUsers);

@@ -190,3 +190,47 @@ exports.removeGroupMembers = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to remove group members' });
     }
 };
+
+exports.activateGroup = async (req, res) => {
+    const { groupId } = req.body;
+    
+    if (!groupId) {
+        return res.status(400).json({ success: false, message: 'groupId is required' });
+    }
+
+    try {
+        const sql = `UPDATE \`groups\` SET status = 'active' WHERE id = ?`;
+        const [result] = await db.promise().query(sql, [groupId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+        return res.status(200).json({ success: true, message: 'Group activated successfully' });
+    } catch (error) {
+        console.error('Error activating group:', error);
+        return res.status(500).json({ success: false, message: 'Failed to activate group' });
+    }
+};
+
+exports.deleteGroup = async (req, res) => {
+    const { groupId } = req.body;
+    
+    if (!groupId) {
+        return res.status(400).json({ success: false, message: 'groupId is required' });
+    }
+
+    try {
+        // First delete members mappings to satisfy foreign key constraints if any
+        await db.promise().query('DELETE FROM user_grouping WHERE group_id = ?', [groupId]);
+        
+        const sql = `DELETE FROM \`groups\` WHERE id = ?`;
+        const [result] = await db.promise().query(sql, [groupId]);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+        return res.status(200).json({ success: true, message: 'Group deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting group:', error);
+        return res.status(500).json({ success: false, message: 'Failed to delete group' });
+    }
+};
