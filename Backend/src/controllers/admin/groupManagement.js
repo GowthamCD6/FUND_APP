@@ -66,6 +66,20 @@ exports.getGroups = async (req, res) => {
 
         // Safely decrypt; skip rows that are not AES (e.g., old bcrypt data)
         rows.forEach(group => {
+            // Auto activation logic based on start date
+            if (group.status === 'not-started' || group.status === 'not started') {
+                if (group.start_date) {
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const stDate = new Date(group.start_date);
+                    if (stDate <= today) {
+                        group.status = 'active';
+                        // Asynchronously update DB
+                        db.promise().query("UPDATE `groups` SET status = 'active' WHERE id = ?", [group.id]).catch(console.error);
+                    }
+                }
+            }
+
             try {
                 group.id = group.id;
                 group.name = group.group_name;
@@ -76,7 +90,20 @@ exports.getGroups = async (req, res) => {
                 group.currentMembers = group.current_members;
                 group.startDate = group.start_date;
                 group.endDate = group.end_date;
-                group.createdDate = group.created_at;
+                // Format to standard YYYY-MM-DD so Date inputs and new Date() constructors don't fail
+                const useDate = group.start_date || group.created_at;
+                if (useDate) {
+                  const date = new Date(useDate);
+                  const dd = String(date.getDate()).padStart(2, '0');
+                  const mm = String(date.getMonth() + 1).padStart(2, '0');
+                  const yyyy = date.getFullYear();
+                  group.createdDate = `${yyyy}-${mm}-${dd}`;
+                  group.startDate = `${yyyy}-${mm}-${dd}`;
+                } else {
+                  group.createdDate = '';
+                  group.startDate = '';
+                }
+                
                 group.groupCode = groupDecryptAES(group.group_code);
             } catch {
                 // leave as-is if not AES-encrypted
@@ -89,6 +116,54 @@ exports.getGroups = async (req, res) => {
     } catch (error) {
         console.error('Error fetching groups:', error);
         return res.status(500).json({ success: false, message: 'Failed to fetch groups' });
+    }
+};
+
+exports.updateGroup = async (req, res) => {
+    const { groupId, groupName, totalAmount, numberOfUsers, createdDate } = req.body;
+
+    if (!groupId) {
+        return res.status(400).json({ success: false, message: 'groupId is required' });
+    }
+
+    const groupIdNum = Number(groupId);
+    if (Number.isNaN(groupIdNum)) {
+        return res.status(400).json({ success: false, message: 'Invalid groupId' });
+    }
+
+    const parsedStartDate = createdDate
+        ? (createdDate.includes('-')
+            ? new Date(createdDate)
+            : new Date(createdDate.split('/').reverse().join('-')))
+        : null;
+
+    try {
+        const sql = `
+            UPDATE \`groups\`
+            SET group_name = ?,
+                group_amount = ?,
+                total_members = ?,
+                start_date = ?
+            WHERE id = ?
+        `;
+
+        const params = [
+            groupName || null,
+            totalAmount !== undefined ? Number(totalAmount) : null,
+            numberOfUsers !== undefined ? Number(numberOfUsers) : null,
+            parsedStartDate,
+            groupIdNum,
+        ];
+
+        const [result] = await db.promise().query(sql, params);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+
+        return res.status(200).json({ success: true, message: 'Group updated successfully' });
+    } catch (error) {
+        console.error('Error updating group:', error);
+        return res.status(500).json({ success: false, message: 'Failed to update group' });
     }
 };
 

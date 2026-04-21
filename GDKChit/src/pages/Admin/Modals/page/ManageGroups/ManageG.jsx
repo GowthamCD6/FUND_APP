@@ -138,8 +138,33 @@ const ManageGroups = ({onBack}) => {
         throw new Error(result?.message || 'Failed to create group');
       }
 
-      setGroups(result.data);
-      console.log(result.data);
+      const mapped = (result.data || []).map(g => {
+        const totalNum = Number(g.totalMembers || g.total_members) || 1;
+        const totalAmount = Number(g.groupAmount || g.group_amount) || 0;
+        return {
+          ...g,
+          id: g.id,
+          name: g.name || g.group_name || 'Untitled',
+          status: g.status === 'not started' || g.status === 'not-started' ? 'Not Started' : (g.status?.charAt(0).toUpperCase() + g.status?.slice(1) || 'Not Started'),
+          totalMembers: g.totalMembers || g.total_members || 0,
+          currentMembers: g.currentMembers || g.totalMembers || 0,
+          completedCycles: g.completedCycles || 0,
+          duration: g.duration || totalNum || 20,
+          totalCycles: g.duration || totalNum || 20,
+          monthlyAmount: g.monthly_amount || Math.round(totalAmount / (g.duration || totalNum)),
+          groupAmount: totalAmount,
+          startDate: g.startDate || g.start_date,
+          endDate: g.endDate || g.end_date,
+          nextDueDate: g.nextDueDate || g.next_due_date,
+          collectedAmount: g.collectedAmount || 0,
+          remainingAmount: g.remainingAmount || 0,
+          groupCode: g.groupCode || g.group_code,
+          createdDate: g.createdDate || g.created_at,
+        };
+      });
+
+      setGroups(mapped);
+      console.log(mapped);
     } catch (error) {
       console.error('Error fetching groups:', error);
       setGroups([]); // Fallback to sample data on error

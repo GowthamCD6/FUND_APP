@@ -8,8 +8,11 @@ import {
   StyleSheet,
   Alert,
   Modal,
+  Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import ApiService from '../../../../../../../services/ApiService';
 
 const EditModal = ({ 
   visible, 
@@ -52,49 +55,78 @@ const EditModal = ({
       newErrors.groupName = 'Group name is required';
     }
     if (!editGroupData.totalAmount || parseFloat(editGroupData.totalAmount) <= 0) {
-      newErrors.totalAmount = 'Please enter a valid total amount';
+      newErrors.totalAmount = 'Please enter a valid monthly amount';
     }
     if (!editGroupData.numberOfUsers || parseInt(editGroupData.numberOfUsers) <= 0) {
       newErrors.numberOfUsers = 'Please enter a valid number of users';
     }
     if (!editGroupData.createdDate) {
-      newErrors.createdDate = 'Created date is required';
+      newErrors.createdDate = 'Start date is required';
     }
     setEditGroupErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const saveEditGroup = () => {
+  const saveEditGroup = async () => {
     if (!validateEditGroup()) {
       return;
     }
-    onSave(editGroupData);
-    onClose();
-    Alert.alert('Success', 'Group information updated successfully');
+    try {
+      await onSave(editGroupData);
+    } catch (error) {
+      console.error('Error saving group:', error);
+    }
   };
 
-  const formatDateForInput = (date) => {
-    if (!date) return '';
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  const formatDate = (date) => {
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${yyyy}-${mm}-${dd}`;
   };
 
-  const formatDateForDisplay = (dateString) => {
-    if (!dateString) return 'Select Date';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+  const parseStringDate = (value) => {
+    try {
+      if (!value) return new Date();
+      if (value.includes('/')) {
+        const [dd, mm, yyyy] = value.split('/').map(Number);
+        if (!dd || !mm || !yyyy) return new Date();
+        return new Date(yyyy, mm - 1, dd);
+      }
+      return new Date(value);
+    } catch {
+      return new Date();
+    }
   };
 
-  const handleCreatedDateSelect = () => {
-    const formattedDate = formatDateForInput(selectedDate);
-    handleEditGroupChange('createdDate', formattedDate);
+  const openDatePicker = () => {
+    const initial = parseStringDate(editGroupData.createdDate);
+    setSelectedDate(initial);
+    setShowCreatedDatePicker(true);
+  };
+
+  const onAndroidDateChange = (event, selectedDate) => {
+    if (event.type === 'dismissed') {
+      setShowCreatedDatePicker(false);
+      return;
+    }
+    const date = selectedDate || selectedDate;
+    setShowCreatedDatePicker(false);
+    handleEditGroupChange('createdDate', formatDate(date));
+  };
+
+  const onIOSDateChange = (_event, selectedDate) => {
+    if (selectedDate) {
+      setSelectedDate(selectedDate);
+    }
+  };
+
+  const confirmIOSDate = () => {
+    handleEditGroupChange('createdDate', formatDate(selectedDate));
+    setShowCreatedDatePicker(false);
+  };
+
+  const cancelIOSDate = () => {
     setShowCreatedDatePicker(false);
   };
 
@@ -144,7 +176,7 @@ const EditModal = ({
                     style={[styles.inputWithPrefix, editGroupErrors.totalAmount && styles.inputError]}
                     value={editGroupData.totalAmount}
                     onChangeText={(value) => handleEditGroupChange('totalAmount', value)}
-                    placeholder="100000"
+                    placeholder="10000"
                     keyboardType="numeric"
                     placeholderTextColor="#9CA3AF"
                   />
@@ -170,17 +202,14 @@ const EditModal = ({
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Created Date *</Text>
+                <Text style={styles.label}>Start Date *</Text>
                 <TouchableOpacity
                   style={[styles.datePickerButton, editGroupErrors.createdDate && styles.inputError]}
-                  onPress={() => {
-                    setSelectedDate(editGroupData.createdDate ? new Date(editGroupData.createdDate) : new Date());
-                    setShowCreatedDatePicker(true);
-                  }}
+                  onPress={openDatePicker}
                 >
                   <MaterialCommunityIcons name="calendar" size={18} color="#6B7280" />
                   <Text style={[styles.datePickerText, !editGroupData.createdDate && styles.placeholderText]}>
-                    {editGroupData.createdDate ? formatDateForDisplay(editGroupData.createdDate) : 'Select date'}
+                    {editGroupData.createdDate ? parseStringDate(editGroupData.createdDate).toLocaleDateString('en-IN') : 'Select Date'}
                   </Text>
                 </TouchableOpacity>
                 {editGroupErrors.createdDate && (
@@ -188,6 +217,35 @@ const EditModal = ({
                 )}
               </View>
             </ScrollView>
+
+            {showCreatedDatePicker && (
+              Platform.OS === 'ios' ? (
+                <View style={styles.iosPickerContainer}>
+                  <View style={styles.iosPickerHeader}>
+                    <TouchableOpacity onPress={cancelIOSDate} style={styles.iosPickerButton}>
+                      <Text style={styles.iosPickerButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.iosPickerTitle}>Select Date</Text>
+                    <TouchableOpacity onPress={confirmIOSDate} style={styles.iosPickerButton}>
+                      <Text style={[styles.iosPickerButtonText, { color: '#2842C4' }]}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display="spinner"
+                    onChange={onIOSDateChange}
+                  />
+                </View>
+              ) : (
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="default"
+                  onChange={onAndroidDateChange}
+                />
+              )
+            )}
 
             <View style={styles.editGroupModalActions}>
               <TouchableOpacity 
@@ -207,50 +265,6 @@ const EditModal = ({
           </View>
         </View>
       </Modal>
-
-      {/* Date Picker Modal */}
-      {showCreatedDatePicker && (
-        <Modal
-          visible={showCreatedDatePicker}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowCreatedDatePicker(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.datePickerModal}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Created Date</Text>
-                <TouchableOpacity onPress={() => setShowCreatedDatePicker(false)}>
-                  <MaterialCommunityIcons name="close" size={20} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.datePickerContent}>
-                <Text style={styles.selectedDateText}>
-                  {selectedDate.toLocaleDateString('en-IN', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
-                </Text>
-              </View>
-              <View style={styles.datePickerActions}>
-                <TouchableOpacity 
-                  style={styles.cancelDateButton}
-                  onPress={() => setShowCreatedDatePicker(false)}
-                >
-                  <Text style={styles.cancelDateText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.selectDateButton}
-                  onPress={handleCreatedDateSelect}
-                >
-                  <Text style={styles.selectDateText}>Select Date</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
     </>
   );
 };
@@ -464,6 +478,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  iosPickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+  },
+  iosPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  iosPickerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#212121',
+  },
+  iosPickerButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  iosPickerButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
   },
 });
 

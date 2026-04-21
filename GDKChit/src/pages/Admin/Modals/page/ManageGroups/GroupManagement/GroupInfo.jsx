@@ -12,7 +12,8 @@ import pageStyles from '../ManageGsty';
 import MemberRegistration from './Page/MemberRegistration'; 
 import EditModal from './Modal/EditModal'; 
 import PaymentD from './Modal/PaymentD';
-import AuctionW from './Modal/AuctionW'; 
+import AuctionW from './Modal/AuctionW';
+import ApiService from '../../../../../../services/ApiService'; 
 
 const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [currentMonth, setCurrentMonth] = useState(0); // 0 = current, -1 = previous
@@ -46,6 +47,8 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     groupName: group.name || '',
     groupId: group.id || '',
     monthlyAmount: group.monthlyAmount?.toString() || '',
+    groupAmount: group.groupAmount?.toString() || '',
+    totalMembers: group.totalMembers?.toString() || '',
     createdDate: group.createdDate || new Date().toISOString().split('T')[0],
     currentMonthAmount: group.currentMonthAmount?.toString() || group.monthlyAmount?.toString() || '',
     elathThalupadi: group.elathThalupadi?.toString() || '',
@@ -76,14 +79,53 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     setShowEditGroupModal(true);
   };
 
-  const handleEditSave = (updatedData) => {
-    // Update the main formData
-    setFormData(prev => ({
-      ...prev,
-      groupName: updatedData.groupName,
-      monthlyAmount: updatedData.monthlyAmount,
-      createdDate: updatedData.createdDate
-    }));
+  const handleEditSave = async (updatedData) => {
+    try {
+      const payload = {
+        groupId: formData.groupId || group.id,
+        groupName: updatedData.groupName,
+        totalAmount: updatedData.totalAmount,
+        numberOfUsers: updatedData.numberOfUsers,
+        createdDate: updatedData.createdDate,
+      };
+
+      const response = await ApiService.makeRequest('/admin/groups/updateGroup', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      let result;
+      if (contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Unexpected response: ${text.substring(0, 200)}`);
+      }
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to update group');
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        groupName: updatedData.groupName,
+        groupAmount: updatedData.totalAmount,
+        monthlyAmount: Math.round(Number(updatedData.totalAmount) / (Number(updatedData.numberOfUsers) || 1)).toString(),
+        totalMembers: updatedData.numberOfUsers,
+        createdDate: updatedData.createdDate,
+      }));
+      
+      // Update the group object so the EditModal can access the updated numberOfUsers
+      if (group.totalMembers !== updatedData.numberOfUsers) {
+        group.totalMembers = updatedData.numberOfUsers;
+      }
+      
+      Alert.alert('Success', 'Group information updated successfully');
+    } catch (error) {
+      console.error('Error updating group:', error);
+      Alert.alert('Error', 'Failed to update group. Please try again.');
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -309,21 +351,23 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
               <View style={pageStyles.groupInfoRow}>
                 <View style={pageStyles.groupInfoItem}>
                   <MaterialCommunityIcons name="account-group" size={16} color="#6B46C1" />
-                  <Text style={pageStyles.groupInfoText}>{memberMappings.length} Members</Text>
+                  <Text style={pageStyles.groupInfoText}>{memberMappings.length} / {formData.totalMembers || 'N/A'} Members</Text>
                 </View>
                 <View style={pageStyles.groupInfoItem}>
                   <MaterialCommunityIcons name="currency-inr" size={16} color="#059669" />
-                  <Text style={pageStyles.groupInfoText}>{formatCurrency(formData.monthlyAmount || group.monthlyAmount)}</Text>
+                  <Text style={pageStyles.groupInfoText}>
+                    {formatCurrency(formData.monthlyAmount)} / month
+                  </Text>
                 </View>
               </View>
 
               {/* Footer */}
               <View style={pageStyles.groupCardFooter}>
                 <Text style={pageStyles.groupDate}>
-                  Created: {new Date(formData.createdDate || group.createdDate).toLocaleDateString('en-IN')}
+                  Start Date: {new Date(formData.createdDate || group.createdDate).toLocaleDateString('en-IN')}
                 </Text>
                 <Text style={pageStyles.groupAmount}>
-                  Total Fund: {formatCurrency((formData.monthlyAmount || group.monthlyAmount) * memberMappings.length)}
+                  Total Fund: {formatCurrency(formData.groupAmount || (formData.monthlyAmount * (formData.totalMembers || memberMappings.length)))}
                 </Text>
               </View>
             </View>
@@ -525,7 +569,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
       {/* Auction winner date picker moved into AuctionW modal */}
 
-      {/* Created Date Picker Modal */}
+      {/* Start Date Picker Modal */}
       {showCreatedDatePicker && (
         <Modal
           visible={showCreatedDatePicker}
@@ -536,7 +580,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           <View style={styles.modalOverlay}>
             <View style={styles.datePickerModal}>
               <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Created Date</Text>
+                <Text style={styles.datePickerTitle}>Select Start Date</Text>
                 <TouchableOpacity onPress={() => setShowCreatedDatePicker(false)}>
                   <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
@@ -623,7 +667,8 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         onClose={() => setShowEditGroupModal(false)}
         initialData={{
           groupName: formData.groupName,
-          monthlyAmount: formData.monthlyAmount,
+          totalAmount: formData.groupAmount || formData.monthlyAmount,
+          numberOfUsers: formData.totalMembers,
           createdDate: formData.createdDate
         }}
         onSave={handleEditSave}

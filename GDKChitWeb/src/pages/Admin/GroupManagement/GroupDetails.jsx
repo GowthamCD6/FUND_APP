@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import EditGroupModal from './Modals/EditGroupModal';
 import PaymentModal from './Modals/PaymentModal';
 import AuctionModal from './Modals/AuctionModal';
@@ -20,6 +21,8 @@ const GroupDetails = ({ group, onBack, memberMappings = [], setShowMemberRegistr
     groupName: group.name || '',
     groupId: group.id || '',
     monthlyAmount: group.monthlyAmount?.toString() || '',
+    groupAmount: group.groupAmount?.toString() || '',
+    totalMembers: group.totalMembers?.toString() || '',
     createdDate: group.createdDate || group.startDate || new Date().toISOString().split('T')[0],
     currentMonthAmount: group.monthlyAmount?.toString() || '',
     elathThalupadi: '',
@@ -68,6 +71,41 @@ const GroupDetails = ({ group, onBack, memberMappings = [], setShowMemberRegistr
     return new Date(dateString).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
+  const handleEditGroupSave = async (data) => {
+    // Optimistically update the UI constraints
+    setFormData(prev => ({
+      ...prev,
+      groupName: data.groupName,
+      groupAmount: data.totalAmount,
+      monthlyAmount: Math.round(Number(data.totalAmount) / (Number(data.numberOfUsers) || 1)).toString(),
+      totalMembers: data.numberOfUsers,
+      createdDate: data.createdDate,
+    }));
+    
+    try {
+      const payload = {
+        groupId: formData.groupId,
+        groupName: data.groupName,
+        totalAmount: data.totalAmount,
+        numberOfUsers: data.numberOfUsers,
+        createdDate: data.createdDate
+      };
+      
+      const response = await makeRequest('/admin/groups/updateGroup', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      
+      const result = await safeJson(response);
+      if (!response.ok || !result.success) {
+        alert(result?.message || 'Failed to update group');
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      alert('An error occurred while updating the group in the database');
+    }
+  };
+
   return (
     <div style={{ padding: '0 24px 40px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, background: '#fff', padding: '16px', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)' }}>
@@ -103,7 +141,7 @@ const GroupDetails = ({ group, onBack, memberMappings = [], setShowMemberRegistr
         <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#374151', fontSize: 14, fontWeight: 500 }}>
             <RiGroupLine size={18} color="#6B46C1" />
-            {memberMappings.length} Members
+            {memberMappings.length} / {formData.totalMembers || 'N/A'} Members
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#374151', fontSize: 14, fontWeight: 500 }}>
             <span style={{ color: '#059669', fontWeight: 800 }}>₹</span>
@@ -111,8 +149,8 @@ const GroupDetails = ({ group, onBack, memberMappings = [], setShowMemberRegistr
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed var(--border)', paddingTop: 16 }}>
-          <span style={{ fontSize: 13, color: '#6B7280' }}>Created: {formatDateForDisplay(formData.createdDate)}</span>
-          <span style={{ fontSize: 13, color: '#111827', fontWeight: 600 }}>Total Fund: {formatCurrency(formData.monthlyAmount * memberMappings.length)}</span>
+          <span style={{ fontSize: 13, color: '#6B7280' }}>Start Date: {formatDateForDisplay(formData.createdDate)}</span>
+          <span style={{ fontSize: 13, color: '#111827', fontWeight: 600 }}>Total Fund: {formatCurrency(formData.groupAmount || (formData.monthlyAmount * (formData.totalMembers || memberMappings.length)))}</span>
         </div>
       </div>
 
@@ -254,8 +292,12 @@ const GroupDetails = ({ group, onBack, memberMappings = [], setShowMemberRegistr
       <EditGroupModal 
         visible={showEditModal} 
         onClose={() => setShowEditModal(false)}
-        initialData={formData}
-        onSave={(data) => setFormData(prev => ({ ...prev, ...data }))}
+        initialData={{
+          ...formData,
+          totalAmount: formData.groupAmount || formData.monthlyAmount,
+          numberOfUsers: formData.totalMembers,
+        }}
+        onSave={handleEditGroupSave}
       />
       <PaymentModal 
         visible={showPaymentModal} 

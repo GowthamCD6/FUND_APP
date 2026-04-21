@@ -8,6 +8,7 @@ const userManagement = require('../controllers/admin/userManagement');
 
 router.post('/groups/createGroup', authenticateToken, groupManagement.createGroup);
 router.get('/groups/getGroups', authenticateToken, groupManagement.getGroups);
+router.post('/groups/updateGroup', authenticateToken, groupManagement.updateGroup);
 
 router.post('/groups/addMembers', authenticateToken, groupManagement.addGroupMembers);
 router.get('/groups/getMembers', authenticateToken, groupManagement.getGroupMembers);

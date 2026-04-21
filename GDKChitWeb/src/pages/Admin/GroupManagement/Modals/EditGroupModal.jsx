@@ -99,7 +99,7 @@ const EditGroupModal = ({ visible, onClose, initialData, onSave }) => {
         </div>
 
         <div style={{ marginBottom: 24 }}>
-          <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#374151', marginBottom: 8 }}>Created Date *</label>
+          <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#374151', marginBottom: 8 }}>Start Date *</label>
           <input
             type="date"
             style={{ width: '100%', padding: '12px 16px', border: `1px solid ${errors.createdDate ? '#EF4444' : '#D1D5DB'}`, borderRadius: 'var(--radius)', fontSize: 15, background: '#fff' }}
