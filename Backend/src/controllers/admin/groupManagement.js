@@ -73,9 +73,9 @@ exports.getGroups = async (req, res) => {
                     today.setHours(0,0,0,0);
                     const stDate = new Date(group.start_date);
                     if (stDate <= today) {
-                        group.status = 'active';
+                        group.status = 'OnGoing';
                         // Asynchronously update DB
-                        db.promise().query("UPDATE `groups` SET status = 'active' WHERE id = ?", [group.id]).catch(console.error);
+                        db.promise().query("UPDATE `groups` SET status = 'OnGoing' WHERE id = ?", [group.id]).catch(console.error);
                     }
                 }
             }
@@ -203,6 +203,13 @@ exports.addGroupMembers = async (req, res) => {
             VALUES ?
         `;
         await db.promise().query(sql, [insertValues]);
+
+        // Update the current_members count in the groups table
+        await db.promise().query(
+            `UPDATE \`groups\` SET current_members = current_members + ? WHERE id = ?`,
+            [normalizedIds.length, groupIdNum]
+        );
+
         return res.status(201).json({ success: true, message: 'Members added successfully' });
     } catch (error) {
         console.error('Error adding group members:', error);
@@ -258,7 +265,16 @@ exports.removeGroupMembers = async (req, res) => {
 
     try {
         const sql = `DELETE FROM user_grouping WHERE group_id = ? AND user_id IN (?);`;
-        await db.promise().query(sql, [groupIdNum, ids]);
+        const [result] = await db.promise().query(sql, [groupIdNum, ids]);
+        
+        if (result.affectedRows > 0) {
+            // Update the current_members count in the groups table
+            await db.promise().query(
+                `UPDATE \`groups\` SET current_members = current_members - ? WHERE id = ?`,
+                [result.affectedRows, groupIdNum]
+            );
+        }
+
         return res.status(200).json({ success: true, message: 'Members removed successfully' });
     } catch (error) {
         console.error('Error removing group members:', error);
@@ -274,7 +290,7 @@ exports.activateGroup = async (req, res) => {
     }
 
     try {
-        const sql = `UPDATE \`groups\` SET status = 'active' WHERE id = ?`;
+        const sql = `UPDATE \`groups\` SET status = 'OnGoing' WHERE id = ?`;
         const [result] = await db.promise().query(sql, [groupId]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: 'Group not found' });

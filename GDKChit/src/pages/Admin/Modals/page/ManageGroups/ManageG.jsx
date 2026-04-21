@@ -145,9 +145,9 @@ const ManageGroups = ({onBack}) => {
           ...g,
           id: g.id,
           name: g.name || g.group_name || 'Untitled',
-          status: g.status === 'not started' || g.status === 'not-started' ? 'Not Started' : (g.status?.charAt(0).toUpperCase() + g.status?.slice(1) || 'Not Started'),
-          totalMembers: g.totalMembers || g.total_members || 0,
-          currentMembers: g.currentMembers || g.totalMembers || 0,
+          status: g.status === 'Not Started' || g.status === 'not started' || g.status === 'not-started' ? 'Not Started' : 'Active',
+          totalMembers: g.totalMembers !== undefined ? g.totalMembers : (g.total_members !== undefined ? g.total_members : 0),
+          currentMembers: g.currentMembers !== undefined ? g.currentMembers : (g.current_members !== undefined ? g.current_members : 0),
           completedCycles: g.completedCycles || 0,
           duration: g.duration || totalNum || 20,
           totalCycles: g.duration || totalNum || 20,
@@ -234,13 +234,18 @@ const ManageGroups = ({onBack}) => {
           style: 'default',
           onPress: async () => {
             try {
-              // Add your API call here to activate the group
-              // const response = await ApiService.makeRequest('/admin/groups/activate', {
-              //   method: 'POST',
-              //   body: JSON.stringify({ groupId: longPressedGroup.id }),
-              // });
+              const response = await ApiService.makeRequest('/admin/groups/activate', {
+                method: 'POST',
+                body: JSON.stringify({ groupId: longPressedGroup.id }),
+              });
               
-              // For now, update locally
+              const result = await response.json();
+
+              if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Failed to activate group');
+              }
+              
+              // Update locally after successful backend confirmation
               setGroups(prevGroups =>
                 prevGroups.map(g =>
                   g.id === longPressedGroup.id
@@ -253,7 +258,7 @@ const ManageGroups = ({onBack}) => {
               setLongPressedGroup(null);
             } catch (error) {
               console.error('Error activating group:', error);
-              Alert.alert('Error', 'Failed to activate group');
+              Alert.alert('Error', 'Failed to activate group. Please try again later.');
             }
           },
         },
@@ -278,13 +283,18 @@ const ManageGroups = ({onBack}) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Add your API call here to delete the group
-              // const response = await ApiService.makeRequest('/admin/groups/delete', {
-              //   method: 'DELETE',
-              //   body: JSON.stringify({ groupId: longPressedGroup.id }),
-              // });
+              const response = await ApiService.makeRequest('/admin/groups/delete', {
+                method: 'POST', // Backend route maps to POST /groups/delete
+                body: JSON.stringify({ groupId: longPressedGroup.id }),
+              });
               
-              // For now, update locally
+              const result = await response.json();
+
+              if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Failed to delete group');
+              }
+              
+              // Update locally after successful backend confirmation
               setGroups(prevGroups =>
                 prevGroups.filter(g => g.id !== longPressedGroup.id)
               );
@@ -293,7 +303,7 @@ const ManageGroups = ({onBack}) => {
               setLongPressedGroup(null);
             } catch (error) {
               console.error('Error deleting group:', error);
-              Alert.alert('Error', 'Failed to delete group');
+              Alert.alert('Error', 'Failed to delete group. Please try again later.');
             }
           },
         },

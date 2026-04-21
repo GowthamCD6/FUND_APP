@@ -47,6 +47,7 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
             id: m.mappingId || (Date.now() + Math.random()),
             memberId: m.userId,
             name: m.name || m.nickname || 'Unnamed',
+            phone: m.phone || 'N/A',
           }));
           setMemberMappings(mappings);
           setInitialMemberMappings(mappings);
@@ -217,6 +218,7 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
         id: Date.now() + Math.random(), // Unique ID for each mapping
         memberId: member.id,
         name: member.name,
+        phone: member.phone || 'N/A',
       }));
       setMemberMappings(prevMappings => [...prevMappings, ...newMappings]);
       setShowMemberPicker(false);
