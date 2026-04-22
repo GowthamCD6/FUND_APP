@@ -17,7 +17,7 @@ import ApiService from '../../../../../../../services/ApiService';
 // Define the maximum number of members
 const MAX_MEMBERS = 20;
 
-const MemberRegistration = ({ visible, onClose, group, onSave }) => {
+const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }) => {
   // Sample members data
   const [allMembers, setAllMembers] = useState([]);
 
@@ -125,7 +125,7 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
     setShowMemberPicker(true);
   };
 
-  const removeMemberMapping = mapping => {
+  const removeMemberMapping = memberIdToRemove => {
     Alert.alert(
       'Remove Member',
       'Are you sure you want to remove this member?',
@@ -141,18 +141,21 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
                 Alert.alert('Error', 'Invalid group id');
                 return;
               }
-              console.log(mapping);
               
               const resp = await ApiService.makeRequest('/admin/groups/removeMembers', {
                 method: 'POST',
-                body: JSON.stringify({ groupId: groupIdNum, members: [mapping] }),
+                body: JSON.stringify({ groupId: groupIdNum, members: [memberIdToRemove] }),
               });
               const json = await resp.json();
               if (!json.success) {
                 Alert.alert('Error', 'Failed to remove member');
                 return;
               }
-              setMemberMappings(prevMappings => prevMappings.filter(m => m.memberId !== mapping.memberId));
+              const updatedMappings = memberMappings.filter(m => m.memberId !== memberIdToRemove);
+              setMemberMappings(updatedMappings);
+              if (typeof onMembersUpdate === 'function') {
+                onMembersUpdate(updatedMappings.length);
+              }
             } catch (err) {
               console.error('Error removing member:', err);
               Alert.alert('Error', 'An error occurred while removing member.');
@@ -220,7 +223,11 @@ const MemberRegistration = ({ visible, onClose, group, onSave }) => {
         name: member.name,
         phone: member.phone || 'N/A',
       }));
-      setMemberMappings(prevMappings => [...prevMappings, ...newMappings]);
+      const updatedMappings = [...memberMappings, ...newMappings];
+      setMemberMappings(updatedMappings);
+      if (typeof onMembersUpdate === 'function') {
+        onMembersUpdate(updatedMappings.length);
+      }
       setShowMemberPicker(false);
       setSelectedMembers([]);
       Alert.alert('Success', 'Members added successfully.');

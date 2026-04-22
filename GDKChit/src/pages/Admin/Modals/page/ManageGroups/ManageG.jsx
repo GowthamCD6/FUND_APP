@@ -383,7 +383,7 @@ const ManageGroups = ({onBack}) => {
                 color="#6B7280"
               />
               <Text style={styles.groupInfoText}>
-                {item.totalMembers} Members
+                {item.currentMembers || item.totalMembers || 0} / {item.totalMembers} Members
               </Text>
             </View>
             <View style={styles.groupInfoItem}>

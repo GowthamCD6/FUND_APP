@@ -49,6 +49,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     monthlyAmount: group.monthlyAmount?.toString() || '',
     groupAmount: group.groupAmount?.toString() || '',
     totalMembers: group.totalMembers?.toString() || '',
+    currentMembers: group.currentMembers || 0,
     createdDate: group.createdDate || new Date().toISOString().split('T')[0],
     currentMonthAmount: group.currentMonthAmount?.toString() || group.monthlyAmount?.toString() || '',
     elathThalupadi: group.elathThalupadi?.toString() || '',
@@ -182,6 +183,13 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
       commission: paymentData.commission,
     }));
     setShowPaymentModal(false);
+  };
+
+  const handleMembersUpdate = (newMemberCount) => {
+    setFormData(prev => ({
+      ...prev,
+      currentMembers: newMemberCount,
+    }));
   };
 
   const handleSave = () => {
@@ -351,7 +359,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
               <View style={pageStyles.groupInfoRow}>
                 <View style={pageStyles.groupInfoItem}>
                   <MaterialCommunityIcons name="account-group" size={16} color="#6B46C1" />
-                  <Text style={pageStyles.groupInfoText}>{memberMappings.length} / {formData.totalMembers || 'N/A'} Members</Text>
+                  <Text style={pageStyles.groupInfoText}>{formData.currentMembers} / {formData.totalMembers || 'N/A'} Members</Text>
                 </View>
                 <View style={pageStyles.groupInfoItem}>
                   <MaterialCommunityIcons name="currency-inr" size={16} color="#059669" />
@@ -367,7 +375,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                   Start Date: {new Date(formData.createdDate || group.createdDate).toLocaleDateString('en-IN')}
                 </Text>
                 <Text style={pageStyles.groupAmount}>
-                  Total Fund: {formatCurrency(formData.groupAmount || (formData.monthlyAmount * (formData.totalMembers || memberMappings.length)))}
+                  Total Fund: {formatCurrency(formData.groupAmount || (formData.monthlyAmount * (formData.totalMembers || formData.currentMembers || 0)))}
                 </Text>
               </View>
             </View>
@@ -679,6 +687,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         visible={showMemberRegistration}
         onClose={() => setShowMemberRegistration(false)}
         group={{
+          id: formData.groupId, // Pass id explicitly to ensure getGroupDbId works
           groupName: formData.groupName,
           groupId: formData.groupId,
           monthlyAmount: formData.monthlyAmount,
@@ -688,6 +697,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           setMemberMappings(updatedMemberMappings);
           setShowMemberRegistration(false);
         }}
+        onMembersUpdate={handleMembersUpdate}
       />
 
       {/* Payment Details Modal */}

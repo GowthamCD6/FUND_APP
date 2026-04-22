@@ -80,7 +80,7 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
         <View style={styles.groupInfoRow}>
           <View style={styles.groupInfoItem}>
             <MaterialCommunityIcons name="account-group" size={16} color="#6B7280" />
-            <Text style={styles.groupInfoText}>{group.totalMembers} Members</Text>
+            <Text style={styles.groupInfoText}>{group.currentMembers || group.totalMembers || 0} / {group.totalMembers} Members</Text>
           </View>
           <View style={styles.groupInfoItem}>
             <MaterialCommunityIcons name="currency-inr" size={16} color="#6B7280" />

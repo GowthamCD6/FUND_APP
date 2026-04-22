@@ -141,7 +141,7 @@ const GroupDetails = ({ group, onBack, memberMappings = [], setShowMemberRegistr
         <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#374151', fontSize: 14, fontWeight: 500 }}>
             <RiGroupLine size={18} color="#6B46C1" />
-            {memberMappings.length} / {formData.totalMembers || 'N/A'} Members
+            {group.currentMembers !== undefined ? group.currentMembers : memberMappings.length} / {formData.totalMembers || 'N/A'} Members
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#374151', fontSize: 14, fontWeight: 500 }}>
             <span style={{ color: '#059669', fontWeight: 800 }}>₹</span>
