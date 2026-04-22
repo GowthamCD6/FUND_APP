@@ -325,3 +325,247 @@ exports.deleteGroup = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to delete group' });
     }
 };
+
+exports.saveGroupMonthlyDetails = async (req, res) => {
+    const {
+        groupId,
+        month,
+        year,
+        currentMonthAmount,
+        elathThalupadi,
+        commission,
+        notes,
+    } = req.body;
+
+    const groupIdNum = Number(groupId);
+    const monthNum = Number(month);
+    const yearNum = Number(year);
+
+    if (!Number.isInteger(groupIdNum) || !Number.isInteger(monthNum) || !Number.isInteger(yearNum)) {
+        return res.status(400).json({ success: false, message: 'groupId, month, and year are required' });
+    }
+
+    if (monthNum < 0 || monthNum > 11) {
+        return res.status(400).json({ success: false, message: 'month must be between 0 and 11' });
+    }
+
+    if (yearNum < 2000 || yearNum > 2100) {
+        return res.status(400).json({ success: false, message: 'year must be between 2000 and 2100' });
+    }
+
+    if ((Number(currentMonthAmount) || 0) <= 0) {
+        return res.status(400).json({ success: false, message: 'currentMonthAmount must be greater than 0' });
+    }
+
+    try {
+        const [[groupRow]] = await db.promise().query(
+            'SELECT id FROM `groups` WHERE id = ? LIMIT 1',
+            [groupIdNum],
+        );
+
+        if (!groupRow) {
+            return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+
+        await db.promise().query(
+            `
+            INSERT INTO group_monthly_details
+            (group_id, month, year, monthly_amount, discount_amount, commission_amount, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                monthly_amount = VALUES(monthly_amount),
+                discount_amount = VALUES(discount_amount),
+                commission_amount = VALUES(commission_amount),
+                notes = VALUES(notes),
+                updated_at = CURRENT_TIMESTAMP
+            `,
+            [
+                groupIdNum,
+                monthNum,
+                yearNum,
+                Number(currentMonthAmount) || 0,
+                Number(elathThalupadi) || 0,
+                Number(commission) || 0,
+                notes ? String(notes) : null,
+            ],
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                groupId: groupIdNum,
+                month: monthNum,
+                year: yearNum,
+                currentMonthAmount: Number(currentMonthAmount) || 0,
+                elathThalupadi: Number(elathThalupadi) || 0,
+                commission: Number(commission) || 0,
+            },
+        });
+    } catch (error) {
+        console.error('Error saving group monthly details:', error);
+        return res.status(500).json({ success: false, message: 'Failed to save payment details' });
+    }
+};
+
+exports.saveAuctionWinner = async (req, res) => {
+    const {
+        groupId,
+        month,
+        year,
+        chitWinnerName,
+        chitWinnerMemberId,
+        amountTaken,
+        datePicked,
+        winnerUserId,
+    } = req.body;
+
+    const groupIdNum = Number(groupId);
+    const monthNum = Number(month);
+    const yearNum = Number(year);
+
+    if (!Number.isInteger(groupIdNum) || !Number.isInteger(monthNum) || !Number.isInteger(yearNum)) {
+        return res.status(400).json({ success: false, message: 'groupId, month, and year are required' });
+    }
+
+    if (!chitWinnerName || !amountTaken || !datePicked) {
+        return res.status(400).json({ success: false, message: 'Winner name, amount taken, and auction date are required' });
+    }
+
+    if (monthNum < 0 || monthNum > 11) {
+        return res.status(400).json({ success: false, message: 'month must be between 0 and 11' });
+    }
+
+    if (yearNum < 2000 || yearNum > 2100) {
+        return res.status(400).json({ success: false, message: 'year must be between 2000 and 2100' });
+    }
+
+    const amountTakenNum = Number(amountTaken) || 0;
+    if (amountTakenNum <= 0) {
+        return res.status(400).json({ success: false, message: 'amountTaken must be greater than 0' });
+    }
+
+    const auctionDate = new Date(datePicked);
+    if (Number.isNaN(auctionDate.getTime())) {
+        return res.status(400).json({ success: false, message: 'datePicked is invalid' });
+    }
+
+    try {
+        const [[groupRow]] = await db.promise().query(
+            'SELECT id FROM `groups` WHERE id = ? LIMIT 1',
+            [groupIdNum],
+        );
+
+        if (!groupRow) {
+            return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+
+        await db.promise().query(
+            `
+            INSERT INTO group_auction_winners
+            (group_id, month, year, winner_user_id, winner_name, winner_member_phone, amount_taken, auction_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                winner_user_id = VALUES(winner_user_id),
+                winner_name = VALUES(winner_name),
+                winner_member_phone = VALUES(winner_member_phone),
+                amount_taken = VALUES(amount_taken),
+                auction_date = VALUES(auction_date),
+                updated_at = CURRENT_TIMESTAMP
+            `,
+            [
+                groupIdNum,
+                monthNum,
+                yearNum,
+                winnerUserId ? Number(winnerUserId) : null,
+                String(chitWinnerName),
+                chitWinnerMemberId ? String(chitWinnerMemberId) : null,
+                amountTakenNum,
+                auctionDate,
+            ],
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                groupId: groupIdNum,
+                month: monthNum,
+                year: yearNum,
+                chitWinnerName: String(chitWinnerName),
+                chitWinnerMemberId: chitWinnerMemberId ? String(chitWinnerMemberId) : null,
+                amountTaken: amountTakenNum,
+                datePicked,
+            },
+        });
+    } catch (error) {
+        console.error('Error saving auction winner:', error);
+        return res.status(500).json({ success: false, message: 'Failed to save auction winner' });
+    }
+};
+
+exports.getGroupMonthSnapshot = async (req, res) => {
+    const groupIdNum = Number(req.query.groupId);
+    const monthNum = Number(req.query.month);
+    const yearNum = Number(req.query.year);
+
+    if (!Number.isInteger(groupIdNum) || !Number.isInteger(monthNum) || !Number.isInteger(yearNum)) {
+        return res.status(400).json({ success: false, message: 'groupId, month, and year are required' });
+    }
+
+    if (monthNum < 0 || monthNum > 11) {
+        return res.status(400).json({ success: false, message: 'month must be between 0 and 11' });
+    }
+
+    if (yearNum < 2000 || yearNum > 2100) {
+        return res.status(400).json({ success: false, message: 'year must be between 2000 and 2100' });
+    }
+
+    try {
+        const [[payment]] = await db.promise().query(
+            `
+            SELECT monthly_amount, discount_amount, commission_amount, notes
+            FROM group_monthly_details
+            WHERE group_id = ? AND month = ? AND year = ?
+            LIMIT 1
+            `,
+            [groupIdNum, monthNum, yearNum],
+        );
+
+        const [[winner]] = await db.promise().query(
+            `
+            SELECT winner_name, winner_member_phone, amount_taken, auction_date
+            FROM group_auction_winners
+            WHERE group_id = ? AND month = ? AND year = ?
+            LIMIT 1
+            `,
+            [groupIdNum, monthNum, yearNum],
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                groupId: groupIdNum,
+                month: monthNum,
+                year: yearNum,
+                payment: payment
+                    ? {
+                        currentMonthAmount: Number(payment.monthly_amount) || 0,
+                        elathThalupadi: Number(payment.discount_amount) || 0,
+                        commission: Number(payment.commission_amount) || 0,
+                        notes: payment.notes || null,
+                    }
+                    : null,
+                winner: winner
+                    ? {
+                        chitWinnerName: winner.winner_name,
+                        chitWinnerMemberId: winner.winner_member_phone,
+                        amountTaken: Number(winner.amount_taken) || 0,
+                        datePicked: winner.auction_date,
+                    }
+                    : null,
+            },
+        });
+    } catch (error) {
+        console.error('Error fetching month snapshot:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch month snapshot' });
+    }
+};

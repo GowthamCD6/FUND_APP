@@ -5,6 +5,7 @@ const groupManagement = require('../controllers/admin/groupManagement');
 const groupMessaging = require('../controllers/admin/groupMessaging');
 const monthlyCollection = require('../controllers/admin/monthlyCollection');
 const userManagement = require('../controllers/admin/userManagement');
+const reportsController = require('../controllers/admin/reportsController');
 
 router.post('/groups/createGroup', authenticateToken, groupManagement.createGroup);
 router.get('/groups/getGroups', authenticateToken, groupManagement.getGroups);
@@ -15,9 +16,19 @@ router.get('/groups/getMembers', authenticateToken, groupManagement.getGroupMemb
 router.post('/groups/removeMembers', authenticateToken, groupManagement.removeGroupMembers);
 router.post('/groups/activate', authenticateToken, groupManagement.activateGroup);
 router.post('/groups/delete', authenticateToken, groupManagement.deleteGroup);
+router.post('/groups/saveMonthlyDetails', authenticateToken, groupManagement.saveGroupMonthlyDetails);
+router.post('/groups/saveAuctionWinner', authenticateToken, groupManagement.saveAuctionWinner);
+router.get('/groups/getMonthlySnapshot', authenticateToken, groupManagement.getGroupMonthSnapshot);
 
 router.post('/users/addUser', authenticateToken, userManagement.addUser);
 router.get('/users/getAllUsers', authenticateToken, userManagement.getAllUsers);
+
+router.get('/collections/getMemberHistory', authenticateToken, monthlyCollection.getMemberPaymentHistory);
+
+router.get('/reports/groups', authenticateToken, reportsController.getReportGroups);
+router.get('/reports/group-members', authenticateToken, reportsController.getGroupMemberPayments);
+router.post('/reports/payment-status', authenticateToken, reportsController.updateMemberPaymentStatus);
+router.get('/reports/member-chit-card', authenticateToken, reportsController.getMemberChitCard);
 
 
 module.exports = router;

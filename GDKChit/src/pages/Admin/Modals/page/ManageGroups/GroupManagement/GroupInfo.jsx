@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -27,21 +27,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   
 
   // Month-wise data storage
-  const [monthlyData] = useState([
-    {
-      month: -1,
-      date: '2024-09-15',
-      amount: 10000,
-      discount: 500,
-      commission: 200,
-      winner: { name: 'முருகன் குமார்', memberId: '9876543210', amountTaken: 9300, date: '2024-09-15' },
-      mappedMembers: [
-        { memberId: '9876543210', name: 'முருகன் குமார்', status: 'paid', amount: 10000, paidDate: '2024-09-15' },
-        { memberId: '9876543211', name: 'லட்சுமி செல்வி', status: 'paid', amount: 10000, paidDate: '2024-09-14' },
-        { memberId: '9876543212', name: 'ராஜேஷ் பாபு', status: 'pending', amount: 10000 },
-      ]
-    }
-  ]);
+  const [monthlyData, setMonthlyData] = useState([]);
 
   const [formData, setFormData] = useState({
     groupName: group.name || '',
@@ -68,6 +54,97 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [showMemberRegistration, setShowMemberRegistration] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false); // State for PaymentD modal
   const [showAuctionModal, setShowAuctionModal] = useState(false); // State for AuctionW modal
+
+  const getPeriodFromOffset = useCallback((offset) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() + offset);
+    return {
+      month: date.getMonth(),
+      year: date.getFullYear(),
+      date,
+    };
+  }, []);
+
+  const loadMonthSnapshot = useCallback(async () => {
+    const groupId = Number(formData.groupId || group.id);
+    if (!Number.isInteger(groupId)) return;
+
+    try {
+      const period = getPeriodFromOffset(currentMonth);
+      const response = await ApiService.makeRequest(
+        `/admin/groups/getMonthlySnapshot?groupId=${groupId}&month=${period.month}&year=${period.year}`,
+        { method: 'GET' },
+      );
+
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to fetch monthly snapshot');
+      }
+
+      const payment = result?.data?.payment;
+      const winner = result?.data?.winner;
+
+      if (payment) {
+        setFormData((prev) => ({
+          ...prev,
+          currentMonthAmount: payment.currentMonthAmount?.toString() || prev.currentMonthAmount,
+          elathThalupadi: payment.elathThalupadi?.toString() || '',
+          commission: payment.commission?.toString() || '',
+        }));
+      }
+
+      if (winner) {
+        setFormData((prev) => ({
+          ...prev,
+          chitWinnerName: winner.chitWinnerName || '',
+          chitWinnerMemberId: winner.chitWinnerMemberId || '',
+          amountTaken: winner.amountTaken?.toString() || '',
+          datePicked: winner.datePicked || '',
+        }));
+      }
+
+      if (!payment && !winner) {
+        setFormData((prev) => ({
+          ...prev,
+          elathThalupadi: '',
+          commission: '',
+          chitWinnerName: '',
+          chitWinnerMemberId: '',
+          amountTaken: '',
+          datePicked: '',
+        }));
+      }
+
+      setMonthlyData((prev) => {
+        const withoutCurrent = prev.filter((item) => item.month !== currentMonth);
+        return [
+          {
+            month: currentMonth,
+            date: payment?.date || winner?.datePicked || new Date().toISOString().split('T')[0],
+            amount: Number(payment?.currentMonthAmount || 0),
+            discount: Number(payment?.elathThalupadi || 0),
+            commission: Number(payment?.commission || 0),
+            winner: winner
+              ? {
+                  name: winner.chitWinnerName,
+                  memberId: winner.chitWinnerMemberId,
+                  amountTaken: Number(winner.amountTaken || 0),
+                  date: winner.datePicked,
+                }
+              : null,
+            mappedMembers: [],
+          },
+          ...withoutCurrent,
+        ];
+      });
+    } catch (error) {
+      console.error('Error loading month snapshot:', error);
+    }
+  }, [currentMonth, formData.groupId, group.id, getPeriodFromOffset]);
+
+  useEffect(() => {
+    loadMonthSnapshot();
+  }, [loadMonthSnapshot]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -175,14 +252,58 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   };
 
   // Function to handle saving payment details from the modal
-  const handlePaymentSave = (paymentData) => {
-    setFormData(prev => ({
-      ...prev,
-      currentMonthAmount: paymentData.currentMonthAmount,
-      elathThalupadi: paymentData.elathThalupadi,
-      commission: paymentData.commission,
-    }));
-    setShowPaymentModal(false);
+  const handlePaymentSave = async (paymentData) => {
+    const groupId = Number(formData.groupId || group.id);
+    const period = getPeriodFromOffset(currentMonth);
+
+    try {
+      const response = await ApiService.makeRequest('/admin/groups/saveMonthlyDetails', {
+        method: 'POST',
+        body: JSON.stringify({
+          groupId,
+          month: period.month,
+          year: period.year,
+          currentMonthAmount: Number(paymentData.currentMonthAmount) || 0,
+          elathThalupadi: Number(paymentData.elathThalupadi) || 0,
+          commission: Number(paymentData.commission) || 0,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to save payment details');
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        currentMonthAmount: paymentData.currentMonthAmount,
+        elathThalupadi: paymentData.elathThalupadi,
+        commission: paymentData.commission,
+      }));
+
+      setMonthlyData((prev) => {
+        const currentEntry = prev.find((item) => item.month === currentMonth);
+        const withoutCurrent = prev.filter((item) => item.month !== currentMonth);
+        return [
+          {
+            month: currentMonth,
+            date: new Date().toISOString().split('T')[0],
+            amount: Number(paymentData.currentMonthAmount) || 0,
+            discount: Number(paymentData.elathThalupadi) || 0,
+            commission: Number(paymentData.commission) || 0,
+            winner: currentEntry?.winner || null,
+            mappedMembers: [],
+          },
+          ...withoutCurrent,
+        ];
+      });
+
+      setShowPaymentModal(false);
+      Alert.alert('Success', 'Payment details saved');
+    } catch (error) {
+      console.error('Error saving payment details:', error);
+      Alert.alert('Error', error.message || 'Failed to save payment details');
+    }
   };
 
   const handleMembersUpdate = (newMemberCount) => {
@@ -272,15 +393,66 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   };
 
   // Function to handle saving auction winner details from the modal
-  const handleAuctionWinnerSave = (winnerData) => {
-    setFormData(prev => ({
-      ...prev,
-      chitWinnerName: winnerData.chitWinnerName,
-      chitWinnerMemberId: winnerData.chitWinnerMemberId,
-      amountTaken: winnerData.amountTaken,
-      datePicked: winnerData.datePicked,
-    }));
-    setShowAuctionModal(false);
+  const handleAuctionWinnerSave = async (winnerData) => {
+    const groupId = Number(formData.groupId || group.id);
+    const period = getPeriodFromOffset(currentMonth);
+
+    try {
+      const response = await ApiService.makeRequest('/admin/groups/saveAuctionWinner', {
+        method: 'POST',
+        body: JSON.stringify({
+          groupId,
+          month: period.month,
+          year: period.year,
+          chitWinnerName: winnerData.chitWinnerName,
+          chitWinnerMemberId: winnerData.chitWinnerMemberId,
+          amountTaken: Number(winnerData.amountTaken) || 0,
+          datePicked: winnerData.datePicked,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to save auction winner');
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        chitWinnerName: winnerData.chitWinnerName,
+        chitWinnerMemberId: winnerData.chitWinnerMemberId,
+        amountTaken: winnerData.amountTaken,
+        datePicked: winnerData.datePicked,
+      }));
+
+      setMonthlyData((prev) => {
+        const currentEntry = prev.find((item) => item.month === currentMonth);
+        const withoutCurrent = prev.filter((item) => item.month !== currentMonth);
+
+        return [
+          {
+            month: currentMonth,
+            date: winnerData.datePicked,
+            amount: Number(currentEntry?.amount || formData.currentMonthAmount || 0),
+            discount: Number(currentEntry?.discount || formData.elathThalupadi || 0),
+            commission: Number(currentEntry?.commission || formData.commission || 0),
+            winner: {
+              name: winnerData.chitWinnerName,
+              memberId: winnerData.chitWinnerMemberId,
+              amountTaken: Number(winnerData.amountTaken || 0),
+              date: winnerData.datePicked,
+            },
+            mappedMembers: currentEntry?.mappedMembers || [],
+          },
+          ...withoutCurrent,
+        ];
+      });
+
+      setShowAuctionModal(false);
+      Alert.alert('Success', 'Auction winner saved');
+    } catch (error) {
+      console.error('Error saving auction winner:', error);
+      Alert.alert('Error', error.message || 'Failed to save auction winner');
+    }
   };
 
   const getMonthLabel = (offset) => {
@@ -299,6 +471,17 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
       case 'not-started': return '#F59E0B';
       default: return '#6B7280';
     }
+  };
+
+  const isStartMonth = () => {
+    const period = getPeriodFromOffset(currentMonth);
+    const startDt = new Date(formData.createdDate || group.createdDate || group.start_date || group.startDate);
+    if (!Number.isNaN(startDt.getTime())) {
+      const periodYearMonth = period.year * 12 + period.month;
+      const startYearMonth = startDt.getFullYear() * 12 + startDt.getMonth();
+      return periodYearMonth <= startYearMonth;
+    }
+    return false; // Safest default is to allow previous if no creation date
   };
 
   const currentMonthData = getCurrentMonthData();
@@ -411,10 +594,11 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           <View style={styles.monthNavigation}>
             <TouchableOpacity
               onPress={() => setCurrentMonth(currentMonth - 1)}
-              style={styles.monthNavButton}
+              disabled={isStartMonth()}
+              style={[styles.monthNavButton, isStartMonth() && styles.monthNavButtonDisabled]}
             >
-              <MaterialCommunityIcons name="chevron-left" size={20} color="#6B46C1" />
-              <Text style={styles.monthNavButtonText}>Previous</Text>
+              <MaterialCommunityIcons name="chevron-left" size={20} color={isStartMonth() ? "#9CA3AF" : "#6B46C1"} />
+              <Text style={[styles.monthNavButtonText, isStartMonth() && { color: '#9CA3AF' }]}>Previous</Text>
             </TouchableOpacity>
 
             <View style={styles.monthDisplay}>
@@ -428,8 +612,8 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
               disabled={currentMonth >= 0}
               style={[styles.monthNavButton, currentMonth >= 0 && styles.monthNavButtonDisabled]}
             >
-              <Text style={styles.monthNavButtonText}>Next</Text>
-              <MaterialCommunityIcons name="chevron-right" size={20} color="#6B46C1" />
+              <Text style={[styles.monthNavButtonText, currentMonth >= 0 && { color: '#9CA3AF' }]}>Next</Text>
+              <MaterialCommunityIcons name="chevron-right" size={20} color={currentMonth >= 0 ? "#9CA3AF" : "#6B46C1"} />
             </TouchableOpacity>
           </View>
 

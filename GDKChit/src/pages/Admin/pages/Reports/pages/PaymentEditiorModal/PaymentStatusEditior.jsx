@@ -52,7 +52,7 @@ const PaymentEditor = ({
       });
 
       if (success) {
-        // 1. INSTANT UI UPDATE
+        // Optimistic update for smoother UX while backend call runs.
         setCurrentStatus(targetStatus);
 
         // 2. Update the history list instantly
@@ -70,8 +70,7 @@ const PaymentEditor = ({
         });
         setLocalHistory(updatedHistory);
 
-        // 3. Update Parent Data
-        onUpdatePaymentStatus(selectedMember.id, targetStatus);
+        await onUpdatePaymentStatus(selectedMember.id, targetStatus);
 
         // Show success alert with user details
         Alert.alert(
@@ -79,11 +78,15 @@ const PaymentEditor = ({
           `Member: ${selectedMember.name}\nStatus: ${targetStatus.toUpperCase()}\nAmount: ${formatCurrency(selectedMember?.currentPayment?.amount || 0)}\nDate: ${new Date().toLocaleDateString()}`,
         );
       } else {
-        // User cancelled or failed bio
         Alert.alert('Cancelled', 'Authentication was cancelled');
       }
     } catch (error) {
       console.error('Authentication error:', error);
+      Alert.alert('Update Failed', error?.message || 'Could not update payment status');
+
+      // Rollback optimistic status in case API fails.
+      setCurrentStatus(selectedMember?.currentPayment?.status);
+      setLocalHistory(selectedMember?.paymentHistory || []);
     } finally {
       setIsAuthenticating(false);
     }

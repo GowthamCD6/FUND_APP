@@ -334,6 +334,53 @@ const MemberDetailsPanel = ({ group, apiMembers, loading, onClose }) => {
     { label: 'Collected', value: formatCurrency(stats.collected),  Icon: RiMoneyDollarCircleLine,  color: 'var(--primary)' },
   ];
 
+  const getAvailableMonths = () => {
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    let startYear = currentYear;
+    let startMonth = 0;
+
+    const groupStart = group.startDate || group.start_date;
+    if (groupStart) {
+      const parsedDate = typeof groupStart === 'string' ? groupStart.replace(' ', 'T') : groupStart;
+      const startDate = new Date(parsedDate);
+      if (!Number.isNaN(startDate.getTime())) {
+        startYear = startDate.getFullYear();
+        startMonth = startDate.getMonth();
+      }
+    }
+
+    const availableMonths = [];
+    const endYear = Math.max(currentYear, startYear);
+
+    for (let y = startYear; y <= endYear; y++) {
+      const sMonth = y === startYear ? startMonth : 0;
+      let eMonth = 11;
+      
+      if (y === endYear) {
+        if (endYear === currentYear) {
+          eMonth = Math.max(currentMonth, y === startYear ? startMonth : 0);
+        } else {
+          eMonth = startMonth;
+        }
+      } else if (y === currentYear) {
+        eMonth = currentMonth;
+      }
+      
+      for (let m = sMonth; m <= eMonth; m++) {
+        availableMonths.push({
+          index: m,
+          year: y,
+          name: MONTHS[m],
+          id: `${y}-${m}`
+        });
+      }
+    }
+    return availableMonths.reverse();
+  };
+
+  const availableMonthsList = getAvailableMonths();
+
   return (
     <div className="rp-overlay" onClick={onClose}>
       <div className="rp-panel rp-panel-wide" onClick={e => e.stopPropagation()}>
@@ -372,10 +419,10 @@ const MemberDetailsPanel = ({ group, apiMembers, loading, onClose }) => {
         {/* ── Month Picker ── */}
         {showMonthPicker && (
           <div className="md-month-picker">
-            {MONTHS.map((m, i) => (
-              <button key={i} className={`md-month-item${i === selMonth ? ' active' : ''}`}
-                onClick={() => { setSelMonth(i); setShowMonthPicker(false); }}>
-                {m} {selYear}
+            {availableMonthsList.map((mInfo) => (
+              <button key={mInfo.id} className={`md-month-item${mInfo.index === selMonth && mInfo.year === selYear ? ' active' : ''}`}
+                onClick={() => { setSelMonth(mInfo.index); setSelYear(mInfo.year); setShowMonthPicker(false); }}>
+                {mInfo.name} {mInfo.year}
               </button>
             ))}
           </div>
