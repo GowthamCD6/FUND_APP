@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,89 +7,81 @@ import {
   Platform,
   SafeAreaView,
   Modal,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import GroupCardInfo from './GroupCardInfo/GroupCardInfo';
 import GroupCard from '../../../../components/GroupCard/GroupCard';
 import Header from '../../../../components/HeaderComponent/Header';
+import ApiService from '../../../../services/ApiService';
 import styles from './Portfoliosty';
 
-const ChitfundPortfolio = () => {
+const ChitfundPortfolio = ({ navigation }) => {
   // Modal state for showing group details
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedModalGroup, setSelectedModalGroup] = useState(null);
   
   // Tab state for switching between Active and Completed groups
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
+  const [isLoading, setIsLoading] = useState(true);
   
-  // --- DATA (from your original component) ---
-  const [chitGroups] = useState([
-    {
-      id: 'CHT001',
-      groupName: 'Group A',
-      investmentAmount: 100000,
-      groupId: 'GRP-2024-001',
-      totalMembers: 20,
-      estimatedPayDate: '2025-09-15',
-      paymentStatus: 'pending',
-      monthlyContribution: 5000,
-      currentMonth: 8,
-      totalMonths: 20,
-    },
-    {
-      id: 'CHT002',
-      groupName: 'Group B',
-      investmentAmount: 150000,
-      groupId: 'GRP-2024-002',
-      totalMembers: 30,
-      estimatedPayDate: '2025-09-10',
-      paymentStatus: 'completed',
-      monthlyContribution: 7500,
-      currentMonth: 12,
-      totalMonths: 20,
-    },
-    {
-      id: 'CHT004',
-      groupName: 'Group D',
-      investmentAmount: 500000, // Added 5 lakh group for the example
-      groupId: 'GRP-2024-004',
-      totalMembers: 40,
-      estimatedPayDate: '2025-09-05',
-      paymentStatus: 'pending',
-      monthlyContribution: 10000,
-      currentMonth: 15,
-      totalMonths: 20,
-    },
-  ]);
+  // --- DATA ---
+  const [chitGroups, setChitGroups] = useState([]);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
 
-  // Default to selecting the first group on load
-  const [selectedGroupId, setSelectedGroupId] = useState(chitGroups.length > 0 ? chitGroups[0].id : null);
+  useEffect(() => {
+    fetchPortfolio();
+  }, []);
+
+  const fetchPortfolio = async () => {
+    try {
+      setIsLoading(true);
+      const response = await ApiService.makeRequest('/user/portfolio', { method: 'GET' });
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to load portfolio');
+      }
+
+      setChitGroups(result.data || []);
+      if (result.data?.length > 0) {
+        setSelectedGroupId(result.data[0].id);
+      }
+    } catch (error) {
+      console.error('Portfolio fetch error:', error);
+      Alert.alert('Error', error.message || 'Could not load your portfolio data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // --- CALCULATIONS ---
-  // Calculate the total value of all chits the user is in (e.g., 1L + 5L)
-  const totalChitValue = chitGroups.reduce(
-    (sum, group) => sum + group.investmentAmount,
+  // Calculate the actual total amount the user has successfully paid across all groups
+  const totalAmountInvested = chitGroups.reduce(
+    (sum, group) => sum + (Number(group.totalPaid) || 0),
     0
   );
   
   // Find the full object for the selected group
   const selectedGroup = chitGroups.find(g => g.id === selectedGroupId);
 
-  // Calculate the amount paid into the selected group so far
+  // Calculate the amount paid into the selected group so far based on approved payments
   const amountPaidInSelectedGroup = selectedGroup
-    ? selectedGroup.monthlyContribution * selectedGroup.currentMonth
+    ? (Number(selectedGroup.totalPaid) || 0)
     : 0;
 
-  // --- HELPER FUNCTIONS (from your original code) ---
+  // --- HELPER FUNCTIONS ---
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(Number(amount) || 0);
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
@@ -124,10 +116,10 @@ const ChitfundPortfolio = () => {
       nextDueDate: group.estimatedPayDate,
       totalAmount: group.investmentAmount,
       groupId: group.groupId,
+      startDate: group.startDate,
     };
   };
 
-  // Function to handle showing group details in modal
   const handleViewGroupDetails = (group) => {
     setSelectedModalGroup(group);
     setModalVisible(true);
@@ -138,11 +130,20 @@ const ChitfundPortfolio = () => {
     setSelectedModalGroup(null);
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+         <Header title="Portfolio" onBack={() => navigation?.goBack()} />
+         <ActivityIndicator size="large" color="#6B46C1" />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
         <Header 
           title="Portfolio"
-          onBack={() => {/* Add your navigation back logic here */}}
+          onBack={() => navigation?.goBack()}
         />
 
         {/* FIXED HEADER - Above the divider */}
@@ -154,7 +155,7 @@ const ChitfundPortfolio = () => {
                     {/* Total Amount Invested Card */}
                     <View style={styles.summaryCard}>
                         <Text style={styles.cardLabel}>Total Amount Invested</Text>
-                        <Text style={styles.cardValue}>{formatCurrency(totalChitValue)}</Text>
+                        <Text style={styles.cardValue}>{formatCurrency(totalAmountInvested)}</Text>
                     </View>
 
                     {/* Selected Group Card */}
@@ -243,7 +244,7 @@ const ChitfundPortfolio = () => {
                         <GroupCard 
                             key={group.id}
                             group={transformGroupData(group)}
-                            onPress={() => {}} // Disabled card press
+                            onPress={() => handleViewGroupDetails(group)}
                             onArrowPress={() => handleViewGroupDetails(group)}
                         />
                     ))

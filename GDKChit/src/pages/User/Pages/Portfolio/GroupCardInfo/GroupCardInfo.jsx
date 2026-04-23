@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   ScrollView,
   SafeAreaView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import styles from './GroupCardInfoSty';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../components/HeaderComponent/Header';
+import ApiService from '../../../../../services/ApiService';
 
 const GroupCardInfo = ({ onClose, group }) => {
   const today = new Date();
@@ -18,81 +20,67 @@ const GroupCardInfo = ({ onClose, group }) => {
 
   // Use real group data passed from Portfolio
   const groupInfo = {
-    name: group?.groupName || group?.name || 'Group A',
-    monthlyAmount: group?.monthlyContribution || group?.monthlyAmount || 5000,
-    status: group?.paymentStatus || group?.status || 'pending',
+    name: group?.name || 'Group A',
+    monthlyAmount: group?.monthlyAmount || 5000,
+    status: group?.status || 'pending',
     groupId: group?.groupId || 'GRP-2024-001',
+    startDate: group?.startDate || null,
   };
 
-  // Helper function to get last 12 months
-  const getLastMonths = () => {
-    const months = [];
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const key = date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
-      months.push({
-        key,
-        date,
-        display: date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
-      });
+  const monthNamesArray = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthKey = `${monthNamesArray[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`;
+
+  let minDate = new Date(1900, 0, 1);
+  if (groupInfo.startDate) {
+    const parseStart = new Date(groupInfo.startDate);
+    if (!isNaN(parseStart)) {
+      minDate = new Date(parseStart.getFullYear(), parseStart.getMonth(), 1);
     }
-    return months;
-  };
+  }
 
-  const availableMonths = getLastMonths();
-  const monthKey = selectedDate.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+  const currentMonthDate = new Date(today.getFullYear(), today.getMonth(), 1);
+  
+  const isPrevDisabled = selectedDate <= minDate;
+  const isNextDisabled = selectedDate >= currentMonthDate;
 
-  // Generate mock monthly data based on real group data
-  const monthlyData = {
-    'Dec 2024': {
-      status: groupInfo.status || 'pending',
-      paymentAmount: groupInfo.monthlyAmount || 5000,
-      discount: Math.floor((groupInfo.monthlyAmount || 5000) * 0.02),
-      commission: Math.floor((groupInfo.monthlyAmount || 5000) * 0.01),
-      netAmount: Math.floor((groupInfo.monthlyAmount || 5000) * 0.97),
-      dueDate: '2024-12-25',
-      auctionWinner: 'Rajesh Kumar',
-      amountTaken: (groupInfo.monthlyAmount || 5000) * 9,
-      auctionDate: '2024-12-01',
-      daysPending: 5,
-    },
-    'Nov 2024': {
-      status: 'paid',
-      paymentAmount: groupInfo.monthlyAmount || 5000,
-      discount: Math.floor((groupInfo.monthlyAmount || 5000) * 0.03),
-      commission: Math.floor((groupInfo.monthlyAmount || 5000) * 0.015),
-      netAmount: Math.floor((groupInfo.monthlyAmount || 5000) * 0.955),
-      dueDate: '2024-11-25',
-      auctionWinner: 'Priya Singh',
-      amountTaken: (groupInfo.monthlyAmount || 5000) * 8.4,
-      auctionDate: '2024-11-01',
-      paidDate: '2024-11-20',
-    },
-    'Oct 2024': {
-      status: 'paid',
-      paymentAmount: groupInfo.monthlyAmount || 5000,
-      discount: Math.floor((groupInfo.monthlyAmount || 5000) * 0.04),
-      commission: Math.floor((groupInfo.monthlyAmount || 5000) * 0.02),
-      netAmount: Math.floor((groupInfo.monthlyAmount || 5000) * 0.94),
-      dueDate: '2024-10-25',
-      auctionWinner: 'Amit Sharma',
-      amountTaken: 40000,
-      auctionDate: '2024-10-01',
-      paidDate: '2024-10-23',
-    },
-  };
+  const [monthlyData, setMonthlyData] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMonthlyInfo = async () => {
+      try {
+        setLoading(true);
+        const endpoint = `/user/portfolio/${groupInfo.groupId}/months`;
+        const response = await ApiService.makeRequest(endpoint);
+        const result = await response.json();
+        if (result.success && result.data) {
+          setMonthlyData(result.data);
+        }
+      } catch (error) {
+        console.error('Error fetching monthly data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (groupInfo.groupId) {
+      fetchMonthlyInfo();
+    } else {
+      setLoading(false);
+    }
+  }, [groupInfo.groupId]);
 
   const monthData = monthlyData[monthKey] || {
     status: 'pending',
-    paymentAmount: groupInfo.monthlyAmount || 5000,
-    discount: Math.floor((groupInfo.monthlyAmount || 5000) * 0.02),
-    commission: Math.floor((groupInfo.monthlyAmount || 5000) * 0.01),
-    netAmount: Math.floor((groupInfo.monthlyAmount || 5000) * 0.97),
-    dueDate: '2024-12-25',
+    paymentAmount: groupInfo.monthlyAmount || 0,
+    discount: 0,
+    commission: 0,
+    netAmount: groupInfo.monthlyAmount || 0,
+    dueDate: null,
     auctionWinner: 'N/A',
     amountTaken: 0,
-    auctionDate: 'N/A',
-    daysPending: 5,
+    auctionDate: null,
+    paidDate: null,
+    daysPending: 0,
   };
 
   const formatCurrency = (amount) => {
@@ -148,6 +136,11 @@ const GroupCardInfo = ({ onClose, group }) => {
         showBackButton={true}
       />
 
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+        </View>
+      ) : (
       <ScrollView 
         style={styles.content} 
         showsVerticalScrollIndicator={false}
@@ -163,10 +156,11 @@ const GroupCardInfo = ({ onClose, group }) => {
           <View style={styles.monthSelectorHeader}>
             <TouchableOpacity
               onPress={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1))}
-              style={styles.monthNavButton}
+              style={[styles.monthNavButton, isPrevDisabled && styles.monthNavButtonDisabled]}
+              disabled={isPrevDisabled}
             >
-              <MaterialCommunityIcons name="chevron-left" size={22} color="#3B82F6" />
-              <Text style={styles.monthNavButtonText}>Previous</Text>
+              <MaterialCommunityIcons name="chevron-left" size={22} color={isPrevDisabled ? '#D1D5DB' : '#3B82F6'} />
+              <Text style={[styles.monthNavButtonText, isPrevDisabled && { color: '#D1D5DB' }]}>Previous</Text>
             </TouchableOpacity>
             
             <View style={styles.monthDisplay}>
@@ -175,21 +169,21 @@ const GroupCardInfo = ({ onClose, group }) => {
                 {selectedDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
               </Text>
               {selectedDate.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) === 
-               new Date().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) && 
+               today.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) ? (
                <Text style={styles.currentMonthBadge}>(Current)</Text>
-              }
+              ) : null}
             </View>
             
             <TouchableOpacity
               onPress={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1))}
-              style={[styles.monthNavButton, selectedDate >= today && styles.monthNavButtonDisabled]}
-              disabled={selectedDate >= today}
+              style={[styles.monthNavButton, isNextDisabled && styles.monthNavButtonDisabled]}
+              disabled={isNextDisabled}
             >
-              <Text style={styles.monthNavButtonText}>Next</Text>
+              <Text style={[styles.monthNavButtonText, isNextDisabled && { color: '#D1D5DB' }]}>Next</Text>
               <MaterialCommunityIcons 
                 name="chevron-right" 
                 size={22} 
-                color={selectedDate >= today ? '#D1D5DB' : '#3B82F6'} 
+                color={isNextDisabled ? '#D1D5DB' : '#3B82F6'} 
               />
             </TouchableOpacity>
           </View>
@@ -207,18 +201,20 @@ const GroupCardInfo = ({ onClose, group }) => {
                 {monthData.status.charAt(0).toUpperCase() + monthData.status.slice(1)}
               </Text>
             </View>
-            {monthData.status === 'pending' && monthData.daysPending && (
+            {(monthData.status === 'pending' || monthData.status === 'overdue') && monthData.daysPending > 0 ? (
               <View style={styles.daysInfo}>
                 <Text style={styles.daysValue}>{monthData.daysPending}</Text>
-                <Text style={styles.daysLabel}>days left</Text>
+                <Text style={styles.daysLabel}>
+                  {monthData.status === 'overdue' ? 'days out' : 'days left'}
+                </Text>
               </View>
-            )}
-            {monthData.status === 'paid' && monthData.paidDate && (
+            ) : null}
+            {monthData.status === 'paid' && monthData.paidDate ? (
               <View style={styles.paidInfo}>
                 <Text style={styles.paidLabel}>Paid on</Text>
                 <Text style={styles.paidDate}>{formatDate(monthData.paidDate)}</Text>
               </View>
-            )}
+            ) : null}
           </View>
         </View>
 
@@ -270,10 +266,13 @@ const GroupCardInfo = ({ onClose, group }) => {
             </View>
           </View>
 
-          {monthData.status === 'pending' && (
+          {(monthData.status === 'pending' || monthData.status === 'overdue') && (
             <View style={styles.dueSection}>
               <MaterialCommunityIcons name="calendar-alert" size={16} color="#EF4444" />
-              <Text style={styles.dueTextForm}>Due by {formatDate(monthData.dueDate)}</Text>
+              <Text style={styles.dueTextForm}>
+                {monthData.status === 'overdue' ? 'Was due by ' : 'Due by '}
+                {formatDate(monthData.dueDate)}
+              </Text>
             </View>
           )}
         </View>
@@ -314,7 +313,7 @@ const GroupCardInfo = ({ onClose, group }) => {
         </View>
 
         {/* Quick Actions */}
-        {monthData.status === 'pending' && (
+        {(monthData.status === 'pending' || monthData.status === 'overdue') && (
           <View style={styles.actionSection}>
             <TouchableOpacity style={styles.payNowButton}>
               <MaterialCommunityIcons name="credit-card" size={20} color="#FFFFFF" />
@@ -329,6 +328,7 @@ const GroupCardInfo = ({ onClose, group }) => {
         )}
 
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
