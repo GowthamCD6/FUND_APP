@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../../../../../../services/ApiService';
+import Header from '../../../../../../../components/HeaderComponent/Header';
 
 // Define the maximum number of members
 const MAX_MEMBERS = 20;
@@ -302,61 +303,10 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={() => {
-        if (hasChanges) {
-          Alert.alert(
-            'Unsaved Changes',
-            'You have unsaved changes. Do you want to discard them and close?',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Discard', style: 'destructive', onPress: onClose },
-            ],
-          );
-        } else {
-          onClose();
-        }
-      }}>
+      onRequestClose={onClose}>
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => {
-              if (hasChanges) {
-                Alert.alert(
-                  'Unsaved Changes',
-                  'You have unsaved changes. Do you want to discard them and close?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Discard', style: 'destructive', onPress: onClose },
-                  ],
-                );
-              } else {
-                onClose();
-              }
-            }}
-            style={styles.backButton}>
-            <MaterialCommunityIcons
-              name="arrow-left"
-              size={24}
-              color="#374151"
-            />
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Member Registration</Text>
-            <Text style={styles.headerSubtitle}>
-              Add and manage group members
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={handleSave}
-            style={[
-              styles.saveButton,
-              !hasChanges && styles.saveButtonDisabled,
-            ]}
-            disabled={!hasChanges}>
-            <Text style={styles.saveButtonText}>Save</Text>
-          </TouchableOpacity>
-        </View>
+        <Header title="Member Registration" onBack={onClose} />
 
         {/* Group Info Card */}
         <View style={styles.groupNameCard}>

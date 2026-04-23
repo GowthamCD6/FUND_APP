@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../../../../services/ApiService';
+import Header from '../../../../../components/HeaderComponent/Header';
 
 const ManageU = ({onBack}) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -158,13 +159,7 @@ const ManageU = ({onBack}) => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Manage Users</Text>
-      </View>
-      <View style={styles.separator} />
+      <Header title="Manage Users" onBack={onBack} />
 
       {/* Search Bar */}
       <View style={customStyles.searchContainer}>
@@ -650,26 +645,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {padding: 4},
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
   },
   inputLabel: {
     fontSize: 15,

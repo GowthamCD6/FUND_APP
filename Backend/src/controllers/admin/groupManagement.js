@@ -2,153 +2,6 @@ const db = require('../../config/db')
 const bcrypt = require('bcryptjs');
 const { groupEncryptAES, groupDecryptAES, passwordEncryptAES } = require('../../utils/decryptAES');
 
-exports.createGroup = async (req, res) => {
-    const { groupName, totalMembers, groupAmount, duration, startDate } = req.body;
-
-    try {
-        const start = startDate
-            ? new Date(startDate.split('/').reverse().join('-'))
-            : null;
-
-        const generateGroupId = () => {
-            const timestamp = Date.now().toString().slice(-6);
-            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-            return `GRP${timestamp}${random}`;
-        };
-        const groupId = generateGroupId();
-
-        const end_date = start && duration
-            ? new Date(start.getFullYear(), start.getMonth() + Number(duration), start.getDate())
-            : null;
-
-
-        const plainGroupCode = String(groupId);
-        const finalGroupCode = groupEncryptAES(plainGroupCode);
-
-
-        const sql = `
-            INSERT INTO \`groups\`
-            (group_code, group_name, total_members, group_amount, duration, start_date, end_date)
-            VALUES (?,?,?,?,?,?,?)
-        `;
-        const params = [
-            finalGroupCode,
-            groupName,
-            Number(totalMembers) || null,
-            Number(groupAmount) || null,
-            Number(duration) || null,
-            start,
-            end_date,
-        ];
-
-        const [result] = await db.promise().query(sql, params);
-        const groupData = {
-            id: result.insertId,
-            group_code: groupId,
-            group_name: groupName
-        };
-        return res.status(201).json({ success: true, data: groupData });
-    } catch (error) {
-        console.error('Error creating group:', error);
-        return res.status(500).json({ success: false, message: 'Failed to create group' });
-    }
-};
-
-exports.getGroups = async (req, res) => {
-    try {
-        const [rows] = await db
-            .promise()
-            .query('SELECT * FROM `groups` ORDER BY created_at DESC');
-
-        if (!rows || rows.length === 0) {
-            return res.status(200).json({ success: true, data: [] });
-        }
-
-        // Safely decrypt; skip rows that are not AES (e.g., old bcrypt data)
-        rows.forEach(group => {
-            let activeDate = group.start_date;
-
-            // Auto activation logic based on start date
-            if (group.status === 'not-started' || group.status === 'not started') {
-                if (group.start_date) {
-                    const today = new Date();
-                    today.setHours(0,0,0,0);
-                    const stDate = new Date(group.start_date);
-                    if (stDate <= today) {
-                        group.status = 'OnGoing';
-                        // Asynchronously update DB
-                        db.promise().query("UPDATE `groups` SET status = 'OnGoing' WHERE id = ?", [group.id]).catch(console.error);
-                    }
-                }
-            }
-
-            try {
-                group.id = group.id;
-                group.name = group.group_name;
-                group.status = group.status;
-                group.totalMembers = group.total_members;
-                group.groupAmount = group.group_amount;
-                group.duration = group.duration;
-                group.currentMembers = group.current_members;
-                group.startDate = group.start_date;
-                group.endDate = group.end_date;
-                
-                // --- Dynamic Next Due Date Logic ---
-                if (group.start_date) {
-                    const st = new Date(group.start_date);
-                    const now = new Date();
-                    // How many months have passed since the start date?
-                    let elapsedMonths = (now.getFullYear() - st.getFullYear()) * 12 + (now.getMonth() - st.getMonth());
-                    
-                    // If the current day is past the start day in the current month, we are in the "next" month cycle
-                    if (now.getDate() >= st.getDate()) {
-                        elapsedMonths += 1;
-                    }
-                    
-                    // Don't exceed the total duration
-                    const maxDuration = group.duration || group.total_members || 1;
-                    elapsedMonths = Math.min(elapsedMonths, maxDuration);
-                    
-                    const nextDueDate = new Date(st.getFullYear(), st.getMonth() + elapsedMonths, st.getDate());
-                    
-                    // Format next Due Date as YYYY-MM-DD
-                    const n_dd = String(nextDueDate.getDate()).padStart(2, '0');
-                    const n_mm = String(nextDueDate.getMonth() + 1).padStart(2, '0');
-                    const n_yyyy = nextDueDate.getFullYear();
-                    group.nextDueDate = `${n_yyyy}-${n_mm}-${n_dd}`;
-                } else {
-                    group.nextDueDate = null;
-                }
-
-                // Format to standard YYYY-MM-DD so Date inputs and new Date() constructors don't fail
-                const useDate = group.start_date || group.created_at;
-                if (useDate) {
-                  const date = new Date(useDate);
-                  const dd = String(date.getDate()).padStart(2, '0');
-                  const mm = String(date.getMonth() + 1).padStart(2, '0');
-                  const yyyy = date.getFullYear();
-                  group.createdDate = `${yyyy}-${mm}-${dd}`;
-                  group.startDate = `${yyyy}-${mm}-${dd}`;
-                } else {
-                  group.createdDate = '';
-                  group.startDate = '';
-                }
-                
-                group.groupCode = groupDecryptAES(group.group_code);
-            } catch {
-                // leave as-is if not AES-encrypted
-            }
-        });
-        // console.log(rows);
-        
-        
-        return res.status(200).json({ success: true, data: rows });
-    } catch (error) {
-        console.error('Error fetching groups:', error);
-        return res.status(500).json({ success: false, message: 'Failed to fetch groups' });
-    }
-};
-
 exports.getAdminNotifications = async (req, res) => {
     try {
         const [rows] = await db.promise().query(
@@ -399,10 +252,36 @@ exports.activateGroup = async (req, res) => {
     }
 
     try {
+        // First check the group's start date
+        const [[group]] = await db.promise().query('SELECT start_date FROM `groups` WHERE id = ?', [groupId]);
+        
+        if (!group) {
+            return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+
+        if (group.start_date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const stDate = new Date(group.start_date);
+            stDate.setHours(0, 0, 0, 0);
+            
+            // Allow manual activation 1 day before the start date
+            const minActivationDate = new Date(stDate);
+            minActivationDate.setDate(minActivationDate.getDate() - 1);
+            
+            if (today < minActivationDate) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Cannot manually activate this group yet. You can activate it starting from ${minActivationDate.toLocaleDateString()} (1 day before start date).` 
+                });
+            }
+        }
+
         const sql = `UPDATE \`groups\` SET status = 'OnGoing' WHERE id = ?`;
         const [result] = await db.promise().query(sql, [groupId]);
         if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Group not found' });
+            return res.status(404).json({ success: false, message: 'Group failed to update' });
         }
         return res.status(200).json({ success: true, message: 'Group activated successfully' });
     } catch (error) {

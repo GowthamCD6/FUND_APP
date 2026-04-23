@@ -12,6 +12,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import styles from './ManageGsty';
 import GroupInfoAdmin from './GroupManagement/GroupInfo.jsx';
 import ApiService from '../../../../../services/ApiService';
+import Header from '../../../../../components/HeaderComponent/Header';
 
 const ManageGroups = ({onBack}) => {
   const [activeTab, setActiveTab] = useState('Active');
@@ -258,7 +259,7 @@ const ManageGroups = ({onBack}) => {
               setLongPressedGroup(null);
             } catch (error) {
               console.error('Error activating group:', error);
-              Alert.alert('Error', 'Failed to activate group. Please try again later.');
+              Alert.alert('Error', error.message || 'Failed to activate group. Please try again later.');
             }
           },
         },
@@ -467,18 +468,7 @@ const ManageGroups = ({onBack}) => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <MaterialCommunityIcons
-              name="arrow-left"
-              size={24}
-              color="#212121"
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Manage Groups</Text>
-        </View>
-      </View>
+      <Header title="Manage Groups" onBack={onBack} />
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>

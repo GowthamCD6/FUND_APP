@@ -2,13 +2,17 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const groupManagement = require('../controllers/admin/groupManagement');
+const manageGroupController = require('../controllers/admin/manageGroupController');
 const groupMessaging = require('../controllers/admin/groupMessaging');
 const monthlyCollection = require('../controllers/admin/monthlyCollection');
 const userManagement = require('../controllers/admin/userManagement');
 const reportsController = require('../controllers/admin/reportsController');
 
-router.post('/groups/createGroup', authenticateToken, groupManagement.createGroup);
-router.get('/groups/getGroups', authenticateToken, groupManagement.getGroups);
+// Using the new Manage Group separate controller page
+router.post('/groups/createGroup', authenticateToken, manageGroupController.createGroup);
+router.get('/groups/getGroups', authenticateToken, manageGroupController.getGroups);
+
+// Group Info internals
 router.post('/groups/updateGroup', authenticateToken, groupManagement.updateGroup);
 
 router.post('/groups/addMembers', authenticateToken, groupManagement.addGroupMembers);

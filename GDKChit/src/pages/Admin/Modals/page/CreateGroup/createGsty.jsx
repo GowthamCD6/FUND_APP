@@ -6,29 +6,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    marginTop: -10,
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#d7dce4ff',
-  },
   scrollContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',

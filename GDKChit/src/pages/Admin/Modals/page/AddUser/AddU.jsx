@@ -11,6 +11,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LottieView from 'lottie-react-native';
 import styles from './AddUsty';
 import ApiService from '../../../../../services/ApiService';
+import Header from '../../../../../components/HeaderComponent/Header';
 
 export default function AddUser({ onBack }) {
   const [formData, setFormData] = useState({
@@ -113,13 +114,7 @@ export default function AddUser({ onBack }) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#212121" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add New User</Text>
-      </View>
-      <View style={styles.separator} />
+      <Header title="Add New User" onBack={onBack} />
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>

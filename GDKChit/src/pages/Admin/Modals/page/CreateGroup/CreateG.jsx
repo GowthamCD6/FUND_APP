@@ -12,6 +12,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import DateTimePicker from '@react-native-community/datetimepicker';
 import styles from './createGsty';
 import ApiService from '../../../../../services/ApiService';
+import Header from '../../../../../components/HeaderComponent/Header';
 
 const CreateGroup = ({ onBack, navigation }) => {
   const [groupData, setGroupData] = useState({
@@ -162,14 +163,7 @@ const CreateGroup = ({ onBack, navigation }) => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#212121" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create New Group</Text>
-      </View>
-
-      <View style={styles.separator} />
+      <Header title="Create New Group" onBack={onBack} />
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>

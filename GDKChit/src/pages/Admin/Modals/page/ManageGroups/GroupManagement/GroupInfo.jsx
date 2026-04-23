@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   Modal,
+  ScrollView,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import pageStyles from '../ManageGsty';
@@ -14,6 +15,7 @@ import EditModal from './Modal/EditModal';
 import PaymentD from './Modal/PaymentD';
 import AuctionW from './Modal/AuctionW';
 import ApiService from '../../../../../../services/ApiService'; 
+import Header from '../../../../../../components/HeaderComponent/Header';
 
 const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [currentMonth, setCurrentMonth] = useState(0); // 0 = current, -1 = previous
@@ -489,23 +491,14 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={pageStyles.header}>
-        <View style={pageStyles.headerContent}>
-          <TouchableOpacity onPress={onBack} style={pageStyles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#212121" />
-          </TouchableOpacity>
-          <View>
-            <Text style={pageStyles.headerTitle}>Group Management</Text>
-          </View>
-        </View>
-      </View>
+      <Header title="Group Management" onBack={onBack} />
 
         {/* Page intro below header (non-scrollable) */}
         <View style={styles.pageHeader}>
           <Text style={styles.pageHeaderSubtext}>Manage your group details and settings</Text>
         </View>
 
-  <View style={styles.scrollContainer}>
+  <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContentContainer} showsVerticalScrollIndicator={false}>
         {/* Group Info Card */}
         <View style={styles.listContainer}>
           <View style={pageStyles.groupCard}>
@@ -664,100 +657,9 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
               />
             </TouchableOpacity>
           </View>
-
-
-          {/* Previous Month Data */}
-          {currentMonthData && (
-            <View style={styles.section}>
-              <TouchableOpacity
-                onPress={() => toggleSection('history')}
-                style={styles.sectionHeader}
-              >
-                <View style={styles.sectionHeaderLeft}>
-                  <View style={[styles.sectionIcon, { backgroundColor: '#D1FAE5' }]}>
-                    <MaterialCommunityIcons name="history" size={20} color="#10B981" />
-                  </View>
-                  <View>
-                    <Text style={styles.sectionTitle}>Saved Month Data</Text>
-                    <Text style={styles.sectionSubtitle}>Previously saved information</Text>
-                  </View>
-                </View>
-                <MaterialCommunityIcons
-                  name={expandedSections.history ? "chevron-up" : "chevron-down"}
-                  size={24}
-                  color="#6B7280"
-                />
-              </TouchableOpacity>
-
-              {expandedSections.history && (
-                <View style={styles.sectionContent}>
-                  <View style={styles.historyGrid}>
-                    <View style={styles.historyCard}>
-                      <Text style={styles.historyCardLabel}>Amount</Text>
-                      <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.amount)}</Text>
-                    </View>
-                    <View style={styles.historyCard}>
-                      <Text style={styles.historyCardLabel}>Discount</Text>
-                      <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.discount)}</Text>
-                    </View>
-                    <View style={styles.historyCard}>
-                      <Text style={styles.historyCardLabel}>Commission</Text>
-                      <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.commission)}</Text>
-                    </View>
-                  </View>
-
-                  {currentMonthData.winner && (
-                    <View style={styles.winnerDetailsCard}>
-                      <Text style={styles.winnerDetailsTitle}>Winner Details</Text>
-                      <Text style={styles.winnerDetailsText}>
-                        <Text style={styles.winnerDetailsLabel}>Name: </Text>
-                        {currentMonthData.winner.name}
-                      </Text>
-                      <Text style={styles.winnerDetailsText}>
-                        <Text style={styles.winnerDetailsLabel}>Amount: </Text>
-                        {formatCurrency(currentMonthData.winner.amountTaken)}
-                      </Text>
-                      <Text style={styles.winnerDetailsText}>
-                        <Text style={styles.winnerDetailsLabel}>Date: </Text>
-                        {formatDateForDisplay(currentMonthData.winner.date)}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.historyMembersContainer}>
-                    <Text style={styles.historyMembersTitle}>
-                      Member Payments ({currentMonthData.mappedMembers.length})
-                    </Text>
-                    {currentMonthData.mappedMembers.map((member, idx) => (
-                      <View key={idx} style={styles.historyMemberCard}>
-                        <View>
-                          <Text style={styles.historyMemberName}>{member.name}</Text>
-                          <Text style={styles.historyMemberPhone}>{member.memberId}</Text>
-                        </View>
-                        <View style={styles.historyMemberRight}>
-                          <Text style={styles.historyMemberAmount}>{formatCurrency(member.amount)}</Text>
-                          <View style={[
-                            styles.historyMemberStatus,
-                            { backgroundColor: member.status === 'paid' ? '#D1FAE5' : '#FEF3C7' }
-                          ]}>
-                            <Text style={[
-                              styles.historyMemberStatusText,
-                              { color: member.status === 'paid' ? '#10B981' : '#F59E0B' }
-                            ]}>
-                              {member.status}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
         </View>
 
-      </View>
+      </ScrollView>
 
       {/* Auction winner date picker moved into AuctionW modal */}
 
