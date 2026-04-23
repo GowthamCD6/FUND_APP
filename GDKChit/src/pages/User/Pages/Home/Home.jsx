@@ -15,6 +15,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LottieView from 'lottie-react-native';
 import ChitPlans from './Chit Plans/ChitPlans';
 import styles from './Homesty';
+import ApiService from '../../../../services/ApiService';
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +32,27 @@ const Home = () => {
   const scrollTimer = useRef(null);
   const mainScrollRef = useRef(null);
   const plansLayoutY = useRef(0);
+
+  // Notifications State
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Fetch Notifications
+  const fetchNotifications = async () => {
+    try {
+      const response = await ApiService.makeRequest('/user/notifications', { method: 'GET' });
+      const result = await response.json();
+      if (result.success) {
+        setNotifications(result.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   // Scroll to Popular Plans section
   const scrollToPlans = () => {
@@ -278,15 +300,17 @@ const Home = () => {
               <Text style={styles.welcomeText}>Welcome Back!</Text>
               <Text style={styles.userName}>Gowtham</Text>
             </View>
-            <TouchableOpacity style={styles.notificationButton}>
+            <TouchableOpacity style={styles.notificationButton} onPress={() => setShowNotifications(true)}>
               <MaterialCommunityIcons
                 name="bell-outline"
                 size={24}
                 color="#1A2A4E"
               />
-              <View style={styles.notificationBadge}>
-                <Text style={styles.badgeText}>3</Text>
-              </View>
+              {notifications.length > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.badgeText}>{notifications.length}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -468,6 +492,53 @@ const Home = () => {
           onClose={() => setShowAllPlans(false)}
           initialPlanIndex={selectedPlanIndex}
         />
+      </Modal>
+
+      {/* Notifications Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showNotifications}
+        onRequestClose={() => setShowNotifications(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: width * 0.9, maxHeight: '80%', backgroundColor: '#fff', borderRadius: 16, padding: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>Notifications</Text>
+              <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {notifications.length > 0 ? (
+                notifications.map((notif, index) => (
+                  <View key={index} style={{ marginBottom: 15, padding: 15, backgroundColor: notif.type === 'danger' ? '#FEF2F2' : '#FFFBEB', borderRadius: 12, borderWidth: 1, borderColor: notif.type === 'danger' ? '#FECACA' : '#FEF3C7' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                      <MaterialCommunityIcons 
+                        name={notif.type === 'danger' ? 'alert-circle' : 'clock-alert'} 
+                        size={20} 
+                        color={notif.type === 'danger' ? '#EF4444' : '#F59E0B'} 
+                        style={{ marginRight: 8 }} 
+                      />
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: notif.type === 'danger' ? '#991B1B' : '#B45309' }}>
+                        {notif.title}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 14, color: '#4B5563', lineHeight: 20 }}>
+                      {notif.message}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <View style={{ padding: 30, alignItems: 'center' }}>
+                  <MaterialCommunityIcons name="bell-sleep" size={48} color="#D1D5DB" />
+                  <Text style={{ marginTop: 15, color: '#6B7280', fontSize: 16 }}>No new notifications</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );

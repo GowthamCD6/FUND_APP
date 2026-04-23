@@ -4,7 +4,6 @@ const { passwordEncryptAES } = require('../../utils/decryptAES');
 
 exports.addUser = async (req, res) => {
     const { name, phoneNumber, yearOfBirth, role } = req.body;
-    const nick_name = name || null;
     const phone = phoneNumber || null;
     const yob = yearOfBirth || null;
 
@@ -29,8 +28,8 @@ exports.addUser = async (req, res) => {
         const [result] = await db
             .promise()
             .query(
-                'INSERT INTO users (nick_name, phone, password, role) VALUES (?, ?, ?, ?)',
-                [nick_name, phone, finalHashedPassword, role || null]
+                'INSERT INTO users (name, phone, password, role) VALUES (?, ?, ?, ?)',
+                [name || null, phone, finalHashedPassword, role || 'User']
             );
 
         if (result.affectedRows === 0) {
@@ -68,5 +67,31 @@ exports.getAllUsers = async (req, res) => {
     } catch (error) {
         console.error('Error fetching users:', error);
         return res.status(500).json({ success: false, message: 'Failed to fetch users' });
+    }
+};
+
+exports.deleteUser = async (req, res) => {
+    const { userId } = req.body;
+    
+    if (!userId) {
+        return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    try {
+        // Perform deletion
+        const [result] = await db.promise().query('DELETE FROM users WHERE id = ?', [userId]);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        
+        return res.status(200).json({ success: true, message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        // Handle foreign key constraint error gracefully if they are assigned to a group
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(409).json({ success: false, message: 'Cannot delete user because they are part of a group' });
+        }
+        return res.status(500).json({ success: false, message: 'Failed to delete user' });
     }
 };

@@ -19,9 +19,11 @@ router.post('/groups/delete', authenticateToken, groupManagement.deleteGroup);
 router.post('/groups/saveMonthlyDetails', authenticateToken, groupManagement.saveGroupMonthlyDetails);
 router.post('/groups/saveAuctionWinner', authenticateToken, groupManagement.saveAuctionWinner);
 router.get('/groups/getMonthlySnapshot', authenticateToken, groupManagement.getGroupMonthSnapshot);
+router.get('/notifications', authenticateToken, groupManagement.getAdminNotifications);
 
 router.post('/users/addUser', authenticateToken, userManagement.addUser);
 router.get('/users/getAllUsers', authenticateToken, userManagement.getAllUsers);
+router.post('/users/deleteUser', authenticateToken, userManagement.deleteUser);
 
 router.get('/collections/getMemberHistory', authenticateToken, monthlyCollection.getMemberPaymentHistory);
 

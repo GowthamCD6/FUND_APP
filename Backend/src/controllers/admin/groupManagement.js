@@ -66,6 +66,8 @@ exports.getGroups = async (req, res) => {
 
         // Safely decrypt; skip rows that are not AES (e.g., old bcrypt data)
         rows.forEach(group => {
+            let activeDate = group.start_date;
+
             // Auto activation logic based on start date
             if (group.status === 'not-started' || group.status === 'not started') {
                 if (group.start_date) {
@@ -90,6 +92,34 @@ exports.getGroups = async (req, res) => {
                 group.currentMembers = group.current_members;
                 group.startDate = group.start_date;
                 group.endDate = group.end_date;
+                
+                // --- Dynamic Next Due Date Logic ---
+                if (group.start_date) {
+                    const st = new Date(group.start_date);
+                    const now = new Date();
+                    // How many months have passed since the start date?
+                    let elapsedMonths = (now.getFullYear() - st.getFullYear()) * 12 + (now.getMonth() - st.getMonth());
+                    
+                    // If the current day is past the start day in the current month, we are in the "next" month cycle
+                    if (now.getDate() >= st.getDate()) {
+                        elapsedMonths += 1;
+                    }
+                    
+                    // Don't exceed the total duration
+                    const maxDuration = group.duration || group.total_members || 1;
+                    elapsedMonths = Math.min(elapsedMonths, maxDuration);
+                    
+                    const nextDueDate = new Date(st.getFullYear(), st.getMonth() + elapsedMonths, st.getDate());
+                    
+                    // Format next Due Date as YYYY-MM-DD
+                    const n_dd = String(nextDueDate.getDate()).padStart(2, '0');
+                    const n_mm = String(nextDueDate.getMonth() + 1).padStart(2, '0');
+                    const n_yyyy = nextDueDate.getFullYear();
+                    group.nextDueDate = `${n_yyyy}-${n_mm}-${n_dd}`;
+                } else {
+                    group.nextDueDate = null;
+                }
+
                 // Format to standard YYYY-MM-DD so Date inputs and new Date() constructors don't fail
                 const useDate = group.start_date || group.created_at;
                 if (useDate) {
@@ -116,6 +146,85 @@ exports.getGroups = async (req, res) => {
     } catch (error) {
         console.error('Error fetching groups:', error);
         return res.status(500).json({ success: false, message: 'Failed to fetch groups' });
+    }
+};
+
+exports.getAdminNotifications = async (req, res) => {
+    try {
+        const [rows] = await db.promise().query(
+            "SELECT group_name, start_date, duration FROM `groups` WHERE status = 'OnGoing' OR status = 'not-started' OR status = 'not started'"
+        );
+
+        const notifications = [];
+        
+        rows.forEach(group => {
+            if (group.start_date) {
+                const st = new Date(group.start_date);
+                const now = new Date();
+                now.setHours(0,0,0,0);
+                
+                let elapsedMonths = (now.getFullYear() - st.getFullYear()) * 12 + (now.getMonth() - st.getMonth());
+                if (now.getDate() >= st.getDate()) {
+                    elapsedMonths += 1;
+                }
+                
+                // If it hasn't even started yet (0 month cycle):
+                if (st > now) {
+                    const timeDiff = st.getTime() - now.getTime();
+                    const daysAway = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                    if (daysAway === 3) {
+                        notifications.push({
+                            id: `admin-notif-${group.group_name}-start-3`,
+                            type: 'warning',
+                            title: 'New Group Starting Soon',
+                            message: `Group "${group.group_name}" is scheduled to start its first cycle in 3 days (${st.toLocaleDateString()}). Prepare initial configurations.`,
+                            date: new Date().toISOString()
+                        });
+                    } else if (daysAway === 0) {
+                        notifications.push({
+                            id: `admin-notif-${group.group_name}-start-0`,
+                            type: 'danger',
+                            title: 'New Group Starts Today!',
+                            message: `Group "${group.group_name}" officially starts today. Ensure members are added and auction is ready.`,
+                            date: new Date().toISOString()
+                        });
+                    }
+                } else {
+                    // Ongoing cycles
+                    const maxDuration = group.duration || 1;
+                    if (elapsedMonths <= maxDuration) {
+                        const nextDueDate = new Date(st.getFullYear(), st.getMonth() + elapsedMonths, st.getDate());
+                        nextDueDate.setHours(0,0,0,0);
+                        
+                        const timeDiff = nextDueDate.getTime() - now.getTime();
+                        const daysAway = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                        
+                        if (daysAway === 3) {
+                            notifications.push({
+                                id: `admin-notif-${group.group_name}-3`,
+                                type: 'warning',
+                                title: 'Cycle Renewal Incoming',
+                                message: `The next cycle for "${group.group_name}" begins in 3 days (${nextDueDate.toLocaleDateString()}). Remind users and prepare next month details.`,
+                                date: new Date().toISOString()
+                            });
+                        } else if (daysAway === 0) {
+                            notifications.push({
+                                id: `admin-notif-${group.group_name}-0`,
+                                type: 'danger',
+                                title: 'New Cycle Today!',
+                                message: `The next cycle for "${group.group_name}" is today. Ensure group monthly details are filled out for collection!`,
+                                date: new Date().toISOString()
+                            });
+                        }
+                    }
+                }
+            }
+        });
+
+        res.json({ success: true, data: notifications });
+    } catch (error) {
+        console.error('Error fetching admin notifications:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
 

@@ -10,6 +10,7 @@ import {
   Pressable,
   Platform,
   KeyboardAvoidingView,
+  Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../../../../services/ApiService';
@@ -130,9 +131,28 @@ const ManageU = ({onBack}) => {
     setShowEditModal(false);
   };
 
-  const confirmDelete = () => {
-    setUsers(users.filter(user => user.id !== selectedUser.id));
-    setShowDeleteModal(false);
+  const confirmDelete = async () => {
+    if (!selectedUser?.id) return;
+    
+    try {
+      const response = await ApiService.makeRequest('/admin/users/deleteUser', {
+        method: 'POST',
+        body: JSON.stringify({ userId: selectedUser.id }),
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setUsers(users.filter(user => user.id !== selectedUser.id));
+        Alert.alert('Success', 'User deleted successfully');
+      } else {
+        Alert.alert('Error', data.message || 'Failed to delete user');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      Alert.alert('Error', 'An error occurred while deleting the user');
+    } finally {
+      setShowDeleteModal(false);
+    }
   };
 
   return (

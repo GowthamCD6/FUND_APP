@@ -17,6 +17,7 @@ exports.getPortfolio = async (req, res) => {
         g.group_name, 
         g.group_amount, 
         g.total_members,
+        g.current_members,
         g.duration, 
         g.start_date, 
         g.end_date, 
@@ -66,6 +67,7 @@ exports.getPortfolio = async (req, res) => {
         investmentAmount: toSafeNumber(row.group_amount, 0),
         totalPaid: toSafeNumber(row.total_paid, 0),
         totalMembers,
+        currentMembers: toSafeNumber(row.current_members, 0),
         startDate: row.start_date || null,
         estimatedPayDate: estimatedPayDate || 'N/A',
         paymentStatus: reportStatus,
@@ -78,6 +80,72 @@ exports.getPortfolio = async (req, res) => {
     res.json({ success: true, data: chitGroups });
   } catch (error) {
     console.error('Error fetching portfolio:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+exports.getNotifications = async (req, res) => {
+  const userId = req.user.userId || req.user.id;
+
+  try {
+    const [rows] = await db.promise().query(
+      `
+      SELECT 
+        g.group_name, 
+        g.start_date,
+        g.duration
+      FROM user_grouping ug
+      INNER JOIN \`groups\` g ON ug.group_id = g.id
+      WHERE ug.user_id = ? AND g.status = 'OnGoing'
+      `,
+      [userId]
+    );
+
+    const notifications = [];
+
+    rows.forEach(group => {
+      if (group.start_date) {
+        const st = new Date(group.start_date);
+        const now = new Date();
+        now.setHours(0,0,0,0);
+        
+        let elapsedMonths = (now.getFullYear() - st.getFullYear()) * 12 + (now.getMonth() - st.getMonth());
+        if (now.getDate() >= st.getDate()) {
+            elapsedMonths += 1;
+        }
+        
+        const maxDuration = group.duration || 1;
+        if (elapsedMonths <= maxDuration) {
+          const nextDueDate = new Date(st.getFullYear(), st.getMonth() + elapsedMonths, st.getDate());
+          nextDueDate.setHours(0,0,0,0);
+          
+          const timeDiff = nextDueDate.getTime() - now.getTime();
+          const daysAway = Math.ceil(timeDiff / (1000 * 3600 * 24));
+          
+          if (daysAway === 3) {
+            notifications.push({
+              id: `notif-${group.group_name}-3`,
+              type: 'warning',
+              title: 'Upcoming Payment Reminder',
+              message: `The next cycle for "${group.group_name}" is due in exactly 3 days (${nextDueDate.toLocaleDateString()}). Please make sure you're prepared.`,
+              date: new Date().toISOString()
+            });
+          } else if (daysAway === 0) {
+            notifications.push({
+              id: `notif-${group.group_name}-0`,
+              type: 'danger',
+              title: 'Payment Due Today!',
+              message: `The payment cycle for "${group.group_name}" is due today. Head to your group dashboard to proceed.`,
+              date: new Date().toISOString()
+            });
+          }
+        }
+      }
+    });
+
+    res.json({ success: true, data: notifications });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };

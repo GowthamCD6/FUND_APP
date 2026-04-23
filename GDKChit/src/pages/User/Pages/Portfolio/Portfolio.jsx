@@ -105,18 +105,36 @@ const ChitfundPortfolio = ({ navigation }) => {
 
   // Function to transform Portfolio data to GroupCard format
   const transformGroupData = (group) => {
+    let dynamicNextDue = group.estimatedPayDate;
+    
+    if (group.startDate) {
+      const st = new Date(group.startDate);
+      // Determine the start date of the current active cycle
+      const cycleIndex = Math.max(0, (group.currentMonth || 1) - 1);
+      const currentCycleStart = new Date(st.getFullYear(), st.getMonth() + cycleIndex, st.getDate());
+      
+      // Next due date is 20 days after the exact cycle start date
+      const cycleDue = new Date(currentCycleStart);
+      cycleDue.setDate(cycleDue.getDate() + 20);
+      
+      dynamicNextDue = cycleDue.toISOString().split('T')[0];
+    }
+
     return {
       id: group.id,
       name: group.groupName,
       status: group.paymentStatus,
       totalMembers: group.totalMembers,
+      currentMembers: group.currentMembers,
       monthlyAmount: group.monthlyContribution,
       completedCycles: group.currentMonth,
       totalCycles: group.totalMonths,
-      nextDueDate: group.estimatedPayDate,
+      nextDueDate: dynamicNextDue,
+      completedDate: group.estimatedPayDate,
       totalAmount: group.investmentAmount,
       groupId: group.groupId,
       startDate: group.startDate,
+      collectedAmount: group.totalPaid || 0,
     };
   };
 
