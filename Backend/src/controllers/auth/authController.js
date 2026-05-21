@@ -187,13 +187,20 @@ exports.refreshToken = async (req, res) => {
     db.query(checkTokenSql, [refreshToken, decoded.userId], (err, results) => {
       if (err) {
         console.error('Database error:', err);
+        if (err.code === 'ER_NO_SUCH_TABLE') {
+          return res.status(500).json({
+            success: false,
+            message: 'Refresh token store not configured'
+          });
+        }
+
         return res.status(500).json({
           success: false,
           message: 'Server error'
         });
       }
 
-      if (results.length === 0) {
+      if (!results || results.length === 0) {
         return res.status(403).json({
           success: false,
           message: 'Invalid or expired refresh token'
@@ -203,7 +210,7 @@ exports.refreshToken = async (req, res) => {
       // Get user details
       const getUserSql = 'SELECT * FROM users WHERE id = ?';
       db.query(getUserSql, [decoded.userId], (err, userResults) => {
-        if (err || userResults.length === 0) {
+        if (err || !userResults || userResults.length === 0) {
           return res.status(500).json({
             success: false,
             message: 'User not found'

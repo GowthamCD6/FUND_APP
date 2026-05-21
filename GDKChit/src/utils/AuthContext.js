@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }) => {
           setUser(null);
         }
       } else {
+        await ApiService.clearTokens();
         setIsAuthenticated(false);
         setUser(null);
       }

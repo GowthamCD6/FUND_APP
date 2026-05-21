@@ -584,6 +584,23 @@ const ManageU = ({onBack}) => {
                   </Text>
                 </View>
               </View>
+
+              {/* Contributed Groups */}
+              <View style={customStyles.inputGroup}>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="account-group-outline"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Contributed Groups</Text>
+                </View>
+                <View style={[customStyles.viewDataContainer, { minHeight: 60, paddingVertical: 10 }]}>
+                  <Text style={[customStyles.viewDataText, { lineHeight: 22 }]}>
+                    {selectedUser?.contributedGroups || 'None'}
+                  </Text>
+                </View>
+              </View>
             </ScrollView>
 
             <View style={customStyles.modalActions}> 

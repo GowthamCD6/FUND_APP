@@ -47,7 +47,19 @@ exports.getAllUsers = async (req, res) => {
     try {
         console.log("Fetching all users");
         
-        const results = await db.promise().query('SELECT id, name, nick_name, phone, mail, role, created_at FROM users');
+        const query = `
+            SELECT 
+                u.id, u.name, u.nick_name, u.phone, u.mail, u.role, u.created_at,
+                (
+                    SELECT GROUP_CONCAT(g.group_name SEPARATOR ', ')
+                    FROM user_grouping ug
+                    JOIN \`groups\` g ON ug.group_id = g.id
+                    WHERE ug.user_id = u.id
+                ) AS contributed_groups
+            FROM users u
+        `;
+        const results = await db.promise().query(query);
+        
         const users = results[0].map(user => ({
             id: user.id,
             name: user.name,
@@ -56,7 +68,8 @@ exports.getAllUsers = async (req, res) => {
             email: user.mail,
             type: user.role,
             joinedDate: user.created_at,
-            dateOfBirth: '00-00-0000'
+            dateOfBirth: '00-00-0000',
+            contributedGroups: user.contributed_groups || 'None'
         }));
         if (!users || users.length === 0) {
             return res.status(200).json({ success: true, data: [] });

@@ -86,6 +86,7 @@ class ApiService {
 
     const makeCall = async (token) => {
       const headers = {
+        Accept: 'application/json',
         'Content-Type': 'application/json',
         ...options.headers,
       };
@@ -106,12 +107,19 @@ class ApiService {
 
       // If token expired, try to refresh and retry
       if (response.status === 401 || response.status === 403) {
+        const refreshToken = await this.getRefreshToken();
+        if (!refreshToken) {
+          await this.clearTokens();
+          throw new Error('Session invalid: no refresh token available. Please login again.');
+        }
+
         try {
           accessToken = await this.refreshAccessToken();
           response = await makeCall(accessToken);
         } catch (refreshError) {
           // Refresh failed, redirect to login
-          throw new Error('Authentication failed');
+          console.error('Refresh failed while requesting', url, refreshError);
+          throw new Error(refreshError.message || 'Authentication failed');
         }
       }
 
@@ -159,6 +167,9 @@ class ApiService {
 
       if (data.success) {
         await this.saveTokens(data.data.accessToken, data.data.refreshToken);
+        if (!data.data.refreshToken) {
+          console.warn('Login response did not include a refresh token.');
+        }
         return data;
       } else {
         throw new Error(data.message || 'Login failed');
@@ -224,7 +235,8 @@ class ApiService {
   // Check if user is authenticated
   async isAuthenticated() {
     const accessToken = await this.getAccessToken();
-    return !!accessToken;
+    const refreshToken = await this.getRefreshToken();
+    return !!accessToken && !!refreshToken;
   }
 }
 
