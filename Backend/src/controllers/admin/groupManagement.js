@@ -378,6 +378,17 @@ exports.saveGroupMonthlyDetails = async (req, res) => {
             ],
         );
 
+        // Update all pending `monthly_collections` rows for this group/month with the requested net amount
+        const netAmount = (Number(currentMonthAmount) || 0) + (Number(commission) || 0) - (Number(elathThalupadi) || 0);
+        await db.promise().query(
+            `
+            UPDATE monthly_collections 
+            SET amount = ? 
+            WHERE group_id = ? AND month = ? AND year = ? AND status = 'pending'
+            `,
+            [netAmount, groupIdNum, monthNum, yearNum]
+        );
+
         return res.status(200).json({
             success: true,
             data: {

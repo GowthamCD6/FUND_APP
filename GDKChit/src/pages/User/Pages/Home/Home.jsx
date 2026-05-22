@@ -50,6 +50,11 @@ const Home = () => {
     }
   };
 
+  const handleOpenNotifications = async () => {
+    await fetchNotifications();
+    setShowNotifications(true);
+  };
+
   useEffect(() => {
     fetchNotifications();
   }, []);
@@ -300,7 +305,7 @@ const Home = () => {
               <Text style={styles.welcomeText}>Welcome Back!</Text>
               <Text style={styles.userName}>Gowtham</Text>
             </View>
-            <TouchableOpacity style={styles.notificationButton} onPress={() => setShowNotifications(true)}>
+            <TouchableOpacity style={styles.notificationButton} onPress={handleOpenNotifications}>
               <MaterialCommunityIcons
                 name="bell-outline"
                 size={24}

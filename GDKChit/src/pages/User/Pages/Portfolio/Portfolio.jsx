@@ -109,15 +109,17 @@ const ChitfundPortfolio = ({ navigation }) => {
     
     if (group.startDate) {
       const st = new Date(group.startDate);
-      // Determine the start date of the current active cycle
-      const cycleIndex = Math.max(0, (group.currentMonth || 1) - 1);
-      const currentCycleStart = new Date(st.getFullYear(), st.getMonth() + cycleIndex, st.getDate());
-      
-      // Next due date is 20 days after the exact cycle start date
-      const cycleDue = new Date(currentCycleStart);
-      cycleDue.setDate(cycleDue.getDate() + 20);
-      
-      dynamicNextDue = cycleDue.toISOString().split('T')[0];
+      if (!isNaN(st.getTime())) {
+        const paidCycles = Math.max(0, Number(group.currentMonth) || 0);
+        const nextCycleIndex = group.paymentStatus === 'completed' ? paidCycles - 1 : paidCycles;
+        const cycleIndex = Math.max(0, nextCycleIndex);
+        const nextCycleStart = new Date(st.getFullYear(), st.getMonth() + cycleIndex, st.getDate());
+
+        const cycleDue = new Date(nextCycleStart);
+        cycleDue.setDate(cycleDue.getDate() + 20);
+
+        dynamicNextDue = cycleDue.toISOString().split('T')[0];
+      }
     }
 
     return {

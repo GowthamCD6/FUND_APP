@@ -71,27 +71,65 @@ const GroupCardInfo = ({ onClose, group }) => {
 
   const monthData = monthlyData[monthKey] || {
     status: 'pending',
-    paymentAmount: groupInfo.monthlyAmount || 0,
-    discount: 0,
-    commission: 0,
-    netAmount: groupInfo.monthlyAmount || 0,
+    paymentAmount: null,
+    discount: null,
+    commission: null,
+    netAmount: null,
     dueDate: null,
-    auctionWinner: 'N/A',
-    amountTaken: 0,
+    auctionWinner: null,
+    amountTaken: null,
     auctionDate: null,
     paidDate: null,
     daysPending: 0,
   };
 
+  const computeDefaultDueDate = (monthDate, startDate) => {
+    if (!startDate || !monthDate) return null;
+    const start = new Date(startDate);
+    if (isNaN(start.getTime())) return null;
+
+    const day = start.getDate();
+    const dueDay = day > 1 ? day - 1 : 0;
+
+    let dueDate;
+    if (dueDay > 0) {
+      dueDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), dueDay);
+    } else {
+      dueDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), 0);
+    }
+
+    return dueDate.toISOString().split('T')[0];
+  };
+
+  const effectiveDueDate = monthData.dueDate || computeDefaultDueDate(selectedDate, groupInfo.startDate);
+
   const formatCurrency = (amount) => {
-    if (amount == null || isNaN(amount)) return '₹0';
+    if (amount == null || amount === '' || isNaN(amount)) return 'nil';
     return `₹${amount.toLocaleString('en-IN')}`;
   };
 
+  const displayNil = (value) => {
+    if (value == null || value === '') return 'nil';
+    return String(value);
+  };
+
+  const getAmountToPay = () => {
+    if (monthData.paymentAmount != null && !isNaN(monthData.paymentAmount)) {
+      return monthData.paymentAmount;
+    }
+    if (monthData.netAmount != null && !isNaN(monthData.netAmount)) {
+      return monthData.netAmount;
+    }
+    return null;
+  };
+
+  const amountToPayThisMonth = getAmountToPay();
+
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return 'nil';
     try {
       const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
       return date.toLocaleDateString('en-IN', {
         day: 'numeric',
         month: 'short',
@@ -231,7 +269,7 @@ const GroupCardInfo = ({ onClose, group }) => {
             <Text style={styles.formLabel}>Amount to be Paid This Month <Text style={styles.requiredAsterisk}>*</Text></Text>
             <View style={styles.inputFieldDisplay}>
               <Text style={styles.currencySymbol}>₹</Text>
-              <Text style={styles.inputValue}>{monthData.paymentAmount.toLocaleString('en-IN')}</Text>
+              <Text style={styles.inputValue}>{formatCurrency(amountToPayThisMonth)}</Text>
             </View>
           </View>
 
@@ -247,7 +285,7 @@ const GroupCardInfo = ({ onClose, group }) => {
               </View>
               <View style={styles.inputFieldDisplay}>
                 <Text style={styles.currencySymbol}>₹</Text>
-                <Text style={styles.inputValue}>{monthData.discount.toLocaleString('en-IN')}</Text>
+                <Text style={styles.inputValue}>{formatCurrency(monthData.discount)}</Text>
               </View>
             </View>
 
@@ -261,7 +299,7 @@ const GroupCardInfo = ({ onClose, group }) => {
               </View>
               <View style={styles.inputFieldDisplay}>
                 <Text style={styles.currencySymbol}>₹</Text>
-                <Text style={styles.inputValue}>{monthData.commission.toLocaleString('en-IN')}</Text>
+                <Text style={styles.inputValue}>{formatCurrency(monthData.commission)}</Text>
               </View>
             </View>
           </View>
@@ -271,7 +309,7 @@ const GroupCardInfo = ({ onClose, group }) => {
               <MaterialCommunityIcons name="calendar-alert" size={16} color="#EF4444" />
               <Text style={styles.dueTextForm}>
                 {monthData.status === 'overdue' ? 'Was due by ' : 'Due by '}
-                {formatDate(monthData.dueDate)}
+                {formatDate(effectiveDueDate)}
               </Text>
             </View>
           )}
@@ -289,7 +327,7 @@ const GroupCardInfo = ({ onClose, group }) => {
           <View style={styles.formGroup}>
             <Text style={styles.formLabel}>Winner Name</Text>
             <View style={styles.inputFieldDisplay}>
-              <Text style={styles.inputValue}>{monthData.auctionWinner}</Text>
+              <Text style={styles.inputValue}>{displayNil(monthData.auctionWinner)}</Text>
             </View>
           </View>
 
@@ -298,7 +336,7 @@ const GroupCardInfo = ({ onClose, group }) => {
             <Text style={styles.formLabel}>Amount Taken</Text>
             <View style={styles.inputFieldDisplay}>
               <Text style={styles.currencySymbol}>₹</Text>
-              <Text style={styles.inputValue}>{monthData.amountTaken.toLocaleString('en-IN')}</Text>
+              <Text style={styles.inputValue}>{formatCurrency(monthData.amountTaken)}</Text>
             </View>
           </View>
 
