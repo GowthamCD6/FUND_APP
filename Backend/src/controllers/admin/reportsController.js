@@ -131,6 +131,34 @@ exports.getReportGroups = async (req, res) => {
   }
 };
 
+// Helper function to determine if a member is overdue (2+ consecutive months unpaid)
+const isPaymentOverdue = (paymentHistory, targetMonth, targetYear) => {
+  if (!paymentHistory || paymentHistory.length === 0) return false;
+
+  // Sort by year desc, month desc (newest first)
+  const sorted = paymentHistory.sort((a, b) => {
+    if (b.year !== a.year) return b.year - a.year;
+    return b.month - a.month;
+  });
+
+  // Find targetMonth record
+  const targetPayment = sorted.find((p) => p.month === targetMonth && p.year === targetYear);
+  if (!targetPayment || targetPayment.status === 'paid') return false;
+
+  // Check if at least 2 consecutive months are unpaid (pending/overdue)
+  let unpaidCount = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    if (sorted[i].status === 'pending' || sorted[i].status === 'overdue') {
+      unpaidCount += 1;
+      if (unpaidCount >= 2) return true;
+    } else if (sorted[i].status === 'paid') {
+      unpaidCount = 0; // Reset if we hit a paid month
+    }
+  }
+
+  return false;
+};
+
 exports.getGroupMemberPayments = async (req, res) => {
   const groupId = Number(req.query.groupId);
   const month = Number(req.query.month);
@@ -245,6 +273,10 @@ exports.getGroupMemberPayments = async (req, res) => {
     const members = memberRows.map((member) => {
       const userId = Number(member.id);
       const paymentHistory = historyByUser.get(userId) || [];
+      
+      // Compute overdue status from payment history
+      const computedOverdueStatus = isPaymentOverdue(paymentHistory, month, year);
+      
       const currentPayment = paymentHistory.find((entry) => entry.month === month && entry.year === year) || {
         id: null,
         month,
@@ -258,12 +290,18 @@ exports.getGroupMemberPayments = async (req, res) => {
         notes: null,
       };
 
+      // If overdue logic detected, override status to 'overdue'
+      if (computedOverdueStatus && currentPayment.status !== 'paid') {
+        currentPayment.status = 'overdue';
+      }
+
       return {
         id: userId,
         name: member.name,
         phone: member.phone,
         currentPayment,
         paymentHistory,
+        isOverdue: computedOverdueStatus,
       };
     });
 

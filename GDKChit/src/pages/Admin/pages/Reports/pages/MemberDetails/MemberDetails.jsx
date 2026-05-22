@@ -71,6 +71,8 @@ class MemberDetails extends Component {
     }
   }
 
+
+
   getStatusColor = (status) => {
     switch (status) {
       case 'paid':
@@ -173,6 +175,8 @@ class MemberDetails extends Component {
 
     return { paid, pending, overdue, totalAmount, total: members.length };
   };
+
+
 
   updatePaymentStatus = async (memberId, newStatus) => {
     const { groupData, selectedMonth, selectedYear } = this.state;
@@ -408,7 +412,9 @@ class MemberDetails extends Component {
             contentContainerStyle={styles.listContainer}
             ListEmptyComponent={
               <View style={{ paddingTop: 24, alignItems: 'center' }}>
-                <Text style={{ color: '#6B7280' }}>No members found for this group.</Text>
+                <Text style={{ color: '#6B7280' }}>
+                  No members found for this group.
+                </Text>
               </View>
             }
             showsVerticalScrollIndicator={false}

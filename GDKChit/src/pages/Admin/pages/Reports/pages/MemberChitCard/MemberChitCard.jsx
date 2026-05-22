@@ -214,7 +214,7 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack }) => {
                 <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>Amount</Text>
                 <Text style={[styles.tableHeaderCell, { flex: 1.4 }]}>Discount</Text>
                 <Text style={[styles.tableHeaderCell, { flex: 1.4 }]}>Commission</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1.8 }]}>Due Date</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1.8 }]}>Paid Date</Text>
                 <Text style={[styles.tableHeaderCell, { flex: 1.4 }]}>Status</Text>
               </View>
 
@@ -243,7 +243,7 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack }) => {
                       <Text style={[styles.tableCell, { flex: 1.5 }]}>{isFutureRow ? '-' : formatCurrency(row.amount)}</Text>
                       <Text style={[styles.tableCell, { flex: 1.4 }]}>{isFutureRow ? '-' : formatCurrency(row.discountAmount)}</Text>
                       <Text style={[styles.tableCell, { flex: 1.4 }]}>{isFutureRow ? '-' : formatCurrency(row.commissionAmount)}</Text>
-                      <Text style={[styles.tableCell, { flex: 1.8 }]}>{isFutureRow ? '-' : formatDate(row.dueDate)}</Text>
+                      <Text style={[styles.tableCell, { flex: 1.8 }]}>{isFutureRow ? '-' : formatDate(row.paidDate)}</Text>
                       <View style={[styles.tableCell, { flex: 1.4, alignItems: 'center' }]}>
                         {isPendingRow ? (
                           <TouchableOpacity style={styles.statusContainer} onPress={() => openOtpForRow(row)}>
