@@ -35,6 +35,8 @@ router.get('/reports/groups', authenticateToken, reportsController.getReportGrou
 router.get('/reports/group-members', authenticateToken, reportsController.getGroupMemberPayments);
 router.post('/reports/payment-status', authenticateToken, reportsController.updateMemberPaymentStatus);
 router.get('/reports/member-chit-card', authenticateToken, reportsController.getMemberChitCard);
+router.post('/reports/send-otp', authenticateToken, reportsController.sendPaymentOTP);
+router.post('/reports/verify-otp', authenticateToken, reportsController.verifyPaymentOTP);
 
 
 module.exports = router;

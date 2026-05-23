@@ -244,6 +244,12 @@ class MemberDetails extends Component {
     });
   };
 
+  handlePaymentMarkedPaid = () => {
+    // Refresh member data immediately after successful payment verification
+    console.log('Payment marked as paid, refreshing data...');
+    this.loadMemberPayments();
+  };
+
   openPaymentEditor = (item) => {
     this.setState({ selectedMember: item });
   };
@@ -467,12 +473,21 @@ class MemberDetails extends Component {
           animationType="slide"
           transparent={false}
           visible={showMemberChitCard}
-          onRequestClose={() => this.setState({ showMemberChitCard: false })}
+          onRequestClose={() => {
+            this.setState({ showMemberChitCard: false });
+            // Refresh member data when closing chit card
+            setTimeout(() => this.loadMemberPayments(), 500);
+          }}
         >
           <MemberChitCard
             selectedGroup={groupData}
             selectedMember={selectedMemberForChitCard}
-            onBack={() => this.setState({ showMemberChitCard: false })}
+            onBack={() => {
+              this.setState({ showMemberChitCard: false });
+              // Refresh member data when going back from chit card
+              setTimeout(() => this.loadMemberPayments(), 500);
+            }}
+            onPaymentMarkedPaid={this.handlePaymentMarkedPaid}
           />
         </Modal>
       </View>

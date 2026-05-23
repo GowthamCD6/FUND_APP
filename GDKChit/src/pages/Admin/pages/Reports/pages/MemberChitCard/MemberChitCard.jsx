@@ -14,16 +14,18 @@ import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
 import styles from './MemberChitCardSty';
 
-const ChitCard = ({ selectedGroup, selectedMember, onBack }) => {
+const ChitCard = ({ selectedGroup, selectedMember, onBack, onPaymentMarkedPaid }) => {
   const [rows, setRows] = useState([]);
   const [groupInfo, setGroupInfo] = useState(selectedGroup || null);
   const [memberInfo, setMemberInfo] = useState(selectedMember || null);
   const [loading, setLoading] = useState(true);
   const [otpVisible, setOtpVisible] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
   const [otpInput, setOtpInput] = useState('');
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [selectedPendingRow, setSelectedPendingRow] = useState(null);
   const [otpSubmitting, setOtpSubmitting] = useState(false);
+  const [highlightedRow, setHighlightedRow] = useState(null); // Track recently updated row
 
   useEffect(() => {
     const loadChitCard = async () => {
@@ -97,11 +99,46 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack }) => {
   };
 
   const openOtpForRow = (row) => {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(otp);
-    setOtpInput('');
     setSelectedPendingRow(row);
+    setOtpInput('');
+    setOtpSent(false);
+    setGeneratedOtp('');
     setOtpVisible(true);
+  };
+
+  const sendOtp = async () => {
+    if (!memberInfo?.phone) {
+      Alert.alert('Error', 'Member phone number not available');
+      return;
+    }
+
+    try {
+      setOtpSubmitting(true);
+
+      const response = await ApiService.makeRequest('/admin/reports/send-otp', {
+        method: 'POST',
+        body: JSON.stringify({
+          phoneNumber: memberInfo.phone,
+          userId: memberInfo.id,
+          groupId: selectedGroup.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to send OTP');
+      }
+
+      setOtpSent(true);
+      Alert.alert('Success', `OTP sent to ${memberInfo.phone}`);
+    } catch (error) {
+      console.error('Failed to send OTP:', error);
+      Alert.alert('Error', error.message || 'Failed to send OTP');
+      setOtpSent(false);
+    } finally {
+      setOtpSubmitting(false);
+    }
   };
 
   const closeOtpModal = () => {
@@ -110,6 +147,7 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack }) => {
     setOtpInput('');
     setGeneratedOtp('');
     setSelectedPendingRow(null);
+    setOtpSent(false);
   };
 
   const verifyOtpAndMarkPaid = async () => {
@@ -120,15 +158,30 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack }) => {
       return;
     }
 
-    if (otpInput !== generatedOtp) {
-      Alert.alert('OTP Failed', 'Entered OTP is incorrect.');
-      return;
-    }
-
     try {
       setOtpSubmitting(true);
 
-      const response = await ApiService.makeRequest('/admin/reports/payment-status', {
+      // Step 1: Verify OTP with backend
+      const verifyResponse = await ApiService.makeRequest('/admin/reports/verify-otp', {
+        method: 'POST',
+        body: JSON.stringify({
+          phoneNumber: memberInfo?.phone,
+          otp: otpInput,
+          groupId: Number(selectedGroup?.id),
+          userId: Number(selectedMember?.id),
+          month: Number(selectedPendingRow.month),
+          year: Number(selectedPendingRow.year),
+        }),
+      });
+
+      const verifyResult = await verifyResponse.json();
+
+      if (!verifyResponse.ok || !verifyResult?.success) {
+        throw new Error(verifyResult?.message || 'OTP verification failed');
+      }
+
+      // Step 2: Update payment status
+      const paymentResponse = await ApiService.makeRequest('/admin/reports/payment-status', {
         method: 'POST',
         body: JSON.stringify({
           groupId: Number(selectedGroup?.id),
@@ -141,33 +194,59 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack }) => {
         }),
       });
 
-      const result = await response.json();
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.message || 'Failed to update status');
+      const paymentResult = await paymentResponse.json();
+      if (!paymentResponse.ok || !paymentResult?.success) {
+        throw new Error(paymentResult?.message || 'Failed to update payment status');
       }
 
-      setRows((prev) =>
-        prev.map((row) => {
+      // Update local state with new paid status
+      const currentDate = new Date();
+      const paidDateString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+      
+      // Highlight the updated row
+      const rowKey = `${selectedPendingRow.year}-${selectedPendingRow.month}-${selectedPendingRow.serialNo}`;
+      setHighlightedRow(rowKey);
+      
+      setRows((prevRows) => {
+        const updatedRows = prevRows.map((row) => {
+          // Match the exact row that was paid
           if (
             row.serialNo === selectedPendingRow.serialNo &&
-            row.month === selectedPendingRow.month &&
-            row.year === selectedPendingRow.year
+            Number(row.month) === Number(selectedPendingRow.month) &&
+            Number(row.year) === Number(selectedPendingRow.year)
           ) {
+            console.log('Updating row from pending to paid:', { serialNo: row.serialNo, month: row.month, year: row.year });
             return {
               ...row,
               status: 'paid',
-              paidDate: new Date().toISOString(),
+              paidDate: paidDateString,
             };
           }
           return row;
-        }),
-      );
+        });
+        console.log('Updated rows:', updatedRows);
+        return updatedRows;
+      });
 
-      Alert.alert('Success', 'Payment marked as PAID successfully.');
-      closeOtpModal();
+      Alert.alert('Success', 'Payment marked as paid successfully');
+      
+      // Notify parent component of successful payment update
+      if (onPaymentMarkedPaid) {
+        onPaymentMarkedPaid();
+      }
+      
+      // Remove highlight after 2 seconds
+      setTimeout(() => {
+        setHighlightedRow(null);
+      }, 2000);
+      
+      // Small delay to ensure state update completes before closing modal
+      setTimeout(() => {
+        closeOtpModal();
+      }, 300);
     } catch (error) {
-      console.error('Failed to update pending status:', error);
-      Alert.alert('Error', error.message || 'Unable to update payment status.');
+      console.error('Payment verification failed:', error);
+      Alert.alert('Error', error.message || 'Payment verification failed');
     } finally {
       setOtpSubmitting(false);
     }
@@ -220,6 +299,9 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack }) => {
 
               <ScrollView style={styles.tableBody} nestedScrollEnabled>
                 {rows.map((row) => {
+                  const rowKey = `${row.year}-${row.month}-${row.serialNo}`;
+                  const isHighlighted = highlightedRow === rowKey;
+                  
                   const now = new Date();
                   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
                   const rowMonthStart = new Date(row.year, row.month, 1);
@@ -238,7 +320,13 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack }) => {
                   const statusLabel = isFutureRow ? 'LOCKED' : getStatusLabel(row.status);
 
                   return (
-                    <View key={`${row.year}-${row.month}-${row.serialNo}`} style={styles.tableRow}>
+                    <View 
+                      key={rowKey} 
+                      style={[
+                        styles.tableRow,
+                        isHighlighted && { backgroundColor: '#D1FAE5', borderLeftWidth: 4, borderLeftColor: '#10B981' }
+                      ]}
+                    >
                       <Text style={[styles.tableCell, { flex: 0.8 }]}>{row.serialNo}</Text>
                       <Text style={[styles.tableCell, { flex: 1.5 }]}>{isFutureRow ? '-' : formatCurrency(row.amount)}</Text>
                       <Text style={[styles.tableCell, { flex: 1.4 }]}>{isFutureRow ? '-' : formatCurrency(row.discountAmount)}</Text>
@@ -281,46 +369,107 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack }) => {
       >
         <View style={styles.otpModalOverlay}>
           <View style={styles.otpModalContainer}>
+            {/* Header */}
             <View style={styles.otpModalHeader}>
-              <Text style={styles.otpModalTitle}>OTP Verification</Text>
+              <View>
+                <Text style={styles.otpModalTitle}>Verify Payment</Text>
+                <Text style={styles.otpModalSubheader}>
+                  {otpSent ? 'Enter the OTP sent to member' : 'Send OTP to member'}
+                </Text>
+              </View>
               <TouchableOpacity onPress={closeOtpModal} disabled={otpSubmitting}>
                 <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.otpModalSubtitle}>
-              Enter OTP to mark Month {selectedPendingRow?.serialNo || '-'} as paid.
-            </Text>
+            {/* Step 1: Send OTP */}
+            {!otpSent ? (
+              <View style={styles.otpSendContainer}>
+                <MaterialCommunityIcons name="send" size={48} color="#6B46C1" />
+                <Text style={styles.otpSendTitle}>Ready to send OTP?</Text>
+                <Text style={styles.otpSendDescription}>
+                  Click the button below to send a 6-digit OTP to the member's registered phone number
+                </Text>
+              </View>
+            ) : null}
 
-            <View style={styles.otpInputContainer}>
-              <Text style={styles.otpInputLabel}>Enter OTP (6 digits)</Text>
-              <TextInput
-                style={styles.otpInput}
-                value={otpInput}
-                onChangeText={setOtpInput}
-                keyboardType="numeric"
-                maxLength={6}
-                placeholder="000000"
-                editable={!otpSubmitting}
-              />
-              <Text style={styles.demoOtpHint}>Demo OTP: {generatedOtp}</Text>
-            </View>
+            {/* Step 2: Enter OTP */}
+            {otpSent ? (
+              <>
+                {/* OTP Display Indicator */}
+                <View style={styles.otpDisplayContainer}>
+                  <View style={styles.otpDotsContainer}>
+                    {[...Array(6)].map((_, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.otpDot,
+                          index < otpInput.length && styles.otpDotFilled,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </View>
 
+                {/* OTP Input */}
+                <View style={styles.otpInputContainer}>
+                  <Text style={styles.otpInputLabel}>Enter OTP</Text>
+                  <TextInput
+                    style={styles.otpInput}
+                    value={otpInput}
+                    onChangeText={setOtpInput}
+                    keyboardType="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    placeholderTextColor="#D1D5DB"
+                    editable={!otpSubmitting}
+                  />
+                </View>
+
+            {/* Demo OTP Display - REMOVED */}
+            {/* OTP has been sent to member's phone. No demo display. */}
+
+                {/* Verification Status */}
+                {otpSubmitting && (
+                  <View style={styles.otpVerifyingContainer}>
+                    <ActivityIndicator size="small" color="#6B46C1" />
+                    <Text style={styles.otpVerifyingText}>Verifying OTP...</Text>
+                  </View>
+                )}
+              </>
+            ) : null}
+
+            {/* Buttons */}
             <View style={styles.otpModalButtons}>
               <TouchableOpacity
-                style={[styles.otpCancelButton, otpSubmitting && styles.disabledButton]}
+                style={[styles.otpCancelButton, (otpSubmitting || !otpSent) && styles.disabledButton]}
                 onPress={closeOtpModal}
                 disabled={otpSubmitting}
               >
                 <Text style={styles.otpCancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.otpSubmitButton, (otpSubmitting || otpInput.length !== 6) && styles.disabledButton]}
-                onPress={verifyOtpAndMarkPaid}
-                disabled={otpSubmitting || otpInput.length !== 6}
-              >
-                <Text style={styles.otpSubmitButtonText}>{otpSubmitting ? 'Verifying...' : 'Verify OTP'}</Text>
-              </TouchableOpacity>
+              {!otpSent ? (
+                <TouchableOpacity
+                  style={styles.otpSendButton}
+                  onPress={sendOtp}
+                  disabled={otpSubmitting}
+                >
+                  <MaterialCommunityIcons name="send" size={18} color="#FFFFFF" />
+                  <Text style={styles.otpSendButtonText}>Send OTP</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.otpSubmitButton, (otpSubmitting || otpInput.length !== 6) && styles.disabledButton]}
+                  onPress={verifyOtpAndMarkPaid}
+                  disabled={otpSubmitting || otpInput.length !== 6}
+                >
+                  {otpSubmitting ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.otpSubmitButtonText}>Verify & Confirm</Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>

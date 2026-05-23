@@ -434,6 +434,182 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1F2937',
   },
+
+  // Enhanced OTP Modal Styles
+  otpModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+  },
+  otpModalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  otpModalSubheader: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+
+  // OTP Send Step
+  otpSendContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    marginBottom: 24,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+  },
+  otpSendTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  otpSendDescription: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 12,
+  },
+
+  // OTP Display Dots
+  otpDisplayContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  otpDotsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  otpDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#E5E7EB',
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+  },
+  otpDotFilled: {
+    backgroundColor: '#6B46C1',
+    borderColor: '#6B46C1',
+  },
+
+  // OTP Input Enhanced
+  otpInputContainer: {
+    marginBottom: 24,
+  },
+  otpInputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+    textAlign: 'left',
+  },
+  otpInput: {
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: 12,
+    backgroundColor: '#F9FAFB',
+    textAlign: 'center',
+  },
+
+  // OTP Demo Container
+  otpDemoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFBEB',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#F59E0B',
+  },
+  otpDemoText: {
+    fontSize: 13,
+    color: '#92400E',
+    marginLeft: 8,
+    fontWeight: '500',
+  },
+  otpDemoValue: {
+    fontWeight: '700',
+    color: '#D97706',
+  },
+
+  // OTP Verifying Container
+  otpVerifyingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EBF4FF',
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#6B46C1',
+  },
+  otpVerifyingText: {
+    marginLeft: 8,
+    fontSize: 13,
+    color: '#5B21B6',
+    fontWeight: '500',
+  },
+
+  // OTP Modal Buttons
+  otpModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  otpCancelButton: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  otpCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  otpSendButton: {
+    flex: 1,
+    backgroundColor: '#6B46C1',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  otpSendButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  otpSubmitButton: {
+    flex: 1,
+    backgroundColor: '#6B46C1',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  otpSubmitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
 });
 
 export default styles;
