@@ -1,6 +1,5 @@
 const db = require('../../config/db');
 
-// Helper to reliably parse numbers
 const toSafeNumber = (val, fallback = 0) => {
   const num = Number(val);
   return Number.isNaN(num) ? fallback : num;
@@ -32,23 +31,24 @@ exports.getPortfolio = async (req, res) => {
         (
           SELECT COALESCE(SUM(amount), 0)
           FROM monthly_collections mc
-          WHERE mc.group_id = g.id AND mc.user_id = ug.user_id AND LOWER(mc.status) = 'paid'
+          WHERE mc.group_id = g.id AND mc.user_id = ug.user_id AND LOWER(mc.status) = 'paid' AND mc.deleted_at IS NULL
         ) as total_paid,
         (
           SELECT COALESCE(COUNT(*), 0)
           FROM monthly_collections mc
-          WHERE mc.group_id = g.id AND mc.user_id = ug.user_id AND LOWER(mc.status) = 'paid'
+          WHERE mc.group_id = g.id AND mc.user_id = ug.user_id AND LOWER(mc.status) = 'paid' AND mc.deleted_at IS NULL
         ) as paid_cycles,
         (
           SELECT mc.status
           FROM monthly_collections mc
-          WHERE mc.group_id = g.id AND mc.user_id = ug.user_id
-          ORDER BY mc.year DESC, mc.month DESC
+          WHERE mc.group_id = g.id AND mc.user_id = ug.user_id AND mc.deleted_at IS NULL
+          ORDER BY mc.collection_period DESC
           LIMIT 1
         ) as latest_status
       FROM user_grouping ug
       INNER JOIN \`groups\` g ON ug.group_id = g.id
-      WHERE ug.user_id = ?
+      INNER JOIN users u ON ug.user_id = u.id
+      WHERE ug.user_id = ? AND g.deleted_at IS NULL AND u.deleted_at IS NULL
       ORDER BY g.created_at DESC
       `,
       [userId]
@@ -60,21 +60,20 @@ exports.getPortfolio = async (req, res) => {
       const safeDuration = duration > 0 ? duration : 1;
       const monthlyAmount = Math.round(toSafeNumber(row.group_amount, 0) / safeDuration);
       const paidCycles = Math.max(0, Math.min(safeDuration, Number(row.paid_cycles) || 0));
-      const totalPaid = toSafeNumber(row.total_paid, 0);
       const requiredPayment = toSafeNumber(row.group_amount, 0) || monthlyAmount * safeDuration;
 
-const isFullyPaid = paidCycles >= safeDuration;
+      const isFullyPaid = paidCycles >= safeDuration;
       
-        let reportStatus = 'pending';
-        if (isFullyPaid) {
-            reportStatus = 'completed';
-        } else if (row.latest_status) {
-            reportStatus = (row.latest_status.toLowerCase() === 'paid') ? 'paid' : 'pending';
-        }
+      let reportStatus = 'pending';
+      if (isFullyPaid) {
+          reportStatus = 'completed';
+      } else if (row.latest_status) {
+          reportStatus = (row.latest_status.toLowerCase() === 'paid') ? 'paid' : 'pending';
+      }
 
-        const completedCycles = isFullyPaid ? safeDuration : paidCycles;
-        
-        let estimatedPayDate = row.end_date;
+      const completedCycles = isFullyPaid ? safeDuration : paidCycles;
+      
+      let estimatedPayDate = row.end_date;
       if (!estimatedPayDate && row.start_date) {
          const d = new Date(row.start_date);
          d.setMonth(d.getMonth() + safeDuration);

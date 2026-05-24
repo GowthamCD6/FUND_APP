@@ -16,23 +16,23 @@ exports.getGroupMonthlyInfo = async (req, res) => {
 
   try {
     const [payments] = await db.promise().query(
-      `SELECT month, year, amount, status, due_date, paid_date, receipt_number 
+      `SELECT MONTH(collection_period) - 1 AS month, YEAR(collection_period) AS year, amount, status, due_date, paid_date, receipt_number 
        FROM monthly_collections 
-       WHERE group_id = ? AND user_id = ?`,
+       WHERE group_id = ? AND user_id = ? AND deleted_at IS NULL`,
       [rawGroupId, userId]
     );
 
     const [auctions] = await db.promise().query(
-      `SELECT month, year, winner_name, amount_taken, auction_date 
+      `SELECT MONTH(collection_period) - 1 AS month, YEAR(collection_period) AS year, winner_name, amount_taken, auction_date 
        FROM group_auction_winners 
-       WHERE group_id = ?`,
+       WHERE group_id = ? AND deleted_at IS NULL`,
       [rawGroupId]
     );
 
     const [monthlyDetails] = await db.promise().query(
-      `SELECT month, year, monthly_amount, discount_amount, commission_amount, notes 
+      `SELECT MONTH(collection_period) - 1 AS month, YEAR(collection_period) AS year, monthly_amount, discount_amount, commission_amount, customer_notes AS notes 
        FROM group_monthly_details 
-       WHERE group_id = ?`,
+       WHERE group_id = ? AND deleted_at IS NULL`,
       [rawGroupId]
     );
 
@@ -93,7 +93,6 @@ exports.getGroupMonthlyInfo = async (req, res) => {
       }
 
       monthlyData[key].status = p.status;
-      // Do not overwrite paymentAmount with user's net collection amount, as paymentAmount dictates the UI's base amount
       if (monthlyData[key].paymentAmount == null && userCollectionAmount > 0) {
         monthlyData[key].paymentAmount = userCollectionAmount;
       }

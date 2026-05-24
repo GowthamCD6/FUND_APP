@@ -1,11 +1,11 @@
 const db = require('../../config/db')
-const bcrypt = require('bcryptjs');
-const { groupEncryptAES, groupDecryptAES, passwordEncryptAES } = require('../../utils/decryptAES');
+const { groupEncryptAES, groupDecryptAES } = require('../../utils/decryptAES');
+const { logAuditEvent } = require('../../utils/auditLogger');
 
 exports.getAdminNotifications = async (req, res) => {
     try {
         const [rows] = await db.promise().query(
-            "SELECT group_name, start_date, duration FROM `groups` WHERE status = 'OnGoing' OR status = 'not-started' OR status = 'not started'"
+            "SELECT group_name, start_date, duration FROM `groups` WHERE (status = 'OnGoing' OR status = 'not-started' OR status = 'not started') AND deleted_at IS NULL"
         );
 
         const notifications = [];
@@ -83,6 +83,7 @@ exports.getAdminNotifications = async (req, res) => {
 
 exports.updateGroup = async (req, res) => {
     const { groupId, groupName, totalAmount, numberOfUsers, createdDate } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
 
     if (!groupId) {
         return res.status(400).json({ success: false, message: 'groupId is required' });
@@ -100,13 +101,21 @@ exports.updateGroup = async (req, res) => {
         : null;
 
     try {
+        // Fetch old values for audit logging
+        const [[oldGroup]] = await db.promise().query(
+            'SELECT group_name, group_amount, total_members, start_date FROM `groups` WHERE id = ? AND deleted_at IS NULL',
+            [groupIdNum]
+        );
+
         const sql = `
             UPDATE \`groups\`
             SET group_name = ?,
                 group_amount = ?,
                 total_members = ?,
-                start_date = ?
-            WHERE id = ?
+                start_date = ?,
+                updated_by = ?,
+                version = version + 1
+            WHERE id = ? AND deleted_at IS NULL
         `;
 
         const params = [
@@ -114,13 +123,23 @@ exports.updateGroup = async (req, res) => {
             totalAmount !== undefined ? Number(totalAmount) : null,
             numberOfUsers !== undefined ? Number(numberOfUsers) : null,
             parsedStartDate,
+            adminId ? Number(adminId) : null,
             groupIdNum,
         ];
 
         const [result] = await db.promise().query(sql, params);
         if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Group not found' });
+            return res.status(404).json({ success: false, message: 'Group not found or already deleted' });
         }
+
+        // Log audit event
+        await logAuditEvent(req, {
+            actionType: 'UPDATE',
+            tableName: 'groups',
+            recordId: groupIdNum,
+            oldValues: oldGroup || null,
+            newValues: { groupName, totalAmount, numberOfUsers, start_date: parsedStartDate }
+        });
 
         return res.status(200).json({ success: true, message: 'Group updated successfully' });
     } catch (error) {
@@ -131,13 +150,12 @@ exports.updateGroup = async (req, res) => {
 
 exports.addGroupMembers = async (req, res) => {
     const { groupId, members } = req.body;
-    // Normalize members input: accept either an array of IDs (e.g. [3,4]) or
-    // an array of objects with `id` (e.g. [{id:3}, {id:4}])
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
+
     if (!Array.isArray(members)) {
         return res.status(400).json({ success: false, message: 'members must be an array' });
     }
 
-    // Convert numbers or string ids and objects to numeric ids
     const normalizedIds = members
         .map(m => (m && typeof m === 'object' ? m.id : m))
         .map(id => (id !== undefined && id !== null ? Number(id) : NaN))
@@ -146,40 +164,48 @@ exports.addGroupMembers = async (req, res) => {
     if (normalizedIds.length === 0) {
         return res.status(400).json({ success: false, message: 'No valid member ids provided' });
     }
-    if (normalizedIds.length === 0) {
-        return res.status(400).json({ success: false, message: 'No valid member ids provided' });
-    }
 
-    // Validate groupId is numeric (DB group_id expects numeric id)
     const groupIdNum = Number(groupId);
     if (Number.isNaN(groupIdNum)) {
         return res.status(400).json({ success: false, message: 'Invalid groupId' });
     }
 
-    console.log('Adding members to group', groupIdNum, 'ids:', normalizedIds);
-
+    const connection = await db.promise().getConnection();
     try {
+        await connection.beginTransaction();
+
         const insertValues = normalizedIds.map(id => [groupIdNum, id]);
         const sql = `
             INSERT INTO user_grouping (group_id, user_id)
             VALUES ?
         `;
-        await db.promise().query(sql, [insertValues]);
+        await connection.query(sql, [insertValues]);
 
         // Update the current_members count in the groups table
-        await db.promise().query(
-            `UPDATE \`groups\` SET current_members = current_members + ? WHERE id = ?`,
-            [normalizedIds.length, groupIdNum]
+        await connection.query(
+            `UPDATE \`groups\` SET current_members = current_members + ?, updated_by = ?, version = version + 1 WHERE id = ?`,
+            [normalizedIds.length, adminId ? Number(adminId) : null, groupIdNum]
         );
 
+        // Audit log
+        await logAuditEvent(req, {
+            actionType: 'ADD_MEMBERS',
+            tableName: 'user_grouping',
+            recordId: groupIdNum,
+            newValues: { membersAdded: normalizedIds }
+        });
+
+        await connection.commit();
         return res.status(201).json({ success: true, message: 'Members added successfully' });
     } catch (error) {
+        await connection.rollback();
         console.error('Error adding group members:', error);
         return res.status(500).json({ success: false, message: 'Failed to add group members' });
+    } finally {
+        connection.release();
     }
 };
 
-// Fetch members of a group
 exports.getGroupMembers = async (req, res) => {
     const groupId = req.query.groupId;
     const groupIdNum = Number(groupId);
@@ -192,14 +218,14 @@ exports.getGroupMembers = async (req, res) => {
             SELECT ug.id AS mappingId, ug.user_id AS userId, u.name, u.nick_name, u.phone
             FROM user_grouping ug
             LEFT JOIN users u ON u.id = ug.user_id
-            WHERE ug.group_id = ?
+            WHERE ug.group_id = ? AND u.deleted_at IS NULL
         `;
         const [rows] = await db.promise().query(sql, [groupIdNum]);
         const data = rows.map(r => ({
             mappingId: r.mappingId,
             userId: r.userId,
             name: r.name,
-            nickname: r.nickname,
+            nickname: r.nick_name,
             phone: r.phone,
         }));
         return res.status(200).json({ success: true, data });
@@ -209,9 +235,10 @@ exports.getGroupMembers = async (req, res) => {
     }
 };
 
-// Remove members from a group (accepts array of user ids)
 exports.removeGroupMembers = async (req, res) => {
     const { groupId, members } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
+
     if (!Array.isArray(members) || members.length === 0) {
         return res.status(400).json({ success: false, message: 'members must be a non-empty array' });
     }
@@ -225,35 +252,50 @@ exports.removeGroupMembers = async (req, res) => {
         return res.status(400).json({ success: false, message: 'No valid member ids provided' });
     }
 
+    const connection = await db.promise().getConnection();
     try {
+        await connection.beginTransaction();
+
         const sql = `DELETE FROM user_grouping WHERE group_id = ? AND user_id IN (?);`;
-        const [result] = await db.promise().query(sql, [groupIdNum, ids]);
+        const [result] = await connection.query(sql, [groupIdNum, ids]);
         
         if (result.affectedRows > 0) {
             // Update the current_members count in the groups table
-            await db.promise().query(
-                `UPDATE \`groups\` SET current_members = current_members - ? WHERE id = ?`,
-                [result.affectedRows, groupIdNum]
+            await connection.query(
+                `UPDATE \`groups\` SET current_members = current_members - ?, updated_by = ?, version = version + 1 WHERE id = ?`,
+                [result.affectedRows, adminId ? Number(adminId) : null, groupIdNum]
             );
         }
 
+        // Audit log
+        await logAuditEvent(req, {
+            actionType: 'REMOVE_MEMBERS',
+            tableName: 'user_grouping',
+            recordId: groupIdNum,
+            oldValues: { membersRemoved: ids }
+        });
+
+        await connection.commit();
         return res.status(200).json({ success: true, message: 'Members removed successfully' });
     } catch (error) {
+        await connection.rollback();
         console.error('Error removing group members:', error);
         return res.status(500).json({ success: false, message: 'Failed to remove group members' });
+    } finally {
+        connection.release();
     }
 };
 
 exports.activateGroup = async (req, res) => {
     const { groupId } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
     
     if (!groupId) {
         return res.status(400).json({ success: false, message: 'groupId is required' });
     }
 
     try {
-        // First check the group's start date
-        const [[group]] = await db.promise().query('SELECT start_date FROM `groups` WHERE id = ?', [groupId]);
+        const [[group]] = await db.promise().query('SELECT start_date FROM `groups` WHERE id = ? AND deleted_at IS NULL', [groupId]);
         
         if (!group) {
             return res.status(404).json({ success: false, message: 'Group not found' });
@@ -266,7 +308,6 @@ exports.activateGroup = async (req, res) => {
             const stDate = new Date(group.start_date);
             stDate.setHours(0, 0, 0, 0);
             
-            // Allow manual activation 1 day before the start date
             const minActivationDate = new Date(stDate);
             minActivationDate.setDate(minActivationDate.getDate() - 1);
             
@@ -278,11 +319,18 @@ exports.activateGroup = async (req, res) => {
             }
         }
 
-        const sql = `UPDATE \`groups\` SET status = 'OnGoing' WHERE id = ?`;
-        const [result] = await db.promise().query(sql, [groupId]);
+        const sql = `UPDATE \`groups\` SET status = 'OnGoing', updated_by = ?, version = version + 1 WHERE id = ? AND deleted_at IS NULL`;
+        const [result] = await db.promise().query(sql, [adminId ? Number(adminId) : null, groupId]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: 'Group failed to update' });
         }
+
+        await logAuditEvent(req, {
+            actionType: 'ACTIVATE',
+            tableName: 'groups',
+            recordId: Number(groupId)
+        });
+
         return res.status(200).json({ success: true, message: 'Group activated successfully' });
     } catch (error) {
         console.error('Error activating group:', error);
@@ -292,21 +340,31 @@ exports.activateGroup = async (req, res) => {
 
 exports.deleteGroup = async (req, res) => {
     const { groupId } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
     
     if (!groupId) {
         return res.status(400).json({ success: false, message: 'groupId is required' });
     }
 
     try {
-        // First delete members mappings to satisfy foreign key constraints if any
-        await db.promise().query('DELETE FROM user_grouping WHERE group_id = ?', [groupId]);
-        
-        const sql = `DELETE FROM \`groups\` WHERE id = ?`;
-        const [result] = await db.promise().query(sql, [groupId]);
+        // Soft delete the group
+        const sql = `UPDATE \`groups\` SET deleted_at = CURRENT_TIMESTAMP, updated_by = ?, version = version + 1 WHERE id = ? AND deleted_at IS NULL`;
+        const [result] = await db.promise().query(sql, [adminId ? Number(adminId) : null, groupId]);
         
         if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Group not found' });
+            return res.status(404).json({ success: false, message: 'Group not found or already deleted' });
         }
+
+        // Soft delete the settings as well
+        await db.promise().query('UPDATE group_settings SET deleted_at = CURRENT_TIMESTAMP, updated_by = ?, version = version + 1 WHERE group_id = ? AND deleted_at IS NULL', [adminId ? Number(adminId) : null, groupId]);
+
+        // Log audit event
+        await logAuditEvent(req, {
+            actionType: 'DELETE',
+            tableName: 'groups',
+            recordId: Number(groupId)
+        });
+
         return res.status(200).json({ success: true, message: 'Group deleted successfully' });
     } catch (error) {
         console.error('Error deleting group:', error);
@@ -324,6 +382,7 @@ exports.saveGroupMonthlyDetails = async (req, res) => {
         commission,
         notes,
     } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
 
     const groupIdNum = Number(groupId);
     const monthNum = Number(month);
@@ -345,49 +404,82 @@ exports.saveGroupMonthlyDetails = async (req, res) => {
         return res.status(400).json({ success: false, message: 'currentMonthAmount must be greater than 0' });
     }
 
+    // Convert month/year into collection_period (first of that month)
+    const collectionPeriodStr = `${yearNum}-${String(monthNum + 1).padStart(2, '0')}-01`;
+
+    const connection = await db.promise().getConnection();
     try {
-        const [[groupRow]] = await db.promise().query(
-            'SELECT id FROM `groups` WHERE id = ? LIMIT 1',
+        await connection.beginTransaction();
+
+        const [[groupRow]] = await connection.query(
+            'SELECT id FROM `groups` WHERE id = ? AND deleted_at IS NULL LIMIT 1',
             [groupIdNum],
         );
 
         if (!groupRow) {
+            connection.release();
             return res.status(404).json({ success: false, message: 'Group not found' });
         }
 
-        await db.promise().query(
+        // Fetch old values if any
+        const [[oldDetail]] = await connection.query(
+            'SELECT monthly_amount, discount_amount, commission_amount, customer_notes FROM group_monthly_details WHERE group_id = ? AND collection_period = ? AND deleted_at IS NULL',
+            [groupIdNum, collectionPeriodStr]
+        );
+
+        await connection.query(
             `
             INSERT INTO group_monthly_details
-            (group_id, month, year, monthly_amount, discount_amount, commission_amount, notes)
+            (group_id, collection_period, monthly_amount, discount_amount, commission_amount, customer_notes, created_by)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 monthly_amount = VALUES(monthly_amount),
                 discount_amount = VALUES(discount_amount),
                 commission_amount = VALUES(commission_amount),
-                notes = VALUES(notes),
+                customer_notes = VALUES(customer_notes),
+                updated_by = ?,
+                version = version + 1,
                 updated_at = CURRENT_TIMESTAMP
             `,
             [
                 groupIdNum,
-                monthNum,
-                yearNum,
+                collectionPeriodStr,
                 Number(currentMonthAmount) || 0,
                 Number(elathThalupadi) || 0,
                 Number(commission) || 0,
                 notes ? String(notes) : null,
+                adminId ? Number(adminId) : null,
+                adminId ? Number(adminId) : null,
             ],
         );
 
         // Update all pending `monthly_collections` rows for this group/month with the requested net amount
         const netAmount = (Number(currentMonthAmount) || 0) + (Number(commission) || 0) - (Number(elathThalupadi) || 0);
-        await db.promise().query(
+        await connection.query(
             `
             UPDATE monthly_collections 
-            SET amount = ? 
-            WHERE group_id = ? AND month = ? AND year = ? AND status = 'pending'
+            SET amount = ?, updated_by = ?, version = version + 1
+            WHERE group_id = ? AND collection_period = ? AND status = 'pending' AND deleted_at IS NULL
             `,
-            [netAmount, groupIdNum, monthNum, yearNum]
+            [netAmount, adminId ? Number(adminId) : null, groupIdNum, collectionPeriodStr]
         );
+
+        // Log audit event
+        await logAuditEvent(req, {
+            actionType: oldDetail ? 'UPDATE' : 'INSERT',
+            tableName: 'group_monthly_details',
+            recordId: groupIdNum,
+            oldValues: oldDetail || null,
+            newValues: {
+                collection_period: collectionPeriodStr,
+                monthly_amount: Number(currentMonthAmount) || 0,
+                discount_amount: Number(elathThalupadi) || 0,
+                commission_amount: Number(commission) || 0,
+                customer_notes: notes ? String(notes) : null
+            }
+        });
+
+        await connection.commit();
 
         return res.status(200).json({
             success: true,
@@ -401,8 +493,11 @@ exports.saveGroupMonthlyDetails = async (req, res) => {
             },
         });
     } catch (error) {
+        await connection.rollback();
         console.error('Error saving group monthly details:', error);
         return res.status(500).json({ success: false, message: 'Failed to save payment details' });
+    } finally {
+        connection.release();
     }
 };
 
@@ -417,6 +512,7 @@ exports.saveAuctionWinner = async (req, res) => {
         datePicked,
         winnerUserId,
     } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
 
     const groupIdNum = Number(groupId);
     const monthNum = Number(month);
@@ -448,20 +544,32 @@ exports.saveAuctionWinner = async (req, res) => {
         return res.status(400).json({ success: false, message: 'datePicked is invalid' });
     }
 
+    const collectionPeriodStr = `${yearNum}-${String(monthNum + 1).padStart(2, '0')}-01`;
+
+    const connection = await db.promise().getConnection();
     try {
-        const [[groupRow]] = await db.promise().query(
-            'SELECT id FROM `groups` WHERE id = ? LIMIT 1',
+        await connection.beginTransaction();
+
+        const [[groupRow]] = await connection.query(
+            'SELECT id FROM `groups` WHERE id = ? AND deleted_at IS NULL LIMIT 1',
             [groupIdNum],
         );
 
         if (!groupRow) {
+            connection.release();
             return res.status(404).json({ success: false, message: 'Group not found' });
         }
 
-        await db.promise().query(
+        // Check if there is an old auction winner record for audit trail
+        const [[oldWinner]] = await connection.query(
+            'SELECT winner_user_id, winner_name, winner_member_phone, amount_taken, auction_date FROM group_auction_winners WHERE group_id = ? AND collection_period = ? AND deleted_at IS NULL',
+            [groupIdNum, collectionPeriodStr]
+        );
+
+        await connection.query(
             `
             INSERT INTO group_auction_winners
-            (group_id, month, year, winner_user_id, winner_name, winner_member_phone, amount_taken, auction_date)
+            (group_id, collection_period, winner_user_id, winner_name, winner_member_phone, amount_taken, auction_date, created_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 winner_user_id = VALUES(winner_user_id),
@@ -469,19 +577,40 @@ exports.saveAuctionWinner = async (req, res) => {
                 winner_member_phone = VALUES(winner_member_phone),
                 amount_taken = VALUES(amount_taken),
                 auction_date = VALUES(auction_date),
+                updated_by = ?,
+                version = version + 1,
                 updated_at = CURRENT_TIMESTAMP
             `,
             [
                 groupIdNum,
-                monthNum,
-                yearNum,
+                collectionPeriodStr,
                 winnerUserId ? Number(winnerUserId) : null,
                 String(chitWinnerName),
                 chitWinnerMemberId ? String(chitWinnerMemberId) : null,
                 amountTakenNum,
                 auctionDate,
+                adminId ? Number(adminId) : null,
+                adminId ? Number(adminId) : null,
             ],
         );
+
+        // Audit log
+        await logAuditEvent(req, {
+            actionType: oldWinner ? 'UPDATE' : 'INSERT',
+            tableName: 'group_auction_winners',
+            recordId: groupIdNum,
+            oldValues: oldWinner || null,
+            newValues: {
+                collection_period: collectionPeriodStr,
+                winner_user_id: winnerUserId ? Number(winnerUserId) : null,
+                winner_name: String(chitWinnerName),
+                winner_member_phone: chitWinnerMemberId ? String(chitWinnerMemberId) : null,
+                amount_taken: amountTakenNum,
+                auction_date: auctionDate
+            }
+        });
+
+        await connection.commit();
 
         return res.status(200).json({
             success: true,
@@ -496,8 +625,11 @@ exports.saveAuctionWinner = async (req, res) => {
             },
         });
     } catch (error) {
+        await connection.rollback();
         console.error('Error saving auction winner:', error);
         return res.status(500).json({ success: false, message: 'Failed to save auction winner' });
+    } finally {
+        connection.release();
     }
 };
 
@@ -518,25 +650,27 @@ exports.getGroupMonthSnapshot = async (req, res) => {
         return res.status(400).json({ success: false, message: 'year must be between 2000 and 2100' });
     }
 
+    const collectionPeriodStr = `${yearNum}-${String(monthNum + 1).padStart(2, '0')}-01`;
+
     try {
         const [[payment]] = await db.promise().query(
             `
-            SELECT monthly_amount, discount_amount, commission_amount, notes
+            SELECT monthly_amount, discount_amount, commission_amount, customer_notes
             FROM group_monthly_details
-            WHERE group_id = ? AND month = ? AND year = ?
+            WHERE group_id = ? AND collection_period = ? AND deleted_at IS NULL
             LIMIT 1
             `,
-            [groupIdNum, monthNum, yearNum],
+            [groupIdNum, collectionPeriodStr],
         );
 
         const [[winner]] = await db.promise().query(
             `
             SELECT winner_name, winner_member_phone, amount_taken, auction_date
             FROM group_auction_winners
-            WHERE group_id = ? AND month = ? AND year = ?
+            WHERE group_id = ? AND collection_period = ? AND deleted_at IS NULL
             LIMIT 1
             `,
-            [groupIdNum, monthNum, yearNum],
+            [groupIdNum, collectionPeriodStr],
         );
 
         return res.status(200).json({
@@ -550,7 +684,7 @@ exports.getGroupMonthSnapshot = async (req, res) => {
                         currentMonthAmount: Number(payment.monthly_amount) || 0,
                         elathThalupadi: Number(payment.discount_amount) || 0,
                         commission: Number(payment.commission_amount) || 0,
-                        notes: payment.notes || null,
+                        notes: payment.customer_notes || null,
                     }
                     : null,
                 winner: winner

@@ -11,8 +11,8 @@ exports.getMemberPaymentHistory = async (req, res) => {
         const sql = `
             SELECT 
                 mc.id,
-                mc.month,
-                mc.year,
+                MONTH(mc.collection_period) - 1 AS month,
+                YEAR(mc.collection_period) AS year,
                 mc.amount,
                 mc.status,
                 mc.due_date,
@@ -24,7 +24,10 @@ exports.getMemberPaymentHistory = async (req, res) => {
             JOIN \`groups\` g ON mc.group_id = g.id
             JOIN users u ON mc.user_id = u.id
             WHERE mc.group_id = ? AND mc.user_id = ?
-            ORDER BY mc.year DESC, mc.month DESC
+              AND mc.deleted_at IS NULL
+              AND g.deleted_at IS NULL
+              AND u.deleted_at IS NULL
+            ORDER BY mc.collection_period DESC
         `;
 
         const [rows] = await db.promise().query(sql, [groupId, userId]);

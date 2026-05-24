@@ -1,12 +1,16 @@
 const db = require('../../config/db');
-const bcrypt = require('bcryptjs');
 const { groupEncryptAES, groupDecryptAES } = require('../../utils/decryptAES');
+const { logAuditEvent } = require('../../utils/auditLogger');
 
 // Group Creation
 exports.createGroup = async (req, res) => {
     const { groupName, totalMembers, groupAmount, duration, startDate } = req.body;
+    const creatorId = req.user ? (req.user.userId || req.user.id) : null;
 
+    const connection = await db.promise().getConnection();
     try {
+        await connection.beginTransaction();
+
         const start = startDate
             ? new Date(startDate.split('/').reverse().join('-'))
             : null;
@@ -27,8 +31,8 @@ exports.createGroup = async (req, res) => {
 
         const sql = `
             INSERT INTO \`groups\`
-            (group_code, group_name, total_members, group_amount, duration, start_date, end_date)
-            VALUES (?,?,?,?,?,?,?)
+            (group_code, group_name, total_members, group_amount, duration, start_date, end_date, created_by)
+            VALUES (?,?,?,?,?,?,?,?)
         `;
         const params = [
             finalGroupCode,
@@ -38,18 +42,47 @@ exports.createGroup = async (req, res) => {
             Number(duration) || null,
             start,
             end_date,
+            creatorId ? Number(creatorId) : null,
         ];
 
-        const [result] = await db.promise().query(sql, params);
+        const [result] = await connection.query(sql, params);
+        const insertId = result.insertId;
+
+        // Auto-create default settings in group_settings
+        const settingsSql = `
+            INSERT INTO group_settings 
+            (group_id, max_members, created_by)
+            VALUES (?, ?, ?)
+        `;
+        await connection.query(settingsSql, [
+            insertId,
+            Number(totalMembers) || 20,
+            creatorId ? Number(creatorId) : null
+        ]);
+
+        // Log the audit event
+        await logAuditEvent(req, {
+            actionType: 'INSERT',
+            tableName: 'groups',
+            recordId: insertId,
+            newValues: { groupName, totalMembers, groupAmount, duration, start_date: start }
+        });
+
+        await connection.commit();
+
         const groupData = {
-            id: result.insertId,
-            group_code: groupId,
+            id: insertId,
+            group_code: plainGroupCode,
             group_name: groupName
         };
+
         return res.status(201).json({ success: true, data: groupData });
     } catch (error) {
+        await connection.rollback();
         console.error('Error creating group:', error);
         return res.status(500).json({ success: false, message: 'Failed to create group' });
+    } finally {
+        connection.release();
     }
 };
 
@@ -59,9 +92,10 @@ exports.getGroups = async (req, res) => {
         const [rows] = await db.promise().query(`
             SELECT 
                 g.*, 
-                COALESCE((SELECT COUNT(id) FROM group_auction_winners WHERE group_id = g.id), 0) AS completedCycles,
-                COALESCE((SELECT SUM(amount) FROM monthly_collections WHERE group_id = g.id AND status = 'paid'), 0) AS collectedAmount
+                COALESCE((SELECT COUNT(id) FROM group_auction_winners WHERE group_id = g.id AND deleted_at IS NULL), 0) AS completedCycles,
+                COALESCE((SELECT SUM(amount) FROM monthly_collections WHERE group_id = g.id AND status = 'paid' AND deleted_at IS NULL), 0) AS collectedAmount
             FROM \`groups\` g 
+            WHERE g.deleted_at IS NULL
             ORDER BY g.created_at DESC
         `);
 

@@ -21,7 +21,8 @@ exports.getNotifications = async (req, res) => {
         g.status
       FROM user_grouping ug
       INNER JOIN \`groups\` g ON ug.group_id = g.id
-      WHERE ug.user_id = ?
+      INNER JOIN users u ON ug.user_id = u.id
+      WHERE ug.user_id = ? AND g.deleted_at IS NULL AND u.deleted_at IS NULL
       `,
       [userId]
     );
@@ -53,10 +54,12 @@ exports.getNotifications = async (req, res) => {
 
       const paymentMonth = dueDate.getMonth();
       const paymentYear = dueDate.getFullYear();
+      
+      const periodStr = `${paymentYear}-${String(paymentMonth + 1).padStart(2, '0')}-01`;
 
       const [paymentRows] = await db.promise().query(
-        `SELECT status, due_date FROM monthly_collections WHERE group_id = ? AND user_id = ? AND month = ? AND year = ? LIMIT 1`,
-        [group.id, userId, paymentMonth, paymentYear]
+        `SELECT status, due_date FROM monthly_collections WHERE group_id = ? AND user_id = ? AND collection_period = ? AND deleted_at IS NULL LIMIT 1`,
+        [group.id, userId, periodStr]
       );
 
       const payment = paymentRows[0];

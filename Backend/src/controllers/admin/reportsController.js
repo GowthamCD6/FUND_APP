@@ -1,5 +1,6 @@
 const db = require('../../config/db');
 const { sendSMS, generateOTP, storeOTP, verifyOTP, clearOTP } = require('../../services/smsService');
+const { logAuditEvent } = require('../../utils/auditLogger');
 
 const ACTIVE_STATUS_SET = new Set(['active', 'ongoing', 'on going', 'on_going']);
 const COMPLETED_STATUS_SET = new Set(['completed', 'complete']);
@@ -43,14 +44,18 @@ const buildDefaultDueDate = (year, month) => {
   if (!Number.isInteger(y) || !Number.isInteger(m) || m < 0 || m > 11) {
     return null;
   }
-
-  // 15th of selected month as default due date.
   return new Date(y, m, 15);
 };
 
 const generateReceiptNumber = (groupId, userId, year, month) => {
   const suffix = Date.now().toString().slice(-5);
   return `RCP-${groupId}-${userId}-${year}${String(Number(month) + 1).padStart(2, '0')}-${suffix}`;
+};
+
+const getPeriodKey = (dateVal) => {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 };
 
 exports.getReportGroups = async (req, res) => {
@@ -72,14 +77,18 @@ exports.getReportGroups = async (req, res) => {
       FROM \`groups\` g
       LEFT JOIN (
         SELECT group_id, COUNT(*) AS member_count
-        FROM user_grouping
+        FROM user_grouping ug
+        INNER JOIN users u ON ug.user_id = u.id
+        WHERE u.deleted_at IS NULL
         GROUP BY group_id
       ) members ON members.group_id = g.id
       LEFT JOIN (
         SELECT group_id, SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS collected_amount
         FROM monthly_collections
+        WHERE deleted_at IS NULL
         GROUP BY group_id
       ) collections ON collections.group_id = g.id
+      WHERE g.deleted_at IS NULL
       ORDER BY g.created_at DESC
       `,
     );
@@ -136,10 +145,9 @@ exports.getReportGroups = async (req, res) => {
 const isPaymentOverdue = (paymentHistory, targetMonth, targetYear) => {
   if (!paymentHistory || paymentHistory.length === 0) return false;
 
-  // Sort by year desc, month desc (newest first)
+  // Sort by date desc (newest first)
   const sorted = paymentHistory.sort((a, b) => {
-    if (b.year !== a.year) return b.year - a.year;
-    return b.month - a.month;
+    return new Date(b.collection_period).getTime() - new Date(a.collection_period).getTime();
   });
 
   // Find targetMonth record
@@ -177,9 +185,11 @@ exports.getGroupMemberPayments = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Valid year is required' });
   }
 
+  const collectionPeriodStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+
   try {
     const [[groupRow]] = await db.promise().query(
-      `SELECT id, group_name, total_members, group_amount, duration, start_date, status FROM \`groups\` WHERE id = ? LIMIT 1`,
+      `SELECT id, group_name, total_members, group_amount, duration, start_date, status FROM \`groups\` WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
       [groupId],
     );
 
@@ -200,7 +210,7 @@ exports.getGroupMemberPayments = async (req, res) => {
         ug.id AS mapping_id
       FROM user_grouping ug
       INNER JOIN users u ON u.id = ug.user_id
-      WHERE ug.group_id = ?
+      WHERE ug.group_id = ? AND u.deleted_at IS NULL
       ORDER BY u.name ASC
       `,
       [groupId],
@@ -212,18 +222,19 @@ exports.getGroupMemberPayments = async (req, res) => {
         mc.id,
         mc.group_id,
         mc.user_id,
-        mc.month,
-        mc.year,
+        MONTH(mc.collection_period) - 1 AS month,
+        YEAR(mc.collection_period) AS year,
+        mc.collection_period,
         mc.amount,
         mc.status,
         mc.due_date,
         mc.paid_date,
         mc.receipt_number,
-        mc.notes,
+        mc.customer_notes AS notes,
         mc.updated_at
       FROM monthly_collections mc
-      WHERE mc.group_id = ?
-      ORDER BY mc.year DESC, mc.month DESC
+      WHERE mc.group_id = ? AND mc.deleted_at IS NULL
+      ORDER BY mc.collection_period DESC
       `,
       [groupId],
     );
@@ -232,20 +243,20 @@ exports.getGroupMemberPayments = async (req, res) => {
       `
       SELECT monthly_amount, discount_amount, commission_amount
       FROM group_monthly_details
-      WHERE group_id = ? AND month = ? AND year = ?
+      WHERE group_id = ? AND collection_period = ? AND deleted_at IS NULL
       LIMIT 1
       `,
-      [groupId, month, year],
+      [groupId, collectionPeriodStr],
     );
 
     const [[auctionWinner]] = await db.promise().query(
       `
       SELECT winner_name, winner_member_phone, amount_taken, auction_date
       FROM group_auction_winners
-      WHERE group_id = ? AND month = ? AND year = ?
+      WHERE group_id = ? AND collection_period = ? AND deleted_at IS NULL
       LIMIT 1
       `,
-      [groupId, month, year],
+      [groupId, collectionPeriodStr],
     );
 
     const historyByUser = new Map();
@@ -257,6 +268,7 @@ exports.getGroupMemberPayments = async (req, res) => {
         id: row.id,
         month: row.month,
         year: row.year,
+        collection_period: row.collection_period,
         amount: toSafeNumber(row.amount, monthlyAmount),
         status: normalizePaymentStatus(row.status),
         monthName: monthNameFromNumber(row.month, row.year),
@@ -275,13 +287,13 @@ exports.getGroupMemberPayments = async (req, res) => {
       const userId = Number(member.id);
       const paymentHistory = historyByUser.get(userId) || [];
       
-      // Compute overdue status from payment history
       const computedOverdueStatus = isPaymentOverdue(paymentHistory, month, year);
       
       const currentPayment = paymentHistory.find((entry) => entry.month === month && entry.year === year) || {
         id: null,
         month,
         year,
+        collection_period: collectionPeriodStr,
         amount: monthConfiguredAmount,
         status: 'pending',
         monthName: monthNameFromNumber(month, year),
@@ -291,7 +303,6 @@ exports.getGroupMemberPayments = async (req, res) => {
         notes: null,
       };
 
-      // If overdue logic detected, override status to 'overdue'
       if (computedOverdueStatus && currentPayment.status !== 'paid') {
         currentPayment.status = 'overdue';
       }
@@ -343,6 +354,13 @@ exports.updateMemberPaymentStatus = async (req, res) => {
   const month = Number(req.body.month);
   const year = Number(req.body.year);
   const status = normalizePaymentStatus(req.body.status);
+  
+  // V4 specific new columns
+  const paymentMethod = req.body.paymentMethod || (status === 'paid' ? 'cash' : null);
+  const transactionReference = req.body.transactionReference || null;
+  const penaltyAmount = Number(req.body.penaltyAmount) || 0.00;
+  const discountReason = req.body.discountReason || null;
+  const sourcePlatform = req.body.sourcePlatform || 'admin_panel';
 
   if (!Number.isInteger(groupId) || !Number.isInteger(userId)) {
     return res.status(400).json({ success: false, message: 'Valid groupId and userId are required' });
@@ -356,14 +374,31 @@ exports.updateMemberPaymentStatus = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Valid year is required' });
   }
 
+  const collectionPeriodStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+
+  const connection = await db.promise().getConnection();
   try {
-    const [[groupRow]] = await db.promise().query(
-      `SELECT group_amount, duration FROM \`groups\` WHERE id = ? LIMIT 1`,
+    await connection.beginTransaction();
+
+    const [[groupRow]] = await connection.query(
+      `SELECT group_amount, duration FROM \`groups\` WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
       [groupId],
     );
 
     if (!groupRow) {
+      connection.release();
       return res.status(404).json({ success: false, message: 'Group not found' });
+    }
+
+    // Verify optimistic locking / finalized checks
+    const [[existingCollection]] = await connection.query(
+      'SELECT id, is_locked FROM monthly_collections WHERE group_id = ? AND user_id = ? AND collection_period = ? AND deleted_at IS NULL LIMIT 1',
+      [groupId, userId, collectionPeriodStr]
+    );
+
+    if (existingCollection && existingCollection.is_locked) {
+      connection.release();
+      return res.status(400).json({ success: false, message: 'This collection month is finalized/locked and cannot be modified.' });
     }
 
     const computedAmount = Math.round(
@@ -373,25 +408,110 @@ exports.updateMemberPaymentStatus = async (req, res) => {
     const amount = Number.isFinite(Number(req.body.amount)) ? Number(req.body.amount) : computedAmount;
     const dueDate = req.body.dueDate ? new Date(req.body.dueDate) : buildDefaultDueDate(year, month);
     const paidDate = status === 'paid' ? new Date() : null;
-    const receiptNumber = status === 'paid' ? generateReceiptNumber(groupId, userId, year, month) : null;
+    const receiptNumber = status === 'paid' ? (req.body.receiptNumber || generateReceiptNumber(groupId, userId, year, month)) : null;
     const notes = req.body.notes ? String(req.body.notes) : null;
 
-    await db.promise().query(
+    const creatorId = req.user ? (req.user.userId || req.user.id) : null;
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const deviceInfo = req.headers['user-agent'];
+
+    // 1. Insert/update monthly_collections
+    await connection.query(
       `
       INSERT INTO monthly_collections
-      (group_id, user_id, month, year, amount, status, due_date, paid_date, receipt_number, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (group_id, user_id, collection_period, amount, status, due_date, paid_date, receipt_number, customer_notes,
+       payment_method, transaction_reference, penalty_amount, discount_reason, source_platform, ip_address, device_info, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         amount = VALUES(amount),
         status = VALUES(status),
         due_date = VALUES(due_date),
         paid_date = VALUES(paid_date),
         receipt_number = VALUES(receipt_number),
-        notes = VALUES(notes),
+        customer_notes = VALUES(customer_notes),
+        payment_method = VALUES(payment_method),
+        transaction_reference = VALUES(transaction_reference),
+        penalty_amount = VALUES(penalty_amount),
+        discount_reason = VALUES(discount_reason),
+        source_platform = VALUES(source_platform),
+        ip_address = VALUES(ip_address),
+        device_info = VALUES(device_info),
+        updated_by = VALUES(created_by),
+        version = version + 1,
         updated_at = CURRENT_TIMESTAMP
       `,
-      [groupId, userId, month, year, amount, status, dueDate, paidDate, receiptNumber, notes],
+      [
+        groupId,
+        userId,
+        collectionPeriodStr,
+        amount,
+        status,
+        dueDate,
+        paidDate,
+        receiptNumber,
+        notes,
+        paymentMethod,
+        transactionReference,
+        penaltyAmount,
+        discountReason,
+        sourcePlatform,
+        ipAddress ? String(ipAddress).substring(0, 45) : null,
+        deviceInfo ? String(deviceInfo).substring(0, 255) : null,
+        creatorId ? Number(creatorId) : null
+      ],
     );
+
+    // Get the collection primary key ID
+    let collectionId = existingCollection ? existingCollection.id : null;
+    if (!collectionId) {
+      const [[lookup]] = await connection.query(
+        'SELECT id FROM monthly_collections WHERE group_id = ? AND user_id = ? AND collection_period = ? LIMIT 1',
+        [groupId, userId, collectionPeriodStr]
+      );
+      collectionId = lookup.id;
+    }
+
+    // 2. If status is paid, create/update record in payment_transactions table
+    if (status === 'paid') {
+      const txSql = `
+        INSERT INTO payment_transactions
+        (collection_id, amount, payment_method, transaction_reference, receipt_number, status, paid_at, created_by)
+        VALUES (?, ?, ?, ?, ?, 'success', ?, ?)
+        ON DUPLICATE KEY UPDATE
+          amount = VALUES(amount),
+          payment_method = VALUES(payment_method),
+          transaction_reference = VALUES(transaction_reference),
+          paid_at = VALUES(paid_at),
+          updated_by = VALUES(created_by),
+          version = version + 1
+      `;
+      await connection.query(txSql, [
+        collectionId,
+        amount,
+        paymentMethod || 'cash',
+        transactionReference || null,
+        receiptNumber,
+        paidDate,
+        creatorId ? Number(creatorId) : null
+      ]);
+    }
+
+    // 3. Log Audit Event
+    await logAuditEvent(req, {
+      actionType: 'UPDATE_PAYMENT',
+      tableName: 'monthly_collections',
+      recordId: collectionId,
+      newValues: {
+        status,
+        amount,
+        paymentMethod,
+        receiptNumber,
+        penaltyAmount,
+        discountReason
+      }
+    });
+
+    await connection.commit();
 
     return res.status(200).json({
       success: true,
@@ -410,8 +530,11 @@ exports.updateMemberPaymentStatus = async (req, res) => {
       },
     });
   } catch (error) {
+    await connection.rollback();
     console.error('Error updating member payment status:', error);
     return res.status(500).json({ success: false, message: 'Failed to update payment status' });
+  } finally {
+    connection.release();
   }
 };
 
@@ -425,7 +548,7 @@ exports.getMemberChitCard = async (req, res) => {
 
   try {
     const [[groupRow]] = await db.promise().query(
-      `SELECT id, group_name, start_date, duration, total_members, group_amount FROM \`groups\` WHERE id = ? LIMIT 1`,
+      `SELECT id, group_name, start_date, duration, total_members, group_amount FROM \`groups\` WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
       [groupId],
     );
 
@@ -434,7 +557,7 @@ exports.getMemberChitCard = async (req, res) => {
     }
 
     const [[memberRow]] = await db.promise().query(
-      `SELECT id, name, phone FROM users WHERE id = ? LIMIT 1`,
+      `SELECT id, name, phone FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
       [userId],
     );
 
@@ -444,10 +567,19 @@ exports.getMemberChitCard = async (req, res) => {
 
     const [paymentRows] = await db.promise().query(
       `
-      SELECT id, month, year, amount, status, due_date, paid_date, receipt_number
+      SELECT 
+        id,
+        MONTH(collection_period) - 1 AS month,
+        YEAR(collection_period) AS year,
+        collection_period,
+        amount,
+        status,
+        due_date,
+        paid_date,
+        receipt_number
       FROM monthly_collections
-      WHERE group_id = ? AND user_id = ?
-      ORDER BY year ASC, month ASC
+      WHERE group_id = ? AND user_id = ? AND deleted_at IS NULL
+      ORDER BY collection_period ASC
       `,
       [groupId, userId],
     );
@@ -455,8 +587,9 @@ exports.getMemberChitCard = async (req, res) => {
     const [monthMetaRows] = await db.promise().query(
       `
       SELECT
-        gmd.month,
-        gmd.year,
+        gmd.collection_period,
+        MONTH(gmd.collection_period) - 1 AS month,
+        YEAR(gmd.collection_period) AS year,
         gmd.monthly_amount,
         gmd.discount_amount,
         gmd.commission_amount,
@@ -464,21 +597,21 @@ exports.getMemberChitCard = async (req, res) => {
       FROM group_monthly_details gmd
       LEFT JOIN group_auction_winners gaw
         ON gaw.group_id = gmd.group_id
-       AND gaw.month = gmd.month
-       AND gaw.year = gmd.year
-      WHERE gmd.group_id = ?
+       AND gaw.collection_period = gmd.collection_period
+       AND gaw.deleted_at IS NULL
+      WHERE gmd.group_id = ? AND gmd.deleted_at IS NULL
       `,
       [groupId],
     );
 
     const paymentByPeriod = new Map();
     paymentRows.forEach((row) => {
-      paymentByPeriod.set(`${row.year}-${row.month}`, row);
+      paymentByPeriod.set(getPeriodKey(row.collection_period), row);
     });
 
     const metaByPeriod = new Map();
     monthMetaRows.forEach((row) => {
-      metaByPeriod.set(`${row.year}-${row.month}`, {
+      metaByPeriod.set(getPeriodKey(row.collection_period), {
         monthlyAmount: Number(row.monthly_amount || 0),
         discountAmount: Number(row.discount_amount || 0),
         commissionAmount: Number(row.commission_amount || 0),
@@ -494,7 +627,7 @@ exports.getMemberChitCard = async (req, res) => {
       const cycleDate = new Date(startDate.getFullYear(), startDate.getMonth() + idx, 1);
       const cycleMonth = cycleDate.getMonth();
       const cycleYear = cycleDate.getFullYear();
-      const key = `${cycleYear}-${cycleMonth}`;
+      const key = `${cycleYear}-${String(cycleMonth + 1).padStart(2, '0')}-01`;
       const payment = paymentByPeriod.get(key);
       const meta = metaByPeriod.get(key);
 
@@ -546,24 +679,18 @@ exports.sendPaymentOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone number, userId, and groupId are required' });
     }
 
-    // Validate phone number format (basic validation)
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(phoneNumber.replace(/\D/g, ''))) {
       return res.status(400).json({ success: false, message: 'Invalid phone number format' });
     }
 
-    // Generate OTP
     const otp = generateOTP();
-
-    // Store OTP in cache (5-minute expiry)
     storeOTP(phoneNumber, otp, 5);
 
-    // Send SMS
     const smsResult = await sendSMS(phoneNumber, `Your FUND-APP OTP is: ${otp}. Valid for 5 minutes.`);
 
     if (!smsResult.success) {
       console.error('SMS sending failed:', smsResult.error);
-      // In demo mode, we still return success so testing can continue
     }
 
     return res.status(200).json({
@@ -571,7 +698,7 @@ exports.sendPaymentOTP = async (req, res) => {
       message: 'OTP sent successfully',
       data: {
         otpSent: true,
-        phoneNumber: phoneNumber.slice(-4).padStart(phoneNumber.length, '*'), // Return masked phone for confirmation
+        phoneNumber: phoneNumber.slice(-4).padStart(phoneNumber.length, '*'),
         expiryMinutes: 5,
       },
     });
@@ -589,7 +716,6 @@ exports.verifyPaymentOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone number and OTP are required' });
     }
 
-    // Verify OTP
     const verificationResult = verifyOTP(phoneNumber, otp);
 
     if (!verificationResult.success) {
@@ -600,7 +726,6 @@ exports.verifyPaymentOTP = async (req, res) => {
       });
     }
 
-    // OTP verified successfully
     return res.status(200).json({
       success: true,
       message: 'OTP verified successfully',
