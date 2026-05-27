@@ -30,11 +30,20 @@ const AuthLoader = () => {
           }
         } catch (error) {
           console.error('Session validation failed:', error);
-          await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
-          return navigation.reset({
-            index: 0,
-            routes: [{ name: 'Welcome' }],
-          });
+          // Only clear tokens on actual session errors, not network errors
+          // This allows the app to continue even if the backend is temporarily unavailable
+          const errorMessage = error?.message || '';
+          if (errorMessage.includes('Network')) {
+            // Network error - allow user to continue, they can retry or login again
+            console.warn('Network error during session validation - continuing without validation');
+          } else {
+            // Session error - clear tokens and return to login
+            await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+            return navigation.reset({
+              index: 0,
+              routes: [{ name: 'Welcome' }],
+            });
+          }
         }
 
         if (role === 'Admin') {

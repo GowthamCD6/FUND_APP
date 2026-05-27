@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { SafeAreaView, StyleSheet, Alert } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { StyleSheet, Alert } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Router from "./src/components/Routes/Routes";
 import "react-native-get-random-values";
 import { AuthProvider } from "./src/utils/AuthContext";

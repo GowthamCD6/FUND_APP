@@ -111,32 +111,37 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone and password are required' });
     }
 
-    const findUserSql = 'SELECT id, name, phone, role, password FROM users WHERE phone = ?';
+    const findUserSql = 'SELECT id, name as username, phone, role, password FROM users WHERE phone = ?';
     db.query(findUserSql, [phone], async (err, results) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({ success: false, message: 'Server error' });
       }
+      
       if (results.length === 0) {
         return res.status(401).json({ success: false, message: 'Invalid phone or password' });
       }
 
       const user = results[0];
 
-      let isPasswordValid = false;
-      try {
-        const aesBase64 = passwordEncryptAES(password);
-        isPasswordValid = await bcrypt.compare(aesBase64, user.password);
-      } catch (e) {
-        console.error('AES encryption error:', e);
-        return res.status(500).json({ success: false, message: 'Server error' });
-      }
+      // Re-apply the AES encryption to the plaintext password to match how users are stored
+      const encryptedAES = passwordEncryptAES(password);
+
+      // Compare the AES encrypted password with the hashed password in the database
+      const isPasswordValid = await bcrypt.compare(encryptedAES, user.password);
 
       if (!isPasswordValid) {
         return res.status(401).json({ success: false, message: 'Invalid phone or password' });
       }
 
-      const tokenPayload = { userId: user.id, username: user.name, phone: user.phone, role: user.role };
+      // Generate JWT tokens
+      const tokenPayload = { 
+        userId: user.id, 
+        username: user.username, 
+        phone: user.phone, 
+        role: user.role 
+      };
+      
       const accessToken = generateToken(tokenPayload, '15m');
       const refreshToken = generateRefreshToken({ userId: user.id });
 
@@ -149,7 +154,12 @@ exports.login = async (req, res) => {
         success: true,
         message: 'Login successful',
         data: {
-          user: { id: user.id, username: user.name, phone: user.phone, role: user.role },
+          user: { 
+            id: user.id, 
+            username: user.username, 
+            phone: user.phone, 
+            role: user.role 
+          },
           accessToken,
           refreshToken,
         },

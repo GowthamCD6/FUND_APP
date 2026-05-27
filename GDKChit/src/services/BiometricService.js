@@ -23,6 +23,7 @@ class BiometricService {
   async init() {
     if (this.isInitialized) {
       console.log('BiometricService: Already initialized');
+      this.notifyListeners(); // Notify listeners even if already initialized
       return;
     }
 

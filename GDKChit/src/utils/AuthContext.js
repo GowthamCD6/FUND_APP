@@ -43,6 +43,8 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Auth check failed:', error);
+      // Don't fail completely on network errors - allow app to continue
+      // User can still navigate and retry
       setIsAuthenticated(false);
       setUser(null);
     } finally {
