@@ -8,6 +8,8 @@ import {
   Dimensions,
   Modal,
   FlatList,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -15,6 +17,7 @@ import styles from '../Auction/AuctionSty.jsx';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import GroupCard from '../../../../../../components/GroupCard/GroupCard';
+import ApiService from '../../../../../../services/ApiService';
 import BettingAuction from './Betting-Auction/BettingAuction';
 import RandomAuction from './Random-Auction/RandomAuction';
 import MemberSelectingModal from './MemberSelecting/MemberSelectingModal';
@@ -39,68 +42,120 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [auctionResult, setAuctionResult] = useState(null);
 
-  // Mock data - Based on app structure
-  const availableGroups = [
-    {
-      id: 1,
-      name: 'Business Investment Group',
-      totalMembers: 20,
-      monthlyAmount: 10000,
-      groupAmount: 200000,
-      status: 'active',
-      completedCycles: 8,
-      totalCycles: 12,
-      nextDueDate: '2025-12-20',
-      completedDate: null,
-      collectedAmount: 80000,
-      members: [
-        { id: '1001', name: 'முருகன் குமார்', phone: '9876543210', avatar: 'MK' },
-        { id: '1002', name: 'லட்சுமி செல்வி', phone: '9876543211', avatar: 'LS' },
-        { id: '1003', name: 'ராஜேஷ் பாபு', phone: '9876543212', avatar: 'RB' },
-        { id: '1004', name: 'பிரியா நாயர்', phone: '9876543213', avatar: 'PN' },
-        { id: '1005', name: 'கார்த்திக் ராஜ்', phone: '9876543214', avatar: 'KR' },
-        { id: '1006', name: 'சுதா தேவி', phone: '9876543215', avatar: 'SD' },
-      ]
-    },
-    {
-      id: 2,
-      name: 'Family Savings Circle',
-      totalMembers: 12,
-      monthlyAmount: 5000,
-      groupAmount: 60000,
-      status: 'active',
-      completedCycles: 6,
-      totalCycles: 12,
-      nextDueDate: '2025-12-18',
-      completedDate: null,
-      collectedAmount: 30000,
-      members: [
-        { id: '2001', name: 'ஹரி பாஸ்கர்', phone: '9876543220', avatar: 'HB' },
-        { id: '2002', name: 'மீரா தேவி', phone: '9876543221', avatar: 'MD' },
-        { id: '2003', name: 'சந்தீப் ராவ்', phone: '9876543222', avatar: 'SR' },
-        { id: '2004', name: 'நித்யா ஸ்ரீ', phone: '9876543223', avatar: 'NS' },
-      ]
-    },
-    {
-      id: 3,
-      name: 'Student Education Fund',
-      totalMembers: 15,
-      monthlyAmount: 3000,
-      groupAmount: 45000,
-      status: 'active',
-      completedCycles: 10,
-      totalCycles: 12,
-      nextDueDate: '2025-12-25',
-      completedDate: null,
-      collectedAmount: 30000,
-      members: [
-        { id: '3001', name: 'விக்ரம் சிங்', phone: '9876543230', avatar: 'VS' },
-        { id: '3002', name: 'பூர்ணிமா', phone: '9876543231', avatar: 'PU' },
-        { id: '3003', name: 'ராம் குமார்', phone: '9876543232', avatar: 'RK' },
-        { id: '3004', name: 'கீர்த்தனா', phone: '9876543233', avatar: 'KI' },
-      ]
+  // Backend state
+  const [groups, setGroups] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(true);
+  const [savingWinner, setSavingWinner] = useState(false);
+
+  // Fetch groups on component mount
+  useEffect(() => {
+    fetchGroups();
+  }, []);
+
+  // Fetch groups from backend
+  const fetchGroups = async () => {
+    try {
+      setLoadingGroups(true);
+      const response = await ApiService.makeRequest('/admin/groups/getGroups', { method: 'GET' });
+      console.log('Groups API Response:', response);
+      
+      // Parse JSON from response
+      const data = await response.json();
+      console.log('Parsed Groups Data:', data);
+      
+      if (data && data.success && Array.isArray(data.groups)) {
+        const transformedGroups = data.groups.map(group => ({
+          id: group.id,
+          name: group.name || group.group_name || 'Unknown',
+          totalMembers: group.totalMembers || group.total_members || group.members_count || 0,
+          monthlyAmount: group.monthlyAmount || group.monthly_amount || 0,
+          groupAmount: group.groupAmount || group.group_amount || group.total_amount || 0,
+          status: group.status?.toLowerCase() === 'ongoing' || group.status?.toLowerCase() === 'ongo' ? 'active' : group.status?.toLowerCase(),
+          completedCycles: group.completedCycles || group.completed_cycles || 0,
+          totalCycles: group.totalCycles || group.total_cycles || group.total_months || group.duration || 12,
+          nextDueDate: group.nextDueDate || group.next_due_date,
+          collectedAmount: group.collectedAmount || group.collected_amount || group.coalesce || 0,
+          members: group.members || [],
+        }));
+        console.log('Transformed Groups:', transformedGroups);
+        setGroups(transformedGroups);
+      } else {
+        console.warn('Invalid response format:', data);
+        setGroups([]);
+        if (!data?.success) {
+          Alert.alert('Error', data?.message || 'Failed to fetch groups');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+      setGroups([]);
+      Alert.alert('Error', 'Network error: ' + (error.message || 'Failed to fetch groups'));
+    } finally {
+      setLoadingGroups(false);
     }
-  ];
+  };
+
+  // Fetch group members when group is selected
+  const fetchGroupMembers = async (groupId) => {
+    try {
+      const response = await ApiService.makeRequest(`/admin/groups/getMembers?groupId=${groupId}`, { method: 'GET' });
+      const data = await response.json();
+      
+      if (data && data.success && Array.isArray(data.members)) {
+        const transformedMembers = data.members.map(member => ({
+          id: member.id?.toString(),
+          name: member.name || member.user_name || '',
+          phone: member.phone || '',
+          avatar: (member.name || member.user_name || 'U').substring(0, 2).toUpperCase(),
+          currentBid: 0,
+        }));
+        setSelectedGroup(prev => ({
+          ...prev,
+          members: transformedMembers,
+        }));
+      } else {
+        Alert.alert('Error', data?.message || 'Failed to fetch group members');
+      }
+    } catch (error) {
+      console.error('Error fetching group members:', error);
+      Alert.alert('Error', 'Failed to fetch group members');
+    }
+  };
+
+  // Save auction winner to backend
+  const saveAuctionWinnerToBackend = async (winner) => {
+    try {
+      setSavingWinner(true);
+      const payload = {
+        groupId: selectedGroup.id,
+        month: new Date().getMonth(),
+        year: new Date().getFullYear(),
+        chitWinnerName: winner.name,
+        chitWinnerMemberId: winner.id,
+        amountTaken: selectedGroup.monthlyAmount,
+        datePicked: new Date().toISOString(),
+        winnerUserId: winner.id,
+      };
+      const response = await ApiService.makeRequest('/admin/groups/saveAuctionWinner', { 
+        method: 'POST', 
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      
+      if (data && data.success) {
+        Alert.alert('Success', `${winner.name} has been declared as the winner!`);
+        setShowResultModal(false);
+        resetAuction();
+      } else {
+        Alert.alert('Error', data?.message || 'Failed to save auction winner');
+      }
+    } catch (error) {
+      console.error('Error saving auction winner:', error);
+      Alert.alert('Error', 'Failed to save auction winner');
+    } finally {
+      setSavingWinner(false);
+    }
+  };
 
   // Utility functions
   const formatCurrency = (amount) => {
@@ -116,7 +171,12 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
     setSelectedGroup(group);
     setSelectedMembers([]);
     setParticipants([]);
-    setShowMemberModal(true);
+    if (group.members && group.members.length > 0) {
+      setShowMemberModal(true);
+    } else {
+      fetchGroupMembers(group.id);
+      setShowMemberModal(true);
+    }
   };
 
   const handleGroupCardPress = (group) => {
@@ -217,24 +277,41 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
     </View>
   );
 
-  const renderGroupSelector = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Select Group for {activeTab === 'betting' ? 'Betting' : 'Random'} Auction</Text>
-      <FlatList
-        data={availableGroups.filter(g => g.status === 'active')}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <GroupCard 
-            group={item}
-            onPress={handleGroupCardPress}
-            onArrowPress={handleGroupCardPress}
+  const renderGroupSelector = () => {
+    if (loadingGroups) {
+      return (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Loading groups...</Text>
+          <ActivityIndicator size="large" color="#6B46C1" style={{ marginTop: 20 }} />
+        </View>
+      );
+    }
+    
+    const activeGroups = groups.filter(g => g.status?.toLowerCase() === 'active' || g.status?.toLowerCase() === 'ongoing');
+    
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Select Group for {activeTab === 'betting' ? 'Betting' : 'Random'} Auction</Text>
+        {activeGroups.length === 0 ? (
+          <Text style={styles.emptyText}>No active groups available</Text>
+        ) : (
+          <FlatList
+            data={activeGroups}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <GroupCard 
+                group={item}
+                onPress={handleGroupCardPress}
+                onArrowPress={handleGroupCardPress}
+              />
+            )}
+            scrollEnabled={false}
+            contentContainerStyle={styles.groupListContainer}
           />
         )}
-        scrollEnabled={false}
-        contentContainerStyle={styles.groupListContainer}
-      />
-    </View>
-  );
+      </View>
+    );
+  };
 
   const renderMemberItem = ({ item }) => {
     const isSelected = selectedMembers.some(m => m.id === item.id);
@@ -369,21 +446,19 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
           {auctionResult?.type === 'betting' ? (
             <>
               <TouchableOpacity 
-                style={[styles.actionButton, !adminSelectedWinner && styles.disabledButton]}
+                style={[styles.actionButton, (!adminSelectedWinner || savingWinner) && styles.disabledButton]}
                 onPress={() => {
                   if (adminSelectedWinner) {
-                    // This action confirms the winner and ends the auction flow.
-                    Alert.alert(
-                      'Winner Confirmed',
-                      `${adminSelectedWinner.name} has been declared as the winner with a bid of ${formatCurrency(adminSelectedWinner.bid)}`
-                    );
-                    setShowResultModal(false);
-                    resetAuction(); // Reset for a new auction
+                    saveAuctionWinnerToBackend(adminSelectedWinner);
                   }
                 }}
-                disabled={!adminSelectedWinner}
+                disabled={!adminSelectedWinner || savingWinner}
               >
-                <Text style={styles.actionButtonText}>Confirm Winner</Text>
+                {savingWinner ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.actionButtonText}>Confirm Winner</Text>
+                )}
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.actionButton, styles.cancelButton]}

@@ -221,14 +221,15 @@ exports.getGroupMembers = async (req, res) => {
             WHERE ug.group_id = ? AND u.deleted_at IS NULL
         `;
         const [rows] = await db.promise().query(sql, [groupIdNum]);
-        const data = rows.map(r => ({
-            mappingId: r.mappingId,
+        const members = rows.map(r => ({
+            id: r.userId.toString(),
+            name: r.name || r.nick_name || 'User',
+            phone: r.phone || '',
+            avatar: (r.name || r.nick_name || 'U').substring(0, 2).toUpperCase(),
             userId: r.userId,
-            name: r.name,
-            nickname: r.nick_name,
-            phone: r.phone,
+            mappingId: r.mappingId,
         }));
-        return res.status(200).json({ success: true, data });
+        return res.status(200).json({ success: true, members });
     } catch (error) {
         console.error('Error fetching group members:', error);
         return res.status(500).json({ success: false, message: 'Failed to fetch group members' });

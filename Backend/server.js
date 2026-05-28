@@ -1,9 +1,370 @@
 const app = require('./src/app');
 const PORT = process.env.PORT || 5000;
 const http = require('http');
+const WebSocket = require('ws');
+const jwt = require('jsonwebtoken');
 const server = http.createServer(app);
 
 const db = require('./src/config/db')
+
+// Initialize WebSocket server
+const wss = new WebSocket.Server({ server, path: '/api/auction' });
+
+// Store active auction sessions
+const auctionSessions = new Map();
+const clientSessions = new Map();
+
+// WebSocket connection handler
+wss.on('connection', (ws, req) => {
+  try {
+    // Parse URL params
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const token = url.searchParams.get('token');
+    const userId = url.searchParams.get('userId');
+    const userType = url.searchParams.get('userType') || 'user';
+
+    if (!token || !userId) {
+      ws.close(1008, 'Missing authentication');
+      return;
+    }
+
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Store client session
+    const clientId = `${userId}-${Date.now()}`;
+    clientSessions.set(clientId, {
+      ws,
+      userId,
+      userName: decoded.name || `User ${userId}`,
+      userType,
+      timestamp: Date.now(),
+    });
+
+    console.log(`✅ WebSocket connected: ${clientId} (${userType})`);
+
+    // Send connection confirmation
+    ws.send(JSON.stringify({
+      type: 'connected',
+      data: { clientId, userType }
+    }));
+
+    // Handle incoming messages
+    ws.on('message', (message) => {
+      try {
+        const { type, data } = JSON.parse(message);
+        handleAuctionMessage(type, data, clientId, userType);
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    });
+
+    // Handle disconnection
+    ws.on('close', () => {
+      clientSessions.delete(clientId);
+      console.log(`🔌 WebSocket disconnected: ${clientId}`);
+    });
+
+    // Handle errors
+    ws.on('error', (error) => {
+      console.error('❌ WebSocket error:', error);
+    });
+
+  } catch (error) {
+    console.error('WebSocket authentication failed:', error.message);
+    ws.close(1008, 'Authentication failed');
+  }
+});
+
+// Handle auction messages
+function handleAuctionMessage(type, data, clientId, userType) {
+  console.log(`📨 [${userType}] ${type}:`, data);
+
+  switch (type) {
+    case 'start_auction':
+      if (userType === 'admin') {
+        startAuction(data, clientId);
+      }
+      break;
+    
+    case 'place_bid':
+      placeBid(data, clientId);
+      break;
+    
+    case 'pause_auction':
+      if (userType === 'admin') {
+        pauseAuction(data.groupId, clientId);
+      }
+      break;
+    
+    case 'resume_auction':
+      if (userType === 'admin') {
+        resumeAuction(data.groupId, clientId);
+      }
+      break;
+    
+    case 'end_auction':
+      if (userType === 'admin') {
+        endAuction(data.groupId, clientId);
+      }
+      break;
+    
+    case 'reset_auction':
+      if (userType === 'admin') {
+        resetAuction(data.groupId, clientId);
+      }
+      break;
+    
+    default:
+      console.warn('Unknown message type:', type);
+  }
+}
+
+// Auction functions
+function startAuction(data, adminClientId) {
+  const { groupId, initialAmount, duration } = data;
+  const auctionId = `auction-${groupId}`;
+  
+  const auction = {
+    groupId,
+    initialAmount,
+    duration,
+    startTime: Date.now(),
+    status: 'active',
+    bids: [],
+    adminClientId,
+    participants: new Set(),
+  };
+
+  auctionSessions.set(auctionId, auction);
+
+  // Broadcast to all clients
+  broadcastToGroup(groupId, {
+    type: 'auction_started',
+    data: {
+      groupId,
+      initialAmount,
+      duration,
+      startTime: auction.startTime,
+    }
+  });
+
+  // Start timer broadcast every second
+  const timerInterval = setInterval(() => {
+    const auction = auctionSessions.get(auctionId);
+    if (!auction) {
+      clearInterval(timerInterval);
+      return;
+    }
+
+    const elapsed = Math.floor((Date.now() - auction.startTime) / 1000);
+    const remainingTime = Math.max(0, auction.duration - elapsed);
+
+    broadcastToGroup(groupId, {
+      type: 'time_update',
+      data: { remainingTime, elapsed }
+    });
+
+    if (remainingTime === 0) {
+      clearInterval(timerInterval);
+      endAuction(groupId, adminClientId);
+    }
+  }, 1000);
+
+  auction.timerInterval = timerInterval;
+  console.log(`🎯 Auction started: ${auctionId}`);
+}
+
+function placeBid(data, clientId) {
+  const { groupId, amount, userId, userName, timestamp } = data;
+  const auctionId = `auction-${groupId}`;
+  const auction = auctionSessions.get(auctionId);
+
+  if (!auction) {
+    const client = clientSessions.get(clientId);
+    if (client?.ws) {
+      client.ws.send(JSON.stringify({
+        type: 'error',
+        data: { message: 'Auction not found or not active' }
+      }));
+    }
+    return;
+  }
+
+  // Add bid to auction history
+  auction.bids.push({
+    userId,
+    userName,
+    amount,
+    timestamp,
+    clientId,
+  });
+
+  auction.participants.add(userId);
+
+  console.log(`💰 Bid placed: ${userName} - ₹${amount}`);
+
+  // Broadcast bid to all clients
+  broadcastToGroup(groupId, {
+    type: 'bid_placed',
+    data: {
+      userId,
+      userName,
+      amount,
+      timestamp,
+      totalBids: auction.bids.length,
+    }
+  });
+}
+
+function pauseAuction(groupId, adminClientId) {
+  const auctionId = `auction-${groupId}`;
+  const auction = auctionSessions.get(auctionId);
+
+  if (auction && auction.timerInterval) {
+    clearInterval(auction.timerInterval);
+    auction.status = 'paused';
+    
+    broadcastToGroup(groupId, {
+      type: 'auction_paused',
+      data: { groupId }
+    });
+  }
+}
+
+function resumeAuction(groupId, adminClientId) {
+  const auctionId = `auction-${groupId}`;
+  const auction = auctionSessions.get(auctionId);
+
+  if (auction && auction.status === 'paused') {
+    auction.status = 'active';
+    auction.startTime = Date.now() - (auction.duration - auction.remainingTime) * 1000;
+
+    const timerInterval = setInterval(() => {
+      const auction = auctionSessions.get(auctionId);
+      if (!auction) {
+        clearInterval(timerInterval);
+        return;
+      }
+
+      const elapsed = Math.floor((Date.now() - auction.startTime) / 1000);
+      const remainingTime = Math.max(0, auction.duration - elapsed);
+
+      broadcastToGroup(groupId, {
+        type: 'time_update',
+        data: { remainingTime }
+      });
+
+      if (remainingTime === 0) {
+        clearInterval(timerInterval);
+        endAuction(groupId, adminClientId);
+      }
+    }, 1000);
+
+    auction.timerInterval = timerInterval;
+
+    broadcastToGroup(groupId, {
+      type: 'auction_resumed',
+      data: { groupId }
+    });
+  }
+}
+
+function endAuction(groupId, adminClientId) {
+  const auctionId = `auction-${groupId}`;
+  const auction = auctionSessions.get(auctionId);
+
+  if (!auction) return;
+
+  if (auction.timerInterval) {
+    clearInterval(auction.timerInterval);
+  }
+
+  auction.status = 'ended';
+
+  // Find winner (highest bid)
+  let winner = null;
+  if (auction.bids.length > 0) {
+    const maxBid = auction.bids.reduce((max, bid) => 
+      bid.amount > max.amount ? bid : max
+    );
+    winner = maxBid;
+  }
+
+  broadcastToGroup(groupId, {
+    type: 'auction_ended',
+    data: {
+      groupId,
+      winner: winner ? {
+        userId: winner.userId,
+        userName: winner.userName,
+        amount: winner.amount,
+        timestamp: winner.timestamp,
+      } : null,
+      totalBids: auction.bids.length,
+    }
+  });
+
+  // Save winner to database
+  if (winner) {
+    saveAuctionWinnerToDb(groupId, winner);
+  }
+
+  auctionSessions.delete(auctionId);
+  console.log(`🏁 Auction ended: ${auctionId}`);
+}
+
+function resetAuction(groupId, adminClientId) {
+  const auctionId = `auction-${groupId}`;
+  const auction = auctionSessions.get(auctionId);
+
+  if (auction && auction.timerInterval) {
+    clearInterval(auction.timerInterval);
+  }
+
+  auctionSessions.delete(auctionId);
+
+  broadcastToGroup(groupId, {
+    type: 'auction_reset',
+    data: { groupId }
+  });
+
+  console.log(`🔄 Auction reset: ${auctionId}`);
+}
+
+// Broadcast to all clients in a group
+function broadcastToGroup(groupId, message) {
+  clientSessions.forEach((session) => {
+    if (session.ws.readyState === WebSocket.OPEN) {
+      session.ws.send(JSON.stringify(message));
+    }
+  });
+}
+
+// Save auction winner to database
+async function saveAuctionWinnerToDb(groupId, winner) {
+  try {
+    const query = `
+      INSERT INTO group_auction_winners 
+      (group_id, winner_user_id, winner_name, amount, month, year, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, NOW())
+    `;
+    
+    const date = new Date();
+    await db.promise().query(query, [
+      groupId,
+      winner.userId,
+      winner.userName,
+      winner.amount,
+      date.getMonth() + 1,
+      date.getFullYear(),
+    ]);
+
+    console.log(`💾 Auction winner saved to database: ${winner.userName}`);
+  } catch (error) {
+    console.error('Error saving auction winner:', error);
+  }
+}
 
 app.get("/", (req, res) => {
   res.send("OK");

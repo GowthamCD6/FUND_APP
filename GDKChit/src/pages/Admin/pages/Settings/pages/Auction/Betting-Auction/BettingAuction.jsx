@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuctionWebSocketService from '../../../../../../../services/AuctionWebSocketService';
 
 const AdminAuctionMonitor = ({
   participants = [],
@@ -20,43 +22,145 @@ const AdminAuctionMonitor = ({
   const [initialAmount, setInitialAmount] = useState('');
   const [isAuctionActive, setIsAuctionActive] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(300);
+  const [auctionStartTime, setAuctionStartTime] = useState(null);
+  const [auctionDuration, setAuctionDuration] = useState(300);
   const [auctionHistory, setAuctionHistory] = useState([]);
   const [winner, setWinner] = useState(null);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [auctionStarted, setAuctionStarted] = useState(false);
+  const [activeBidders, setActiveBidders] = useState([]);
+  const [wsConnected, setWsConnected] = useState(false);
+  const unsubscribeRef = useRef([]);
 
-  // Timer effect
+  // Connect to WebSocket on mount
   useEffect(() => {
-    let timer;
-    if (isAuctionActive && timeRemaining > 0) {
-      timer = setTimeout(() => {
-        setTimeRemaining(timeRemaining - 1);
-      }, 1000);
-    } else if (timeRemaining === 0 && isAuctionActive) {
-      endAuction();
-    }
-    return () => clearTimeout(timer);
-  }, [isAuctionActive, timeRemaining]);
-
-  // Listen for bid updates from participants
-  useEffect(() => {
-    participants.forEach(p => {
-      if (p.bid > 0 && p.bidTime) {
-        const existingEntry = auctionHistory.find(
-          h => h.userId === p.id && h.bid === p.bid
-        );
+    const initWebSocket = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const userId = await AsyncStorage.getItem('userId');
         
-        if (!existingEntry) {
-          setAuctionHistory(prev => [...prev, {
-            userId: p.id,
-            user: p.name,
-            bid: p.bid,
-            time: new Date(p.bidTime).toLocaleTimeString(),
-          }]);
+        if (token && userId) {
+          // Connect to auction WebSocket
+          await AuctionWebSocketService.connect(token, userId, 'admin');
+          setWsConnected(true);
+
+          // Listen for auction events
+          const unsub1 = AuctionWebSocketService.on('auction_started', handleAuctionStartedEvent);
+          const unsub2 = AuctionWebSocketService.on('bid_placed', handleBidPlacedEvent);
+          const unsub3 = AuctionWebSocketService.on('time_update', handleTimeUpdateEvent);
+          const unsub4 = AuctionWebSocketService.on('auction_ended', handleAuctionEndedEvent);
+          const unsub5 = AuctionWebSocketService.on('participants_updated', handleParticipantsUpdatedEvent);
+          const unsub6 = AuctionWebSocketService.on('error', handleWebSocketError);
+
+          unsubscribeRef.current = [unsub1, unsub2, unsub3, unsub4, unsub5, unsub6];
         }
+      } catch (error) {
+        console.error('Failed to connect WebSocket:', error);
+        Alert.alert('Connection Error', 'Failed to connect to auction server');
       }
+    };
+
+    initWebSocket();
+
+    return () => {
+      unsubscribeRef.current.forEach(unsub => unsub?.());
+      AuctionWebSocketService.disconnect();
+    };
+  }, []);
+
+  // Synchronized timer effect
+  useEffect(() => {
+    if (!isAuctionActive || !auctionStartTime) return;
+
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - auctionStartTime) / 1000);
+      const remaining = Math.max(0, auctionDuration - elapsed);
+      
+      setTimeRemaining(remaining);
+
+      if (remaining === 0) {
+        endAuction();
+      }
+    }, 100); // Update every 100ms for smooth timer
+
+    return () => clearInterval(interval);
+  }, [isAuctionActive, auctionStartTime, auctionDuration]);
+
+  // WebSocket event handlers
+  const handleAuctionStartedEvent = (data) => {
+    console.log('🎯 Auction started event:', data);
+    setAuctionStartTime(data.startTime);
+    setAuctionDuration(data.duration || 300);
+    setIsAuctionActive(true);
+    setAuctionStarted(true);
+    setAuctionHistory([]);
+    setActiveBidders([]);
+  };
+
+  const handleBidPlacedEvent = (data) => {
+    console.log('💰 Bid placed event:', data);
+    const { userId, userName, amount, timestamp } = data;
+    
+    // Update participants
+    setParticipants(prev => {
+      const updated = [...prev];
+      const bidderIndex = updated.findIndex(p => p.id === userId);
+      if (bidderIndex >= 0) {
+        updated[bidderIndex] = {
+          ...updated[bidderIndex],
+          bid: amount,
+          bidTime: timestamp,
+        };
+      }
+      return updated;
     });
-  }, [participants]);
+
+    // Add to history
+    setAuctionHistory(prev => [...prev, {
+      userId,
+      user: userName,
+      bid: amount,
+      time: new Date(timestamp).toLocaleTimeString(),
+    }]);
+
+    // Update active bidders
+    setActiveBidders(prev => {
+      const exists = prev.find(b => b.userId === userId);
+      if (exists) {
+        return prev.map(b => b.userId === userId ? { ...b, amount, timestamp } : b);
+      }
+      return [...prev, { userId, userName, amount, timestamp }];
+    });
+  };
+
+  const handleTimeUpdateEvent = (data) => {
+    // Server-sent time sync for all clients
+    console.log('⏰ Time update from server:', data);
+    setTimeRemaining(Math.max(0, data.remainingTime));
+  };
+
+  const handleAuctionEndedEvent = (data) => {
+    console.log('🏁 Auction ended event:', data);
+    const { winner: winnerData } = data;
+    if (winnerData) {
+      const winnerObj = participants.find(p => p.id === winnerData.userId);
+      setWinner(winnerObj || winnerData);
+      setShowWinnerModal(true);
+    }
+    setIsAuctionActive(false);
+  };
+
+  const handleParticipantsUpdatedEvent = (data) => {
+    console.log('👥 Participants updated:', data);
+    if (data.participants) {
+      setParticipants(data.participants);
+    }
+  };
+
+  const handleWebSocketError = (error) => {
+    console.error('⚠️ WebSocket error:', error);
+    Alert.alert('Connection Issue', error.message || 'WebSocket connection lost');
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -91,27 +195,35 @@ const AdminAuctionMonitor = ({
       return;
     }
 
+    if (!selectedGroup?.id) {
+      Alert.alert('Error', 'No group selected');
+      return;
+    }
+
     if (isAuctionActive) {
       Alert.alert('Auction Running', 'The betting auction is already in progress.');
       return;
     }
 
-    setIsAuctionActive(true);
-    setAuctionStarted(true);
-    setTimeRemaining(300);
-    setWinner(null);
-    Alert.alert('Auction Started', 'Participants can now place their bids!');
+    // Send auction start event via WebSocket
+    AuctionWebSocketService.startAuction(
+      selectedGroup.id,
+      parseFloat(initialAmount),
+      300
+    );
   };
 
   const pauseAuction = () => {
+    if (!selectedGroup?.id) return;
+    AuctionWebSocketService.pauseAuction(selectedGroup.id);
     setIsAuctionActive(false);
-    Alert.alert('Auction Paused', 'The auction has been paused.');
   };
 
   const resumeAuction = () => {
+    if (!selectedGroup?.id) return;
     if (timeRemaining > 0) {
+      AuctionWebSocketService.resumeAuction(selectedGroup.id);
       setIsAuctionActive(true);
-      Alert.alert('Auction Resumed', 'The auction has resumed.');
     } else {
       Alert.alert('Cannot Resume', 'Time has expired. Please reset the auction.');
     }
@@ -127,12 +239,16 @@ const AdminAuctionMonitor = ({
           text: 'Reset',
           style: 'destructive',
           onPress: () => {
+            if (selectedGroup?.id) {
+              AuctionWebSocketService.resetAuction(selectedGroup.id);
+            }
             setParticipants(participants.map(p => ({ ...p, bid: 0, bidTime: null })));
             setIsAuctionActive(false);
             setAuctionStarted(false);
             setTimeRemaining(300);
             setWinner(null);
             setAuctionHistory([]);
+            setActiveBidders([]);
             setInitialAmount('');
             Alert.alert('Success', 'Auction reset successfully!');
           },
@@ -142,20 +258,25 @@ const AdminAuctionMonitor = ({
   };
 
   const endAuction = () => {
-    setIsAuctionActive(false);
+    if (!selectedGroup?.id) return;
     
     const validBids = participants.filter(p => p.bid > 0);
     if (validBids.length === 0) {
       Alert.alert('Auction Ended', 'No participants placed bids.');
+      setIsAuctionActive(false);
       return;
     }
 
     const auctionWinner = validBids.reduce((prev, current) => 
       (prev.bid > current.bid) ? prev : current
     );
+
+    // Send end auction event via WebSocket
+    AuctionWebSocketService.endAuction(selectedGroup.id);
     
     setWinner(auctionWinner);
     setShowWinnerModal(true);
+    setIsAuctionActive(false);
     
     if (onAuctionComplete) {
       onAuctionComplete({
@@ -343,6 +464,60 @@ const AdminAuctionMonitor = ({
     </View>
   );
 
+  const renderLiveBidders = () => (
+    <View style={styles.sectionCard}>
+      <View style={styles.sectionHeader}>
+        <MaterialCommunityIcons name="lightning-bolt" size={20} color="#10B981" />
+        <Text style={styles.sectionTitle}>Live Bidders</Text>
+        {wsConnected && (
+          <View style={styles.connectionBadge}>
+            <View style={styles.connectionDot} />
+            <Text style={styles.connectionText}>Connected</Text>
+          </View>
+        )}
+      </View>
+      
+      {activeBidders.length === 0 ? (
+        <View style={styles.emptyState}>
+          <MaterialCommunityIcons name="account-multiple-outline" size={40} color="#D1D5DB" />
+          <Text style={styles.emptyText}>Waiting for bids...</Text>
+        </View>
+      ) : (
+        <View>
+          {activeBidders
+            .sort((a, b) => b.amount - a.amount)
+            .map((bidder, index) => (
+              <View key={bidder.userId} style={[styles.activeBidderRow, index === 0 && styles.topActiveBidder]}>
+                <View style={styles.bidderInfo}>
+                  <View style={[styles.activeBidderAvatar, index === 0 && styles.topActiveBidderAvatar]}>
+                    <Text style={styles.avatarText}>
+                      {bidder.userName.substring(0, 2).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.bidderDetails}>
+                    <Text style={styles.bidderName}>{bidder.userName}</Text>
+                    <Text style={styles.bidderTime}>
+                      {new Date(bidder.timestamp).toLocaleTimeString()}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.bidderAmountContainer}>
+                  <Text style={[styles.bidderAmount, index === 0 && styles.topBidderAmount]}>
+                    {formatCurrency(bidder.amount)}
+                  </Text>
+                  {index === 0 && (
+                    <View style={styles.leadingBadge}>
+                      <MaterialCommunityIcons name="crown" size={14} color="#FFD700" />
+                    </View>
+                  )}
+                </View>
+              </View>
+            ))}
+        </View>
+      )}
+    </View>
+  );
+
   const renderWinnerModal = () => (
     <Modal
       visible={showWinnerModal}
@@ -379,6 +554,7 @@ const AdminAuctionMonitor = ({
         {renderHeader()}
         {renderTimer()}
         {renderStats()}
+        {renderLiveBidders()}
         {renderLeaderboard()}
         {renderBidHistory()}
       </ScrollView>
@@ -767,6 +943,92 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#6B46C1',
     letterSpacing: -0.2,
+  },
+
+  // Live Bidders
+  connectionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 'auto',
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 5,
+  },
+  connectionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+  },
+  connectionText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#059669',
+  },
+  activeBidderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#F0FDF4',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#BBEF63',
+  },
+  topActiveBidder: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 2,
+    borderColor: '#FCD34D',
+  },
+  bidderInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  activeBidderAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  topActiveBidderAvatar: {
+    backgroundColor: '#F59E0B',
+  },
+  bidderDetails: {
+    flex: 1,
+  },
+  bidderName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  bidderTime: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  bidderAmountContainer: {
+    alignItems: 'flex-end',
+    position: 'relative',
+  },
+  bidderAmount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  topBidderAmount: {
+    color: '#F59E0B',
+    fontSize: 15,
+  },
+  leadingBadge: {
+    marginTop: 4,
   },
   
   // Modal

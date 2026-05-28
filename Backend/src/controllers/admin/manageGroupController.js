@@ -91,7 +91,12 @@ exports.getGroups = async (req, res) => {
     try {
         const [rows] = await db.promise().query(`
             SELECT 
-                g.*, 
+                g.*,
+                COALESCE((
+                    SELECT monthly_amount FROM group_monthly_details 
+                    WHERE group_id = g.id AND deleted_at IS NULL 
+                    ORDER BY created_at DESC LIMIT 1
+                ), 0) AS monthly_amount,
                 COALESCE((SELECT COUNT(id) FROM group_auction_winners WHERE group_id = g.id AND deleted_at IS NULL), 0) AS completedCycles,
                 COALESCE((SELECT SUM(amount) FROM monthly_collections WHERE group_id = g.id AND status = 'paid' AND deleted_at IS NULL), 0) AS collectedAmount
             FROM \`groups\` g 
@@ -99,8 +104,10 @@ exports.getGroups = async (req, res) => {
             ORDER BY g.created_at DESC
         `);
 
+        console.log('Fetched groups from DB:', rows ? rows.length : 0, 'groups');
+
         if (!rows || rows.length === 0) {
-            return res.status(200).json({ success: true, data: [] });
+            return res.status(200).json({ success: true, groups: [] });
         }
 
         rows.forEach(group => {
@@ -120,10 +127,14 @@ exports.getGroups = async (req, res) => {
             try {
                 // Mapping structure
                 group.name = group.group_name;
-                group.totalMembers = group.total_members;
-                group.groupAmount = group.group_amount;
+                group.totalMembers = group.total_members || 0;
+                group.groupAmount = group.group_amount || 0;
+                group.monthlyAmount = group.monthly_amount || 0;
+                group.totalCycles = group.total_months || group.duration || 12;
+                group.members_count = group.current_members || group.total_members || 0;
                 group.currentMembers = group.current_members;
                 group.startDate = group.start_date;
+                group.members = [];
                 
                 // --- Dynamic Next Due Date Logic ---
                 if (group.start_date) {
@@ -165,9 +176,9 @@ exports.getGroups = async (req, res) => {
             }
         });
         
-        return res.status(200).json({ success: true, data: rows });
+        return res.status(200).json({ success: true, groups: rows });
     } catch (error) {
-        console.error('Error fetching groups:', error);
-        return res.status(500).json({ success: false, message: 'Failed to fetch groups' });
+        console.error('ERROR in getGroups:', error.message, error.stack);
+        return res.status(500).json({ success: false, message: 'Failed to fetch groups: ' + error.message });
     }
 };
