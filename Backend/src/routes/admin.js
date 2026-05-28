@@ -28,6 +28,9 @@ router.get('/notifications', authenticateToken, groupManagement.getAdminNotifica
 router.post('/users/addUser', authenticateToken, userManagement.addUser);
 router.get('/users/getAllUsers', authenticateToken, userManagement.getAllUsers);
 router.post('/users/deleteUser', authenticateToken, userManagement.deleteUser);
+router.post('/users/updatePassword', authenticateToken, userManagement.updatePassword);
+router.post('/users/resetPassword', authenticateToken, userManagement.resetPassword);
+router.get('/users/:userId/passwordDetails', authenticateToken, userManagement.getUserPasswordDetails);
 
 router.get('/collections/getMemberHistory', authenticateToken, monthlyCollection.getMemberPaymentHistory);
 

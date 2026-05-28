@@ -11,7 +11,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'All fields are required' });
     }
     // Check if user already exists
-    const checkUserSql = 'SELECT * FROM users WHERE phone = ?';
+    const checkUserSql = 'SELECT * FROM users WHERE phone = ? AND deleted_at IS NULL';
     db.query(checkUserSql, [phone], async (err, results) => {
       if (err) {
         console.error('Database error:', err);
@@ -20,8 +20,11 @@ exports.register = async (req, res) => {
       if (results.length > 0) {
         return res.status(409).json({ success: false, message: 'User with this phone already exists' });
       }
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      
+      // Encrypt password with AES, then hash with bcrypt (consistent with password management)
+      const encryptedPassword = passwordEncryptAES(password);
+      const hashedPassword = await bcrypt.hash(encryptedPassword, 12);
+      
       const insertUserSql = `INSERT INTO users (name, phone, password, created_at) VALUES (?, ?, ?, NOW())`;
       db.query(insertUserSql, [name, phone, hashedPassword], (err, result) => {
         if (err) {
@@ -58,7 +61,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone and password are required' });
     }
 
-    const findUserSql = 'SELECT id, name as username, phone, role, password FROM users WHERE phone = ?';
+    const findUserSql = 'SELECT id, name as username, phone, role, password FROM users WHERE phone = ? AND deleted_at IS NULL';
     db.query(findUserSql, [phone], async (err, results) => {
       if (err) {
         console.error('Database error:', err);
@@ -71,8 +74,10 @@ exports.login = async (req, res) => {
 
       const user = results[0];
 
-      // Compare the plaintext password with the bcrypt hash
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+      // Encrypt the password with AES first, then compare with bcrypt
+      // This ensures the same hashing method is used as when password is created/updated
+      const encryptedPassword = passwordEncryptAES(password);
+      const isPasswordValid = await bcrypt.compare(encryptedPassword, user.password);
 
       if (!isPasswordValid) {
         return res.status(401).json({ success: false, message: 'Invalid phone or password' });

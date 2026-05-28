@@ -124,3 +124,147 @@ exports.deleteUser = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to delete user' });
     }
 };
+
+// Update user password (admin only)
+exports.updatePassword = async (req, res) => {
+    const { userId, newPassword } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
+
+    if (!userId || !newPassword) {
+        return res.status(400).json({ success: false, message: 'User ID and new password are required' });
+    }
+
+    try {
+        // Validate user exists
+        const [userRows] = await db.promise().query(
+            'SELECT id FROM users WHERE id = ? AND deleted_at IS NULL',
+            [userId]
+        );
+
+        if (userRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Hash the new password using AES encryption + bcrypt
+        const encryptedPassword = passwordEncryptAES(newPassword);
+        const hashedPassword = await bcrypt.hash(encryptedPassword, 12);
+
+        // Update password
+        const [result] = await db.promise().query(
+            'UPDATE users SET password = ?, updated_by = ?, version = version + 1 WHERE id = ? AND deleted_at IS NULL',
+            [hashedPassword, adminId ? Number(adminId) : null, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(500).json({ success: false, message: 'Failed to update password' });
+        }
+
+        // Log audit event
+        await logAuditEvent(req, {
+            actionType: 'UPDATE',
+            tableName: 'users',
+            recordId: Number(userId),
+            newValues: { password: '***' }
+        });
+
+        return res.status(200).json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Error updating password:', error);
+        return res.status(500).json({ success: false, message: 'Failed to update password' });
+    }
+};
+
+// Reset user password to default (based on YOB)
+exports.resetPassword = async (req, res) => {
+    const { userId } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
+
+    if (!userId) {
+        return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    try {
+        // Get user's year of birth (stored during creation or from profile)
+        const [userRows] = await db.promise().query(
+            'SELECT id, year_of_birth FROM users WHERE id = ? AND deleted_at IS NULL',
+            [userId]
+        );
+
+        if (userRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const yob = userRows[0].year_of_birth;
+        if (!yob) {
+            return res.status(400).json({ success: false, message: 'User year of birth not found. Cannot reset password.' });
+        }
+
+        // Hash the YOB as the default password
+        const plainPassword = String(yob);
+        const encryptedPassword = passwordEncryptAES(plainPassword);
+        const hashedPassword = await bcrypt.hash(encryptedPassword, 12);
+
+        // Update password
+        const [result] = await db.promise().query(
+            'UPDATE users SET password = ?, updated_by = ?, version = version + 1 WHERE id = ? AND deleted_at IS NULL',
+            [hashedPassword, adminId ? Number(adminId) : null, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(500).json({ success: false, message: 'Failed to reset password' });
+        }
+
+        // Log audit event
+        await logAuditEvent(req, {
+            actionType: 'UPDATE',
+            tableName: 'users',
+            recordId: Number(userId),
+            newValues: { password: 'RESET_TO_DEFAULT' }
+        });
+
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Password reset to default successfully',
+            defaultPassword: yob 
+        });
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        return res.status(500).json({ success: false, message: 'Failed to reset password' });
+    }
+};
+
+// Get user password details
+exports.getUserPasswordDetails = async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId) {
+        return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    try {
+        const [userRows] = await db.promise().query(
+            'SELECT id, name, phone, role, created_at, updated_at FROM users WHERE id = ? AND deleted_at IS NULL',
+            [userId]
+        );
+
+        if (userRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const user = userRows[0];
+        return res.status(200).json({
+            success: true,
+            data: {
+                userId: user.id,
+                name: user.name,
+                phone: user.phone,
+                role: user.role,
+                createdAt: user.created_at,
+                lastUpdatedAt: user.updated_at
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching password details:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch password details' });
+    }
+};

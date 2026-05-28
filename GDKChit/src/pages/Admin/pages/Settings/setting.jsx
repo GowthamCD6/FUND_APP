@@ -21,6 +21,7 @@ import UserL from './pages/UserLocation/UserL';
 import EditProfile from './pages/AccountDetails/EditProfile';
 import MyLocation from './pages/MyLocation/MyLocation';
 import SecurityLockScreen from './pages/SecurityLock/SecurityPermision';
+import PasswordManagement from './pages/PasswordManagement/PasswordManagement';
 import Share from './Model/ShareApp/Share';
 import Rate from './Model/RateApp/Rate';
 
@@ -30,6 +31,7 @@ const Settings = () => {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showMyLocation, setShowMyLocation] = useState(false);
   const [showSecurityLock, setShowSecurityLock] = useState(false);
+  const [showPasswordManagement, setShowPasswordManagement] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showRate, setShowRate] = useState(false);
   const navigation = useNavigation();
@@ -48,6 +50,9 @@ const Settings = () => {
     new Animated.Value(Dimensions.get('window').width),
   ).current;
   const securityLockAnim = useRef(
+    new Animated.Value(Dimensions.get('window').width),
+  ).current;
+  const passwordManagementAnim = useRef(
     new Animated.Value(Dimensions.get('window').width),
   ).current;
 
@@ -132,6 +137,22 @@ const Settings = () => {
     }
   }, [showSecurityLock, securityLockAnim]);
 
+  useEffect(() => {
+    if (showPasswordManagement) {
+      Animated.timing(passwordManagementAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(passwordManagementAnim, {
+        toValue: Dimensions.get('window').width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showPasswordManagement, passwordManagementAnim]);
+
   const [userData, setUserData] = useState({
     name: 'Admin',
     role: 'Super Admin',
@@ -187,6 +208,14 @@ const Settings = () => {
           iconColor: '#666666',
           onPress: () => {
             setShowSecurityLock(true);
+          },
+        },
+        {
+          icon: 'lock-reset',
+          title: 'Manage Passwords',
+          iconColor: '#10B981',
+          onPress: () => {
+            setShowPasswordManagement(true);
           },
         },
       ],
@@ -312,7 +341,8 @@ const Settings = () => {
           !showUserL &&
           !showEditProfile &&
           !showMyLocation &&
-          !showSecurityLock && (
+          !showSecurityLock &&
+          !showPasswordManagement && (
             <>
               <Header 
                 title="Settings"
@@ -514,6 +544,27 @@ const Settings = () => {
             />
           </Animated.View>
         )}
+
+        {/* Password Management Overlay */}
+        {showPasswordManagement && (
+          <Animated.View
+            style={[
+              styles.fullScreenOverlay,
+              {transform: [{translateX: passwordManagementAnim}]},
+            ]}>
+            <PasswordManagement
+              onClose={() => {
+                Animated.timing(passwordManagementAnim, {
+                  toValue: Dimensions.get('window').width,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start(() => {
+                  setShowPasswordManagement(false);
+                });
+              }}
+            />
+          </Animated.View>
+        )}
       </View>
 
       {/* Share Modal */}
@@ -533,7 +584,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-    marginTop: 30,
   },
   content: {
     flex: 1,
