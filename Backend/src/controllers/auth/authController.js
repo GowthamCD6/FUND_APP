@@ -1,106 +1,53 @@
 const bcrypt = require('bcryptjs');
+const { passwordEncryptAES } = require('../../utils/decryptAES');
 const db = require('../../config/db');
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../../middleware/auth');
-const { passwordEncryptAES } = require('../../utils/decryptAES');
 
 // User Registration
-// exports.register = async (req, res) => {
-//   try {
-//     const { name, phone, password } = req.body;
-
-//     // Validation
-//     if (!name || !phone || !password) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'All fields are required'
-//       });
-//     }
-
-//     // Check if user already exists
-//     const checkUserSql = 'SELECT * FROM users WHERE phone = ?';
-//     db.query(checkUserSql, [phone], async (err, results) => {
-//       if (err) {
-//         console.error('Database error:', err);
-//         return res.status(500).json({
-//           success: false,
-//           message: 'Server error'
-//         });
-//       }
-
-//       if (results.length > 0) {
-//         return res.status(409).json({
-//           success: false,
-//           message: 'User with this email or username already exists'
-//         });
-//       }
-
-//       // Hash password
-//       const saltRounds = 10;
-
-//       const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-//       // Insert new user
-//       const insertUserSql = `
-//         INSERT INTO users (name, phone, password, created_at) 
-//         VALUES (?, ?, ?, ?, ?, NOW())
-//       `;
-
-//       db.query(insertUserSql, [name, phone, hashedPassword], (err, result) => {
-//         if (err) {
-//           console.error('Database error:', err);
-//           return res.status(500).json({
-//             success: false,
-//             message: 'Error creating user'
-//           });
-//         }
-
-//         const userId = result.insertId;
-
-//         // Generate tokens
-//         const tokenPayload = {
-//           userId: userId,
-//           username: name,
-//           email: email,
-//           fullName: fullName
-//         };
-
-//         const accessToken = generateToken(tokenPayload);
-//         const refreshToken = generateRefreshToken({ userId: userId });
-
-//         // Store refresh token in database
-//         const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
-//         db.query(storeTokenSql, [userId, refreshToken], (err) => {
-//           if (err) {
-//             console.error('Error storing refresh token:', err);
-//           }
-//         });
-
-//         res.status(201).json({
-//           success: true,
-//           message: 'User registered successfully',
-//           data: {
-//             user: {
-//               id: userId,
-//               username: name,
-//               email: email,
-//               fullName: fullName,
-//               state: state
-//             },
-//             accessToken: accessToken,
-//             refreshToken: refreshToken
-//           }
-//         });
-//       });
-//     });
-
-//   } catch (error) {
-//     console.error('Registration error:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Server error'
-//     });
-//   }
-// };
+exports.register = async (req, res) => {
+  try {
+    const { name, phone, password } = req.body;
+    if (!name || !phone || !password) {
+      return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+    // Check if user already exists
+    const checkUserSql = 'SELECT * FROM users WHERE phone = ?';
+    db.query(checkUserSql, [phone], async (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
+      }
+      if (results.length > 0) {
+        return res.status(409).json({ success: false, message: 'User with this phone already exists' });
+      }
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      const insertUserSql = `INSERT INTO users (name, phone, password, created_at) VALUES (?, ?, ?, NOW())`;
+      db.query(insertUserSql, [name, phone, hashedPassword], (err, result) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({ success: false, message: 'Error creating user' });
+        }
+        const userId = result.insertId;
+        const tokenPayload = { userId, username: name, phone };
+        const accessToken = generateToken(tokenPayload);
+        const refreshToken = generateRefreshToken({ userId });
+        const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
+        db.query(storeTokenSql, [userId, refreshToken], (e) => {
+          if (e) console.error('Error storing refresh token:', e);
+        });
+        return res.status(201).json({
+          success: true,
+          message: 'User registered successfully',
+          data: { user: { id: userId, username: name, phone }, accessToken, refreshToken }
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
 
 // User Login
 exports.login = async (req, res) => {
@@ -124,11 +71,8 @@ exports.login = async (req, res) => {
 
       const user = results[0];
 
-      // Re-apply the AES encryption to the plaintext password to match how users are stored
-      const encryptedAES = passwordEncryptAES(password);
-
-      // Compare the AES encrypted password with the hashed password in the database
-      const isPasswordValid = await bcrypt.compare(encryptedAES, user.password);
+      // Compare the plaintext password with the bcrypt hash
+      const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
         return res.status(401).json({ success: false, message: 'Invalid phone or password' });

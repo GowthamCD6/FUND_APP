@@ -167,9 +167,6 @@ class ApiService {
 
       if (data.success) {
         await this.saveTokens(data.data.accessToken, data.data.refreshToken);
-        if (!data.data.refreshToken) {
-          console.warn('Login response did not include a refresh token.');
-        }
         return data;
       } else {
         throw new Error(data.message || 'Login failed');

@@ -55,20 +55,24 @@ export const AuthProvider = ({ children }) => {
   const login = async (phone, password) => {
     try {
       const response = await ApiService.login(phone, password);
+      
       if (response.success) {
-        setUser(response.data.user);
+        const user = response.data.user;
+        setUser(user);
         setIsAuthenticated(true);
 
-        // Save user details to AsyncStorage (for backward compatibility)
-        await AsyncStorage.setItem('userName', response.data.user.username ? String(response.data.user.username) : '');
-        await AsyncStorage.setItem('userPhone', response.data.user.phone ? String(response.data.user.phone) : '');
+        // Save user details to AsyncStorage
+        await AsyncStorage.setItem('userName', user.username ? String(user.username) : '');
+        await AsyncStorage.setItem('userPhone', user.phone ? String(user.phone) : '');
+        await AsyncStorage.setItem('userRole', user.role ? String(user.role) : 'User');
         await AsyncStorage.setItem('userLoginMethod', 'jwt');
 
         return response;
       } else {
-        throw new Error(response.message);
+        throw new Error(response.message || 'Login failed');
       }
     } catch (error) {
+      console.error('AuthContext login error:', error.message);
       throw error;
     }
   };

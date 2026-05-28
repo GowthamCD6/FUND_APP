@@ -91,33 +91,27 @@ const Login = () => {
             return;
         }
 
-        if (phoneError || passwordError) {
-            Alert.alert("Validation Error", "Please fix the errors before continuing.");
-            return;
-        }
-
         setLoading(true);
+        
         try {
-            const phone = phoneNumber;
-            const response = await login(phone, password);
-            if (!response.success) {
-                throw new Error(response.message || "Login failed");
-            }
-
-            const user = response.data.user;
-
-            await AsyncStorage.setItem("userPhone", user.phone ? String(user.phone) : "");
-            await AsyncStorage.setItem("userName", user.username ? String(user.username) : "");
-            await AsyncStorage.setItem("userRole", user.role ? String(user.role) : "");
-            await AsyncStorage.setItem("userLoginMethod", "jwt");
+            const response = await login(phoneNumber, password);
             
-            navigation.reset({
-                index: 0, 
-                routes: [{ name: "TabRouter", params: { role: user.role } }],
-            });
+            if (response.success) {
+                const user = response.data.user;
+                
+                // Save user data to AsyncStorage
+                await AsyncStorage.setItem("userPhone", String(user.phone));
+                await AsyncStorage.setItem("userName", String(user.username));
+                await AsyncStorage.setItem("userRole", String(user.role));
+                
+                // Navigate to home page based on role
+                navigation.reset({
+                    index: 0, 
+                    routes: [{ name: "TabRouter", params: { role: user.role } }],
+                });
+            }
         } catch (error) {
-            console.error("Login Error:", error);
-            Alert.alert("Login Failed", error.message || "Invalid username or password.");
+            Alert.alert("Login Failed", error.message || "Invalid phone or password.");
         } finally {
             setLoading(false);
         }
