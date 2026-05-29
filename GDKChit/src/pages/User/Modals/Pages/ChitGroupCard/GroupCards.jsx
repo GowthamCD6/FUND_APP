@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,30 +9,44 @@ import {
   Platform,
   StatusBar,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../components/HeaderComponent/Header';
 import ChitCard from './ChitCard';
+import ApiService from '../../../../../services/ApiService';
 
 const { width } = Dimensions.get('window');
 
 const GroupCards = ({ onBack, onSelectGroup }) => {
   const [showChitCard, setShowChitCard] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [userGroups, setUserGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample data for 20 groups
-  const userGroups = Array.from({ length: 20 }, (_, index) => ({
-    id: `GRP-2024-${String(index + 1).padStart(3, '0')}`,
-    groupName: `Group ${String.fromCharCode(65 + (index % 26))}${index > 25 ? Math.floor(index / 26) : ''}`,
-    totalMembers: 20,
-    monthlyContribution: (index + 1) * 1000 + 2000,
-    nextPaymentDate: '2025-09-15',
-    paymentStatus: index % 3 === 0 ? 'completed' : 'pending',
-    currentMonth: Math.floor(Math.random() * 15) + 1,
-    totalMonths: 20,
-    yourPosition: Math.floor(Math.random() * 20) + 1,
-    estimatedReceiveAmount: (index + 1) * 15000 + 50000,
-  }));
+  // Fetch portfolio data from backend
+  useEffect(() => {
+    fetchPortfolio();
+  }, []);
+
+  const fetchPortfolio = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await ApiService.getPortfolio();
+      if (response.success && response.data) {
+        setUserGroups(response.data);
+      } else {
+        setError('Failed to fetch groups');
+      }
+    } catch (err) {
+      console.error('Error fetching portfolio:', err);
+      setError(err.message || 'Error fetching groups');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGroupSelect = (group) => {
     setSelectedGroup(group);
@@ -62,13 +76,13 @@ const GroupCards = ({ onBack, onSelectGroup }) => {
         <Text style={styles.groupListCardName}>{item.groupName}</Text>
         <View style={[
           styles.groupListStatusBadge,
-          item.paymentStatus === 'completed' ? styles.statusCompleted : styles.statusPending
+          ['completed', 'paid'].includes(item.paymentStatus) ? styles.statusCompleted : styles.statusPending
         ]}>
           <Text style={[
             styles.groupListStatusText,
-            item.paymentStatus === 'completed' ? styles.statusCompletedText : styles.statusPendingText
+            ['completed', 'paid'].includes(item.paymentStatus) ? styles.statusCompletedText : styles.statusPendingText
           ]}>
-            {item.paymentStatus === 'completed' ? 'PAID' : 'PENDING'}
+            {['completed', 'paid'].includes(item.paymentStatus) ? 'PAID' : 'PENDING'}
           </Text>
         </View>
       </View>
@@ -104,39 +118,62 @@ const GroupCards = ({ onBack, onSelectGroup }) => {
         />
 
         <View style={styles.groupListContainer}>
-          {/* Summary Stats */}
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Portfolio Summary</Text>
-            <View style={styles.summaryStats}>
-              <View style={styles.summaryStatItem}>
-                <Text style={styles.summaryStatValue}>{userGroups.length}</Text>
-                <Text style={styles.summaryStatLabel}>Total Groups</Text>
-              </View>
-              <View style={styles.summaryStatItem}>
-                <Text style={styles.summaryStatValue}>
-                  {userGroups.filter(g => g.paymentStatus === 'completed').length}
-                </Text>
-                <Text style={styles.summaryStatLabel}>Paid</Text>
-              </View>
-              <View style={styles.summaryStatItem}>
-                <Text style={styles.summaryStatValue}>
-                  {userGroups.filter(g => g.paymentStatus === 'pending').length}
-                </Text>
-                <Text style={styles.summaryStatLabel}>Pending</Text>
-              </View>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6B46C1" />
+              <Text style={styles.loadingText}>Loading groups...</Text>
             </View>
-          </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#DC2626" />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={fetchPortfolio}>
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : userGroups.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons name="folder-open-outline" size={48} color="#9CA3AF" />
+              <Text style={styles.emptyText}>No groups found</Text>
+              <Text style={styles.emptySubText}>Join a group to get started</Text>
+            </View>
+          ) : (
+            <>
+              {/* Summary Stats */}
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryTitle}>Portfolio Summary</Text>
+                <View style={styles.summaryStats}>
+                  <View style={styles.summaryStatItem}>
+                    <Text style={styles.summaryStatValue}>{userGroups.length}</Text>
+                    <Text style={styles.summaryStatLabel}>Total Groups</Text>
+                  </View>
+                  <View style={styles.summaryStatItem}>
+                    <Text style={styles.summaryStatValue}>
+                      {userGroups.filter(g => ['completed', 'paid'].includes(g.paymentStatus)).length}
+                    </Text>
+                    <Text style={styles.summaryStatLabel}>Paid</Text>
+                  </View>
+                  <View style={styles.summaryStatItem}>
+                    <Text style={styles.summaryStatValue}>
+                      {userGroups.filter(g => g.paymentStatus === 'pending').length}
+                    </Text>
+                    <Text style={styles.summaryStatLabel}>Pending</Text>
+                  </View>
+                </View>
+              </View>
 
-          {/* Groups Grid */}
-          <FlatList
-            data={userGroups}
-            renderItem={renderGroupCard}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.groupListContent}
-            columnWrapperStyle={styles.groupListRow}
-          />
+              {/* Groups Grid */}
+              <FlatList
+                data={userGroups}
+                renderItem={renderGroupCard}
+                keyExtractor={(item) => item.id.toString()}
+                numColumns={2}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.groupListContent}
+                columnWrapperStyle={styles.groupListRow}
+              />
+            </>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -160,6 +197,60 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+
+  // Loading, Error & Empty States
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B46C1',
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    paddingHorizontal: 32,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#DC2626',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#6B46C1',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#1A2A4E',
+    fontWeight: '600',
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+  },
+
   summaryCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,

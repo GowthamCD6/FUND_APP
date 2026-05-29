@@ -235,6 +235,25 @@ class ApiService {
     const refreshToken = await this.getRefreshToken();
     return !!accessToken && !!refreshToken;
   }
+
+  // Portfolio methods
+  async getPortfolio() {
+    try {
+      const response = await this.makeRequest('/user/portfolio');
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getGroupMonthlyInfo(groupId) {
+    try {
+      const response = await this.makeRequest(`/user/portfolio/${groupId}/months`);
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export default new ApiService();

@@ -12,39 +12,31 @@ exports.register = async (req, res) => {
     }
     // Check if user already exists
     const checkUserSql = 'SELECT * FROM users WHERE phone = ? AND deleted_at IS NULL';
-    db.query(checkUserSql, [phone], async (err, results) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({ success: false, message: 'Server error' });
-      }
-      if (results.length > 0) {
-        return res.status(409).json({ success: false, message: 'User with this phone already exists' });
-      }
-      
-      // Encrypt password with AES, then hash with bcrypt (consistent with password management)
-      const encryptedPassword = passwordEncryptAES(password);
-      const hashedPassword = await bcrypt.hash(encryptedPassword, 12);
-      
-      const insertUserSql = `INSERT INTO users (name, phone, password, created_at) VALUES (?, ?, ?, NOW())`;
-      db.query(insertUserSql, [name, phone, hashedPassword], (err, result) => {
-        if (err) {
-          console.error('Database error:', err);
-          return res.status(500).json({ success: false, message: 'Error creating user' });
-        }
-        const userId = result.insertId;
-        const tokenPayload = { userId, username: name, phone };
-        const accessToken = generateToken(tokenPayload);
-        const refreshToken = generateRefreshToken({ userId });
-        const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
-        db.query(storeTokenSql, [userId, refreshToken], (e) => {
-          if (e) console.error('Error storing refresh token:', e);
-        });
-        return res.status(201).json({
-          success: true,
-          message: 'User registered successfully',
-          data: { user: { id: userId, username: name, phone }, accessToken, refreshToken }
-        });
-      });
+    const [results] = await db.promise().query(checkUserSql, [phone]);
+
+    if (results.length > 0) {
+      return res.status(409).json({ success: false, message: 'User with this phone already exists' });
+    }
+    
+    // Encrypt password with AES, then hash with bcrypt (consistent with password management)
+    const encryptedPassword = passwordEncryptAES(password);
+    const hashedPassword = await bcrypt.hash(encryptedPassword, 12);
+    
+    const insertUserSql = `INSERT INTO users (name, phone, password, created_at) VALUES (?, ?, ?, NOW())`;
+    const [result] = await db.promise().query(insertUserSql, [name, phone, hashedPassword]);
+    
+    const userId = result.insertId;
+    const tokenPayload = { userId, username: name, phone };
+    const accessToken = generateToken(tokenPayload);
+    const refreshToken = generateRefreshToken({ userId });
+    
+    const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
+    await db.promise().query(storeTokenSql, [userId, refreshToken]);
+
+    return res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      data: { user: { id: userId, username: name, phone }, accessToken, refreshToken }
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -62,57 +54,49 @@ exports.login = async (req, res) => {
     }
 
     const findUserSql = 'SELECT id, name as username, phone, role, password FROM users WHERE phone = ? AND deleted_at IS NULL';
-    db.query(findUserSql, [phone], async (err, results) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({ success: false, message: 'Server error' });
-      }
-      
-      if (results.length === 0) {
-        return res.status(401).json({ success: false, message: 'Invalid phone or password' });
-      }
+    const [results] = await db.promise().query(findUserSql, [phone]);
 
-      const user = results[0];
+    if (results.length === 0) {
+      return res.status(401).json({ success: false, message: 'Invalid phone or password' });
+    }
 
-      // Encrypt the password with AES first, then compare with bcrypt
-      // This ensures the same hashing method is used as when password is created/updated
-      const encryptedPassword = passwordEncryptAES(password);
-      const isPasswordValid = await bcrypt.compare(encryptedPassword, user.password);
+    const user = results[0];
 
-      if (!isPasswordValid) {
-        return res.status(401).json({ success: false, message: 'Invalid phone or password' });
-      }
+    // Encrypt the password with AES first, then compare with bcrypt
+    const encryptedPassword = passwordEncryptAES(password);
+    const isPasswordValid = await bcrypt.compare(encryptedPassword, user.password);
 
-      // Generate JWT tokens
-      const tokenPayload = { 
-        userId: user.id, 
-        username: user.username, 
-        phone: user.phone, 
-        role: user.role 
-      };
-      
-      const accessToken = generateToken(tokenPayload, '15m');
-      const refreshToken = generateRefreshToken({ userId: user.id });
+    if (!isPasswordValid) {
+      return res.status(401).json({ success: false, message: 'Invalid phone or password' });
+    }
 
-      const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
-      db.query(storeTokenSql, [user.id, refreshToken], (e) => {
-        if (e) console.error('Error storing refresh token:', e);
-      });
+    // Generate JWT tokens
+    const tokenPayload = { 
+      userId: user.id, 
+      username: user.username, 
+      phone: user.phone, 
+      role: user.role 
+    };
+    
+    const accessToken = generateToken(tokenPayload, '15m');
+    const refreshToken = generateRefreshToken({ userId: user.id });
 
-      return res.json({
-        success: true,
-        message: 'Login successful',
-        data: {
-          user: { 
-            id: user.id, 
-            username: user.username, 
-            phone: user.phone, 
-            role: user.role 
-          },
-          accessToken,
-          refreshToken,
+    const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
+    await db.promise().query(storeTokenSql, [user.id, refreshToken]);
+
+    return res.json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        user: { 
+          id: user.id, 
+          username: user.username, 
+          phone: user.phone, 
+          role: user.role 
         },
-      });
+        accessToken,
+        refreshToken,
+      },
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -143,63 +127,54 @@ exports.refreshToken = async (req, res) => {
 
     // Check if refresh token exists in database
     const checkTokenSql = 'SELECT * FROM refresh_tokens WHERE token = ? AND user_id = ? AND expires_at > NOW()';
-    db.query(checkTokenSql, [refreshToken, decoded.userId], (err, results) => {
-      if (err) {
-        console.error('Database error:', err);
-        if (err.code === 'ER_NO_SUCH_TABLE') {
-          return res.status(500).json({
-            success: false,
-            message: 'Refresh token store not configured'
-          });
-        }
+    const [results] = await db.promise().query(checkTokenSql, [refreshToken, decoded.userId]);
 
-        return res.status(500).json({
-          success: false,
-          message: 'Server error'
-        });
-      }
-
-      if (!results || results.length === 0) {
-        return res.status(403).json({
-          success: false,
-          message: 'Invalid or expired refresh token'
-        });
-      }
-
-      // Get user details
-      const getUserSql = 'SELECT * FROM users WHERE id = ?';
-      db.query(getUserSql, [decoded.userId], (err, userResults) => {
-        if (err || !userResults || userResults.length === 0) {
-          return res.status(500).json({
-            success: false,
-            message: 'User not found'
-          });
-        }
-
-        const user = userResults[0];
-
-        // Generate new access token
-        const tokenPayload = {
-          userId: user.id,
-          username: user.name,
-          email: user.email,
-          fullName: user.full_name
-        };
-
-        const accessToken = generateToken(tokenPayload);
-
-        res.json({
-          success: true,
-          data: {
-            accessToken: accessToken
-          }
-        });
+    if (!results || results.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid or expired refresh token'
       });
+    }
+
+    // Get user details
+    const getUserSql = 'SELECT * FROM users WHERE id = ?';
+    const [userResults] = await db.promise().query(getUserSql, [decoded.userId]);
+
+    if (!userResults || userResults.length === 0) {
+      return res.status(500).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const user = userResults[0];
+
+    // Generate new access token
+    const tokenPayload = {
+      userId: user.id,
+      username: user.name,
+      email: user.email,
+      fullName: user.full_name
+    };
+
+    const accessToken = generateToken(tokenPayload);
+
+    res.json({
+      success: true,
+      data: {
+        accessToken: accessToken
+      }
     });
 
   } catch (error) {
-    console.error('Refresh token error:', error);
-    res.status(500).json({
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      return res.status(500).json({
+        success: false,
+        message: 'Refresh token store not configured'
+      });
+    }
+    console.error('Refresh Token Error:', error);
+    return res.status(500).json({
       success: false,
       message: 'Server error'
     });

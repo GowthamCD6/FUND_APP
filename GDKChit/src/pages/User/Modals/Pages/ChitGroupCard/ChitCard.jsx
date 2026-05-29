@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,22 +6,95 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../components/HeaderComponent/Header';
+import ApiService from '../../../../../services/ApiService';
 
 const ChitCard = ({ selectedGroup, onBack }) => {
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   if (!selectedGroup) return null;
 
-  // Create 20 rows for chit details table
-  const chitRows = Array.from({ length: 20 }, (_, index) => ({
-    serialNo: index + 1,
-    date: index < selectedGroup.currentMonth ? `${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/09/2024` : '',
-    auctionAmount: index < selectedGroup.currentMonth ? Math.floor(Math.random() * 5000) + 15000 : '',
-    receivedAmount: index < selectedGroup.currentMonth ? Math.floor(Math.random() * 3000) + 12000 : '',
-    commission: index < selectedGroup.currentMonth ? Math.floor(Math.random() * 500) + 200 : '',
-    signature: index < selectedGroup.currentMonth ? '✓' : '',
-  }));
+  // Fetch monthly details from backend
+  useEffect(() => {
+    fetchMonthlyDetails();
+  }, [selectedGroup.id]);
+
+  const fetchMonthlyDetails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await ApiService.getGroupMonthlyInfo(selectedGroup.id);
+      if (response.success && response.data) {
+        const formattedData = formatMonthlyData(response.data);
+        setMonthlyData(formattedData);
+      } else {
+        setError('Failed to fetch payment details');
+      }
+    } catch (err) {
+      console.error('Error fetching monthly details:', err);
+      setError(err.message || 'Error fetching payment details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadStatement = async () => {
+    Alert.alert(
+      'Download Statement',
+      `Preparing statement for ${selectedGroup?.groupName || 'Group'}...\\n\\nYou will need an API endpoint to generate and download the actual PDF/Excel file.`
+    );
+  };
+
+  // Transform backend data to table format
+  const formatMonthlyData = (data) => {
+    const totalMonths = selectedGroup.totalMonths || 20;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // Create array with all month slots (1 to totalMonths)
+    const allMonthsData = Array.from({ length: totalMonths }, (_, index) => {
+      const monthNumber = index + 1;
+      
+      // Find matching data for this month position
+      let monthData = null;
+      let monthKey = null;
+      for (const key in data) {
+        const details = data[key];
+        // Try to match by month number (you might need to adjust this based on how months are stored)
+        const monthIndex = Object.keys(data).indexOf(key);
+        if (monthIndex === index) {
+          monthData = details;
+          monthKey = key;
+          break;
+        }
+      }
+      
+      // If no data found, create empty row for this month
+      const details = monthData || {};
+      
+      return {
+        serialNo: monthNumber,
+        monthNumber,
+        month: monthKey || `Month ${monthNumber}`,
+        collectionPeriod: details.collectionPeriod || monthKey || '',
+        date: details.paidDate || '',
+        auctionAmount: details.amountTaken || 0,
+        receivedAmount: details.paymentAmount || 0,
+        commission: details.commission || 0,
+        discount: details.discount || 0,
+        status: details.status || 'pending',
+        dueDate: details.dueDate || '',
+        auctionWinner: details.auctionWinner || 'N/A',
+      };
+    });
+    
+    return allMonthsData;
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -31,6 +104,44 @@ const ChitCard = ({ selectedGroup, onBack }) => {
     }).format(amount);
   };
 
+  const formatDateNumeric = (dateString, monthKey) => {
+    if (!dateString && !monthKey) return '';
+    try {
+      // Try to parse the dateString first
+      let date;
+      if (dateString) {
+        date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
+          const day = String(date.getDate()).padStart(2, '0');
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const year = date.getFullYear();
+          return `${day}/${month}/${year}`;
+        }
+      }
+      
+      // Fallback: try to parse monthKey (e.g., "Jan 2024")
+      if (monthKey && monthKey.includes(' ')) {
+        date = new Date(monthKey);
+        if (!isNaN(date.getTime())) {
+          const day = String(date.getDate()).padStart(2, '0');
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const year = date.getFullYear();
+          return `${day}/${month}/${year}`;
+        }
+        // If month-year format, just show as "01/MM/YYYY"
+        const monthMap = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
+        const [month, year] = monthKey.split(' ');
+        if (monthMap[month] && year) {
+          return `01/${monthMap[month]}/${year}`;
+        }
+      }
+      
+      return dateString || monthKey || '';
+    } catch (error) {
+      return dateString || monthKey || '';
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Header 
@@ -38,69 +149,90 @@ const ChitCard = ({ selectedGroup, onBack }) => {
         onBack={onBack}
       />
 
-      <ScrollView style={styles.groupDetailsContainer} showsVerticalScrollIndicator={false}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6B46C1" />
+          <Text style={styles.loadingText}>Loading payment details...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#DC2626" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchMonthlyDetails}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView style={styles.groupDetailsContainer} showsVerticalScrollIndicator={false}>
 
-        {/* Traditional Chit Details Table */}
-        <View style={styles.chitDetailsCard}>
-          <Text style={styles.chitDetailsTitle}>Chit Payment Details</Text>
-          
-          {/* Table Header */}
-          <View style={styles.tableContainer}>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>எண்</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>தேதி</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1.8 }]}>எலத் தள்ளுபடி</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1.8 }]}>க.வே. தொகை</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>கசர்</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>கையொப்பம்</Text>
-            </View>
+          {/* Traditional Chit Details Table */}
+          <View style={styles.chitDetailsCard}>
+            <Text style={styles.chitDetailsTitle}>Chit Payment Details</Text>
+            
+            {monthlyData.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons name="folder-open-outline" size={48} color="#9CA3AF" />
+                <Text style={styles.emptyText}>No payment data available</Text>
+              </View>
+            ) : (
+              <View style={styles.tableContainer}>
+                {/* Table Header */}
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>எண்</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>தேதி</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1.8 }]}>எலத் தள்ளுபடி</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1.8 }]}>க.வே. தொகை</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>கசர்</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>கையொப்பம்</Text>
+                </View>
 
-            {/* Table Body */}
-            <ScrollView style={styles.tableBody} nestedScrollEnabled>
-              {chitRows.map((row) => {
-                const isCompleted = row.serialNo < selectedGroup.currentMonth;
-                const isCurrentMonth = row.serialNo === selectedGroup.currentMonth;
-                const isFutureMonth = row.serialNo > selectedGroup.currentMonth;
-                
-                return (
-                  <View 
-                    key={row.serialNo} 
-                    style={styles.tableRow}
-                  >
-                    <Text style={[styles.tableCell, { flex: 0.8 }]}>{row.serialNo}</Text>
-                    <Text style={[styles.tableCell, { flex: 1.5 }]}>{row.date}</Text>
-                    <Text style={[styles.tableCell, { flex: 1.8 }]}>{row.auctionAmount ? formatCurrency(row.auctionAmount) : ''}</Text>
-                    <Text style={[styles.tableCell, { flex: 1.8 }]}>{row.receivedAmount ? formatCurrency(row.receivedAmount) : ''}</Text>
-                    <Text style={[styles.tableCell, { flex: 1.2 }]}>{row.commission ? formatCurrency(row.commission) : ''}</Text>
-                    <View style={[styles.tableCell, { flex: 1.2, alignItems: 'center' }]}>
-                      {isCompleted ? (
-                        <MaterialCommunityIcons name="check-circle" size={16} color="#4CAF50" />
-                      ) : isCurrentMonth ? (
-                        <MaterialCommunityIcons name="lock" size={16} color="#FF9800" />
-                      ) : (
-                        <MaterialCommunityIcons name="clock-outline" size={16} color="#9E9E9E" />
-                      )}
-                    </View>
-                  </View>
-                );
-              })}
-            </ScrollView>
+                {/* Table Body */}
+                <ScrollView style={styles.tableBody} nestedScrollEnabled>
+                  {monthlyData.map((row) => {
+                    const isCompleted = row.status && row.status.toLowerCase() === 'paid';
+                    const isPending = row.status && row.status.toLowerCase() === 'pending';
+                    
+                    return (
+                      <View 
+                        key={row.serialNo} 
+                        style={styles.tableRow}
+                      >
+                        <Text style={[styles.tableCell, { flex: 0.8 }]}>{row.serialNo}</Text>
+                        <Text style={[styles.tableCell, { flex: 1.5 }]}>{formatDateNumeric(row.collectionPeriod, row.month)}</Text>
+                        <Text style={[styles.tableCell, { flex: 1.8 }]}>{row.discount ? formatCurrency(row.discount) : ''}</Text>
+                        <Text style={[styles.tableCell, { flex: 1.8 }]}>{row.receivedAmount ? formatCurrency(row.receivedAmount) : ''}</Text>
+                        <Text style={[styles.tableCell, { flex: 1.2 }]}>{row.commission ? formatCurrency(row.commission) : ''}</Text>
+                        <View style={[styles.tableCell, { flex: 1.2, alignItems: 'center' }]}>
+                          {isCompleted ? (
+                            <MaterialCommunityIcons name="check-circle" size={16} color="#4CAF50" />
+                          ) : isPending ? (
+                            <MaterialCommunityIcons name="clock-outline" size={16} color="#FF9800" />
+                          ) : (
+                            <MaterialCommunityIcons name="clock-outline" size={16} color="#9E9E9E" />
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
           </View>
-        </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.payButton}>
-            <MaterialCommunityIcons name="credit-card" size={20} color="#FFFFFF" />
-            <Text style={styles.payButtonText}>Make Payment</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.detailsButton}>
-            <MaterialCommunityIcons name="download" size={20} color="#6B46C1" />
-            <Text style={styles.detailsButtonText}>Download Statement</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity style={styles.payButton}>
+              <MaterialCommunityIcons name="credit-card" size={20} color="#FFFFFF" />
+              <Text style={styles.payButtonText}>Make Payment</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.detailsButton} onPress={handleDownloadStatement}>
+              <MaterialCommunityIcons name="download" size={20} color="#6B46C1" />
+              <Text style={styles.detailsButtonText}>Download Statement</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -109,6 +241,55 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
+  },
+
+  // Loading, Error & Empty States
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B46C1',
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    paddingHorizontal: 32,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#DC2626',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#6B46C1',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#1A2A4E',
+    fontWeight: '600',
   },
 
   // Group Details Styles
