@@ -8,14 +8,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   headerWrapper: {
-    paddingTop: 25,
+    paddingTop: 0,
     paddingBottom: 5,
   },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    marginTop: 25,
+    marginTop: 0,
     marginBottom: 5,
     borderRadius: 12,
     padding: 4,

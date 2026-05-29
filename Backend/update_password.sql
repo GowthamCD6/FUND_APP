@@ -1,1 +1,0 @@
-UPDATE users SET password = '$2b$12$iuJp2jdRS1UuCCiBXCEY5O3yHdcQ24KS/lr50uwNSWYF8nJ/KHV/C' WHERE phone = '1234567890';
