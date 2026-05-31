@@ -5,7 +5,9 @@ const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
 const server = http.createServer(app);
 
-const db = require('./src/config/db')
+const db = require('./src/config/db');
+const checkAndInitializeDatabase = require('./src/utils/dbHealthCheck');
+const setupGracefulShutdown = require('./src/utils/gracefulShutdown');
 
 // Initialize WebSocket server
 const wss = new WebSocket.Server({ server, path: '/api/auction' });
@@ -370,6 +372,25 @@ app.get("/", (req, res) => {
   res.send("OK");
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`);
-});
+// ========== STARTUP & SHUTDOWN MANAGEMENT ==========
+
+// Setup graceful shutdown handlers
+setupGracefulShutdown(server);
+
+// Check database health on startup
+(async () => {
+  try {
+    // Verify database exists and is healthy
+    await checkAndInitializeDatabase();
+    
+    // Start the server
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+      console.log(`🌐 WebSocket auction endpoint: ws://localhost:${PORT}/api/auction`);
+      console.log('\n📝 Press Ctrl+C to shutdown gracefully\n');
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error.message);
+    process.exit(1);
+  }
+})();

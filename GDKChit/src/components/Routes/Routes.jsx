@@ -33,7 +33,6 @@ const Routes = () => {
                 <Stack.Screen name="UserTabs" component={UserTabs} />
                 <Stack.Screen name="LinkBA" component={LinkBA} />
 
-
                 {/* Admin Tabs */}
                 <Stack.Screen name="AdminTabs" component={AdminTab} />
 

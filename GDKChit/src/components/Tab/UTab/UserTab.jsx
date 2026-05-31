@@ -8,6 +8,7 @@ import styles from './UserTabsty';
 import Home from '../../../pages/User/Pages/Home/Home';
 import Portfolio from '../../../pages/User/Pages/Portfolio/Portfolio';
 import Profile from '../../../pages/User/Pages/Profile/Profile';
+import ChatList from '../../../pages/User/Pages/Chat/ChatList/ChatList';
 
 // Import MaterialCommunityIcons for consistent iconography
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -18,17 +19,6 @@ import AdminTab, { ADMIN_PHONE, ADMIN_PASSWORD } from '../ATab/AdminTab';
 
 // ---- Screen Components ----
 const MoreScreen = () => null; // Placeholder, modal will be shown instead
-
-const ChatScreen = () => (
-  <View style={styles.screenContainer}>
-    <View style={styles.gradientHeader}>
-      <Text style={styles.headerTitle}>Chat</Text>
-    </View>
-    <View style={styles.screenContent}>
-      <Text style={styles.screenText}>Chat Screen</Text>
-    </View>
-  </View>
-);
 
 const Tab = createBottomTabNavigator();
 
@@ -119,7 +109,7 @@ const UserTabs = () => {
         {/* Chat Tab */}
         <Tab.Screen
           name="Chat"
-          component={ChatScreen}
+          component={ChatList}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
