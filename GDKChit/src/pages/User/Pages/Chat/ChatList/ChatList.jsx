@@ -13,6 +13,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Animated,
+  Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './ChatListStyles';
@@ -299,14 +300,21 @@ const ChatList = ({ navigation }) => {
   // If a chat is open, show ChatScreen instead of chat list
   if (openChat) {
     return (
-      <ChatScreen 
-        route={{ params: openChat }}
-        navigation={{ 
-          ...navigation,
-          goBack: handleBackFromChat 
-        }}
-        onBack={handleBackFromChat}
-      />
+      <Modal
+        visible={true}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={handleBackFromChat}
+      >
+        <ChatScreen 
+          route={{ params: openChat }}
+          navigation={{ 
+            ...navigation,
+            goBack: handleBackFromChat 
+          }}
+          onBack={handleBackFromChat}
+        />
+      </Modal>
     );
   }
 

@@ -20,8 +20,6 @@ const DB_CONFIG = {
  */
 async function checkAndInitializeDatabase() {
   try {
-    console.log('\n🔍 Checking database health on startup...\n');
-
     // Connect to MySQL without specifying database
     const connection = await mysql.createConnection({
       host: DB_CONFIG.host,
@@ -37,14 +35,10 @@ async function checkAndInitializeDatabase() {
     );
 
     if (databases.length === 0) {
-      console.warn(`⚠️  Database '${DB_CONFIG.database}' not found!`);
-      console.log('📋 Please restore the database using:');
-      console.log(`   node restore-schema.js\n`);
+      console.error(`❌ Database '${DB_CONFIG.database}' not found!`);
       await connection.end();
       process.exit(1);
     }
-
-    console.log(`✅ Database '${DB_CONFIG.database}' exists\n`);
 
     // Select the database
     await connection.query(`USE ${DB_CONFIG.database}`);
@@ -72,50 +66,17 @@ async function checkAndInitializeDatabase() {
     const missingTables = requiredTables.filter(t => !existingTables.has(t));
 
     if (missingTables.length > 0) {
-      console.error(`❌ Missing ${missingTables.length} required table(s):`);
-      missingTables.forEach(t => console.error(`   - ${t}`));
-      console.log('\n📋 Please restore the database using:');
-      console.log(`   node restore-schema.js\n`);
+      console.error(`❌ Missing required tables: ${missingTables.join(', ')}`);
       await connection.end();
       process.exit(1);
     }
 
-    console.log(`📊 All ${requiredTables.length} required tables found\n`);
-
-    // Check table row counts
-    console.log('📈 Table status:');
-    for (const table of requiredTables) {
-      const [result] = await connection.query(`SELECT COUNT(*) as count FROM ${table}`);
-      const count = result[0].count;
-      const icon = count > 0 ? '✅' : '⚠️ ';
-      console.log(`   ${icon} ${table.padEnd(25)} ${count} rows`);
-    }
-
     await connection.end();
-
-    console.log('\n✅ Database health check PASSED\n');
-    console.log('═'.repeat(60));
-    console.log('🎉 Database is ready for use!');
-    console.log('═'.repeat(60));
-    console.log();
 
     return true;
 
   } catch (error) {
-    console.error('\n❌ Database health check FAILED!\n');
-    console.error('Error:', error.message);
-    
-    if (error.code === 'ER_ACCESS_DENIED_ERROR') {
-      console.error('\n💡 Access Denied:');
-      console.error('   - Check your DB credentials in .env file');
-      console.error('   - Verify MySQL server is running');
-    } else if (error.code === 'PROTOCOL_CONNECTION_LOST' || error.code === 'ECONNREFUSED') {
-      console.error('\n💡 Connection Error:');
-      console.error('   - MySQL server may not be running');
-      console.error('   - Check host and port in .env file');
-      console.error('\n   For XAMPP, start MySQL from XAMPP Control Panel');
-    }
-    
+    console.error('❌ Database connection failed:', error.message);
     process.exit(1);
   }
 }

@@ -311,28 +311,15 @@ const styles = StyleSheet.create({
   },
 
   timestamp: {
-    fontSize: 11,
-    color: '#FFFFFF',
-    backgroundColor: '#6B46C1',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    fontWeight: '600',
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontWeight: '500',
     marginLeft: 8,
-    minWidth: 35,
-    textAlign: 'center',
-    elevation: 1,
-    shadowColor: '#6B46C1',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    overflow: 'hidden',
   },
 
   timestampUnread: {
-    color: '#FFFFFF',
+    color: '#9CA3AF',
     fontWeight: '600',
-    backgroundColor: '#6B46C1',
   },
 
   // Chat Divider

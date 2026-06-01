@@ -40,6 +40,7 @@ const ChatScreen = ({ route, navigation, onBack }) => {
   const [replyingTo, setReplyingTo] = useState(null);
   const flatListRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const [onlineStatus, setOnlineStatus] = useState(true);
 
   // Handle back navigation
   const handleGoBack = () => {
@@ -194,16 +195,11 @@ const ChatScreen = ({ route, navigation, onBack }) => {
   };
 
   const formatTime = (date) => {
-    const now = new Date();
-    const diffInMinutes = Math.floor((now - date) / 60000);
-
-    if (diffInMinutes < 1) return 'now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h`;
-
-    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('en-IN', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
   };
 
   // Format date separator (Today, Yesterday, or Date)
@@ -227,6 +223,15 @@ const ChatScreen = ({ route, navigation, onBack }) => {
     const currentDate = new Date(currentMsg.timestamp).toDateString();
     const previousDate = new Date(previousMsg.timestamp).toDateString();
     return currentDate !== previousDate;
+  };
+
+  // Check if messages from same sender should be grouped
+  const shouldGroupWithPrevious = (currentMsg, previousMsg) => {
+    if (!previousMsg || !currentMsg) return false;
+    return (
+      previousMsg.sender === currentMsg.sender &&
+      (new Date(currentMsg.timestamp) - new Date(previousMsg.timestamp)) < 60000 // Within 1 minute
+    );
   };
 
   // Handle message long press for context menu
@@ -287,11 +292,11 @@ const ChatScreen = ({ route, navigation, onBack }) => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'sent':
-        return <MaterialCommunityIcons name="check" size={12} color="#DDD6FE" />;
+        return <MaterialCommunityIcons name="check" size={14} color="#E0C3FC" />;
       case 'delivered':
-        return <MaterialCommunityIcons name="check-all" size={12} color="#DDD6FE" />;
+        return <MaterialCommunityIcons name="check-all" size={14} color="#E0C3FC" />;
       case 'read':
-        return <MaterialCommunityIcons name="check-all" size={12} color="#60A5FA" />;
+        return <MaterialCommunityIcons name="check-all" size={14} color="#FFFFFF" />;
       default:
         return null;
     }
@@ -300,13 +305,16 @@ const ChatScreen = ({ route, navigation, onBack }) => {
   const renderMessage = ({ item, index }) => {
     const isUserMessage = item.sender === 'user';
     const showDateSeparator = shouldShowDateSeparator(item, messages[index - 1]);
+    const isGrouped = shouldGroupWithPrevious(item, messages[index - 1]);
+    const nextMsg = messages[index + 1];
+    const isLastInGroup = !shouldGroupWithPrevious(nextMsg, item);
 
     return (
       <View>
         {/* Date Separator */}
         {showDateSeparator && (
-          <View style={{ alignItems: 'center', marginVertical: 12 }}>
-            <View style={{ backgroundColor: '#E5E7EB', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 }}>
+          <View style={{ alignItems: 'center', marginVertical: 8, marginTop: 2 }}>
+            <View style={{ backgroundColor: '#E5E7EB', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
               <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '500' }}>
                 {formatDateSeparator(item.timestamp)}
               </Text>
@@ -322,30 +330,27 @@ const ChatScreen = ({ route, navigation, onBack }) => {
           style={[
             styles.messageContainer,
             isUserMessage ? styles.userMessageContainer : styles.otherMessageContainer,
-            selectedMessage?.id === item.id && { backgroundColor: 'rgba(107, 70, 193, 0.1)', borderRadius: 12 },
+            !isLastInGroup && { marginBottom: -2 },
+            isGrouped && { marginTop: -2 },
           ]}
         >
-          {!isUserMessage && (
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarEmoji}>{item.avatar}</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={{ flex: 1 }}>
+          <View style={[
+            { maxWidth: '85%' },
+            isUserMessage && { alignItems: 'flex-start' },
+            !isUserMessage && { alignItems: 'flex-end' },
+          ]}>
             {/* Reply Preview */}
             {item.repliedTo && (
               <View style={{
                 backgroundColor: isUserMessage ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                marginBottom: 6,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                marginBottom: 8,
                 borderLeftWidth: 3,
-                borderLeftColor: '#6B46C1',
+                borderLeftColor: '#7C3AED',
                 borderRadius: 4,
               }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: isUserMessage ? '#DDD6FE' : '#6B46C1' }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: isUserMessage ? '#DDD6FE' : '#7C3AED' }}>
                   Replying to
                 </Text>
                 <Text style={{ fontSize: 12, color: isUserMessage ? '#E9D5FF' : '#6B7280', marginTop: 2 }}>
@@ -357,28 +362,30 @@ const ChatScreen = ({ route, navigation, onBack }) => {
             {/* Message Bubble */}
             <View style={[
               styles.messageBubble,
-              isUserMessage ? styles.userBubble : styles.otherBubble
+              isUserMessage ? styles.userBubble : styles.otherBubble,
+              isGrouped && (isUserMessage ? styles.groupedUserBubble : styles.groupedOtherBubble),
             ]}>
               <Text style={[
                 styles.messageText,
-                isUserMessage && styles.userMessageText
+                isUserMessage && styles.userMessageText,
+                { textAlign: isUserMessage ? 'left' : 'right' }
               ]}>
                 {item.text}
               </Text>
 
-              <View style={styles.messageFooter}>
-                <Text style={[
-                  styles.timestamp,
-                  isUserMessage && styles.userTimestamp
-                ]}>
-                  {formatTime(item.timestamp)}
-                </Text>
-                {isUserMessage && getStatusIcon(item.status)}
-              </View>
+              {isLastInGroup && (
+                <View style={styles.messageFooter}>
+                  <Text style={[
+                    styles.timestamp,
+                    isUserMessage && styles.userTimestamp
+                  ]}>
+                    {formatTime(item.timestamp)}
+                  </Text>
+                  {isUserMessage && getStatusIcon(item.status)}
+                </View>
+              )}
             </View>
           </View>
-
-          {isUserMessage && <View style={styles.spacer} />}
         </TouchableOpacity>
       </View>
     );
@@ -386,53 +393,39 @@ const ChatScreen = ({ route, navigation, onBack }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F1F7" />
       
-      {/* Custom Header with Online Status */}
-      <View style={{ backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-            <TouchableOpacity onPress={handleGoBack} style={{ marginRight: 16, padding: 4 }}>
-              <MaterialCommunityIcons name="chevron-left" size={28} color="#6B46C1" />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#1F2937' }}>{chatName}</Text>
-              <Text style={{ fontSize: 12, color: '#10B981', marginTop: 2 }}>Online</Text>
+      {/* Enhanced Header with Profile Info - Exact Match */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+            <MaterialCommunityIcons name="chevron-left" size={28} color="#000" />
+          </TouchableOpacity>
+          
+          {/* Profile Section */}
+          <View style={styles.profileSection}>
+            <View style={styles.avatarWithStatus}>
+              <View style={styles.profileAvatar}>
+                <Text style={styles.profileAvatarText}>{chatAvatar}</Text>
+              </View>
+              {onlineStatus && <View style={styles.onlineStatusDot} />}
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{chatName}</Text>
+              <Text style={styles.profileStatus}>Online</Text>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity
-              onPress={() => setSearchActive(!searchActive)}
-              style={{ padding: 8, borderRadius: 20 }}
-            >
-              <MaterialCommunityIcons name="magnify" size={24} color="#6B46C1" />
+
+          {/* Header Actions */}
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.headerActionButton}>
+              <MaterialCommunityIcons name="magnify" size={24} color="#7C3AED" />
             </TouchableOpacity>
-            <TouchableOpacity style={{ padding: 8, borderRadius: 20 }}>
-              <MaterialCommunityIcons name="dots-vertical" size={24} color="#6B46C1" />
+            <TouchableOpacity style={styles.headerActionButton}>
+              <MaterialCommunityIcons name="dots-vertical" size={24} color="#000" />
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Search Bar */}
-        {searchActive && (
-          <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 20, paddingHorizontal: 12 }}>
-              <MaterialCommunityIcons name="magnify" size={20} color="#9CA3AF" />
-              <TextInput
-                style={{ flex: 1, paddingVertical: 8, paddingHorizontal: 8, fontSize: 14 }}
-                placeholder="Search messages..."
-                placeholderTextColor="#9CA3AF"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <MaterialCommunityIcons name="close" size={20} color="#9CA3AF" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        )}
       </View>
 
       <KeyboardAvoidingView 
@@ -487,40 +480,40 @@ const ChatScreen = ({ route, navigation, onBack }) => {
           {/* Reply Preview */}
           {replyingTo && (
             <View style={{
-              backgroundColor: '#F3F4F6',
+              backgroundColor: '#E9D5FF',
               paddingHorizontal: 12,
               paddingVertical: 8,
-              marginBottom: 8,
+              marginBottom: 12,
               borderLeftWidth: 3,
-              borderLeftColor: '#6B46C1',
-              borderRadius: 4,
+              borderLeftColor: '#7C3AED',
+              borderRadius: 6,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B46C1' }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#7C3AED' }}>
                   Replying to {replyingTo.sender === 'user' ? 'yourself' : chatName}
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2, maxHeight: 30 }} numberOfLines={1}>
+                <Text style={{ fontSize: 12, color: '#6B46C1', marginTop: 2, maxHeight: 30 }} numberOfLines={1}>
                   {replyingTo.text}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setReplyingTo(null)} style={{ padding: 4 }}>
-                <MaterialCommunityIcons name="close" size={18} color="#9CA3AF" />
+                <MaterialCommunityIcons name="close" size={16} color="#7C3AED" />
               </TouchableOpacity>
             </View>
           )}
 
           <View style={styles.inputWrapper}>
             <TouchableOpacity style={styles.attachButton} disabled={isSending}>
-              <MaterialCommunityIcons name="plus-circle" size={26} color="#6B46C1" />
+              <MaterialCommunityIcons name="plus" size={24} color="#7C3AED" />
             </TouchableOpacity>
 
             <TextInput
               style={styles.input}
               placeholder="Type a message..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#B4B4B4"
               value={messageText}
               onChangeText={(text) => {
                 setMessageText(text);
@@ -532,6 +525,10 @@ const ChatScreen = ({ route, navigation, onBack }) => {
               editable={!isSending}
             />
 
+            <TouchableOpacity style={styles.emojiButton} disabled={isSending}>
+              <MaterialCommunityIcons name="emoticon-outline" size={22} color="#B4B4B4" />
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={[
                 styles.sendButton,
@@ -541,12 +538,12 @@ const ChatScreen = ({ route, navigation, onBack }) => {
               disabled={isSending || !messageText.trim()}
             >
               {isSending ? (
-                <ActivityIndicator size={20} color="#FFFFFF" />
+                <ActivityIndicator size={16} color="#FFFFFF" />
               ) : (
                 <MaterialCommunityIcons
-                  name={messageText.trim() ? 'send' : 'emoticon-happy-outline'}
-                  size={24}
-                  color={messageText.trim() ? '#FFFFFF' : '#9CA3AF'}
+                  name="send"
+                  size={18}
+                  color="#FFFFFF"
                 />
               )}
             </TouchableOpacity>

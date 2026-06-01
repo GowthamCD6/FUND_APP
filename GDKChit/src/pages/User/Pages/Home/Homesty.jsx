@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
   // Header Styles
   header: {
     backgroundColor: '#6B46C1',
-    paddingTop: Platform.OS === 'ios' ? 50 : 35,
+    paddingTop: Platform.OS === 'ios' ? 16 : 12,
     paddingBottom: 30,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 25,
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-    marginTop: 30,
+    marginTop: 0,
   },
   lottieHero: {
     width: 280,

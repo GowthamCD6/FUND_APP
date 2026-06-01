@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-    marginTop: 30,
+    marginTop: 0,
   },
   content: {
     flex: 1,
