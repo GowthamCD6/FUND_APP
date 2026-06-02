@@ -92,11 +92,7 @@ exports.getGroups = async (req, res) => {
         const [rows] = await db.promise().query(`
             SELECT 
                 g.*,
-                COALESCE((
-                    SELECT monthly_amount FROM group_monthly_details 
-                    WHERE group_id = g.id AND deleted_at IS NULL 
-                    ORDER BY created_at DESC LIMIT 1
-                ), 0) AS monthly_amount,
+                ROUND(COALESCE(g.group_amount / NULLIF(g.duration, 0), 0), 2) AS monthly_amount,
                 COALESCE((SELECT COUNT(id) FROM group_auction_winners WHERE group_id = g.id AND deleted_at IS NULL), 0) AS completedCycles,
                 COALESCE((SELECT SUM(amount) FROM monthly_collections WHERE group_id = g.id AND status = 'paid' AND deleted_at IS NULL), 0) AS collectedAmount
             FROM \`groups\` g 
@@ -111,16 +107,20 @@ exports.getGroups = async (req, res) => {
         }
 
         rows.forEach(group => {
-            // Auto activation ...
-            if (group.status === 'not-started' || group.status === 'not started') {
-                if (group.start_date) {
-                    const today = new Date();
-                    today.setHours(0,0,0,0);
-                    const stDate = new Date(group.start_date);
-                    if (stDate <= today) {
-                        group.status = 'OnGoing';
-                        db.promise().query("UPDATE `groups` SET status = 'OnGoing' WHERE id = ?", [group.id]).catch(console.error);
-                    }
+            // Auto activation - Check if group should be activated
+            if (group.status === 'Not Started' && group.start_date) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const stDate = new Date(group.start_date);
+                stDate.setHours(0, 0, 0, 0);
+                
+                console.log(`Group ${group.id}: Status=${group.status}, StartDate=${stDate.toISOString()}, Today=${today.toISOString()}`);
+                
+                if (stDate <= today) {
+                    console.log(`Auto-activating group ${group.id}`);
+                    group.status = 'OnGoing';
+                    db.promise().query("UPDATE `groups` SET status = 'OnGoing' WHERE id = ?", [group.id]).catch(console.error);
                 }
             }
 

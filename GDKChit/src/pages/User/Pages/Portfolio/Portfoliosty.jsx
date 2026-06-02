@@ -360,6 +360,140 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'System',
   },
+
+  // Loading state styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 20,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
+  },
+  loadingSubtext: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 18,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'System',
+  },
+
+  // Error state styles
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  errorContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginTop: 20,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'System',
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 12,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'System',
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6B46C1',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginTop: 24,
+    shadowColor: '#6B46C1',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 8,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
+  },
+
+  // Empty portfolio state styles
+  emptyPortfolioContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  emptyPortfolioContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  emptyPortfolioTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginTop: 24,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'System',
+  },
+  emptyPortfolioMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 12,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'System',
+    marginBottom: 24,
+  },
+  exploreButton: {
+    backgroundColor: '#6B46C1',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    shadowColor: '#6B46C1',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  exploreButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
+  },
 });
 
 export default styles;

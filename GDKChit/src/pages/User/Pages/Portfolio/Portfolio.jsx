@@ -8,7 +8,6 @@ import {
   SafeAreaView,
   Modal,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import GroupCardInfo from './GroupCardInfo/GroupCardInfo';
@@ -25,19 +24,76 @@ const ChitfundPortfolio = ({ navigation }) => {
   // Tab state for switching between Active and Completed groups
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // --- DATA ---
   const [chitGroups, setChitGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
 
   useEffect(() => {
-    fetchPortfolio();
+    let isMounted = true;
+
+    const loadPortfolio = async () => {
+      try {
+        if (isMounted) setIsLoading(true);
+        setError(null);
+
+        // Create a promise that rejects after 15 seconds
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout. Please check your connection.')), 15000)
+        );
+
+        // Race between the actual request and timeout
+        const response = await Promise.race([
+          ApiService.makeRequest('/user/portfolio', { method: 'GET' }),
+          timeoutPromise
+        ]);
+
+        const result = await response.json();
+
+        if (isMounted) {
+          if (!response.ok || !result?.success) {
+            throw new Error(result?.message || 'Failed to load portfolio');
+          }
+
+          setChitGroups(result.data || []);
+          if (result.data?.length > 0) {
+            setSelectedGroupId(result.data[0].id);
+          }
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Portfolio fetch error:', error);
+        if (isMounted) {
+          setError(error.message || 'Could not load your portfolio data. Please check your connection and try again.');
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadPortfolio();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const fetchPortfolio = async () => {
     try {
       setIsLoading(true);
-      const response = await ApiService.makeRequest('/user/portfolio', { method: 'GET' });
+      setError(null);
+
+      // Create a promise that rejects after 15 seconds
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout. Please check your connection.')), 15000)
+      );
+
+      // Race between the actual request and timeout
+      const response = await Promise.race([
+        ApiService.makeRequest('/user/portfolio', { method: 'GET' }),
+        timeoutPromise
+      ]);
+
       const result = await response.json();
 
       if (!response.ok || !result?.success) {
@@ -48,10 +104,10 @@ const ChitfundPortfolio = ({ navigation }) => {
       if (result.data?.length > 0) {
         setSelectedGroupId(result.data[0].id);
       }
+      setIsLoading(false);
     } catch (error) {
       console.error('Portfolio fetch error:', error);
-      Alert.alert('Error', error.message || 'Could not load your portfolio data. Please try again.');
-    } finally {
+      setError(error.message || 'Could not load your portfolio data. Please check your connection and try again.');
       setIsLoading(false);
     }
   };
@@ -152,9 +208,58 @@ const ChitfundPortfolio = ({ navigation }) => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView style={styles.container}>
          <Header title="Portfolio" onBack={() => navigation?.goBack()} />
-         <ActivityIndicator size="large" color="#6B46C1" />
+         <View style={styles.loadingContainer}>
+           <View style={styles.loadingContent}>
+             <ActivityIndicator size="large" color="#6B46C1" />
+             <Text style={styles.loadingText}>Loading your portfolio...</Text>
+             <Text style={styles.loadingSubtext}>Please wait while we fetch your investment details</Text>
+           </View>
+         </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Header title="Portfolio" onBack={() => navigation?.goBack()} />
+        <View style={styles.errorContainer}>
+          <View style={styles.errorContent}>
+            <MaterialCommunityIcons name="wifi-off" size={64} color="#DC2626" />
+            <Text style={styles.errorTitle}>Unable to Load Portfolio</Text>
+            <Text style={styles.errorMessage}>{error}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={fetchPortfolio}
+            >
+              <MaterialCommunityIcons name="refresh" size={20} color="#FFFFFF" />
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (chitGroups.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Header title="Portfolio" onBack={() => navigation?.goBack()} />
+        <View style={styles.emptyPortfolioContainer}>
+          <View style={styles.emptyPortfolioContent}>
+            <MaterialCommunityIcons name="briefcase-outline" size={72} color="#D1D5DB" />
+            <Text style={styles.emptyPortfolioTitle}>No Portfolio Data</Text>
+            <Text style={styles.emptyPortfolioMessage}>You haven't joined any chit groups yet</Text>
+            <TouchableOpacity 
+              style={styles.exploreButton}
+              onPress={() => navigation?.navigate('Home')}
+            >
+              <Text style={styles.exploreButtonText}>Explore Groups</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </SafeAreaView>
     );
   }

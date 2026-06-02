@@ -44,7 +44,7 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
             console.warn('Failed to fetch group members');
             return;
           }
-          const mappings = json.data.map(m => ({
+          const mappings = (json.members || []).map(m => ({
             id: m.mappingId || (Date.now() + Math.random()),
             memberId: m.userId,
             name: m.name || m.nickname || 'Unnamed',

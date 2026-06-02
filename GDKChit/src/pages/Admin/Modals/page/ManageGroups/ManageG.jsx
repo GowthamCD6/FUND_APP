@@ -136,10 +136,10 @@ const ManageGroups = ({onBack}) => {
       }
 
       if (!response.ok || !result?.success) {
-        throw new Error(result?.message || 'Failed to create group');
+        throw new Error(result?.message || 'Failed to fetch groups');
       }
 
-      const mapped = (result.data || []).map(g => {
+      const mapped = (result.groups || []).map(g => {
         const totalNum = Number(g.totalMembers || g.total_members) || 1;
         const totalAmount = Number(g.groupAmount || g.group_amount) || 0;
         return {
