@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: 80,
     paddingHorizontal: 20,
   },
   emptyStateText: {

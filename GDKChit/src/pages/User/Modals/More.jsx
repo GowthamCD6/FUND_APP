@@ -4,11 +4,13 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Join from './Pages/JoinGroup/JoinGroup';
 import GroupCards from './Pages/ChitGroupCard/GroupCards';
 import Auction from './Pages/Auction/Auction';
+import Finance from './Pages/Finance/Finance';
 
-const MoreModal = ({ visible, onClose }) => {
+const MoreModal = ({ visible, onClose, selectedGroup }) => {
   const [showJoinPage, setShowJoinPage] = useState(false);
   const [showGroupCard, setShowGroupCard] = useState(false);
   const [showAuction, setShowAuction] = useState(false);
+  const [showFinance, setShowFinance] = useState(false);
 
   const handleJoinPress = () => {
     setShowJoinPage(true);
@@ -34,10 +36,19 @@ const MoreModal = ({ visible, onClose }) => {
     setShowAuction(false);
   };
 
+  const handleFinancePress = () => {
+    setShowFinance(true);
+  };
+
+  const handleFinanceBack = () => {
+    setShowFinance(false);
+  };
+
   const handleModalClose = () => {
     setShowJoinPage(false);
     setShowGroupCard(false);
     setShowAuction(false);
+    setShowFinance(false);
     onClose();
   };
 
@@ -80,6 +91,19 @@ const MoreModal = ({ visible, onClose }) => {
     );
   }
 
+  if (showFinance) {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={visible}
+        onRequestClose={handleModalClose}
+      >
+        <Finance selectedGroup={selectedGroup} onBack={handleFinanceBack} />
+      </Modal>
+    );
+  }
+
   return (
   <Modal
     animationType="slide"
@@ -110,9 +134,10 @@ const MoreModal = ({ visible, onClose }) => {
             onPress={handleAuctionPress}
           />
           <MenuItem
-            icon={<MaterialCommunityIcons name="wallet-outline" size={26} color="#6B46C1" />}
-            title="Sell"
-            description="Liquidate your gold to cash"
+            icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#6B46C1" />}
+            title="Finance"
+            description="Contribute and earn extra interest"
+            onPress={handleFinancePress}
           />
         </View>
         {/* X Button */}

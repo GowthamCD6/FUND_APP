@@ -123,19 +123,11 @@ const GroupCards = ({ onBack, onSelectGroup }) => {
               <ActivityIndicator size="large" color="#6B46C1" />
               <Text style={styles.loadingText}>Loading groups...</Text>
             </View>
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#DC2626" />
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={fetchPortfolio}>
-                <Text style={styles.retryButtonText}>Try Again</Text>
-              </TouchableOpacity>
-            </View>
           ) : userGroups.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="folder-open-outline" size={48} color="#9CA3AF" />
-              <Text style={styles.emptyText}>No groups found</Text>
-              <Text style={styles.emptySubText}>Join a group to get started</Text>
+              <MaterialCommunityIcons name="account-group-outline" size={48} color="#9CA3AF" />
+              <Text style={styles.emptyText}>No group card present</Text>
+              <Text style={styles.emptySubText}>Join a chit group to start your investment journey</Text>
             </View>
           ) : (
             <>
