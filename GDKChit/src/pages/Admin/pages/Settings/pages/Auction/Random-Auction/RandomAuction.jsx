@@ -24,6 +24,7 @@ const RandomAuction = ({
   const [diceValue, setDiceValue] = useState(1);
   const [isDiceRolling, setIsDiceRolling] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [rollTimer, setRollTimer] = useState(0);
   
   // 3D Cube Animation Values
   const diceAnimations = useMemo(() => ({
@@ -67,19 +68,18 @@ const RandomAuction = ({
       ];
     });
 
-    // Define faces with vertices indices - Mapped to standard dice values
-    // Critical: Ensure these mappings correctly correspond to the visual representation
-    const faces = [
+    // Define faces with vertices indices - ALWAYS 6 FACES
+    const facesData = [
       { name: 'front', indices: [0, 1, 2, 3], color: '#6B46C1', dots: 1, initialRot: { x: 0, y: 0 } },
-      { name: 'back', indices: [5, 4, 7, 6], color: '#7C3AED', dots: 6, initialRot: { x: 0, y: Math.PI } },
-      { name: 'left', indices: [4, 0, 3, 7], color: '#8B5CF6', dots: 4, initialRot: { x: 0, y: -Math.PI / 2 } },
-      { name: 'right', indices: [1, 5, 6, 2], color: '#9333EA', dots: 3, initialRot: { x: 0, y: Math.PI / 2 } },
-      { name: 'top', indices: [3, 2, 6, 7], color: '#A855F7', dots: 5, initialRot: { x: -Math.PI / 2, y: 0 } },
-      { name: 'bottom', indices: [4, 5, 1, 0], color: '#C084FC', dots: 2, initialRot: { x: Math.PI / 2, y: 0 } },
+      { name: 'bottom', indices: [4, 5, 1, 0], color: '#C084FC', dots: 2, initialRot: { x: Math.PI / 2, y: 0 } }, // Mapped for value 2
+      { name: 'right', indices: [1, 5, 6, 2], color: '#9333EA', dots: 3, initialRot: { x: 0, y: Math.PI / 2 } },  // Mapped for value 3
+      { name: 'left', indices: [4, 0, 3, 7], color: '#8B5CF6', dots: 4, initialRot: { x: 0, y: -Math.PI / 2 } }, // Mapped for value 4
+      { name: 'top', indices: [3, 2, 6, 7], color: '#A855F7', dots: 5, initialRot: { x: -Math.PI / 2, y: 0 } }, // Mapped for value 5
+      { name: 'back', indices: [5, 4, 7, 6], color: '#7C3AED', dots: 6, initialRot: { x: 0, y: Math.PI } },     // Mapped for value 6
     ];
-
+    
     // Calculate face centers and depth for sorting
-    return faces.map(face => {
+    return facesData.map(face => { // Use all 6 facesData
       const faceVertices = face.indices.map(i => vertices[i]);
       const center = faceVertices.reduce(
         (acc, v) => [acc[0] + v[0], acc[1] + v[1], acc[2] + v[2]],
@@ -95,7 +95,9 @@ const RandomAuction = ({
     }).sort((a, b) => a.depth - b.depth); // Sort by depth
   };
 
-  const renderDots = (dots, vertices) => {
+  const renderDots = (dots, vertices, maxParticipants) => {
+    if (dots > maxParticipants) return null; // Only render dots if value is within participant count
+
     // Calculate the center of the face
     const center = vertices.reduce(
       (acc, v) => [acc[0] + v[0], acc[1] + v[1]],
@@ -129,8 +131,25 @@ const RandomAuction = ({
 
   const rollDice = () => {
     if (isDiceRolling) return;
+    if (participants.length === 0) {
+      Alert.alert("Error", "No participants available for the random draw.");
+      return;
+    }
+    
     setIsDiceRolling(true);
     setShowResult(false);
+    setRollTimer(30); // Start 30-second countdown
+
+    // Timer countdown
+    const timerInterval = setInterval(() => {
+      setRollTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timerInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
     // Haptic feedback
     if (Platform.OS === 'ios') {
@@ -139,7 +158,9 @@ const RandomAuction = ({
       Vibration.vibrate([0, 40, 25, 40]);
     }
 
-    const finalValue = Math.floor(Math.random() * 6) + 1;
+    // Roll based on participant count - max 6 participants
+    const maxDiceValue = Math.min(participants.length, 6);
+    const finalValue = Math.floor(Math.random() * maxDiceValue) + 1;
     
     // Reset animations
     diceAnimations.scale.setValue(1);
@@ -149,39 +170,44 @@ const RandomAuction = ({
     diceAnimations.rotateY.setValue(0);
     diceAnimations.rotateZ.setValue(0);
 
-    const ROLL_DURATION = 2500;
-    const BOUNCE_COUNT = 15; // Reduced bounce count for smoother animation
+    const ROLL_DURATION = 30000; // 30 seconds for rolling
+    const BOUNCE_COUNT = 150; // More bounces for longer duration and smoother slow-down
 
-    // Calculate target rotation to show the correct face
+    // Calculate target rotation to show the correct face based on participant count
     const getTargetRotation = (value) => {
-      const fullRotations = Math.PI * (8 + Math.floor(Math.random() * 4)); // More dramatic, random full rotations
-      let x = fullRotations;
-      let y = fullRotations;
+      // Add multiple full rotations for randomness before settling
+      const baseFullRotationsX = Math.PI * (10 + Math.floor(Math.random() * 5)); 
+      const baseFullRotationsY = Math.PI * (10 + Math.floor(Math.random() * 5));
+
+      let targetX = baseFullRotationsX;
+      let targetY = baseFullRotationsY;
 
       // Adjust to align the correct face upwards/forwards
+      // These rotations are based on the face definitions in create3DCube
       switch(value) {
-        case 1: x += 0; y += 0; break; // Front
-        case 6: x += 0; y += Math.PI; break; // Back
-        case 4: x += 0; y += -Math.PI / 2; break; // Left
-        case 3: x += 0; y += Math.PI / 2; break; // Right
-        case 5: x += -Math.PI / 2; y += 0; break; // Top
-        case 2: x += Math.PI / 2; y += 0; break; // Bottom
+        case 1: targetX += 0;             targetY += 0;             break; // Front
+        case 2: targetX += Math.PI / 2;   targetY += 0;             break; // Bottom
+        case 3: targetX += 0;             targetY += Math.PI / 2;   break; // Right
+        case 4: targetX += 0;             targetY += -Math.PI / 2;  break; // Left
+        case 5: targetX += -Math.PI / 2;  targetY += 0;             break; // Top
+        case 6: targetX += 0;             targetY += Math.PI;       break; // Back
         default: break;
       }
-      return { x, y };
+      return { x: targetX, y: targetY };
     };
 
     const targetRotation = getTargetRotation(finalValue);
     
     const createRealisticRoll = () => {
       const animations = [];
-      const totalBounceTime = ROLL_DURATION * 0.75; // Time for bounces
+      const totalBounceTime = ROLL_DURATION * 0.75; 
       const bounceDuration = totalBounceTime / BOUNCE_COUNT;
       
       for (let i = 0; i < BOUNCE_COUNT; i++) {
         const progress = i / BOUNCE_COUNT;
-        const intensity = 1 - (progress * 0.9); // Reduce intensity over time
-        
+        // Sharper decrease in intensity for a more realistic slow-down
+        const intensity = 1 - (progress * progress * 0.95); // Quadratic decay
+
         const randomX = (Math.random() - 0.5) * 40 * intensity;
         const randomHeight = 50 + Math.random() * 40 * intensity;
         const spinSpeedX = (Math.PI * 3 + Math.random() * Math.PI) * intensity;
@@ -226,17 +252,17 @@ const RandomAuction = ({
             Animated.timing(diceAnimations.rotateX, {
               toValue: diceAnimations.rotateX._value + spinSpeedX,
               duration: bounceDuration,
-              easing: Easing.linear,
+              easing: Easing.linear, // Linear for continuous spin, spring will handle final settle
               useNativeDriver: true,
             }),
             Animated.timing(diceAnimations.rotateY, {
               toValue: diceAnimations.rotateY._value + spinSpeedY,
               duration: bounceDuration,
-              easing: Easing.linear,
+              easing: Easing.linear, // Linear for continuous spin, spring will handle final settle
               useNativeDriver: true,
             }),
             Animated.timing(diceAnimations.rotateZ, {
-              toValue: spinSpeedZ, // Random Z-axis wobble
+              toValue: diceAnimations.rotateZ._value + spinSpeedZ, // Accumulate Z rotation as well
               duration: bounceDuration,
               easing: Easing.inOut(Easing.sin),
               useNativeDriver: true,
@@ -266,10 +292,10 @@ const RandomAuction = ({
           ])
         );
         
-        if (i % 3 === 0 && i > 0) { // Less frequent haptic feedback during roll
+        if (i % 5 === 0 && i > 0) { // Less frequent haptic feedback during roll
           setTimeout(() => {
             if (Platform.OS === 'android') {
-              Vibration.vibrate(20);
+              Vibration.vibrate(10);
             }
           }, i * bounceDuration);
         }
@@ -281,9 +307,10 @@ const RandomAuction = ({
     const createFinalSettle = () => {
       const settleDuration = ROLL_DURATION * 0.25; // Time for final settle
       return Animated.parallel([
+        // Final slow, subtle bounce
         Animated.sequence([
           Animated.timing(diceAnimations.translateY, {
-            toValue: -40,
+            toValue: -15, // A smaller final bounce
             duration: settleDuration * 0.2,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
@@ -291,11 +318,12 @@ const RandomAuction = ({
           Animated.timing(diceAnimations.translateY, {
             toValue: 0,
             duration: settleDuration * 0.8,
-            easing: Easing.bounce, // Use bounce easing for realistic settle
+            easing: Easing.bounce, 
             useNativeDriver: true,
           }),
         ]),
         
+        // Spring for horizontal movement to zero
         Animated.spring(diceAnimations.translateX, {
           toValue: 0,
           friction: 8,
@@ -303,6 +331,7 @@ const RandomAuction = ({
           useNativeDriver: true,
         }),
         
+        // Springs for final rotation to target (very important for realistic settle)
         Animated.spring(diceAnimations.rotateX, {
           toValue: targetRotation.x,
           friction: 12,
@@ -316,21 +345,22 @@ const RandomAuction = ({
           useNativeDriver: true,
         }),
         Animated.spring(diceAnimations.rotateZ, {
-          toValue: 0, // Ensure Z rotation settles to 0
+          toValue: 0, // Ensure Z rotation settles to 0 for a stable final face
           friction: 12,
           tension: 50,
           useNativeDriver: true,
         }),
         
+        // Scale variation for a final 'thud'
         Animated.sequence([
           Animated.timing(diceAnimations.scale, {
-            toValue: 0.9,
+            toValue: 0.95, // Slightly squash on impact
             duration: settleDuration * 0.2,
             easing: Easing.in(Easing.quad),
             useNativeDriver: true,
           }),
           Animated.spring(diceAnimations.scale, {
-            toValue: 1,
+            toValue: 1, // Spring back to original size
             friction: 5,
             tension: 100,
             useNativeDriver: true,
@@ -344,21 +374,25 @@ const RandomAuction = ({
       createFinalSettle(),
     ]);
 
+    // Face changes throughout roll - make this slightly less frequent towards the end
     let faceChangeCount = 0;
-    const totalFaceChanges = Math.floor(ROLL_DURATION / 100); // Slower face changes
+    const totalFaceChanges = Math.floor(ROLL_DURATION / 150); 
     
     const faceChangeInterval = setInterval(() => {
       if (faceChangeCount < totalFaceChanges) {
-        setDiceValue(Math.floor(Math.random() * 6) + 1);
+        setDiceValue(Math.floor(Math.random() * maxDiceValue) + 1);
         faceChangeCount++;
       } else {
         clearInterval(faceChangeInterval);
       }
-    }, 100); // Update dice value every 100ms
+    }, 150); // Update dice value every 150ms
 
     completeAnimation.start(() => {
       clearInterval(faceChangeInterval);
+      clearInterval(timerInterval);
+      setRollTimer(0);
       
+      // Delay setting final dice value and showing result for emphasis
       setTimeout(() => {
         setDiceValue(finalValue);
         setShowResult(true);
@@ -372,28 +406,27 @@ const RandomAuction = ({
         setTimeout(() => {
           setIsDiceRolling(false);
           
-          if (participants.length === 0) {
-            Alert.alert("Error", "No participants available for the random draw.");
-            return;
-          }
-
-          const winnerIndex = (finalValue - 1) % participants.length;
+          // Select winner based on dice value and participant count
+          // Dice value directly maps to participant index (1-based to 0-based)
+          const winnerIndex = finalValue - 1;
           const winner = participants[winnerIndex];
 
-          if (onAuctionComplete) {
+          if (onAuctionComplete && winner) {
             onAuctionComplete({
               type: 'random',
               winner: winner,
-              diceValue: finalValue
+              diceValue: finalValue,
+              participantPosition: finalValue
             });
           }
-        }, 800);
-      }, 400);
+        }, 800); // Small delay after result shown before marking as complete
+      }, 400); // Delay before showing final value and result
     });
   };
 
   const Dice3D = () => {
     const [cubeState, setCubeState] = useState(null);
+    const maxParticipants = Math.min(participants.length, 6); // Determine actual max dots to show
 
     React.useEffect(() => {
       const updateCube = () => {
@@ -427,7 +460,7 @@ const RandomAuction = ({
         diceAnimations.translateY.removeListener(id);
         diceAnimations.scale.removeListener(id);
       });
-    }, []);
+    }, [maxParticipants]); // Re-run effect if maxParticipants changes
 
     if (!cubeState) return null;
 
@@ -441,11 +474,12 @@ const RandomAuction = ({
             .map(v => `${v[0]},${v[1]}`)
             .join(' ');
 
-          const isMainFace = showResult && face.depth > 35; // Identify the most prominent face for result
+          // Identify the most prominent face for result based on depth and position
+          // A face is "main" if its center is significantly closer to the viewer and its normal is pointing towards the viewer.
+          // For simplicity, we can still use depth, but ensuring the `dots` value matches `diceValue` is key.
+          const isMainFace = showResult && (face.dots === diceValue); 
           
-          // When showing result, override face dots to match diceValue state
-          const displayDots = (showResult && isMainFace) ? diceValue : face.dots;
-
+          // Only render dots if the face's value is within the active participant range
           return (
             <G key={i}>
               <Polygon
@@ -453,10 +487,8 @@ const RandomAuction = ({
                 fill={isMainFace ? '#5B21B6' : (isDiceRolling ? face.color : '#6B46C1')}
                 stroke={isMainFace ? '#2D1B69' : '#4C1D95'}
                 strokeWidth={isMainFace ? 3.5 : 2.5}
-                // Add an ID for debugging if needed
-                // id={`face-${face.dots}-${i}`}
               />
-              {renderDots(displayDots, face.vertices)}
+              {renderDots(face.dots, face.vertices, maxParticipants)} {/* Pass maxParticipants to renderDots */}
             </G>
           );
         })}
@@ -466,7 +498,13 @@ const RandomAuction = ({
 
   const renderDiceContainer = () => (
     <View style={styles.diceCard}>
-      <Text style={styles.diceTitle}>Lucky Draw</Text>
+      <View style={styles.diceTitleContainer}>
+        <Text style={styles.diceTitle}>Lucky Draw</Text>
+        <View style={styles.participantCountBadge}>
+          <MaterialCommunityIcons name="account-multiple" size={14} color="#FFFFFF" />
+          <Text style={styles.participantCountText}>{participants.length} {participants.length === 1 ? 'Participant' : 'Participants'}</Text>
+        </View>
+      </View>
       
       <View style={styles.diceWrapper}>
         <View style={styles.diceContainer}>
@@ -512,6 +550,13 @@ const RandomAuction = ({
           <View style={styles.resultValue}>
             <Text style={styles.resultNumber}>{diceValue}</Text>
           </View>
+        </View>
+      )}
+
+      {isDiceRolling && rollTimer > 0 && (
+        <View style={styles.timerContainer}>
+          <MaterialCommunityIcons name="timer-sand" size={18} color="#92400E" />
+          <Text style={styles.timerText}>{rollTimer.toString().padStart(2, '0')}s</Text>
         </View>
       )}
       
@@ -612,6 +657,42 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 6,
+  },
+  diceTitleContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  participantCountBadge: {
+    backgroundColor: '#6B46C1',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  participantCountText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  timerText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#92400E',
   },
   resultContainer: {
     flexDirection: 'row',
