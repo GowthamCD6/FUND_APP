@@ -207,6 +207,18 @@ class ApiService {
     }
   }
 
+  async updateProfile(profileData) {
+    try {
+      const response = await this.makeRequest('/auth/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(profileData),
+      });
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // User preferences methods
   async getUserPreferences() {
     try {

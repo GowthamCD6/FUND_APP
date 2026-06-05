@@ -213,44 +213,305 @@ exports.logout = async (req, res) => {
 // Get User Profile
 exports.getProfile = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId || req.user?.id;
 
-    const getUserSql = 'SELECT id, name, mail, phone, last_login FROM users WHERE id = ?';
-    db.query(getUserSql, [userId], (err, results) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    const getUserSql = `
+      SELECT
+        u.id,
+        u.name,
+        u.nick_name,
+        u.mail,
+        u.phone,
+        u.role,
+        u.is_active,
+        u.last_login,
+        u.created_at,
+        u.updated_at,
+        p.name AS profile_name,
+        p.email AS profile_email,
+        DATE_FORMAT(p.date_of_birth, '%Y-%m-%d') AS date_of_birth,
+        p.street_address,
+        p.city,
+        p.state,
+        p.user_image
+      FROM users u
+      LEFT JOIN user_profiles p ON p.user_id = u.id AND p.deleted_at IS NULL
+      WHERE u.id = ? AND u.deleted_at IS NULL
+      LIMIT 1
+    `;
+
+    const [results] = await db.promise().query(getUserSql, [userId]);
+
+    if (!results || results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const user = results[0];
+
+    return res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          name: user.name,
+          username: user.profile_name || user.nick_name || user.name,
+          nickName: user.nick_name,
+          email: user.profile_email || user.mail,
+          phone: user.phone,
+          role: user.role,
+          isActive: Boolean(user.is_active),
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+          lastLogin: user.last_login
+        },
+        profile: {
+          name: user.profile_name || user.name,
+          email: user.profile_email || user.mail,
+          dateOfBirth: user.date_of_birth,
+          streetAddress: user.street_address,
+          city: user.city,
+          state: user.state,
+          userImage: user.user_image
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+// Update User Profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    const {
+      name,
+      email,
+      dateOfBirth,
+      streetAddress,
+      city,
+      state,
+      userImage,
+    } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    const userUpdates = [];
+    const userValues = [];
+
+    const profileUpdates = [];
+    const profileValues = [];
+
+    if (typeof name === 'string') {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        return res.status(400).json({
           success: false,
-          message: 'Server error'
+          message: 'Name cannot be empty'
         });
       }
+      userUpdates.push('name = ?');
+      userValues.push(trimmedName);
+      profileUpdates.push('name = ?');
+      profileValues.push(trimmedName);
+    }
 
-      if (results.length === 0) {
+    if (typeof email === 'string') {
+      const trimmedEmail = email.trim();
+      if (trimmedEmail && !/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid email address'
+        });
+      }
+      userUpdates.push('mail = ?');
+      userValues.push(trimmedEmail || null);
+      profileUpdates.push('email = ?');
+      profileValues.push(trimmedEmail || null);
+    }
+
+    if (typeof dateOfBirth === 'string') {
+      const trimmedDate = dateOfBirth.trim();
+      if (trimmedDate) {
+        const normalizedDate = trimmedDate.includes('/')
+          ? (() => {
+              const [month, day, year] = trimmedDate.split('/');
+              return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            })()
+          : trimmedDate;
+        profileUpdates.push('date_of_birth = ?');
+        profileValues.push(normalizedDate);
+      } else {
+        profileUpdates.push('date_of_birth = ?');
+        profileValues.push(null);
+      }
+    }
+
+    if (typeof streetAddress === 'string') {
+      profileUpdates.push('street_address = ?');
+      profileValues.push(streetAddress.trim() || null);
+    }
+
+    if (typeof city === 'string') {
+      profileUpdates.push('city = ?');
+      profileValues.push(city.trim() || null);
+    }
+
+    if (typeof state === 'string') {
+      profileUpdates.push('state = ?');
+      profileValues.push(state.trim() || null);
+    }
+
+    if (typeof userImage === 'string') {
+      profileUpdates.push('user_image = ?');
+      profileValues.push(userImage.trim() || null);
+    }
+
+    if (userUpdates.length === 0 && profileUpdates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No profile fields provided'
+      });
+    }
+
+    if (userUpdates.length > 0) {
+      userUpdates.push('updated_by = ?');
+      userUpdates.push('version = version + 1');
+      userValues.push(Number(userId));
+      userValues.push(userId);
+
+      const [result] = await db.promise().query(
+        `
+          UPDATE users
+          SET ${userUpdates.join(', ')}
+          WHERE id = ? AND deleted_at IS NULL
+        `,
+        userValues
+      );
+
+      if (result.affectedRows === 0) {
         return res.status(404).json({
           success: false,
           message: 'User not found'
         });
       }
+    }
 
-      const user = results[0];
-      res.json({
-        success: true,
-        data: {
-          user: {
-            id: user.id,
-            username: user.name,
-            email: user.email,
-            fullName: user.full_name,
-            state: user.state,
-            createdAt: user.created_at,
-            lastLogin: user.last_login
-          }
+    if (profileUpdates.length > 0) {
+      const [profileRows] = await db.promise().query(
+        'SELECT id FROM user_profiles WHERE user_id = ? AND deleted_at IS NULL LIMIT 1',
+        [userId]
+      );
+
+      if (profileRows.length > 0) {
+        profileUpdates.push('updated_by = ?');
+        profileUpdates.push('version = version + 1');
+        profileValues.push(Number(userId));
+
+        await db.promise().query(
+          `
+            UPDATE user_profiles
+            SET ${profileUpdates.join(', ')}
+            WHERE user_id = ? AND deleted_at IS NULL
+          `,
+          [...profileValues, userId]
+        );
+      } else {
+        const columns = ['user_id', ...profileUpdates.map(item => item.split(' = ')[0]), 'created_by', 'updated_by'];
+        const placeholders = columns.map(() => '?').join(', ');
+        const insertValues = [
+          userId,
+          ...profileValues,
+          Number(userId),
+          Number(userId),
+        ];
+
+        await db.promise().query(
+          `INSERT INTO user_profiles (${columns.join(', ')}) VALUES (${placeholders})`,
+          insertValues
+        );
+      }
+    }
+
+    const [rows] = await db.promise().query(
+      `
+        SELECT
+          u.id,
+          u.name,
+          u.nick_name,
+          u.mail,
+          u.phone,
+          u.role,
+          u.is_active,
+          u.last_login,
+          u.created_at,
+          u.updated_at,
+          p.name AS profile_name,
+          p.email AS profile_email,
+          DATE_FORMAT(p.date_of_birth, '%Y-%m-%d') AS date_of_birth,
+          p.street_address,
+          p.city,
+          p.state,
+          p.user_image
+        FROM users u
+        LEFT JOIN user_profiles p ON p.user_id = u.id AND p.deleted_at IS NULL
+        WHERE u.id = ? AND u.deleted_at IS NULL
+        LIMIT 1
+      `,
+      [userId]
+    );
+
+    const user = rows[0];
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        user: {
+          id: user.id,
+          name: user.name,
+          username: user.profile_name || user.nick_name || user.name,
+          nickName: user.nick_name,
+          email: user.profile_email || user.mail,
+          phone: user.phone,
+          role: user.role,
+          isActive: Boolean(user.is_active),
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+          lastLogin: user.last_login
+        },
+        profile: {
+          name: user.profile_name || user.name,
+          email: user.profile_email || user.mail,
+          dateOfBirth: user.date_of_birth,
+          streetAddress: user.street_address,
+          city: user.city,
+          state: user.state,
+          userImage: user.user_image
         }
-      });
+      }
     });
-
   } catch (error) {
-    console.error('Get profile error:', error);
+    console.error('Update profile error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

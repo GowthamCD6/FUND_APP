@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
+  Image,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../components/HeaderComponent/Header';
@@ -26,8 +27,11 @@ import RateModal from './Modals/Rate';
 import {Animated, Dimensions} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import ApiService from '../../../../services/ApiService';
+import { useAuth } from '../../../../utils/AuthContext';
 
 const Profile = () => {
+  const { user: authUser } = useAuth();
   const [showAccountD, setShowAccountD] = useState(false);
   const [showNominee, setShowNominee] = useState(false);
   const [showLinkBA, setShowLinkBA] = useState(false);
@@ -39,6 +43,9 @@ const Profile = () => {
   const [showAdminLocation, setShowAdminLocation] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
+  const [profileUser, setProfileUser] = useState(authUser);
+  const [profileImage, setProfileImage] = useState('');
+  const [profileLoading, setProfileLoading] = useState(true);
   const navigation = useNavigation()
 
   // Animation values for slide-in effects
@@ -218,6 +225,35 @@ const Profile = () => {
     }
   }, [showAdminLocation, adminLocationAnim]);
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        if (authUser) {
+          setProfileUser(authUser);
+        }
+
+        const response = await ApiService.getProfile();
+        if (response.success) {
+          setProfileUser(response.data.user);
+          setProfileImage(response.data.profile?.userImage || '');
+        }
+      } catch (error) {
+        console.error('Failed to load profile data:', error);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [authUser]);
+
+  const displayName = profileUser?.username || profileUser?.name || 'User';
+  const displayPhone = profileUser?.phone || 'No phone number';
+  const profileInitial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
+  const profileStatus = profileUser?.role
+    ? `${profileUser.role} account`
+    : 'Chit Fund account';
+
   const handleLogout = async () => {
     try {
       await AsyncStorage.clear();
@@ -260,11 +296,15 @@ const Profile = () => {
                 <View style={styles.profileSection}>
                   <View style={styles.profileImageContainer}>
                     <View style={styles.profileImage}>
-                      <Text style={styles.profileInitial}>G</Text>
+                      {profileImage ? (
+                        <Image source={{ uri: profileImage }} style={styles.profileAvatarImage} />
+                      ) : (
+                        <Text style={styles.profileInitial}>{profileInitial}</Text>
+                      )}
                     </View>
                   </View>
-                  <Text style={styles.userName}>GOWTHAM</Text>
-                  <Text style={styles.userPhone}>+91 8610696889</Text>
+                  <Text style={styles.userName}>{displayName}</Text>
+                  <Text style={styles.userPhone}>{displayPhone}</Text>
                   <Text style={styles.userStatus}>
                     increasing Periyanayagi amman ChitFund
                   </Text>
@@ -824,6 +864,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+  },
+  profileAvatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 36,
   },
   userName: {
     fontSize: 22,
