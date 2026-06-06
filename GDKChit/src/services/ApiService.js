@@ -219,6 +219,27 @@ class ApiService {
     }
   }
 
+  async getNomineeDetails() {
+    try {
+      const response = await this.makeRequest('/auth/nominee');
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateNomineeDetails(nomineeData) {
+    try {
+      const response = await this.makeRequest('/auth/nominee', {
+        method: 'PATCH',
+        body: JSON.stringify(nomineeData),
+      });
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // User preferences methods
   async getUserPreferences() {
     try {

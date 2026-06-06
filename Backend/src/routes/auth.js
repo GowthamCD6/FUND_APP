@@ -12,5 +12,7 @@ router.post('/logout', authController.logout);
 // Protected routes
 router.get('/profile', authenticateToken, authController.getProfile);
 router.patch('/profile', authenticateToken, authController.updateProfile);
+router.get('/nominee', authenticateToken, authController.getNomineeDetails);
+router.patch('/nominee', authenticateToken, authController.upsertNomineeDetails);
 
 module.exports = router;

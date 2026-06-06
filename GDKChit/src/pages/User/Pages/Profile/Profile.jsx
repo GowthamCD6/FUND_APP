@@ -14,7 +14,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../components/HeaderComponent/Header';
 import AccountD from './Page/UserAccountDetails/AccountDetails';
-import Nominee from './Page/Nominee';
+import Nominee from './Page/UserNominee/Nominee';
 import LinkBA from './Page/LinkBankAccount';
 import IdentityV from './Page/IdentityVerification';
 import SecurPermis from './Page/SecurityLock/SecurityPermision';
@@ -32,8 +32,6 @@ import { useAuth } from '../../../../utils/AuthContext';
 
 const Profile = () => {
   const { user: authUser } = useAuth();
-  const [showAccountD, setShowAccountD] = useState(false);
-  const [showNominee, setShowNominee] = useState(false);
   const [showLinkBA, setShowLinkBA] = useState(false);
   const [showIdentityV, setShowIdentityV] = useState(false);
   const [showSecurPermis, setShowSecurPermis] = useState(false);
@@ -49,12 +47,6 @@ const Profile = () => {
   const navigation = useNavigation()
 
   // Animation values for slide-in effects
-  const slideAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const nomineeAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
   const linkBAAnim = useRef(
     new Animated.Value(Dimensions.get('window').width),
   ).current;
@@ -78,38 +70,6 @@ const Profile = () => {
   ).current;
 
   // Animation effects for each page
-  useEffect(() => {
-    if (showAccountD) {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showAccountD, slideAnim]);
-
-  useEffect(() => {
-    if (showNominee) {
-      Animated.timing(nomineeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(nomineeAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showNominee, nomineeAnim]);
-
   useEffect(() => {
     if (showLinkBA) {
       Animated.timing(linkBAAnim, {
@@ -273,9 +233,7 @@ const Profile = () => {
       {/* Main Profile Content */}
       <View style={{flex: 1}}>
         {/* Profile Content - Only show when no sub-page is open */}
-        {!showAccountD &&
-          !showNominee &&
-          !showLinkBA &&
+        {!showLinkBA &&
           !showIdentityV &&
           !showSecurPermis &&
           !showPrivacyPolicy &&
@@ -315,7 +273,7 @@ const Profile = () => {
                   <View style={styles.menuSection}>
                     <TouchableOpacity
                       style={styles.menuItem}
-                      onPress={() => setShowAccountD(true)}>
+                      onPress={() => navigation.navigate('AccountD')}>
                       <View style={styles.menuItemLeft}>
                         <MaterialCommunityIcons
                           name="card-account-details-outline"
@@ -370,7 +328,7 @@ const Profile = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.menuItem, styles.menuItemBorder]}
-                      onPress={() => setShowNominee(true)}>
+                      onPress={() => navigation.navigate('Nominee')}>
                       <View style={styles.menuItemLeft}>
                         <MaterialCommunityIcons
                           name="account-outline"
@@ -617,48 +575,6 @@ const Profile = () => {
               </View>
             </>
           )}
-
-        {/* Account Details Page - Full Screen Overlay */}
-        {showAccountD && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: slideAnim}]},
-            ]}>
-            <AccountD
-              onBack={() => {
-                Animated.timing(slideAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowAccountD(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Nominee Details Page - Full Screen Overlay */}
-        {showNominee && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: nomineeAnim}]},
-            ]}>
-            <Nominee
-              onBack={() => {
-                Animated.timing(nomineeAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowNominee(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
 
         {/* Linked Bank Account Page - Full Screen Overlay */}
         {showLinkBA && (

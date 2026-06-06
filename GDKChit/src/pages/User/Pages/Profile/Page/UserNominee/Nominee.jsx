@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,22 @@ import {
   TextInput,
   Modal,
   FlatList,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
+import ApiService from '../../../../../../services/ApiService';
 
 const Nominee = ({ onBack }) => {
+  const navigation = useNavigation();
   const [nomineeName, setNomineeName] = useState('');
   const [nomineePhone, setNomineePhone] = useState('');
   const [selectedRelationship, setSelectedRelationship] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const relationships = [
     'Father',
@@ -33,14 +41,87 @@ const Nominee = ({ onBack }) => {
 
   const handleSelectRelationship = (relationship) => {
     setSelectedRelationship(relationship);
+    if (errors.relationship) {
+      setErrors(prev => ({ ...prev, relationship: '' }));
+    }
     setIsModalVisible(false);
+  };
+
+  useEffect(() => {
+    const loadNominee = async () => {
+      try {
+        const response = await ApiService.getNomineeDetails();
+        if (response.success && response.data?.nominee) {
+          setNomineeName(response.data.nominee.nomineeName || '');
+          setNomineePhone(response.data.nominee.nomineePhone || '');
+          setSelectedRelationship(response.data.nominee.relationship || '');
+        }
+      } catch (error) {
+        console.error('Failed to load nominee details:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadNominee();
+  }, []);
+
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!nomineeName.trim()) {
+      nextErrors.name = 'Nominee name is required';
+    }
+
+    if (!nomineePhone.trim()) {
+      nextErrors.phone = 'Nominee phone is required';
+    } else if (!/^\d{10,15}$/.test(nomineePhone.trim())) {
+      nextErrors.phone = 'Enter a valid phone number';
+    }
+
+    if (!selectedRelationship.trim()) {
+      nextErrors.relationship = 'Relationship is required';
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      Alert.alert('Validation Error', 'Please fill all nominee details correctly.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await ApiService.updateNomineeDetails({
+        nomineeName: nomineeName.trim(),
+        nomineePhone: nomineePhone.trim(),
+        relationship: selectedRelationship.trim(),
+      });
+
+      if (response.success) {
+        Alert.alert('Success', 'Nominee details saved successfully.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+        return;
+      }
+
+      Alert.alert('Error', response.message || 'Failed to save nominee details.');
+    } catch (error) {
+      console.error('Save nominee error:', error);
+      Alert.alert('Error', error.message || 'Failed to save nominee details.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Nominee</Text>
@@ -48,36 +129,56 @@ const Nominee = ({ onBack }) => {
       <View style={styles.separator} />
       {/* Content */}
       <View style={styles.content}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#6D28D9" />
+            <Text style={styles.loadingText}>Loading nominee details...</Text>
+          </View>
+        ) : null}
+
         {/* Nominee Name Input */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Name</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, errors.name && styles.inputError]}
             placeholder="Full Name"
             placeholderTextColor="#9CA3AF"
             value={nomineeName}
-            onChangeText={setNomineeName}
+            onChangeText={(value) => {
+              setNomineeName(value);
+              if (errors.name) {
+                setErrors(prev => ({ ...prev, name: '' }));
+              }
+            }}
           />
+          {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
         </View>
 
         {/* Nominee Phone Number Input */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Phone number</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, errors.phone && styles.inputError]}
             placeholder="1234567890"
             placeholderTextColor="#9CA3AF"
             value={nomineePhone}
-            onChangeText={setNomineePhone}
+            onChangeText={(value) => {
+              setNomineePhone(value);
+              if (errors.phone) {
+                setErrors(prev => ({ ...prev, phone: '' }));
+              }
+            }}
             keyboardType="phone-pad"
+            maxLength={15}
           />
+          {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
         </View>
 
         {/* Nominee Relationship Input with Modal Trigger */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Relationship</Text>
           <TouchableOpacity
-            style={styles.relationshipInput}
+            style={[styles.relationshipInput, errors.relationship && styles.inputError]}
             onPress={() => setIsModalVisible(true)}
           >
             <Text style={selectedRelationship ? styles.relationshipText : styles.placeholderText}>
@@ -85,12 +186,13 @@ const Nominee = ({ onBack }) => {
             </Text>
             <MaterialCommunityIcons name="chevron-down" size={20} color="#9CA3AF" />
           </TouchableOpacity>
+          {errors.relationship && <Text style={styles.errorText}>{errors.relationship}</Text>}
         </View>
       </View>
 
       {/* Save Button */}
-      <TouchableOpacity style={styles.saveButton} onPress={() => console.log('Save Nominee')}>
-        <Text style={styles.saveButtonText}>Save</Text>
+      <TouchableOpacity style={[styles.saveButton, saving && styles.saveButtonDisabled]} onPress={handleSave} disabled={saving}>
+        <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save'}</Text>
       </TouchableOpacity>
 
       {/* Relationship Selection Modal */}
@@ -169,6 +271,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
   },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  loadingText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
+  },
   inputContainer: {
     marginBottom: 18,
     width: '100%',
@@ -192,6 +305,15 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
     height: 52,
     width: '100%',
+  },
+  inputError: {
+    borderColor: '#EF4444',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 13,
+    marginTop: 6,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   relationshipInput: {
     flexDirection: 'row',
@@ -226,6 +348,9 @@ const styles = StyleSheet.create({
     marginBottom: Platform.OS === 'ios' ? 24 : 16,
     width: '96%',
     alignSelf: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.75,
   },
   saveButtonText: {
     color: '#fff',

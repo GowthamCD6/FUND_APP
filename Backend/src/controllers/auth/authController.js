@@ -518,3 +518,163 @@ exports.updateProfile = async (req, res) => {
     });
   }
 };
+
+// Get Nominee Details
+exports.getNomineeDetails = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    const [rows] = await db.promise().query(
+      `
+        SELECT
+          nominee_name,
+          nominee_phone,
+          relationship
+        FROM user_nominees
+        WHERE user_id = ? AND deleted_at IS NULL
+        LIMIT 1
+      `,
+      [userId]
+    );
+
+    const nominee = rows[0] || null;
+
+    return res.json({
+      success: true,
+      data: {
+        nominee: nominee
+          ? {
+              nomineeName: nominee.nominee_name,
+              nomineePhone: nominee.nominee_phone,
+              relationship: nominee.relationship,
+            }
+          : null
+      }
+    });
+  } catch (error) {
+    console.error('Get nominee details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+// Upsert Nominee Details
+exports.upsertNomineeDetails = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    const { nomineeName, nomineePhone, relationship } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    const trimmedName = typeof nomineeName === 'string' ? nomineeName.trim() : '';
+    const trimmedPhone = typeof nomineePhone === 'string' ? nomineePhone.trim() : '';
+    const trimmedRelationship = typeof relationship === 'string' ? relationship.trim() : '';
+
+    if (!trimmedName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nominee name is required'
+      });
+    }
+
+    if (!trimmedPhone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nominee phone is required'
+      });
+    }
+
+    if (!/^\d{10,15}$/.test(trimmedPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid nominee phone number'
+      });
+    }
+
+    if (!trimmedRelationship) {
+      return res.status(400).json({
+        success: false,
+        message: 'Relationship is required'
+      });
+    }
+
+    await db.promise().query(
+      `
+        INSERT INTO user_nominees (
+          user_id,
+          nominee_name,
+          nominee_phone,
+          relationship,
+          created_by,
+          updated_by,
+          deleted_at,
+          version
+        ) VALUES (?, ?, ?, ?, ?, ?, NULL, 1)
+        ON DUPLICATE KEY UPDATE
+          nominee_name = VALUES(nominee_name),
+          nominee_phone = VALUES(nominee_phone),
+          relationship = VALUES(relationship),
+          updated_by = VALUES(updated_by),
+          deleted_at = NULL,
+          version = version + 1
+      `,
+      [
+        userId,
+        trimmedName,
+        trimmedPhone,
+        trimmedRelationship,
+        Number(userId),
+        Number(userId),
+      ]
+    );
+
+    const [rows] = await db.promise().query(
+      `
+        SELECT
+          nominee_name,
+          nominee_phone,
+          relationship
+        FROM user_nominees
+        WHERE user_id = ? AND deleted_at IS NULL
+        LIMIT 1
+      `,
+      [userId]
+    );
+
+    const nominee = rows[0] || null;
+
+    return res.json({
+      success: true,
+      message: 'Nominee details saved successfully',
+      data: {
+        nominee: nominee
+          ? {
+              nomineeName: nominee.nominee_name,
+              nomineePhone: nominee.nominee_phone,
+              relationship: nominee.relationship,
+            }
+          : null
+      }
+    });
+  } catch (error) {
+    console.error('Upsert nominee details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};

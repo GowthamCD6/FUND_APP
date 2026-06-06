@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInp
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { useNavigation } from '@react-navigation/native';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
 
@@ -59,6 +60,7 @@ const parseStoredDate = (value) => {
 };
 
 const AccountD = ({ onBack }) => {
+	const navigation = useNavigation();
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -79,17 +81,14 @@ const AccountD = ({ onBack }) => {
 	// Handle hardware back button to navigate back to profile page
 	useEffect(() => {
 		const backAction = () => {
-			if (onBack) {
-				onBack(); 
-				return true; 
-			}
-			return false;
+			navigation.goBack(); 
+			return true; 
 		};
 
 		const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
 		return () => backHandler.remove();
-	}, [onBack]);
+	}, [navigation]);
 
 	useEffect(() => {
 		const loadProfile = async () => {
@@ -221,10 +220,10 @@ const AccountD = ({ onBack }) => {
 						Alert.alert(
 							'Success',
 							'Account details saved successfully!',
-							[{ text: 'OK', onPress: () => onBack && onBack() }]
-						);
-						return;
-					}
+						[{ text: 'OK', onPress: () => navigation.goBack() }]
+					);
+					return;
+				}
 
 					Alert.alert('Error', response.message || 'Failed to save account details.', [{ text: 'OK' }]);
 				})
@@ -325,7 +324,7 @@ const AccountD = ({ onBack }) => {
 		<View style={styles.container}>
 			<Header 
 				title="Account Details"
-				onBack={onBack}
+				onBack={() => navigation.goBack()}
 				showBackButton={true}
 			/>
 			
@@ -556,9 +555,6 @@ const AccountD = ({ onBack }) => {
 						<MaterialCommunityIcons name="content-save" size={20} color="#FFF" />
 						<Text style={styles.saveButtonText}>Save Changes</Text>
 					</TouchableOpacity>
-
-					{/* Bottom spacing */}
-					<View style={styles.bottomSpacing} />
 				</View>
 			</ScrollView>
 		</View>
@@ -715,7 +711,7 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		gap: 8,
 		marginTop: 20,
-		marginBottom: 100,
+		marginBottom: 20,
 		shadowColor: '#000',
 		shadowOffset: {
 			width: 0,
@@ -731,9 +727,6 @@ const styles = StyleSheet.create({
 			fontWeight: '600',
 			fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
 		},
-	bottomSpacing: {
-		height: 32,
-	},
 });
 
 export default AccountD;
