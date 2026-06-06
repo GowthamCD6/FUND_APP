@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, BackHandler } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 
 /**
@@ -10,27 +11,25 @@ import LottieView from 'lottie-react-native';
  * @param {string} [props.pageName="This Page"] - The name of the page that is under construction.
  */
 const UnderConstruction = ({ onBack, pageName = "This Page" }) => {
+  const navigation = useNavigation();
   // Handle hardware back button to navigate back to profile page
   useEffect(() => {
     const backAction = () => {
-      if (onBack) {
-        onBack(); // Navigate back to profile page
-        return true; // Prevent default back action
-      }
-      return true; // Block default navigation
+      navigation.goBack(); // Navigate back using React Navigation
+      return true; // Prevent default back action
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
-  }, [onBack]);
+  }, [navigation]);
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F4F4F4" />
       <View style={styles.container}>
         <View style={styles.iconContainer}>
           <LottieView
-            source={require('../../../../../animation/Maintenance web.json')}
+            source={require('../../../../../../animation/Maintenance web.json')}
             autoPlay
             loop
             style={{ width: 460, height: 260, marginRight: 90 }}
@@ -48,7 +47,7 @@ const UnderConstruction = ({ onBack, pageName = "This Page" }) => {
           Please check back later!
         </Text>
 
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -66,8 +65,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingBottom: 90,
-    marginTop: -90,
+    paddingBttom: 50,
   },
   iconContainer: {
     padding: 30,

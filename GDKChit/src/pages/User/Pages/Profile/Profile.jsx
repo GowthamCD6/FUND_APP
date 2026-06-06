@@ -15,9 +15,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Header from '../../../../components/HeaderComponent/Header';
 import AccountD from './Page/UserAccountDetails/AccountDetails';
 import Nominee from './Page/UserNominee/Nominee';
-import LinkBA from './Page/LinkBankAccount';
-import IdentityV from './Page/IdentityVerification';
-import SecurPermis from './Page/SecurityLock/SecurityPermision';
+import LinkBA from './Page/LinkBankAccount/LinkBankAccount';
+import IdentityV from './Page/Verification/IdentityVerification';
 import PrivacyPolicy from './Page/PrivacyPolicy';
 import HelpSupport from './Page/Help&Support';
 import MyLocation from './Page/MyLocation/MyLocation';
@@ -32,9 +31,6 @@ import { useAuth } from '../../../../utils/AuthContext';
 
 const Profile = () => {
   const { user: authUser } = useAuth();
-  const [showLinkBA, setShowLinkBA] = useState(false);
-  const [showIdentityV, setShowIdentityV] = useState(false);
-  const [showSecurPermis, setShowSecurPermis] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showHelpSupport, setShowHelpSupport] = useState(false);
   const [showMyLocation, setShowMyLocation] = useState(false);
@@ -46,16 +42,6 @@ const Profile = () => {
   const [profileLoading, setProfileLoading] = useState(true);
   const navigation = useNavigation()
 
-  // Animation values for slide-in effects
-  const linkBAAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const identityVAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const securPermisAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
   const privacyPolicyAnim = useRef(
     new Animated.Value(Dimensions.get('window').width),
   ).current;
@@ -68,55 +54,6 @@ const Profile = () => {
   const adminLocationAnim = useRef(
     new Animated.Value(Dimensions.get('window').width),
   ).current;
-
-  // Animation effects for each page
-  useEffect(() => {
-    if (showLinkBA) {
-      Animated.timing(linkBAAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(linkBAAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showLinkBA, linkBAAnim]);
-
-  useEffect(() => {
-    if (showIdentityV) {
-      Animated.timing(identityVAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(identityVAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showIdentityV, identityVAnim]);
-
-  useEffect(() => {
-    if (showSecurPermis) {
-      Animated.timing(securPermisAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(securPermisAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showSecurPermis, securPermisAnim]);
 
   useEffect(() => {
     console.log('Privacy Policy state changed:', showPrivacyPolicy);
@@ -233,10 +170,7 @@ const Profile = () => {
       {/* Main Profile Content */}
       <View style={{flex: 1}}>
         {/* Profile Content - Only show when no sub-page is open */}
-        {!showLinkBA &&
-          !showIdentityV &&
-          !showSecurPermis &&
-          !showPrivacyPolicy &&
+        {!showPrivacyPolicy &&
           !showHelpSupport &&
           !showMyLocation &&
           !showAdminLocation && (
@@ -290,7 +224,7 @@ const Profile = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.menuItem, styles.menuItemBorder]}
-                      onPress={() => setShowLinkBA(true)}>
+                      onPress={() => navigation.navigate('LinkBA')}>
                       <View style={styles.menuItemLeft}>
                         <MaterialCommunityIcons
                           name="credit-card-outline"
@@ -309,7 +243,7 @@ const Profile = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.menuItem, styles.menuItemBorder]}
-                      onPress={() => setShowIdentityV(true)}>
+                      onPress={() => navigation.navigate('IdentityV')}>
                       <View style={styles.menuItemLeft}>
                         <MaterialCommunityIcons
                           name="shield-check-outline"
@@ -351,7 +285,7 @@ const Profile = () => {
                   <View style={styles.menuSection}>
                     <TouchableOpacity
                       style={styles.menuItem}
-                      onPress={() => setShowSecurPermis(true)}>
+                      onPress={() => navigation.navigate('SecurityPerm')}>
                       <View style={styles.menuItemLeft}>
                         <MaterialCommunityIcons
                           name="shield-lock-outline"
@@ -575,69 +509,6 @@ const Profile = () => {
               </View>
             </>
           )}
-
-        {/* Linked Bank Account Page - Full Screen Overlay */}
-        {showLinkBA && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: linkBAAnim}]},
-            ]}>
-            <LinkBA
-              onBack={() => {
-                Animated.timing(linkBAAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowLinkBA(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Identity Verification Page - Full Screen Overlay */}
-        {showIdentityV && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: identityVAnim}]},
-            ]}>
-            <IdentityV
-              onBack={() => {
-                Animated.timing(identityVAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowIdentityV(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Security & Permissions Page - Full Screen Overlay */}
-        {showSecurPermis && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: securPermisAnim}]},
-            ]}>
-            <SecurPermis
-              onBack={() => {
-                Animated.timing(securPermisAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowSecurPermis(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
 
         {/* Privacy Policy Overlay */}
         {showPrivacyPolicy && (

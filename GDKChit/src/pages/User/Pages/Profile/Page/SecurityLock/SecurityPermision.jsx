@@ -14,11 +14,13 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
+import { useNavigation } from '@react-navigation/native';
 import BiometricService from '../../../../../../services/BiometricService';
 import LockInfo from './Lock-Info-Modal/LockInfo';
 import Header from '../../../../../../components/HeaderComponent/Header';
 
 const SecurPermis = ({ onBack }) => {
+  const navigation = useNavigation();
   const [securityEnabled, setSecurityEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
@@ -31,17 +33,14 @@ const SecurPermis = ({ onBack }) => {
   // Handle hardware back button to navigate back to profile page
   useEffect(() => {
     const backAction = () => {
-      if (onBack) {
-        onBack();
-        return true; 
-      }
+      navigation.goBack();
       return true; 
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
-  }, [onBack]);
+  }, [navigation]);
 
   const loadSecuritySetting = async () => {
     try {
@@ -137,7 +136,7 @@ const SecurPermis = ({ onBack }) => {
     <View style={styles.container}>
       <Header 
         title="Security Settings"
-        onBack={onBack}
+        onBack={() => navigation.goBack()}
         showBackButton={true}
       />
 
@@ -237,7 +236,7 @@ const styles = StyleSheet.create({
   lottieAnimation: {
     width: 380,
     height: 380,
-    marginTop: -80,
+    marginTop: -20,
     marginBottom: -70,
   },
   inputContainer: {

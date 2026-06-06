@@ -1,8 +1,9 @@
 import { NavigationContainer } from "@react-navigation/native";
 import TabNavigator from "../Tab/UTab/UserTab";
 import AccountD from "../../pages/User/Pages/Profile/Page/UserAccountDetails/AccountDetails";
-import LinkBA from "../../pages/User/Pages/Profile/Page/LinkBankAccount";
+import LinkBA from "../../pages/User/Pages/Profile/Page/LinkBankAccount/LinkBankAccount";
 import Nominee from "../../pages/User/Pages/Profile/Page/UserNominee/Nominee";
+import IdentityV from "../../pages/User/Pages/Profile/Page/Verification/IdentityVerification";
 import SecurPermis from "../../pages/User/Pages/Profile/Page/SecurityLock/SecurityPermision";
 import AuthLoader from "../../utils/authLoader";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -38,6 +39,7 @@ const Routes = () => {
 
                 <Stack.Screen name="AccountD" component={AccountD} />
                 <Stack.Screen name="Nominee" component={Nominee} />
+                <Stack.Screen name="IdentityV" component={IdentityV} />
                 <Stack.Screen name="SecurityPerm" component={SecurPermis} />
                 <Stack.Screen name="MembersDetails" component={MemberDetails} />
                 <Stack.Screen name="AuctionSettings" component={Auction} />
