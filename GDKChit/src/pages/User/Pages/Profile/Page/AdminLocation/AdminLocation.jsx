@@ -12,10 +12,12 @@ import {
   TextInput,
   Linking,
   Modal,
+  BackHandler,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 import Header from '../../../../../../components/HeaderComponent/Header';
+import ApiService from '../../../../../../services/ApiService';
 
 const AdminLocation = ({ onBack }) => {
   const [adminLocations, setAdminLocations] = useState([]);
@@ -29,44 +31,63 @@ const AdminLocation = ({ onBack }) => {
   const [showNavigationModal, setShowNavigationModal] = useState(false);
 
   useEffect(() => {
-    loadAdminLocations();
-  }, []);
+    const backAction = () => {
+      if (showNavigationModal) {
+        setShowNavigationModal(false);
+        return true;
+      }
+      if (onBack) {
+        onBack();
+      }
+      return true;
+    };
 
-  // Load admin locations from local storage or API
-  const loadAdminLocations = async () => {
-    try {
-      setLoading(true);
-      // Simulated data - Replace with API call or AsyncStorage
-      const sampleAdmins = [
-        {
-          id: 1,
-          name: 'Admin 1 - Gowtham',
-          location: 'Triupur, Tamil Nadu',
-          address: '1/319 K Chettipalyam Dharapuram Road Tirupur - 641604',
-          latitude: 11.071307,
-          longitude: 77.371819,
-          lastUpdated: new Date().toISOString(),
-          phone: '+91 9876543210',
-        },
-        {
-          id: 2,
-          name: 'Admin 2 - Ramesh',
-          location: 'Bangalore, Karnataka',
-          address: '456 Tech Park, Koramangala, Bangalore - 560034',
-          latitude: 12.9352,
-          longitude: 77.6245,
-          lastUpdated: new Date().toISOString(),
-          phone: '+91 9876543211',
-        },
-      ];
-      setAdminLocations(sampleAdmins);
-    } catch (error) {
-      console.log('Error loading admin locations:', error);
-      Alert.alert('Error', 'Failed to load admin locations');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [onBack, showNavigationModal]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAdminLocations = async (isInitial = false) => {
+      try {
+        if (isInitial) setLoading(true);
+        const response = await ApiService.makeRequest('/user/admins/locations', {
+          method: 'GET',
+        });
+        const result = await response.json();
+        if (isMounted) {
+          if (result.success) {
+            setAdminLocations(result.data);
+          } else if (isInitial) {
+            Alert.alert('Error', result.message || 'Failed to load admin locations');
+          }
+        }
+      } catch (error) {
+        console.log('Error loading admin locations:', error);
+        if (isMounted && isInitial) {
+          Alert.alert('Error', 'Failed to load admin locations');
+        }
+      } finally {
+        if (isMounted && isInitial) setLoading(false);
+      }
+    };
+
+    loadAdminLocations(true);
+
+    const intervalId = setInterval(() => {
+      loadAdminLocations(false);
+    }, 5000); // Poll every 5 seconds
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, []);
 
   const handleAddAdmin = async () => {
     if (!newAdminName.trim() || !newAdminLocation.trim() || !newAdminLatitude.trim() || !newAdminLongitude.trim()) {

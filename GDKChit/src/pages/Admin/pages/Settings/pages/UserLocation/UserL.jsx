@@ -14,6 +14,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
@@ -29,27 +30,62 @@ const UserL = ({onClose}) => {
   const [showLocationModal, setShowLocationModal] = useState(false);
 
   useEffect(() => {
-    const fetchUserLocations = async () => {
+    const backAction = () => {
+      if (showLocationModal) {
+        setShowLocationModal(false);
+        return true;
+      }
+      if (onClose) {
+        onClose();
+      }
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [onClose, showLocationModal]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUserLocations = async (isInitial = false) => {
       try {
-        setLoading(true);
+        if (isInitial) setLoading(true);
         const response = await ApiService.makeRequest('/admin/users/locations', {
           method: 'GET',
         });
         const result = await response.json();
-        if (result.success) {
-          setUsers(result.data);
-        } else {
-          Alert.alert('Error', result.message || 'Failed to fetch user locations');
+        if (isMounted) {
+          if (result.success) {
+            setUsers(result.data);
+          } else if (isInitial) {
+            Alert.alert('Error', result.message || 'Failed to fetch user locations');
+          }
         }
       } catch (error) {
         console.error('Error fetching user locations:', error);
-        Alert.alert('Error', 'An error occurred while fetching user locations.');
+        if (isMounted && isInitial) {
+          Alert.alert('Error', 'An error occurred while fetching user locations.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted && isInitial) setLoading(false);
       }
     };
 
-    fetchUserLocations();
+    fetchUserLocations(true);
+
+    const intervalId = setInterval(() => {
+      fetchUserLocations(false);
+    }, 5000); // Poll every 5 seconds
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, []);
 
   // Memoized list for efficient search filtering

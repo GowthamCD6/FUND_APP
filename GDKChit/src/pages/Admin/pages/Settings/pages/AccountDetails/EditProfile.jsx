@@ -80,23 +80,17 @@ const EditProfile = ({ onBack }) => {
 	const [selectedDate, setSelectedDate] = useState(new Date());
 	const [loading, setLoading] = useState(true);
 
-	const handleBack = () => {
-		if (typeof onBack === 'function') {
-			onBack();
-			return;
-		}
-		navigation.navigate('AdminTabs', { screen: 'Settings' });
-	};
-
+	// Handle hardware back button to navigate back to settings page
 	useEffect(() => {
 		const backAction = () => {
-			handleBack();
-			return true;
+			navigation.goBack(); 
+			return true; 
 		};
 
 		const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
 		return () => backHandler.remove();
-	}, []);
+	}, [navigation]);
 
 	useEffect(() => {
 		const loadProfile = async () => {
@@ -293,7 +287,7 @@ const EditProfile = ({ onBack }) => {
 		<View style={styles.container}>
 			<Header 
 				title="Edit Profile"
-				onBack={handleBack}
+				onBack={() => navigation.goBack()}
 				showBackButton={true}
 			/>
 			

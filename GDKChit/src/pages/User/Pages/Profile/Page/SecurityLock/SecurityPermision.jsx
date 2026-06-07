@@ -33,6 +33,10 @@ const SecurPermis = ({ onBack }) => {
   // Handle hardware back button to navigate back to profile page
   useEffect(() => {
     const backAction = () => {
+      if (helpModalVisible) {
+        setHelpModalVisible(false);
+        return true;
+      }
       navigation.goBack();
       return true; 
     };
@@ -40,7 +44,7 @@ const SecurPermis = ({ onBack }) => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
-  }, [navigation]);
+  }, [navigation, helpModalVisible]);
 
   const loadSecuritySetting = async () => {
     try {

@@ -12,6 +12,7 @@ import {
   Platform,
   ScrollView,
   KeyboardAvoidingView,
+  BackHandler,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -57,6 +58,26 @@ const BlockUserScreen = ({ navigation, onClose }) => {
       status: 'Active',
     },
   ]);
+
+  useEffect(() => {
+    const backAction = () => {
+      if (showBlockModal) {
+        setShowBlockModal(false);
+        return true;
+      }
+      if (onClose) {
+        onClose();
+      }
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [onClose, showBlockModal]);
 
   useEffect(() => {
     loadBlockedUsers();

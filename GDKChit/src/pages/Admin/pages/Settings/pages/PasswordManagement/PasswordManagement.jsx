@@ -13,6 +13,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -34,6 +35,26 @@ const PasswordManagement = ({ onClose }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [activeTab, setActiveTab] = useState('all'); // all, edit, reset
+
+  useEffect(() => {
+    const backAction = () => {
+      if (showPasswordModal) {
+        setShowPasswordModal(false);
+        return true;
+      }
+      if (onClose) {
+        onClose();
+      }
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [onClose, showPasswordModal]);
 
   useEffect(() => {
     fetchAllUsers();

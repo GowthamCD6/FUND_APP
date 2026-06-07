@@ -59,6 +59,10 @@ const MyLocation = ({ onBack, animatedValue }) => {
     // Handle Android hardware back button
     const backAction = () => {
       console.log('Hardware back button pressed');
+      if (showShareLocationInfo) {
+        setShowShareLocationInfo(false);
+        return true;
+      }
       if (onBack) {
         console.log('Calling onBack from hardware button...');
         onBack();
@@ -74,7 +78,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
       console.log('MyLocation component unmounting');
       backHandler.remove();
     };
-  }, [onBack]);
+  }, [onBack, showShareLocationInfo]);
 
   useEffect(() => {
     if (authUser?.id || authUser?.userId) {

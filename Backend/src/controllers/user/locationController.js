@@ -337,3 +337,89 @@ exports.getMyLocation = async (req, res) => {
     });
   }
 };
+
+exports.getAdminLocations = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        u.id, 
+        u.name, 
+        u.phone,
+        ul.latitude, 
+        ul.longitude,
+        ul.address AS location_address,
+        up.street_address,
+        up.city,
+        up.state,
+        u.updated_at AS user_updated_at,
+        ul.updated_at AS location_updated_at
+      FROM users u
+      LEFT JOIN user_locations ul ON u.id = ul.user_id AND ul.deleted_at IS NULL
+      LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
+      WHERE u.role = 'Admin' AND u.deleted_at IS NULL
+    `;
+    const [rows] = await db.promise().query(query);
+
+    const coordinatePattern = /^\s*-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*$/;
+
+    const admins = rows.map(row => {
+      // Priority fallback logic for address:
+      // Check if location_address matches coordinates format or is empty.
+      // If so, fall back to profile address parameters (street_address, city, state).
+      let displayAddress = '';
+      const hasGpsAddress = row.location_address && row.location_address.trim();
+      const isCoordinatesGpsAddress = hasGpsAddress && coordinatePattern.test(row.location_address);
+
+      if (hasGpsAddress && !isCoordinatesGpsAddress) {
+        displayAddress = row.location_address.trim();
+      } else {
+        const profileParts = [row.street_address, row.city, row.state]
+          .map(part => part ? part.trim() : '')
+          .filter(part => part !== '');
+        
+        if (profileParts.length > 0) {
+          displayAddress = profileParts.join(', ');
+        } else if (hasGpsAddress) {
+          displayAddress = row.location_address.trim();
+        } else {
+          displayAddress = 'No address provided';
+        }
+      }
+
+      // Location field for display (typically City, State or fallback)
+      let locationStr = '';
+      if (row.city && row.state) {
+        locationStr = `${row.city.trim()}, ${row.state.trim()}`;
+      } else if (row.city) {
+        locationStr = row.city.trim();
+      } else if (row.state) {
+        locationStr = row.state.trim();
+      } else {
+        locationStr = displayAddress;
+      }
+
+      return {
+        id: row.id,
+        name: row.name,
+        phone: row.phone || 'N/A',
+        location: locationStr,
+        address: displayAddress,
+        latitude: row.latitude ? Number(row.latitude) : null,
+        longitude: row.longitude ? Number(row.longitude) : null,
+        lastUpdated: row.location_updated_at || row.user_updated_at || new Date().toISOString()
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: admins
+    });
+  } catch (error) {
+    console.error('Get admin locations error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
