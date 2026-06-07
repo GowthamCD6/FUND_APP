@@ -268,3 +268,38 @@ exports.getUserPasswordDetails = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to fetch password details' });
     }
 };
+
+exports.getUserLocations = async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                u.id, 
+                u.name, 
+                u.phone,
+                ul.latitude, 
+                ul.longitude,
+                COALESCE(ul.address, CONCAT_WS(', ', NULLIF(up.street_address, ''), NULLIF(up.city, ''), NULLIF(up.state, ''))) AS address
+            FROM users u
+            LEFT JOIN user_locations ul ON u.id = ul.user_id AND ul.deleted_at IS NULL
+            LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
+            WHERE u.role = 'User' AND u.deleted_at IS NULL
+        `;
+        const [rows] = await db.promise().query(query);
+        
+        const userLocations = rows
+            .filter(row => row.address && row.address.trim() !== '')
+            .map(row => ({
+                id: String(row.id),
+                name: row.name,
+                phone: row.phone,
+                address: row.address,
+                latitude: row.latitude ? Number(row.latitude) : null,
+                longitude: row.longitude ? Number(row.longitude) : null,
+            }));
+            
+        return res.status(200).json({ success: true, data: userLocations });
+    } catch (error) {
+        console.error('Error fetching user locations:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch user locations' });
+    }
+};

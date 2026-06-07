@@ -1,24 +1,30 @@
+import { API_URL } from '../utils/env';
+
 /**
  * Location Services Configuration
- * 
+ *
  * To use Google Maps Geocoding API:
  * 1. Get a Google Maps API key from: https://developers.google.com/maps/documentation/geocoding/get-api-key
  * 2. Enable the Geocoding API in your Google Cloud Console
  * 3. Replace 'YOUR_GOOGLE_MAPS_API_KEY' with your actual API key
  */
 
+const BACKEND_BASE_URL = API_URL.endsWith('/api')
+  ? API_URL.slice(0, -4)
+  : API_URL;
+
 export const LOCATION_CONFIG = {
   // Google Maps API Configuration
   GOOGLE_MAPS_API_KEY: null, // Replace with your actual API key
   
   // Backend API Configuration
-  BACKEND_URL: 'https://your-backend-api.com', // Replace with your backend URL
+  BACKEND_URL: BACKEND_BASE_URL,
   
   // API Endpoints
   ENDPOINTS: {
     SAVE_LOCATION: '/api/user/save-location',
-    GET_USER_LOCATIONS: '/api/user/locations',
-    UPDATE_LOCATION: '/api/user/update-location',
+    GET_USER_LOCATIONS: '/api/user/location',
+    UPDATE_LOCATION: '/api/user/save-location',
   },
   
   // Location Settings

@@ -90,7 +90,7 @@ export const getUserCurrentLocationWithFallback = async () => {
     // First attempt: High accuracy with longer timeout
     return await getUserCurrentLocation({
       enableHighAccuracy: true,
-      timeout: 30000,
+      timeout: 20000,
       maximumAge: 30000,
     });
   } catch (highAccuracyError) {
@@ -100,7 +100,7 @@ export const getUserCurrentLocationWithFallback = async () => {
       // Second attempt: Balanced accuracy with shorter timeout
       return await getUserCurrentLocation({
         enableHighAccuracy: false,
-        timeout: 20000,
+        timeout: 15000,
         maximumAge: 60000,
       });
     } catch (balancedError) {
@@ -110,11 +110,26 @@ export const getUserCurrentLocationWithFallback = async () => {
         // Third attempt: Low accuracy, fast response
         return await getUserCurrentLocation({
           enableHighAccuracy: false,
-          timeout: 10000,
+          timeout: 8000,
           maximumAge: 300000, // Accept location up to 5 minutes old
         });
       } catch (lowAccuracyError) {
         console.log("❌ All location attempts failed");
+
+        const cachedLocation = await getStoredLocation();
+        if (cachedLocation && cachedLocation.latitude !== undefined && cachedLocation.longitude !== undefined) {
+          console.log("♻️ Using cached location as fallback:", cachedLocation);
+          return {
+            latitude: cachedLocation.latitude,
+            longitude: cachedLocation.longitude,
+            accuracy: cachedLocation.accuracy ?? null,
+            timestamp: cachedLocation.timestamp || Date.now(),
+            altitude: cachedLocation.altitude ?? null,
+            heading: cachedLocation.heading ?? null,
+            speed: cachedLocation.speed ?? null,
+            fromCache: true,
+          };
+        }
         
         // If all attempts fail, throw the most relevant error
         if (highAccuracyError.code === 1) {
@@ -284,7 +299,12 @@ export const getAddressFromCoordinates = async (latitude, longitude, apiKey) => 
  */
 export const saveLocationToBackend = async (locationData, apiUrl, authToken) => {
   try {
-    const response = await fetch(`${apiUrl}/api/user/save-location`, {
+    const baseUrl = apiUrl ? String(apiUrl).replace(/\/$/, '') : '';
+    const endpoint = baseUrl.endsWith('/api')
+      ? `${baseUrl}/user/save-location`
+      : `${baseUrl}/api/user/save-location`;
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

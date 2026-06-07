@@ -14,6 +14,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import ApiService from '../../../../../../services/ApiService';
+import Header from '../../../../../../components/HeaderComponent/Header';
 
 const Nominee = ({ onBack }) => {
   const navigation = useNavigation();
@@ -119,14 +120,7 @@ const Nominee = ({ onBack }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Nominee</Text>
-      </View>
-      <View style={styles.separator} />
+      <Header title="Add Nominee" onBack={() => navigation.goBack()} />
       {/* Content */}
       <View style={styles.content}>
         {loading ? (
@@ -236,34 +230,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#d7dce4ff',
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    marginTop: -10,
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#F0F0F0',
-    width: '100%',
+    alignItems: 'stretch',
   },
   content: {
     flex: 1,

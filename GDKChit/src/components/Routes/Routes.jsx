@@ -11,6 +11,7 @@ import Welcome from "../../pages/Fronter/Welcome/Welcome";
 import Login from "../../pages/Fronter/Login/Login";
 import MemberDetails from "../../pages/Admin/pages/Reports/pages/MemberDetails/MemberDetails";
 import Auction from "../../pages/Admin/pages/Settings/pages/Auction/Auction";
+import AdminEditProfile from "../../pages/Admin/pages/Settings/pages/AccountDetails/EditProfile";
 import { StatusBar } from "react-native";
 import TabRouter from "../Tab/TabRouter";
 import UserTabs from "../Tab/UTab/UserTab";
@@ -43,6 +44,7 @@ const Routes = () => {
                 <Stack.Screen name="SecurityPerm" component={SecurPermis} />
                 <Stack.Screen name="MembersDetails" component={MemberDetails} />
                 <Stack.Screen name="AuctionSettings" component={Auction} />
+                <Stack.Screen name="AdminEditProfile" component={AdminEditProfile} />
             </Stack.Navigator>
         </NavigationContainer>
     )

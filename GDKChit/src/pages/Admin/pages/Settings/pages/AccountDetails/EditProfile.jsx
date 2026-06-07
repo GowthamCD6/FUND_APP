@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInput, Alert, Modal, FlatList } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInput, Alert, Modal, FlatList, BackHandler, Image, ActivityIndicator } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../../../../../components/HeaderComponent/Header';
+import { useNavigation } from '@react-navigation/native';
+import ApiService from '../../../../../../services/ApiService';
 
 const SOUTH_INDIAN_STATES = [
   'Tamil Nadu',
@@ -15,7 +19,49 @@ const TAMIL_NADU_CITIES = [
   'Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Erode', 'Vellore', 'Tirunelveli', 'Thoothukudi', 'Dindigul', 'Thanjavur', 'Ranipet', 'Sivakasi', 'Karur', 'Kanchipuram', 'Nagercoil', 'Kumbakonam', 'Rajapalayam', 'Pudukkottai', 'Hosur', 'Ambur', 'Krishnagiri', 'Cuddalore', 'Tiruvannamalai', 'Pollachi', 'Nagapattinam', 'Viluppuram', 'Tirupur', 'Ariyalur', 'Perambalur', 'Dharmapuri', 'Virudhunagar', 'Namakkal', 'Tenkasi', 'Mayiladuthurai', 'Thiruvarur', 'Udhagamandalam', 'Gudiyatham', 'Panruti', 'Mettur', 'Sankarankoil', 'Pattukkottai', 'Ramanathapuram', 'Arakkonam', 'Sirkazhi', 'Palani', 'Papanasam', 'Gobichettipalayam', 'Manapparai', 'Paramakudi', 'Tiruchengode', 'Karaikudi', 'Kovilpatti', 'Thiruvallur', 'Avadi', 'Tambaram', 'Tiruppur', 'Ambattur', 'Chengalpattu', 'Sriperumbudur', 'Others'
 ];
 
+const formatDateForSave = (date) => {
+	const dd = String(date.getDate()).padStart(2, '0');
+	const mm = String(date.getMonth() + 1).padStart(2, '0');
+	const yyyy = date.getFullYear();
+	return `${yyyy}-${mm}-${dd}`;
+};
+
+const formatDateForDisplay = (date) => {
+	const dd = String(date.getDate()).padStart(2, '0');
+	const mm = String(date.getMonth() + 1).padStart(2, '0');
+	const yyyy = date.getFullYear();
+	return `${dd}/${mm}/${yyyy}`;
+};
+
+const parseStoredDate = (value) => {
+	if (!value || typeof value !== 'string') {
+		return null;
+	}
+
+	const normalizedValue = value.trim().split('T')[0];
+	let parsedDate = null;
+
+	if (/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
+		const [year, month, day] = normalizedValue.split('-').map(Number);
+		parsedDate = new Date(year, month - 1, day);
+	} else if (/^\d{2}\/\d{2}\/\d{4}$/.test(normalizedValue)) {
+		const [month, day, year] = normalizedValue.split('/').map(Number);
+		parsedDate = new Date(year, month - 1, day);
+	} else if (/^\d{2}-\d{2}-\d{4}$/.test(normalizedValue)) {
+		const [day, month, year] = normalizedValue.split('-').map(Number);
+		parsedDate = new Date(year, month - 1, day);
+	} else {
+		const fallbackDate = new Date(normalizedValue);
+		if (!Number.isNaN(fallbackDate.getTime())) {
+			parsedDate = fallbackDate;
+		}
+	}
+
+	return parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate : null;
+};
+
 const EditProfile = ({ onBack }) => {
+	const navigation = useNavigation();
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -24,11 +70,67 @@ const EditProfile = ({ onBack }) => {
 		city: '',
 		state: '',
 		phone: '',
+		userImage: '',
 	});
 
 	const [errors, setErrors] = useState({});
 	const [stateModalVisible, setStateModalVisible] = useState(false);
 	const [cityModalVisible, setCityModalVisible] = useState(false);
+	const [showDatePicker, setShowDatePicker] = useState(false);
+	const [selectedDate, setSelectedDate] = useState(new Date());
+	const [loading, setLoading] = useState(true);
+
+	const handleBack = () => {
+		if (typeof onBack === 'function') {
+			onBack();
+			return;
+		}
+		navigation.navigate('AdminTabs', { screen: 'Settings' });
+	};
+
+	useEffect(() => {
+		const backAction = () => {
+			handleBack();
+			return true;
+		};
+
+		const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+		return () => backHandler.remove();
+	}, []);
+
+	useEffect(() => {
+		const loadProfile = async () => {
+			try {
+				const response = await ApiService.getProfile();
+				if (response.success && response.data?.user) {
+					const user = response.data.user;
+					const profile = response.data.profile || {};
+					const parsedDate = parseStoredDate(profile.dateOfBirth);
+
+					setFormData(prev => ({
+						...prev,
+						name: profile.name || user.name || user.username || '',
+						email: profile.email || user.email || '',
+						dateOfBirth: parsedDate ? formatDateForSave(parsedDate) : '',
+						streetAddress: profile.streetAddress || '',
+						city: profile.city || '',
+						phone: user.phone || '',
+						userImage: profile.userImage || '',
+					}));
+
+					if (parsedDate) {
+						setSelectedDate(parsedDate);
+					}
+				}
+			} catch (error) {
+				console.error('Failed to load admin profile details:', error);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		loadProfile();
+	}, []);
 
 	const handleInputChange = (field, value) => {
 		setFormData(prev => ({
@@ -41,6 +143,45 @@ const EditProfile = ({ onBack }) => {
 				[field]: ''
 			}));
 		}
+	};
+
+	const handlePickProfileImage = async () => {
+		try {
+			const result = await launchImageLibrary({
+				mediaType: 'photo',
+				selectionLimit: 1,
+				quality: 0.8,
+			});
+
+			if (result.didCancel || !result.assets || result.assets.length === 0) {
+				return;
+			}
+
+			const selectedImage = result.assets[0]?.uri || '';
+			if (selectedImage) {
+				handleInputChange('userImage', selectedImage);
+			}
+		} catch (error) {
+			console.error('Image picker error:', error);
+			Alert.alert('Error', 'Unable to pick image from gallery.', [{ text: 'OK' }]);
+		}
+	};
+
+	const openDatePicker = () => {
+		const initialDate = parseStoredDate(formData.dateOfBirth) || new Date();
+		setSelectedDate(initialDate);
+		setShowDatePicker(true);
+	};
+
+	const handleDateChange = (event, pickedDate) => {
+		if (event?.type === 'dismissed') {
+			setShowDatePicker(false);
+			return;
+		}
+
+		const nextDate = pickedDate || selectedDate;
+		setShowDatePicker(false);
+		handleInputChange('dateOfBirth', formatDateForSave(nextDate));
 	};
 
 	const validateForm = () => {
@@ -68,12 +209,31 @@ const EditProfile = ({ onBack }) => {
 
 	const handleSave = () => {
 		if (validateForm()) {
-			Alert.alert(
-				'Success',
-				'Profile updated successfully!',
-				[{ text: 'OK', onPress: () => onBack() }]
-			);
-			console.log('Form Data:', formData);
+			ApiService.updateProfile({
+				name: formData.name,
+				email: formData.email,
+				dateOfBirth: formData.dateOfBirth,
+				streetAddress: formData.streetAddress,
+				city: formData.city,
+				state: formData.state,
+				userImage: formData.userImage,
+			})
+				.then((response) => {
+					if (response.success) {
+						Alert.alert(
+							'Success',
+							'Profile updated successfully!',
+							[{ text: 'OK', onPress: () => handleBack() }]
+						);
+						return;
+					}
+
+					Alert.alert('Error', response.message || 'Failed to save profile details.', [{ text: 'OK' }]);
+				})
+				.catch((error) => {
+					console.error('Profile update error:', error);
+					Alert.alert('Error', error.message || 'Failed to save profile details.', [{ text: 'OK' }]);
+				});
 		} else {
 			Alert.alert(
 				'Error',
@@ -133,13 +293,34 @@ const EditProfile = ({ onBack }) => {
 		<View style={styles.container}>
 			<Header 
 				title="Edit Profile"
-				onBack={onBack}
+				onBack={handleBack}
 				showBackButton={true}
 			/>
 			
 			{/* Form Content */}
 			<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
 				<View style={styles.formContainer}>
+					{loading && (
+						<View style={styles.loadingRow}>
+							<ActivityIndicator size="small" color="#6B46C1" />
+							<Text style={styles.loadingText}>Loading profile details...</Text>
+						</View>
+					)}
+
+					<View style={styles.imagePreviewContainer}>
+						{formData.userImage ? (
+							<Image source={{ uri: formData.userImage }} style={styles.imagePreview} />
+						) : (
+							<View style={styles.imagePlaceholder}>
+								<MaterialCommunityIcons name="account" size={34} color="#FFFFFF" />
+							</View>
+						)}
+						<Text style={styles.imagePreviewText}>Profile Image</Text>
+						<TouchableOpacity style={styles.pickImageButton} onPress={handlePickProfileImage}>
+							<MaterialCommunityIcons name="image-plus" size={18} color="#FFFFFF" />
+							<Text style={styles.pickImageButtonText}>Choose from phone</Text>
+						</TouchableOpacity>
+					</View>
 					
 					{/* Name Field */}
 					<View style={styles.inputContainer}>
@@ -195,14 +376,50 @@ const EditProfile = ({ onBack }) => {
 							<MaterialCommunityIcons name="calendar" size={16} color="#6B7280" />
 							<Text style={styles.inputLabel}>Date of Birth *</Text>
 						</View>
-						<TextInput
-							style={[styles.textInput, errors.dateOfBirth && styles.errorInput]}
-							placeholder="MM/DD/YYYY"
-							placeholderTextColor="#A0A0A0"
-							value={formData.dateOfBirth}
-							onChangeText={(value) => handleInputChange('dateOfBirth', value)}
-						/>
+						<TouchableOpacity
+							style={[styles.datePickerButton, errors.dateOfBirth && styles.errorInput]}
+							onPress={openDatePicker}
+							activeOpacity={0.8}
+						>
+							<Text style={[styles.datePickerText, !formData.dateOfBirth && styles.placeholderText]}>
+								{formData.dateOfBirth ? formatDateForDisplay(parseStoredDate(formData.dateOfBirth) || new Date()) : 'Select date of birth'}
+							</Text>
+							<MaterialCommunityIcons name="calendar-month-outline" size={20} color="#6B7280" />
+						</TouchableOpacity>
 						{errors.dateOfBirth && <Text style={styles.errorText}>{errors.dateOfBirth}</Text>}
+						{showDatePicker && Platform.OS !== 'ios' && (
+							<DateTimePicker
+								value={selectedDate}
+								mode="date"
+								display="default"
+								onChange={handleDateChange}
+							/>
+						)}
+						{showDatePicker && Platform.OS === 'ios' && (
+							<View style={styles.iosPickerContainer}>
+								<View style={styles.iosPickerHeader}>
+									<TouchableOpacity onPress={() => setShowDatePicker(false)} style={styles.iosPickerButton}>
+										<Text style={styles.iosPickerButtonText}>Cancel</Text>
+									</TouchableOpacity>
+									<Text style={styles.iosPickerTitle}>Select Date</Text>
+									<TouchableOpacity
+										onPress={() => {
+											handleInputChange('dateOfBirth', formatDateForSave(selectedDate));
+											setShowDatePicker(false);
+										}}
+										style={styles.iosPickerButton}
+									>
+										<Text style={[styles.iosPickerButtonText, { color: '#2842C4' }]}>Done</Text>
+									</TouchableOpacity>
+								</View>
+								<DateTimePicker
+									value={selectedDate}
+									mode="date"
+									display="spinner"
+									onChange={(_event, pickedDate) => pickedDate && setSelectedDate(pickedDate)}
+								/>
+							</View>
+						)}
 					</View>
 
 					{/* Street Address Field */}
@@ -347,8 +564,57 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	formContainer: {
-		paddingTop: 32,
+		paddingTop: 24,
 		paddingHorizontal: 20,
+	},
+	loadingRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: 16,
+	},
+	loadingText: {
+		marginLeft: 10,
+		color: '#6B7280',
+	},
+	imagePreviewContainer: {
+		alignItems: 'center',
+		marginBottom: 28,
+	},
+	imagePreview: {
+		width: 96,
+		height: 96,
+		borderRadius: 48,
+		marginBottom: 12,
+	},
+	imagePlaceholder: {
+		width: 96,
+		height: 96,
+		borderRadius: 48,
+		backgroundColor: '#6B46C1',
+		alignItems: 'center',
+		justifyContent: 'center',
+		marginBottom: 12,
+	},
+	imagePreviewText: {
+		fontSize: 14,
+		fontWeight: '600',
+		color: '#374151',
+		marginBottom: 10,
+	},
+	pickImageButton: {
+		backgroundColor: '#6B46C1',
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		borderRadius: 10,
+		gap: 8,
+	},
+	pickImageButtonText: {
+		color: '#FFFFFF',
+		fontSize: 14,
+		fontWeight: '600',
 	},
 	inputContainer: {
 		marginBottom: 28,
@@ -377,6 +643,25 @@ const styles = StyleSheet.create({
 		backgroundColor: '#F5F5F5',
 		color: '#212121',
 		fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+	},
+	datePickerButton: {
+		borderRadius: 12,
+		paddingHorizontal: 16,
+		paddingVertical: 14,
+		backgroundColor: '#F5F5F5',
+		color: '#212121',
+		fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+	},
+	datePickerText: {
+		fontSize: 17,
+		color: '#212121',
+		fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+	},
+	placeholderText: {
+		color: '#A0A0A0',
 	},
 	multilineInput: {
 		height: 80,
@@ -418,6 +703,32 @@ const styles = StyleSheet.create({
 	},
 	bottomSpacing: {
 		height: 32,
+	},
+	iosPickerContainer: {
+		backgroundColor: '#FFFFFF',
+		borderTopWidth: 1,
+		borderTopColor: '#E5E7EB',
+		marginBottom: 18,
+	},
+	iosPickerHeader: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+	},
+	iosPickerButton: {
+		padding: 4,
+	},
+	iosPickerButtonText: {
+		fontSize: 16,
+		color: '#6B7280',
+		fontWeight: '600',
+	},
+	iosPickerTitle: {
+		fontSize: 16,
+		fontWeight: '700',
+		color: '#212121',
 	},
 });
 

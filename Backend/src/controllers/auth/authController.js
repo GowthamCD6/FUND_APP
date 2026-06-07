@@ -30,7 +30,7 @@ exports.register = async (req, res) => {
     const accessToken = generateToken(tokenPayload);
     const refreshToken = generateRefreshToken({ userId });
     
-    const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
+    const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
     await db.promise().query(storeTokenSql, [userId, refreshToken]);
 
     return res.status(201).json({
@@ -126,7 +126,7 @@ exports.refreshToken = async (req, res) => {
     }
 
     // Check if refresh token exists in database
-    const checkTokenSql = 'SELECT * FROM refresh_tokens WHERE token = ? AND user_id = ? AND expires_at > NOW()';
+    const checkTokenSql = 'SELECT * FROM refresh_tokens WHERE token_hash = ? AND user_id = ? AND expires_at > NOW()';
     const [results] = await db.promise().query(checkTokenSql, [refreshToken, decoded.userId]);
 
     if (!results || results.length === 0) {
@@ -188,7 +188,7 @@ exports.logout = async (req, res) => {
 
     if (refreshToken) {
       // Remove refresh token from database
-      const deleteTokenSql = 'DELETE FROM refresh_tokens WHERE token = ?';
+      const deleteTokenSql = 'DELETE FROM refresh_tokens WHERE token_hash = ?';
       db.query(deleteTokenSql, [refreshToken], (err) => {
         if (err) {
           console.error('Error deleting refresh token:', err);

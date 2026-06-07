@@ -18,8 +18,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LottieView from 'lottie-react-native';
 import ShareLocationInfo from './Share_info_modal/ShareLocationInfo';
 import Header from '../../../../../../components/HeaderComponent/Header';
+import ApiService from '../../../../../../services/ApiService';
 import {
-  getUserCurrentLocation,
   getUserCurrentLocationWithFallback,
   checkLocationPermission,
   requestLocationPermission,
@@ -28,14 +28,15 @@ import {
   storeLocationLocally,
   getStoredLocation,
   getAddressFromCoordinates,
-  saveLocationToBackend,
   createLocationDataObject,
   storeLocationWithAddress,
   getStoredLocationWithAddress
 } from '../../../../../../services/locationService';
-import { LOCATION_CONFIG, isGeocodingAvailable, getBackendEndpoint } from '../../../../../../config/locationConfig';
+import { LOCATION_CONFIG, isGeocodingAvailable } from '../../../../../../config/locationConfig';
+import { useAuth } from '../../../../../../utils/AuthContext';
 
 const MyLocation = ({ onBack, animatedValue }) => {
+  const { user: authUser } = useAuth();
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -75,6 +76,12 @@ const MyLocation = ({ onBack, animatedValue }) => {
     };
   }, [onBack]);
 
+  useEffect(() => {
+    if (authUser?.id || authUser?.userId) {
+      checkLocationPermissionStatus();
+    }
+  }, [authUser?.id, authUser?.userId]);
+
   const initializeComponent = async () => {
     try {
       console.log('Initializing MyLocation component...');
@@ -94,6 +101,42 @@ const MyLocation = ({ onBack, animatedValue }) => {
       const granted = await checkLocationPermission();
       console.log('Permission granted:', granted);
       setLocationEnabled(granted);
+
+      if (authUser?.id || authUser?.userId) {
+        try {
+          console.log('Loading location from backend...');
+          const backendResponse = await ApiService.getMyLocation();
+
+          if (backendResponse?.success && backendResponse?.data?.location) {
+            const backendLocation = backendResponse.data.location;
+            const resolvedLatitude = Number(backendLocation.latitude);
+            const resolvedLongitude = Number(backendLocation.longitude);
+
+            const hydratedLocation = {
+              latitude: resolvedLatitude,
+              longitude: resolvedLongitude,
+              accuracy: backendLocation.accuracy ?? null,
+              timestamp: backendLocation.capturedAt || backendLocation.updatedAt || Date.now(),
+            };
+
+            setCurrentLocation(hydratedLocation);
+            setAddress(backendLocation.address || formatCoordinates(resolvedLatitude, resolvedLongitude));
+            setFullAddress(backendLocation.address || formatCoordinates(resolvedLatitude, resolvedLongitude));
+            setSavedToDatabase(Boolean(backendLocation.savedToDatabase));
+            setHasSharedAddress(true);
+            setLastUpdated(
+              backendLocation.updatedAt
+                ? new Date(backendLocation.updatedAt)
+                : backendLocation.capturedAt
+                  ? new Date(backendLocation.capturedAt)
+                  : new Date(),
+            );
+            return;
+          }
+        } catch (backendError) {
+          console.log('Backend location load failed, falling back to local storage:', backendError);
+        }
+      }
       
       // Try to load saved location with address first
       console.log('Loading stored location data...');
@@ -420,6 +463,13 @@ const MyLocation = ({ onBack, animatedValue }) => {
       return;
     }
 
+    const userId = authUser?.id || authUser?.userId;
+
+    if (!userId) {
+      Alert.alert('Login Required', 'Please sign in again to save your location.');
+      return;
+    }
+
     setSavingLocation(true);
     
     try {
@@ -427,69 +477,44 @@ const MyLocation = ({ onBack, animatedValue }) => {
       const locationData = createLocationDataObject(
         currentLocation,
         fullAddress,
-        'USER_ID_HERE' // Replace with actual user ID from context/auth
+        userId
       );
 
-      // For demo purposes, we'll simulate the API call
-      // Update LOCATION_CONFIG with your actual backend URL and implement auth
-      const BACKEND_URL = LOCATION_CONFIG.BACKEND_URL;
-      const SAVE_ENDPOINT = getBackendEndpoint('SAVE_LOCATION');
-      const AUTH_TOKEN = 'your-auth-token'; // Get from your auth context/storage
-      
-      try {
-        // Attempt to save to backend using the configured endpoint
-        const response = await fetch(SAVE_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${AUTH_TOKEN}`,
-          },
-          body: JSON.stringify(locationData),
-        });
-        
-        const result = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(result.message || 'Failed to save location');
-        }
-        
-        // If successful, mark as saved
-        setSavedToDatabase(true);
-        
-        // Store locally with database sync flag
-        await storeLocationWithAddress({
-          ...locationData,
-          savedToDatabase: true,
-          savedAt: new Date().toISOString()
-        });
-        
-        Alert.alert(
-          'Location Saved Successfully!',
-          'Your location has been saved to the database. Admins can now navigate to your address using Google Maps.',
-          [{ text: 'OK' }]
-        );
-      } catch (apiError) {
-        // If API fails, store locally for later sync
-        console.log('API save failed, storing locally:', apiError);
-        
-        await storeLocationWithAddress({
-          ...locationData,
-          savedToDatabase: false,
-          pendingSync: true,
-          savedAt: new Date().toISOString()
-        });
-        
-        Alert.alert(
-          'Saved Locally',
-          'Could not connect to server. Your location has been saved locally and will be synced when connection is available.',
-          [{ text: 'OK' }]
-        );
+      const result = await ApiService.saveMyLocation({
+        ...locationData,
+        savedToDatabase: true,
+      });
+
+      if (!result?.success) {
+        throw new Error(result?.message || 'Failed to save location');
       }
+
+      const savedLocation = result?.data?.location || locationData;
+
+      setSavedToDatabase(true);
+
+      await storeLocationWithAddress({
+        ...savedLocation,
+        savedToDatabase: true,
+        savedAt: new Date().toISOString(),
+      });
+
+      Alert.alert(
+        'Location Saved Successfully!',
+        'Your location has been saved to the database. Admins can now navigate to your address using Google Maps.',
+        [{ text: 'OK' }]
+      );
     } catch (error) {
       console.log('Save location error:', error);
+      await storeLocationWithAddress({
+        ...createLocationDataObject(currentLocation, fullAddress, userId),
+        savedToDatabase: false,
+        pendingSync: true,
+        savedAt: new Date().toISOString(),
+      });
       Alert.alert(
         'Save Failed',
-        'Failed to save location. Please try again.',
+        error.message || 'Failed to save location. Please try again.',
         [{ text: 'OK' }]
       );
     } finally {
@@ -868,8 +893,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
   },
   fullAddressText: {
     fontSize: 14,
@@ -966,8 +989,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginTop: 16,
     width: '100%',
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
   },
   infoText: {
     fontSize: 12,

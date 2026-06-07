@@ -18,7 +18,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../../../../components/HeaderComponent/Header';
 import BlockU from './pages/BlockUser/BlockUser';
 import UserL from './pages/UserLocation/UserL';
-import EditProfile from './pages/AccountDetails/EditProfile';
 import MyLocation from './pages/MyLocation/MyLocation';
 import SecurityLockScreen from './pages/SecurityLock/SecurityPermision';
 import PasswordManagement from './pages/PasswordManagement/PasswordManagement';
@@ -28,7 +27,6 @@ import Rate from './Model/RateApp/Rate';
 const Settings = () => {
   const [showBlockU, setShowBlockU] = useState(false);
   const [showUserL, setShowUserL] = useState(false);
-  const [showEditProfile, setShowEditProfile] = useState(false);
   const [showMyLocation, setShowMyLocation] = useState(false);
   const [showSecurityLock, setShowSecurityLock] = useState(false);
   const [showPasswordManagement, setShowPasswordManagement] = useState(false);
@@ -41,9 +39,6 @@ const Settings = () => {
     new Animated.Value(Dimensions.get('window').width),
   ).current;
   const userLAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const editProfileAnim = useRef(
     new Animated.Value(Dimensions.get('window').width),
   ).current;
   const myLocationAnim = useRef(
@@ -88,22 +83,6 @@ const Settings = () => {
       }).start();
     }
   }, [showUserL, userLAnim]);
-
-  useEffect(() => {
-    if (showEditProfile) {
-      Animated.timing(editProfileAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(editProfileAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showEditProfile, editProfileAnim]);
 
   useEffect(() => {
     if (showMyLocation) {
@@ -199,7 +178,7 @@ const Settings = () => {
           title: 'Edit Profile',
           iconColor: '#666666',
           onPress: () => {
-            setShowEditProfile(true);
+            navigation.navigate('AdminEditProfile');
           },
         },
         {
@@ -339,7 +318,6 @@ const Settings = () => {
       <View style={{flex: 1}}>
         {!showBlockU &&
           !showUserL &&
-          !showEditProfile &&
           !showMyLocation &&
           !showSecurityLock &&
           !showPasswordManagement && (
@@ -476,27 +454,6 @@ const Settings = () => {
                   useNativeDriver: true,
                 }).start(() => {
                   setShowUserL(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Edit Profile Overlay */}
-        {showEditProfile && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: editProfileAnim}]},
-            ]}>
-            <EditProfile
-              onBack={() => {
-                Animated.timing(editProfileAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowEditProfile(false);
                 });
               }}
             />

@@ -262,6 +262,27 @@ class ApiService {
     }
   }
 
+  async saveMyLocation(locationData) {
+    try {
+      const response = await this.makeRequest('/user/save-location', {
+        method: 'POST',
+        body: JSON.stringify(locationData),
+      });
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getMyLocation() {
+    try {
+      const response = await this.makeRequest('/user/location');
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Check if user is authenticated
   async isAuthenticated() {
     const accessToken = await this.getAccessToken();

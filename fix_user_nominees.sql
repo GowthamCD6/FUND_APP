@@ -1,3 +1,0 @@
-﻿ALTER TABLE `user_nominees` ADD COLUMN `nominee_name` VARCHAR(100) NULL, ADD COLUMN `nominee_phone` VARCHAR(20) NULL, ADD COLUMN `relationship` VARCHAR(50) NULL, ADD COLUMN `version_tmp` INT(11) NULL;
-UPDATE `user_nominees` SET nominee_name = `ominee_name`, nominee_phone = `ominee_phone`, relationship = `elationship`, version_tmp = `ersion`;
-ALTER TABLE `user_nominees` DROP COLUMN `ominee_name`, DROP COLUMN `ominee_phone`, DROP COLUMN `elationship`, DROP COLUMN `ersion`, MODIFY COLUMN `nominee_name` VARCHAR(100) NOT NULL, MODIFY COLUMN `nominee_phone` VARCHAR(20) NOT NULL, MODIFY COLUMN `relationship` VARCHAR(50) NOT NULL, CHANGE COLUMN `version_tmp` `version` INT(11) NOT NULL DEFAULT 1;

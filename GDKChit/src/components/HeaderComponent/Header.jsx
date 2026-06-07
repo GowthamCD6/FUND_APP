@@ -64,6 +64,8 @@ const Header = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
+    width: '100%',
+    alignSelf: 'stretch',
   },
   header: {
     flexDirection: 'row',

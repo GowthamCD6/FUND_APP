@@ -1,4 +1,4 @@
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import {
   View,
   Text,
@@ -13,60 +13,53 @@ import {
   Modal,
   ScrollView,
   KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import Clipboard from '@react-native-clipboard/clipboard'; // Import Clipboard
-
-// 🌟 Mock User Data (Replace with your actual database fetch)
-// You can add latitude and longitude if you have exact coordinates from Google Maps
-const USERS_DATA = [
-  {
-    id: '1', 
-    name: 'Gowtham', 
-    phone: '+91 98765 43210',
-    address: '1/319, West street, k.chettipalayam, Dharapuram road, Tiruppur, Tiruppur, Tamil Nadu - 641604',
-  },
-  {
-    id: '2', 
-    name: 'Pranesh Karthi', 
-    phone: '+91 98765 43211',
-    address: '1/206, KARUPUSAMY KOVIL THOTTAM, KULAVIKARADU, P VELLALAPALAYAM, GOBICHETTIPALAYAM, ERODE, TAMIL NADU',
-  },
-  {
-    id: '3', 
-    name: 'Rohith', 
-    phone: '+91 98765 43212',
-    address: '53, NAMMA GOUNDAN PALAYAM, VAZAHAITHOTTAM, SIVAGIRI - 638109, ERODE, TAMIL NADU',
-  },
-  {
-    id: '4', 
-    name: 'Sundar Raj', 
-    phone: '+91 98765 43213',
-    address: '56, Big Street, Trichy Main, Tiruchirappalli, Tamil Nadu 620001',
-  },
-  {
-    id: '5', 
-    name: 'Lakshmi Narayanan', 
-    phone: '+91 98765 43214',
-    address: '234, East Car Street, Temple Area, Thanjavur, Tamil Nadu 613001',
-  },
-];
+import ApiService from '../../../../../../services/ApiService';
 
 const UserL = ({onClose}) => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showLocationModal, setShowLocationModal] = useState(false);
 
+  useEffect(() => {
+    const fetchUserLocations = async () => {
+      try {
+        setLoading(true);
+        const response = await ApiService.makeRequest('/admin/users/locations', {
+          method: 'GET',
+        });
+        const result = await response.json();
+        if (result.success) {
+          setUsers(result.data);
+        } else {
+          Alert.alert('Error', result.message || 'Failed to fetch user locations');
+        }
+      } catch (error) {
+        console.error('Error fetching user locations:', error);
+        Alert.alert('Error', 'An error occurred while fetching user locations.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserLocations();
+  }, []);
+
   // Memoized list for efficient search filtering
   const filteredUsers = useMemo(() => {
-    if (!searchQuery) return USERS_DATA;
+    if (!searchQuery) return users;
     const q = searchQuery.toLowerCase();
-    return USERS_DATA.filter(
+    return users.filter(
       u => u.name.toLowerCase().includes(q) || u.address.toLowerCase().includes(q),
     );
-  }, [searchQuery]);
+  }, [users, searchQuery]);
 
   const handleUserSelect = user => {
     setSelectedUser(user);
@@ -221,33 +214,42 @@ const UserL = ({onClose}) => {
       {renderSearchBar()}
 
       <View style={styles.content}>
-        {/* Navigation Animation */}
-        {filteredUsers.length > 0 && (
-          <View style={styles.animationContainer}>
-            <LottieView
-              source={require('../../../../../../animation/Navigate_House_Address.json')}
-              autoPlay={true}
-              loop={true}
-              speed={0.7}
-              resizeMode="contain"
-              style={styles.navigationLottie}
-            />
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#0066FF" />
+            <Text style={styles.loadingText}>Loading user locations...</Text>
           </View>
-        )}
+        ) : (
+          <>
+            {/* Navigation Animation */}
+            {filteredUsers.length > 0 && (
+              <View style={styles.animationContainer}>
+                <LottieView
+                  source={require('../../../../../../animation/Navigate_House_Address.json')}
+                  autoPlay={true}
+                  loop={true}
+                  speed={0.7}
+                  resizeMode="contain"
+                  style={styles.navigationLottie}
+                />
+              </View>
+            )}
 
-        <FlatList
-          data={filteredUsers}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          renderItem={({item}) => <UserCard user={item} />}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <MaterialCommunityIcons name="map-marker-off" size={64} color="#D1D5DB" />
-              <Text style={styles.emptyStateText}>No users found</Text>
-            </View>
-          }
-        />
+            <FlatList
+              data={filteredUsers}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              renderItem={({item}) => <UserCard user={item} />}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <MaterialCommunityIcons name="map-marker-off" size={64} color="#D1D5DB" />
+                  <Text style={styles.emptyStateText}>No users found</Text>
+                </View>
+              }
+            />
+          </>
+        )}
       </View>
     </View>
   );
@@ -532,6 +534,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
   },
 });
 
