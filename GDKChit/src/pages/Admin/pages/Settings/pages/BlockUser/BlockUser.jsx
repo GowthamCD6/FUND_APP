@@ -15,10 +15,12 @@ import {
   BackHandler,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../../../../../../components/HeaderComponent/Header';
 
-const BlockUserScreen = ({ navigation, onClose }) => {
+const BlockUserScreen = () => {
+  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('blocked');
   const [showBlockModal, setShowBlockModal] = useState(false);
@@ -65,9 +67,7 @@ const BlockUserScreen = ({ navigation, onClose }) => {
         setShowBlockModal(false);
         return true;
       }
-      if (onClose) {
-        onClose();
-      }
+      navigation.goBack();
       return true;
     };
 
@@ -77,7 +77,7 @@ const BlockUserScreen = ({ navigation, onClose }) => {
     );
 
     return () => backHandler.remove();
-  }, [onClose, showBlockModal]);
+  }, [navigation, showBlockModal]);
 
   useEffect(() => {
     loadBlockedUsers();
@@ -271,7 +271,7 @@ const BlockUserScreen = ({ navigation, onClose }) => {
       {/* Header */}
       <Header
         title="Block User Management"
-        onBack={onClose || (() => navigation?.goBack())}
+        onBack={() => navigation.goBack()}
       />
 
       {/* Tab Selector */}

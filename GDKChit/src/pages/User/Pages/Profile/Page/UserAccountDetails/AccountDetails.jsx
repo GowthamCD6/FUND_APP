@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInput, Alert, Modal, FlatList, BackHandler, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInput, Alert, Modal, FlatList, BackHandler, Image, RefreshControl } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -77,6 +77,38 @@ const AccountD = ({ onBack }) => {
 	const [showDatePicker, setShowDatePicker] = useState(false);
 	const [selectedDate, setSelectedDate] = useState(new Date());
 	const [loading, setLoading] = useState(true);
+	const [refreshing, setRefreshing] = useState(false);
+
+	const loadProfile = async (showLoader = false) => {
+		try {
+			if (showLoader) setLoading(true);
+			const response = await ApiService.getProfile();
+			if (response.success && response.data?.user) {
+				const user = response.data.user;
+				const profile = response.data.profile || {};
+				setFormData(prev => ({
+					...prev,
+					name: profile.name || user.name || user.username || '',
+					email: profile.email || user.email || '',
+					dateOfBirth: parseStoredDate(profile.dateOfBirth) ? formatDateForSave(parseStoredDate(profile.dateOfBirth)) : '',
+					streetAddress: profile.streetAddress || '',
+					city: profile.city || '',
+					state: profile.state || '',
+					userImage: profile.userImage || '',
+				}));
+			}
+		} catch (error) {
+			console.error('Failed to load account details:', error);
+		} finally {
+			if (showLoader) setLoading(false);
+		}
+	};
+
+	const handleRefresh = async () => {
+		setRefreshing(true);
+		await loadProfile(false);
+		setRefreshing(false);
+	};
 
 	// Handle hardware back button to navigate back to profile page
 	useEffect(() => {
@@ -91,31 +123,7 @@ const AccountD = ({ onBack }) => {
 	}, [navigation]);
 
 	useEffect(() => {
-		const loadProfile = async () => {
-			try {
-				const response = await ApiService.getProfile();
-				if (response.success && response.data?.user) {
-					const user = response.data.user;
-					const profile = response.data.profile || {};
-					setFormData(prev => ({
-						...prev,
-						name: profile.name || user.name || user.username || '',
-						email: profile.email || user.email || '',
-						dateOfBirth: parseStoredDate(profile.dateOfBirth) ? formatDateForSave(parseStoredDate(profile.dateOfBirth)) : '',
-						streetAddress: profile.streetAddress || '',
-						city: profile.city || '',
-						state: profile.state || '',
-						userImage: profile.userImage || '',
-					}));
-				}
-			} catch (error) {
-				console.error('Failed to load account details:', error);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		loadProfile();
+		loadProfile(true);
 	}, []);
 
 	const handlePickProfileImage = async () => {
@@ -329,7 +337,18 @@ const AccountD = ({ onBack }) => {
 			/>
 			
 			{/* Form Content */}
-			<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+			<ScrollView 
+				style={styles.content} 
+				showsVerticalScrollIndicator={false}
+				refreshControl={
+					<RefreshControl
+						refreshing={refreshing}
+						onRefresh={handleRefresh}
+						colors={['#3B82F6']}
+						tintColor="#3B82F6"
+					/>
+				}
+			>
 				<View style={styles.formContainer}>
 					{loading && (
 						<Text style={{ marginBottom: 16, color: '#6B7280' }}>Loading profile details...</Text>

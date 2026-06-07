@@ -16,11 +16,13 @@ import {
   BackHandler,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
 
 const PasswordManagement = ({ onClose }) => {
+  const navigation = useNavigation();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,9 +44,7 @@ const PasswordManagement = ({ onClose }) => {
         setShowPasswordModal(false);
         return true;
       }
-      if (onClose) {
-        onClose();
-      }
+      navigation.goBack();
       return true;
     };
 
@@ -54,7 +54,7 @@ const PasswordManagement = ({ onClose }) => {
     );
 
     return () => backHandler.remove();
-  }, [onClose, showPasswordModal]);
+  }, [navigation, showPasswordModal]);
 
   useEffect(() => {
     fetchAllUsers();
@@ -316,7 +316,7 @@ const PasswordManagement = ({ onClose }) => {
       
       <Header
         title="Password Management"
-        onBack={onClose}
+        onBack={() => navigation.goBack()}
       />
 
       {/* Search Bar */}

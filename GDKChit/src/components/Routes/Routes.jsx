@@ -5,6 +5,10 @@ import LinkBA from "../../pages/User/Pages/Profile/Page/LinkBankAccount/LinkBank
 import Nominee from "../../pages/User/Pages/Profile/Page/UserNominee/Nominee";
 import IdentityV from "../../pages/User/Pages/Profile/Page/Verification/IdentityVerification";
 import SecurPermis from "../../pages/User/Pages/Profile/Page/SecurityLock/SecurityPermision";
+import AdminSecurPermis from "../../pages/Admin/pages/Settings/pages/SecurityLock/SecurityPermision";
+import AdminPasswordManagement from "../../pages/Admin/pages/Settings/pages/PasswordManagement/PasswordManagement";
+import AdminBlockUserScreen from "../../pages/Admin/pages/Settings/pages/BlockUser/BlockUser";
+import AdminUserLocation from "../../pages/Admin/pages/Settings/pages/UserLocation/UserL";
 import AuthLoader from "../../utils/authLoader";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Welcome from "../../pages/Fronter/Welcome/Welcome";
@@ -42,6 +46,10 @@ const Routes = () => {
                 <Stack.Screen name="Nominee" component={Nominee} />
                 <Stack.Screen name="IdentityV" component={IdentityV} />
                 <Stack.Screen name="SecurityPerm" component={SecurPermis} />
+                <Stack.Screen name="AdminSecurityPerm" component={AdminSecurPermis} />
+                <Stack.Screen name="AdminPasswordManagement" component={AdminPasswordManagement} />
+                <Stack.Screen name="AdminBlockUser" component={AdminBlockUserScreen} />
+                <Stack.Screen name="AdminUserLocation" component={AdminUserLocation} />
                 <Stack.Screen name="MembersDetails" component={MemberDetails} />
                 <Stack.Screen name="AuctionSettings" component={Auction} />
                 <Stack.Screen name="AdminEditProfile" component={AdminEditProfile} />

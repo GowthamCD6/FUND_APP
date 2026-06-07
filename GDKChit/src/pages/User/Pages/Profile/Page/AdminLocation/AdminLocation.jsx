@@ -13,6 +13,7 @@ import {
   Linking,
   Modal,
   BackHandler,
+  RefreshControl,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
@@ -29,6 +30,7 @@ const AdminLocation = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [showNavigationModal, setShowNavigationModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const backAction = () => {
@@ -50,37 +52,47 @@ const AdminLocation = ({ onBack }) => {
     return () => backHandler.remove();
   }, [onBack, showNavigationModal]);
 
+  const loadAdminLocations = async (isInitial = false) => {
+    try {
+      if (isInitial) setLoading(true);
+      const response = await ApiService.makeRequest('/user/admins/locations', {
+        method: 'GET',
+      });
+      const result = await response.json();
+      if (result.success) {
+        setAdminLocations(result.data);
+      } else if (isInitial) {
+        Alert.alert('Error', result.message || 'Failed to load admin locations');
+      }
+    } catch (error) {
+      console.log('Error loading admin locations:', error);
+      if (isInitial) {
+        Alert.alert('Error', 'Failed to load admin locations');
+      }
+    } finally {
+      if (isInitial) setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadAdminLocations(false);
+    setRefreshing(false);
+  };
+
   useEffect(() => {
     let isMounted = true;
 
-    const loadAdminLocations = async (isInitial = false) => {
-      try {
-        if (isInitial) setLoading(true);
-        const response = await ApiService.makeRequest('/user/admins/locations', {
-          method: 'GET',
-        });
-        const result = await response.json();
-        if (isMounted) {
-          if (result.success) {
-            setAdminLocations(result.data);
-          } else if (isInitial) {
-            Alert.alert('Error', result.message || 'Failed to load admin locations');
-          }
-        }
-      } catch (error) {
-        console.log('Error loading admin locations:', error);
-        if (isMounted && isInitial) {
-          Alert.alert('Error', 'Failed to load admin locations');
-        }
-      } finally {
-        if (isMounted && isInitial) setLoading(false);
-      }
+    const fetchOnMount = async () => {
+      await loadAdminLocations(true);
     };
 
-    loadAdminLocations(true);
+    fetchOnMount();
 
     const intervalId = setInterval(() => {
-      loadAdminLocations(false);
+      if (isMounted) {
+        loadAdminLocations(false);
+      }
     }, 5000); // Poll every 5 seconds
 
     return () => {
@@ -247,6 +259,14 @@ const AdminLocation = ({ onBack }) => {
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#6B46C1']}
+            tintColor="#6B46C1"
+          />
+        }
       >
         <View style={styles.formContainer}>
           {/* Navigation Animation */}
@@ -342,19 +362,6 @@ const AdminLocation = ({ onBack }) => {
                 </View>
               ))
             )}
-
-          {/* Info Card */}
-          <View style={styles.infoCard}>
-            <MaterialCommunityIcons
-              name="information-outline"
-              size={20}
-              color="#2196F3"
-            />
-            <Text style={styles.infoText}>
-              Manage admin locations to help with service delivery coordination.
-              These locations are used for admin navigation and route planning.
-            </Text>
-          </View>
         </View>
       </ScrollView>
 

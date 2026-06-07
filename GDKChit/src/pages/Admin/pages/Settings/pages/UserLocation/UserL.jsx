@@ -17,12 +17,14 @@ import {
   BackHandler,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import Clipboard from '@react-native-clipboard/clipboard'; // Import Clipboard
 import ApiService from '../../../../../../services/ApiService';
 
-const UserL = ({onClose}) => {
+const UserL = () => {
+  const navigation = useNavigation();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -35,9 +37,7 @@ const UserL = ({onClose}) => {
         setShowLocationModal(false);
         return true;
       }
-      if (onClose) {
-        onClose();
-      }
+      navigation.goBack();
       return true;
     };
 
@@ -47,7 +47,7 @@ const UserL = ({onClose}) => {
     );
 
     return () => backHandler.remove();
-  }, [onClose, showLocationModal]);
+  }, [navigation, showLocationModal]);
 
   useEffect(() => {
     let isMounted = true;
@@ -103,7 +103,7 @@ const UserL = ({onClose}) => {
   };
 
   const handleBackPress = () => {
-    if (onClose) onClose();
+    navigation.goBack();
   };
 
   // 🌍 Smart navigation - uses coordinates if available, otherwise searches in Google Maps

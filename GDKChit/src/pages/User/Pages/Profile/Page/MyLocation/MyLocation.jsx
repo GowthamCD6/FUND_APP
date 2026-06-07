@@ -13,6 +13,7 @@ import {
   Share,
   BackHandler,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
@@ -49,6 +50,13 @@ const MyLocation = ({ onBack, animatedValue }) => {
   const [hasSharedAddress, setHasSharedAddress] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const [showShareLocationInfo, setShowShareLocationInfo] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await checkLocationPermissionStatus();
+    setRefreshing(false);
+  };
 
   console.log('MyLocation component rendered');
 
@@ -563,6 +571,14 @@ const MyLocation = ({ onBack, animatedValue }) => {
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#4CAF50']}
+            tintColor="#4CAF50"
+          />
+        }
       >
         <View style={styles.formContainer}>
           {/* Lottie Animation */}

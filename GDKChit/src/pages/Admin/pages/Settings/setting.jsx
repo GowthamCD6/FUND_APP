@@ -16,73 +16,20 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../../../../components/HeaderComponent/Header';
-import BlockU from './pages/BlockUser/BlockUser';
-import UserL from './pages/UserLocation/UserL';
 import MyLocation from './pages/MyLocation/MyLocation';
-import SecurityLockScreen from './pages/SecurityLock/SecurityPermision';
-import PasswordManagement from './pages/PasswordManagement/PasswordManagement';
 import Share from './Model/ShareApp/Share';
 import Rate from './Model/RateApp/Rate';
 
 const Settings = () => {
-  const [showBlockU, setShowBlockU] = useState(false);
-  const [showUserL, setShowUserL] = useState(false);
   const [showMyLocation, setShowMyLocation] = useState(false);
-  const [showSecurityLock, setShowSecurityLock] = useState(false);
-  const [showPasswordManagement, setShowPasswordManagement] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showRate, setShowRate] = useState(false);
   const navigation = useNavigation();
 
   // Animation values for slide-in effects
-  const blockUAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const userLAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
   const myLocationAnim = useRef(
     new Animated.Value(Dimensions.get('window').width),
   ).current;
-  const securityLockAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const passwordManagementAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-
-  // Animation effects
-  useEffect(() => {
-    if (showBlockU) {
-      Animated.timing(blockUAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(blockUAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showBlockU, blockUAnim]);
-
-  useEffect(() => {
-    if (showUserL) {
-      Animated.timing(userLAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(userLAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showUserL, userLAnim]);
 
   useEffect(() => {
     if (showMyLocation) {
@@ -100,37 +47,7 @@ const Settings = () => {
     }
   }, [showMyLocation, myLocationAnim]);
 
-  useEffect(() => {
-    if (showSecurityLock) {
-      Animated.timing(securityLockAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(securityLockAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showSecurityLock, securityLockAnim]);
 
-  useEffect(() => {
-    if (showPasswordManagement) {
-      Animated.timing(passwordManagementAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(passwordManagementAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showPasswordManagement, passwordManagementAnim]);
 
   const [userData, setUserData] = useState({
     name: 'Admin',
@@ -186,7 +103,7 @@ const Settings = () => {
           title: 'Security',
           iconColor: '#666666',
           onPress: () => {
-            setShowSecurityLock(true);
+            navigation.navigate('AdminSecurityPerm');
           },
         },
         {
@@ -194,7 +111,7 @@ const Settings = () => {
           title: 'Manage Passwords',
           iconColor: '#10B981',
           onPress: () => {
-            setShowPasswordManagement(true);
+            navigation.navigate('AdminPasswordManagement');
           },
         },
       ],
@@ -249,7 +166,7 @@ const Settings = () => {
           title: 'Block User',
           iconColor: '#EF4444',
           onPress: () => {
-            setShowBlockU(true);
+            navigation.navigate('AdminBlockUser');
           },
         },
       ],
@@ -262,7 +179,7 @@ const Settings = () => {
           title: 'User Location Map',
           iconColor: '#10B981',
           onPress: () => {
-            setShowUserL(true);
+            navigation.navigate('AdminUserLocation');
           },
         },
         {
@@ -316,11 +233,7 @@ const Settings = () => {
       
       {/* Main Settings Content */}
       <View style={{flex: 1}}>
-        {!showBlockU &&
-          !showUserL &&
-          !showMyLocation &&
-          !showSecurityLock &&
-          !showPasswordManagement && (
+        {!showMyLocation && (
             <>
               <Header 
                 title="Settings"
@@ -418,47 +331,8 @@ const Settings = () => {
             </>
           )}
 
-        {/* Block User Overlay */}
-        {showBlockU && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: blockUAnim}]},
-            ]}>
-            <BlockU
-              onClose={() => {
-                Animated.timing(blockUAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowBlockU(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
 
-        {/* User Location Overlay */}
-        {showUserL && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: userLAnim}]},
-            ]}>
-            <UserL
-              onClose={() => {
-                Animated.timing(userLAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowUserL(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
+
 
         {/* My Location Overlay */}
         {showMyLocation && (
@@ -481,47 +355,7 @@ const Settings = () => {
           </Animated.View>
         )}
 
-        {/* Security Lock Overlay */}
-        {showSecurityLock && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: securityLockAnim}]},
-            ]}>
-            <SecurityLockScreen
-              onBack={() => {
-                Animated.timing(securityLockAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowSecurityLock(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
 
-        {/* Password Management Overlay */}
-        {showPasswordManagement && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: passwordManagementAnim}]},
-            ]}>
-            <PasswordManagement
-              onClose={() => {
-                Animated.timing(passwordManagementAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowPasswordManagement(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
       </View>
 
       {/* Share Modal */}

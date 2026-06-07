@@ -10,13 +10,14 @@ import LottieView from 'lottie-react-native';
  * @param {function} props.onBack - A function to be called when the back button is pressed.
  * @param {string} [props.pageName="This Page"] - The name of the page that is under construction.
  */
-const UnderConstruction = ({ onBack, pageName = "This Page" }) => {
+
+const LinkBA = ({ onBack, pageName = "This Page" }) => {
   const navigation = useNavigation();
   // Handle hardware back button to navigate back to profile page
   useEffect(() => {
     const backAction = () => {
-      navigation.goBack(); // Navigate back using React Navigation
-      return true; // Prevent default back action
+      navigation.goBack(); 
+      return true; 
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
@@ -34,7 +35,7 @@ const UnderConstruction = ({ onBack, pageName = "This Page" }) => {
             loop
             style={{ width: 460, height: 260, marginRight: 90 }}
           />
-        </View>
+        </View>   
 
         <Text style={styles.title}>Under Construction</Text>
 
@@ -65,7 +66,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingBttom: 50,
+    paddingBottom: 50,
   },
   iconContainer: {
     padding: 30,
@@ -109,4 +110,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UnderConstruction;
+export default LinkBA;
