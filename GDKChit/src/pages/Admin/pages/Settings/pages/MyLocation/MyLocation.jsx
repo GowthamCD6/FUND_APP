@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   Share,
   BackHandler,
-  ScrollView,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
@@ -559,171 +558,167 @@ const MyLocation = ({ onBack, animatedValue }) => {
         showBackButton={true}
       />
 
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.formContainer}>
-          {/* Lottie Animation */}
-          <View style={styles.animationContainer}>
-            <LottieView
-              source={require('../../../../../../animation/Share_Location.json')}
-              autoPlay={true}
-              loop={true}
-              speed={0.7}
-              resizeMode="contain"
-              style={styles.lottieAnimation}
-            />
-          </View>
-
-          {/* Share Address Card */}
-          {!hasSharedAddress && !loading && (
-            <View style={styles.inputContainer}>
-              <View style={styles.labelContainer}>
-                <MaterialCommunityIcons name="map-marker" size={16} color="#6B7280" />
-                <Text style={styles.inputLabel}>Share Your House Address</Text>
-              </View>
-              <View style={styles.shareAddressCard}>
-                <Text style={styles.shareAddressCardTitle}>Help us locate your house for better service delivery</Text>
-                <TouchableOpacity 
-                  style={styles.shareAddressButton}
-                  onPress={shareHouseAddress}
-                  disabled={loading}
-                >
-                  <MaterialCommunityIcons name="map-marker-plus" size={20} color="#ffffff" />
-                  <Text style={styles.shareAddressButtonText}>
-                    {loading ? 'Getting Location...' : 'Share My Address'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {/* How This Function Works Button */}
-          {!hasSharedAddress && !loading && (
-            <TouchableOpacity 
-              style={styles.helpButton}
-              onPress={() => setShowShareLocationInfo(true)}
-            >
-              <MaterialCommunityIcons name="help-circle-outline" size={20} color="#3B82F6" />
-              <Text style={styles.helpButtonText}>How this function works</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Loading State */}
-        {loading && (
-          <View style={styles.loadingContent}>
-            <ActivityIndicator size="large" color="#4CAF50" />
-            <Text style={styles.loadingTitle}>Getting Your Location...</Text>
-            <Text style={styles.loadingSubtitle}>
-              {loading ? 'Trying multiple GPS strategies for best results...\nThis may take up to 30 seconds.' : 'Please make sure GPS is enabled and you\'re in a location with good signal'}
-            </Text>
-          </View>
-        )}
-
-        {/* Success State - Address Shared */}
-        {hasSharedAddress && currentLocation && (
-          <View style={styles.successContent}>
-            <View style={styles.cardHeader}>
-              <MaterialCommunityIcons 
-                name="check-circle" 
-                size={24} 
-                color="#4CAF50" 
+      <View style={styles.centeringWrapper}>
+          <View style={styles.formContainer}>
+            {/* Lottie Animation */}
+            <View style={styles.animationContainer}>
+              <LottieView
+                source={require('../../../../../../animation/Share_Location.json')}
+                autoPlay={true}
+                loop={true}
+                speed={0.7}
+                resizeMode="contain"
+                style={styles.lottieAnimation}
               />
-              <Text style={styles.cardTitle}>Address Shared Successfully!</Text>
             </View>
-            
-            <View style={styles.successSection}>
-              <View style={styles.addressDisplay}>
-                {fullAddress ? (
-                  <View style={styles.addressRow}>
+
+            {/* Share Address Card */}
+            {!hasSharedAddress && !loading && (
+              <View style={styles.inputContainer}>
+                <View style={styles.labelContainer}>
+                  <MaterialCommunityIcons name="map-marker" size={16} color="#6B7280" />
+                  <Text style={styles.inputLabel}>Share Your House Address</Text>
+                </View>
+                <View style={styles.shareAddressCard}>
+                  <Text style={styles.shareAddressCardTitle}>Help us locate your house for better service delivery</Text>
+                  <TouchableOpacity 
+                    style={styles.shareAddressButton}
+                    onPress={shareHouseAddress}
+                    disabled={loading}
+                  >
+                    <MaterialCommunityIcons name="map-marker-plus" size={20} color="#ffffff" />
+                    <Text style={styles.shareAddressButtonText}>
+                      {loading ? 'Getting Location...' : 'Share My Address'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* How This Function Works Button */}
+            {!hasSharedAddress && !loading && (
+              <TouchableOpacity 
+                style={styles.helpButton}
+                onPress={() => setShowShareLocationInfo(true)}
+              >
+                <MaterialCommunityIcons name="help-circle-outline" size={20} color="#3B82F6" />
+                <Text style={styles.helpButtonText}>How this function works</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Loading State */}
+          {loading && (
+            <View style={styles.loadingContent}>
+              <ActivityIndicator size="large" color="#4CAF50" />
+              <Text style={styles.loadingTitle}>Getting Your Location...</Text>
+              <Text style={styles.loadingSubtitle}>
+                {loading ? 'Trying multiple GPS strategies for best results...\nThis may take up to 30 seconds.' : "Please make sure GPS is enabled and you're in a location with good signal"}
+              </Text>
+            </View>
+          )}
+
+          {/* Success State - Address Shared */}
+          {hasSharedAddress && currentLocation && (
+            <View style={styles.successContent}>
+              <View style={styles.cardHeader}>
+                <MaterialCommunityIcons 
+                  name="check-circle" 
+                  size={24} 
+                  color="#4CAF50" 
+                />
+                <Text style={styles.cardTitle}>Address Shared Successfully!</Text>
+              </View>
+              
+              <View style={styles.successSection}>
+                <View style={styles.addressDisplay}>
+                  {fullAddress ? (
+                    <View style={styles.addressRow}>
+                      <MaterialCommunityIcons 
+                        name="map-marker" 
+                        size={18} 
+                        color="#4CAF50" 
+                      />
+                      <Text style={styles.fullAddressText}>{fullAddress}</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.coordinatesRow}>
+                      <MaterialCommunityIcons 
+                        name="crosshairs-gps" 
+                        size={16} 
+                        color="#666" 
+                      />
+                      <Text style={styles.coordinatesText}>
+                        {formatCoordinates(currentLocation.latitude, currentLocation.longitude)}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  <View style={styles.timeRow}>
                     <MaterialCommunityIcons 
-                      name="map-marker" 
-                      size={18} 
-                      color="#4CAF50" 
-                    />
-                    <Text style={styles.fullAddressText}>{fullAddress}</Text>
-                  </View>
-                ) : (
-                  <View style={styles.coordinatesRow}>
-                    <MaterialCommunityIcons 
-                      name="crosshairs-gps" 
+                      name="clock-outline" 
                       size={16} 
                       color="#666" 
                     />
-                    <Text style={styles.coordinatesText}>
-                      {formatCoordinates(currentLocation.latitude, currentLocation.longitude)}
+                    <Text style={styles.timeText}>
+                      Shared: {formatDate(lastUpdated)}
                     </Text>
                   </View>
-                )}
-                
-                <View style={styles.timeRow}>
-                  <MaterialCommunityIcons 
-                    name="clock-outline" 
-                    size={16} 
-                    color="#666" 
-                  />
-                  <Text style={styles.timeText}>
-                    Shared: {formatDate(lastUpdated)}
-                  </Text>
+                  
+                  {savedToDatabase && (
+                    <View style={styles.databaseStatus}>
+                      <MaterialCommunityIcons name="database-check" size={16} color="#4CAF50" />
+                      <Text style={styles.databaseStatusText}>Saved to database</Text>
+                    </View>
+                  )}
                 </View>
                 
-                {savedToDatabase && (
-                  <View style={styles.databaseStatus}>
-                    <MaterialCommunityIcons name="database-check" size={16} color="#4CAF50" />
-                    <Text style={styles.databaseStatusText}>Saved to database</Text>
-                  </View>
-                )}
-              </View>
-              
-              {/* Action Buttons */}
-              <View style={styles.actionButtonsRow}>
-                <TouchableOpacity 
-                  style={styles.updateAddressButton}
-                  onPress={shareHouseAddress}
-                  disabled={loading}
-                >
-                  <MaterialCommunityIcons name="refresh" size={18} color="#4CAF50" />
-                  <Text style={styles.updateAddressButtonText}>Update Address</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.shareLocationButton}
-                  onPress={shareLocation}
-                >
-                  <MaterialCommunityIcons name="share" size={18} color="#2196F3" />
-                  <Text style={styles.shareLocationButtonText}>Share</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.openMapsButton}
-                  onPress={openInMaps}
-                >
-                  <MaterialCommunityIcons name="map" size={18} color="#FF9800" />
-                  <Text style={styles.openMapsButtonText}>Maps</Text>
-                </TouchableOpacity>
+                {/* Action Buttons */}
+                <View style={styles.actionButtonsRow}>
+                  <TouchableOpacity 
+                    style={styles.updateAddressButton}
+                    onPress={shareHouseAddress}
+                    disabled={loading}
+                  >
+                    <MaterialCommunityIcons name="refresh" size={18} color="#4CAF50" />
+                    <Text style={styles.updateAddressButtonText}>Update Address</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.shareLocationButton}
+                    onPress={shareLocation}
+                  >
+                    <MaterialCommunityIcons name="share" size={18} color="#2196F3" />
+                    <Text style={styles.shareLocationButtonText}>Share</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.openMapsButton}
+                    onPress={openInMaps}
+                  >
+                    <MaterialCommunityIcons name="map" size={18} color="#FF9800" />
+                    <Text style={styles.openMapsButtonText}>Maps</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Information Card */}
-        <View style={styles.infoContent}>
-          <MaterialCommunityIcons 
-            name="information-outline" 
-            size={20} 
-            color="#2196F3" 
-          />
-          <Text style={styles.infoText}>
-            {hasSharedAddress 
-              ? 'Your house address has been shared successfully. Admins can now navigate to your location when needed.'
-              : 'Share your house address to help our team locate your house for better service delivery. Your location data is kept secure and private.'
-            }
-          </Text>
-        </View>
-      </ScrollView>
+          {/* Information Card */}
+          <View style={styles.infoContent}>
+            <MaterialCommunityIcons 
+              name="information-outline" 
+              size={20} 
+              color="#2196F3" 
+            />
+            <Text style={styles.infoText}>
+              {hasSharedAddress 
+                ? 'Your house address has been shared successfully. Admins can now navigate to your location when needed.'
+                : 'Share your house address to help our team locate your house for better service delivery. Your location data is kept secure and private.'
+              }
+            </Text>
+          </View>
+      </View>
 
       {/* Share Location Info Modal */}
       <ShareLocationInfo 
@@ -739,29 +734,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF', // Pure white background
   },
-  scrollView: {
+  centeringWrapper: {
     flex: 1,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    backgroundColor: '#FFFFFF',
   },
   content: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
   formContainer: {
-    paddingTop: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
+    width: '100%',
+    paddingBottom: 12,
+    alignItems: 'center',
   },
   animationContainer: {
     alignItems: 'center',
     marginBottom: 24,
     paddingVertical: 8,
     backgroundColor: 'transparent',
+    width: '100%',
   },
   lottieAnimation: {
     width: 370,
@@ -771,6 +766,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: 20,
+    width: '100%',
   },
   labelContainer: {
     flexDirection: 'row',
@@ -888,6 +884,7 @@ const styles = StyleSheet.create({
   successContent: {
     paddingHorizontal: 20,
     paddingVertical: 16,
+    width: '100%',
   },
   successSection: {
     marginTop: 8,
@@ -991,7 +988,7 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: 16,
+    marginTop: 8,
     width: '100%',
   },
   infoText: {

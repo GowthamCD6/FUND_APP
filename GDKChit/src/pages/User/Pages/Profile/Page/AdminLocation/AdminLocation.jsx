@@ -19,8 +19,10 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LottieView from 'lottie-react-native';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const AdminLocation = ({ navigation }) => {
+  const { t, language } = useLanguage();
   const [adminLocations, setAdminLocations] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [newAdminName, setNewAdminName] = useState('');
@@ -248,7 +250,7 @@ const AdminLocation = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <Header
-        title="Admin Location"
+        title="Admin Locations"
         onBack={() => navigation.goBack()}
         showBackButton={true}
       />
@@ -289,11 +291,11 @@ const AdminLocation = ({ navigation }) => {
                   size={48}
                   color="#CCCCCC"
                 />
-                <Text style={styles.emptyStateText}>
-                  No admin locations added yet
+                <Text style={[styles.emptyStateText, language === 'ta' && { fontSize: 16 }]}>
+                  {t('No admin locations added yet')}
                 </Text>
-                <Text style={styles.emptyStateSubtext}>
-                  Add an admin location to get started
+                <Text style={[styles.emptyStateSubtext, language === 'ta' && { fontSize: 13 }]}>
+                  {t('Add an admin location to get started')}
                 </Text>
               </View>
             ) : (
@@ -354,7 +356,7 @@ const AdminLocation = ({ navigation }) => {
                         size={16}
                         color="#2196F3"
                       />
-                      <Text style={styles.navigateButtonText}>Navigate</Text>
+                      <Text style={[styles.actionButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Navigate')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -404,7 +406,7 @@ const AdminLocation = ({ navigation }) => {
                     style={styles.cleanCancelButton}
                     onPress={handleCloseNavigationModal}
                   >
-                    <Text style={styles.cleanCancelButtonText}>Cancel</Text>
+                    <Text style={[styles.modalCancelText, language === 'ta' && { fontSize: 14 }]}>{t('Cancel')}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity

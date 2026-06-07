@@ -3,9 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform, TextInput, Alert } 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 import Header from '../../../../../components/HeaderComponent/Header';
+import { useLanguage } from '../../../../../utils/LanguageContext';
 
 const Join = ({ onBack }) => {
   const [groupCode, setGroupCode] = useState('');
+  const { t, language } = useLanguage();
 
   const handleJoinGroup = () => {
     if (!groupCode.trim()) {
@@ -33,16 +35,16 @@ const Join = ({ onBack }) => {
           />
         </View>
         
-        <Text style={styles.title}>Join a Group</Text>
-        <Text style={styles.description}>
-          Enter the group code provided by your group administrator to join the fund group.
+        <Text style={[styles.title, language === 'ta' && { fontSize: 18 }]}>{t('Join a Group')}</Text>
+        <Text style={[styles.description, language === 'ta' && { fontSize: 13 }]}>
+          {t('Enter the group code provided by your group administrator to join the fund group.')}
         </Text>
         
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Group Code</Text>
+          <Text style={[styles.inputLabel, language === 'ta' && { fontSize: 13 }]}>{t('Group Code')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter group code"
+            placeholder={t('Enter group code')}
             placeholderTextColor="#9CA3AF"
             value={groupCode}
             onChangeText={setGroupCode}
@@ -56,11 +58,11 @@ const Join = ({ onBack }) => {
           onPress={handleJoinGroup}
           disabled={!groupCode.trim()}
         >
-          <Text style={styles.joinButtonText}>Join Group</Text>
+          <Text style={[styles.joinButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Join Group')}</Text>
         </TouchableOpacity>
         
-        <Text style={styles.helpText}>
-          Don't have a group code? Contact your group administrator
+        <Text style={[styles.helpText, language === 'ta' && { fontSize: 11 }]}>
+          {t("Don't have a group code? Contact your group administrator")}
         </Text>
       </View>
     </View>

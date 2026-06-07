@@ -18,9 +18,11 @@ import { useNavigation } from '@react-navigation/native';
 import BiometricService from '../../../../../../services/BiometricService';
 import LockInfo from './Lock-Info-Modal/LockInfo';
 import Header from '../../../../../../components/HeaderComponent/Header';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const SecurPermis = ({ onBack }) => {
   const navigation = useNavigation();
+  const { t, language } = useLanguage();
   const [securityEnabled, setSecurityEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
@@ -164,7 +166,7 @@ const SecurPermis = ({ onBack }) => {
           <View style={styles.inputContainer}>
             <View style={styles.labelContainer}>
               <MaterialCommunityIcons name="shield-check" size={16} color="#6B7280" />
-              <Text style={styles.inputLabel}>App Security Lock</Text>
+              <Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Biometric Login')}</Text>
             </View>
             <View style={styles.securityCard}>
               <View style={styles.securityContent}>
@@ -175,8 +177,8 @@ const SecurPermis = ({ onBack }) => {
                     color={securityEnabled ? '#22C55E' : '#EF4444'}
                   />
                   <View style={styles.securityText}>
-                    <Text style={styles.securityTitle}>
-                      {securityEnabled ? 'Security Enabled' : 'Security Disabled'}
+                    <Text style={[styles.securityTitle, language === 'ta' && { fontSize: 14 }]}>
+                      {securityEnabled ? t('Security Enabled') : t('Security Disabled')}
                     </Text>
                     <Text style={styles.securitySubtitle}>
                       {securityEnabled
@@ -202,7 +204,7 @@ const SecurPermis = ({ onBack }) => {
             onPress={() => setHelpModalVisible(true)}
           >
             <MaterialCommunityIcons name="help-circle-outline" size={20} color="#3B82F6" />
-            <Text style={styles.helpButtonText}>How this function works</Text>
+            <Text style={[styles.helpButtonText, language === 'ta' && { fontSize: 12 }]}>{t('How this function works')}</Text>
           </TouchableOpacity>
 
         </View>

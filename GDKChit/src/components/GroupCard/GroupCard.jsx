@@ -7,8 +7,10 @@ import {
   Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const GroupCard = ({ group, onPress, onArrowPress }) => {
+  const { t, language } = useLanguage();
   
   const getStatusColor = (status) => {
     switch (status) {
@@ -57,14 +59,14 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
     >
       <View style={styles.groupCardHeader}>
         <View style={styles.groupNameContainer}>
-          <Text style={styles.groupName}>{group.name}</Text>
+          <Text style={[styles.groupName, language === 'ta' && { fontSize: 16 }]}>{group.name}</Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(group.status) }]}>
             <MaterialCommunityIcons 
               name={getStatusIcon(group.status)} 
               size={12} 
               color="#FFFFFF" 
             />
-            <Text style={styles.statusText}>{group.status.toUpperCase()}</Text>
+            <Text style={[styles.statusText, language === 'ta' && { fontSize: 9 }]}>{t(group.status).toUpperCase()}</Text>
           </View>
         </View>
         <TouchableOpacity 
@@ -80,18 +82,18 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
         <View style={styles.groupInfoRow}>
           <View style={styles.groupInfoItem}>
             <MaterialCommunityIcons name="account-group" size={16} color="#6B7280" />
-            <Text style={styles.groupInfoText}>{(group.currentMembers !== undefined && group.currentMembers !== null) ? group.currentMembers : (group.totalMembers || 0)} / {group.totalMembers} Members</Text>
+            <Text style={[styles.groupInfoText, language === 'ta' && { fontSize: 13 }]}>{(group.currentMembers !== undefined && group.currentMembers !== null) ? group.currentMembers : (group.totalMembers || 0)} / {group.totalMembers} {t('Members')}</Text>
           </View>
           <View style={styles.groupInfoItem}>
             <MaterialCommunityIcons name="currency-inr" size={16} color="#6B7280" />
-            <Text style={styles.groupInfoText}>{formatCurrency(group.monthlyAmount)}/month</Text>
+            <Text style={[styles.groupInfoText, language === 'ta' && { fontSize: 13 }]}>{formatCurrency(group.monthlyAmount)}{t('/month')}</Text>
           </View>
         </View>
 
         <View style={styles.progressContainer}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressText}>
-              {group.completedCycles}/{group.totalCycles} Cycles
+            <Text style={[styles.progressText, language === 'ta' && { fontSize: 13 }]}>
+              {group.completedCycles}/{group.totalCycles} {t('Cycles')}
             </Text>
             <Text style={styles.progressPercentage}>
               {Math.round((group.completedCycles / group.totalCycles) * 100)}%
@@ -108,14 +110,14 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
         </View>
 
         <View style={styles.groupCardFooter}>
-          <Text style={styles.groupDate}>
+          <Text style={[styles.groupDate, language === 'ta' && { fontSize: 11 }]}>
             {group.status === 'completed' 
-              ? `Completed: ${formatDate(group.completedDate)}`
-              : `Next Due: ${formatDate(group.nextDueDate)}`
+              ? `${t('Completed:')} ${formatDate(group.completedDate)}`
+              : `${t('Next Due:')} ${formatDate(group.nextDueDate)}`
             }
           </Text>
-          <Text style={styles.groupAmount}>
-            {formatCurrency(group.collectedAmount)} collected
+          <Text style={[styles.groupAmount, language === 'ta' && { fontSize: 13 }]}>
+            {formatCurrency(group.collectedAmount)} {t('collected')}
           </Text>
         </View>
       </View>

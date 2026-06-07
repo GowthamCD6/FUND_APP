@@ -13,8 +13,10 @@ import styles from './GroupCardInfoSty';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../services/ApiService';
+import { useLanguage } from '../../../../../utils/LanguageContext';
 
 const GroupCardInfo = ({ onClose, group }) => {
+  const { t, language } = useLanguage();
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 
@@ -198,17 +200,17 @@ const GroupCardInfo = ({ onClose, group }) => {
               disabled={isPrevDisabled}
             >
               <MaterialCommunityIcons name="chevron-left" size={22} color={isPrevDisabled ? '#D1D5DB' : '#3B82F6'} />
-              <Text style={[styles.monthNavButtonText, isPrevDisabled && { color: '#D1D5DB' }]}>Previous</Text>
+              <Text style={[styles.monthNavButtonText, isPrevDisabled && { color: '#D1D5DB' }, language === 'ta' && { fontSize: 13 }]}>{t('Previous')}</Text>
             </TouchableOpacity>
             
             <View style={styles.monthDisplay}>
-              <Text style={styles.monthLabel}>Viewing Month</Text>
+              <Text style={[styles.monthLabel, language === 'ta' && { fontSize: 11 }]}>{t('Viewing Month')}</Text>
               <Text style={styles.monthValue}>
                 {selectedDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
               </Text>
               {selectedDate.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) === 
                today.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) ? (
-               <Text style={styles.currentMonthBadge}>(Current)</Text>
+               <Text style={[styles.currentMonthBadge, language === 'ta' && { fontSize: 11 }]}>{t('(Current)')}</Text>
               ) : null}
             </View>
             
@@ -217,7 +219,7 @@ const GroupCardInfo = ({ onClose, group }) => {
               style={[styles.monthNavButton, isNextDisabled && styles.monthNavButtonDisabled]}
               disabled={isNextDisabled}
             >
-              <Text style={[styles.monthNavButtonText, isNextDisabled && { color: '#D1D5DB' }]}>Next</Text>
+              <Text style={[styles.monthNavButtonText, isNextDisabled && { color: '#D1D5DB' }, language === 'ta' && { fontSize: 13 }]}>{t('Next')}</Text>
               <MaterialCommunityIcons 
                 name="chevron-right" 
                 size={22} 
@@ -234,22 +236,22 @@ const GroupCardInfo = ({ onClose, group }) => {
               <MaterialCommunityIcons name={getStatusIcon()} size={24} color="#FFFFFF" />
             </View>
             <View style={styles.statusInfo}>
-              <Text style={styles.statusLabel}>Payment Status</Text>
-              <Text style={[styles.statusValue, { color: getStatusColor() }]}>
-                {monthData.status.charAt(0).toUpperCase() + monthData.status.slice(1)}
+              <Text style={[styles.statusLabel, language === 'ta' && { fontSize: 11 }]}>{t('Payment Status')}</Text>
+              <Text style={[styles.statusValue, { color: getStatusColor() }, language === 'ta' && { fontSize: 14 }]}>
+                {t(monthData.status).toUpperCase()}
               </Text>
             </View>
             {(monthData.status === 'pending' || monthData.status === 'overdue') && monthData.daysPending > 0 ? (
               <View style={styles.daysInfo}>
                 <Text style={styles.daysValue}>{monthData.daysPending}</Text>
-                <Text style={styles.daysLabel}>
-                  {monthData.status === 'overdue' ? 'days out' : 'days left'}
+                <Text style={[styles.daysLabel, language === 'ta' && { fontSize: 10 }]}>
+                  {monthData.status === 'overdue' ? t('days out') : t('days left')}
                 </Text>
               </View>
             ) : null}
             {monthData.status === 'paid' && monthData.paidDate ? (
               <View style={styles.paidInfo}>
-                <Text style={styles.paidLabel}>Paid on</Text>
+                <Text style={[styles.paidLabel, language === 'ta' && { fontSize: 11 }]}>{t('Paid on')}</Text>
                 <Text style={styles.paidDate}>{formatDate(monthData.paidDate)}</Text>
               </View>
             ) : null}
@@ -259,14 +261,14 @@ const GroupCardInfo = ({ onClose, group }) => {
         {/* Payment Breakdown Card - Input Form Style */}
         <View style={styles.formCard}>
           <View style={styles.formHeader}>
-            <Text style={styles.formTitle}>Payment Breakdown</Text>
+            <Text style={[styles.formTitle, language === 'ta' && { fontSize: 16 }]}>{t('Payment Breakdown')}</Text>
           </View>
 
           <View style={styles.formDivider} />
 
           {/* Amount to be Paid */}
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Amount to be Paid This Month <Text style={styles.requiredAsterisk}>*</Text></Text>
+            <Text style={[styles.formLabel, language === 'ta' && { fontSize: 13 }]}>{t('Amount to be Paid This Month')} <Text style={styles.requiredAsterisk}>*</Text></Text>
             <View style={styles.inputFieldDisplay}>
               <Text style={styles.currencySymbol}>₹</Text>
               <Text style={styles.inputValue}>{formatCurrency(amountToPayThisMonth)}</Text>
@@ -279,8 +281,8 @@ const GroupCardInfo = ({ onClose, group }) => {
               <View style={styles.labelWithIconStack}>
                 <MaterialCommunityIcons name="trending-down" size={14} color="#6B7280" />
                 <View style={styles.labelTextStack}>
-                  <Text style={styles.formLabelTamil}>எலத் தள்ளுபடி</Text>
-                  <Text style={styles.formLabelEnglish}>(Discount)</Text>
+                  <Text style={[styles.formLabelTamil, language === 'ta' && { fontSize: 13 }]}>எலத் தள்ளுபடி</Text>
+                  <Text style={[styles.formLabelEnglish, language === 'ta' && { fontSize: 11 }]}>{t('(Discount)')}</Text>
                 </View>
               </View>
               <View style={styles.inputFieldDisplay}>
@@ -293,8 +295,8 @@ const GroupCardInfo = ({ onClose, group }) => {
               <View style={styles.labelWithIconStack}>
                 <MaterialCommunityIcons name="percent" size={14} color="#6B7280" />
                 <View style={styles.labelTextStack}>
-                  <Text style={styles.formLabelTamil}>கசர்</Text>
-                  <Text style={styles.formLabelEnglish}>(Commission)</Text>
+                  <Text style={[styles.formLabelTamil, language === 'ta' && { fontSize: 13 }]}>கசர்</Text>
+                  <Text style={[styles.formLabelEnglish, language === 'ta' && { fontSize: 11 }]}>{t('(Commission)')}</Text>
                 </View>
               </View>
               <View style={styles.inputFieldDisplay}>
@@ -307,8 +309,8 @@ const GroupCardInfo = ({ onClose, group }) => {
           {(monthData.status === 'pending' || monthData.status === 'overdue') && (
             <View style={styles.dueSection}>
               <MaterialCommunityIcons name="calendar-alert" size={16} color="#EF4444" />
-              <Text style={styles.dueTextForm}>
-                {monthData.status === 'overdue' ? 'Was due by ' : 'Due by '}
+              <Text style={[styles.dueTextForm, language === 'ta' && { fontSize: 12 }]}>
+                {monthData.status === 'overdue' ? t('Was due by ') : t('Due by ')}
                 {formatDate(effectiveDueDate)}
               </Text>
             </View>
@@ -318,14 +320,14 @@ const GroupCardInfo = ({ onClose, group }) => {
         {/* Auction Winner Card - Form Style */}
         <View style={styles.formCard}>
           <View style={styles.formHeader}>
-            <Text style={styles.formTitle}>Chit Auction Winner</Text>
+            <Text style={[styles.formTitle, language === 'ta' && { fontSize: 16 }]}>{t('Chit Auction Winner')}</Text>
           </View>
 
           <View style={styles.formDivider} />
 
           {/* Winner Name */}
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Winner Name</Text>
+            <Text style={[styles.formLabel, language === 'ta' && { fontSize: 13 }]}>{t('Winner Name')}</Text>
             <View style={styles.inputFieldDisplay}>
               <Text style={styles.inputValue}>{displayNil(monthData.auctionWinner)}</Text>
             </View>
@@ -333,7 +335,7 @@ const GroupCardInfo = ({ onClose, group }) => {
 
           {/* Amount Taken */}
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Amount Taken</Text>
+            <Text style={[styles.formLabel, language === 'ta' && { fontSize: 13 }]}>{t('Amount Taken')}</Text>
             <View style={styles.inputFieldDisplay}>
               <Text style={styles.currencySymbol}>₹</Text>
               <Text style={styles.inputValue}>{formatCurrency(monthData.amountTaken)}</Text>
@@ -342,7 +344,7 @@ const GroupCardInfo = ({ onClose, group }) => {
 
           {/* Auction Date */}
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Auction Date</Text>
+            <Text style={[styles.formLabel, language === 'ta' && { fontSize: 13 }]}>{t('Auction Date')}</Text>
             <View style={[styles.inputFieldDisplay, { justifyContent: 'flex-start' }]}>
               <MaterialCommunityIcons name="calendar" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
               <Text style={styles.inputValue}>{formatDate(monthData.auctionDate)}</Text>
@@ -355,12 +357,12 @@ const GroupCardInfo = ({ onClose, group }) => {
           <View style={styles.actionSection}>
             <TouchableOpacity style={styles.payNowButton}>
               <MaterialCommunityIcons name="credit-card" size={20} color="#FFFFFF" />
-              <Text style={styles.payNowButtonText}>Pay Now</Text>
+              <Text style={[styles.payNowButtonText, language === 'ta' && { fontSize: 14 }]}>{t('Pay Now')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.contactAdminButton}>
               <MaterialCommunityIcons name="message-text-outline" size={20} color="#3B82F6" />
-              <Text style={styles.contactAdminButtonText}>Contact Admin</Text>
+              <Text style={[styles.contactAdminButtonText, language === 'ta' && { fontSize: 14 }]}>{t('Contact Admin')}</Text>
             </TouchableOpacity>
           </View>
         )}

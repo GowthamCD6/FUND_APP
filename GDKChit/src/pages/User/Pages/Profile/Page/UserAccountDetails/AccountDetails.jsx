@@ -6,6 +6,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const SOUTH_INDIAN_STATES = [
   'Tamil Nadu',
@@ -61,6 +62,7 @@ const parseStoredDate = (value) => {
 
 const AccountD = ({ onBack }) => {
 	const navigation = useNavigation();
+	const { t, language } = useLanguage();
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -331,7 +333,7 @@ const AccountD = ({ onBack }) => {
 	return (
 		<View style={styles.container}>
 			<Header 
-				title="Account Details"
+				title="Edit Profile"
 				onBack={() => navigation.goBack()}
 				showBackButton={true}
 			/>
@@ -351,7 +353,7 @@ const AccountD = ({ onBack }) => {
 			>
 				<View style={styles.formContainer}>
 					{loading && (
-						<Text style={{ marginBottom: 16, color: '#6B7280' }}>Loading profile details...</Text>
+						<Text style={{ marginBottom: 16, color: '#6B7280' }}>{t('Loading profile details...')}</Text>
 					)}
 
 					<View style={styles.imagePreviewContainer}>
@@ -362,10 +364,10 @@ const AccountD = ({ onBack }) => {
 								<MaterialCommunityIcons name="account" size={34} color="#FFFFFF" />
 							</View>
 						)}
-						<Text style={styles.imagePreviewText}>Profile Image</Text>
+						<Text style={[styles.imagePreviewText, language === 'ta' && { fontSize: 13 }]}>{t('Profile Image')}</Text>
 						<TouchableOpacity style={styles.pickImageButton} onPress={handlePickProfileImage}>
 							<MaterialCommunityIcons name="image-plus" size={18} color="#FFFFFF" />
-							<Text style={styles.pickImageButtonText}>Choose from phone</Text>
+							<Text style={[styles.pickImageButtonText, language === 'ta' && { fontSize: 12 }]}>{t('Choose from phone')}</Text>
 						</TouchableOpacity>
 					</View>
 					
@@ -373,11 +375,11 @@ const AccountD = ({ onBack }) => {
 					<View style={styles.inputContainer}>
 						<View style={styles.labelContainer}>
 							<MaterialCommunityIcons name="account" size={16} color="#6B7280" />
-							<Text style={styles.inputLabel}>Name</Text>
+							<Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Name')}</Text>
 						</View>
 						<TextInput
 							style={[styles.textInput, errors.name && styles.errorInput]}
-							placeholder="Enter your name"
+							placeholder={t("Enter your name")}
 							placeholderTextColor="#A0A0A0"
 							value={formData.name}
 							onChangeText={(value) => handleInputChange('name', value)}
@@ -389,11 +391,11 @@ const AccountD = ({ onBack }) => {
 					<View style={styles.inputContainer}>
 						<View style={styles.labelContainer}>
 							<MaterialCommunityIcons name="email" size={16} color="#6B7280" />
-							<Text style={styles.inputLabel}>Email Id</Text>
+							<Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Phone number')}</Text>
 						</View>
 						<TextInput
 							style={[styles.textInput, errors.email && styles.errorInput]}
-							placeholder="Enter email address"
+							placeholder={t("Enter email address")}
 							placeholderTextColor="#A0A0A0"
 							value={formData.email}
 							onChangeText={(value) => handleInputChange('email', value)}
@@ -406,7 +408,7 @@ const AccountD = ({ onBack }) => {
 					<View style={styles.inputContainer}>
 						<View style={styles.labelContainer}>
 							<MaterialCommunityIcons name="calendar" size={16} color="#6B7280" />
-							<Text style={styles.inputLabel}>Date of Birth</Text>
+							<Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Date of Birth')}</Text>
 						</View>
 						<TouchableOpacity
 							style={[styles.datePickerButton, errors.dateOfBirth && styles.errorInput]}
@@ -414,7 +416,7 @@ const AccountD = ({ onBack }) => {
 							activeOpacity={0.8}
 						>
 							<Text style={[styles.datePickerText, !formData.dateOfBirth && styles.placeholderText]}>
-								{formData.dateOfBirth ? formatDateForDisplay(parseStoredDate(formData.dateOfBirth) || new Date()) : 'Select date of birth'}
+								{formData.dateOfBirth ? formatDateForDisplay(parseStoredDate(formData.dateOfBirth) || new Date()) : t('Select date of birth')}
 							</Text>
 							<MaterialCommunityIcons name="calendar-month-outline" size={20} color="#6B7280" />
 						</TouchableOpacity>
@@ -424,11 +426,11 @@ const AccountD = ({ onBack }) => {
 								<View style={styles.iosPickerContainer}>
 									<View style={styles.iosPickerHeader}>
 										<TouchableOpacity onPress={cancelIOSDate} style={styles.iosPickerButton}>
-											<Text style={styles.iosPickerButtonText}>Cancel</Text>
+											<Text style={styles.iosPickerButtonText}>{t('Cancel')}</Text>
 										</TouchableOpacity>
-										<Text style={styles.iosPickerTitle}>Select Date</Text>
+										<Text style={styles.iosPickerTitle}>{t('Select Date')}</Text>
 										<TouchableOpacity onPress={confirmIOSDate} style={styles.iosPickerButton}>
-											<Text style={[styles.iosPickerButtonText, { color: '#2842C4' }]}>Done</Text>
+											<Text style={[styles.iosPickerButtonText, { color: '#2842C4' }]}>{t('Done')}</Text>
 										</TouchableOpacity>
 									</View>
 									<DateTimePicker
@@ -453,11 +455,11 @@ const AccountD = ({ onBack }) => {
 					<View style={styles.inputContainer}>
 						<View style={styles.labelContainer}>
 							<MaterialCommunityIcons name="home" size={16} color="#6B7280" />
-							<Text style={styles.inputLabel}>Street Address</Text>
+							<Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Street Address')}</Text>
 						</View>
 						<TextInput
 							style={[styles.textInput, styles.multilineInput, errors.streetAddress && styles.errorInput]}
-							placeholder="Enter your street address"
+							placeholder={t("Enter your street address")}
 							placeholderTextColor="#A0A0A0"
 							value={formData.streetAddress}
 							onChangeText={(value) => handleInputChange('streetAddress', value)}
@@ -471,7 +473,7 @@ const AccountD = ({ onBack }) => {
 					<View style={styles.inputContainer}>
 						<View style={styles.labelContainer}>
 							<MaterialCommunityIcons name="city" size={16} color="#6B7280" />
-							<Text style={styles.inputLabel}>City</Text>
+							<Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('City')}</Text>
 						</View>
 						<TouchableOpacity
 							style={styles.textInput}
@@ -479,7 +481,7 @@ const AccountD = ({ onBack }) => {
 							activeOpacity={0.7}
 						>
 							<Text style={{ color: formData.city ? '#6B7280' : '#A0A0A0', fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold', fontSize: 17 }}>
-								{formData.city || 'Select city'}
+								{formData.city || t('Select City')}
 							</Text>
 						</TouchableOpacity>
 						{errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
@@ -492,7 +494,7 @@ const AccountD = ({ onBack }) => {
 							<View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'flex-end' }}>
 								<View style={modalSheetStyle}>
 									<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-										<Text style={modalTitleStyle}>Select City</Text>
+										<Text style={[modalTitleStyle, language === 'ta' && { fontSize: 18 }]}>{t('Select City')}</Text>
 										<TouchableOpacity onPress={() => setCityModalVisible(false)} style={modalCloseStyle}>
 											<MaterialCommunityIcons name="close" size={24} color="#212121" />
 										</TouchableOpacity>
@@ -522,7 +524,7 @@ const AccountD = ({ onBack }) => {
 					<View style={styles.inputContainer}>
 						<View style={styles.labelContainer}>
 							<MaterialCommunityIcons name="map" size={16} color="#6B7280" />
-							<Text style={styles.inputLabel}>State</Text>
+							<Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('State')}</Text>
 						</View>
 						<TouchableOpacity
 							style={styles.textInput}
@@ -530,7 +532,7 @@ const AccountD = ({ onBack }) => {
 							activeOpacity={0.7}
 						>
 							<Text style={{ color: formData.state ? '#6B7280' : '#A0A0A0', fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold', fontSize: 17 }}>
-								{formData.state || 'Select state'}
+								{formData.state || t('Select State')}
 							</Text>
 						</TouchableOpacity>
 						{errors.state && <Text style={styles.errorText}>{errors.state}</Text>}
@@ -572,7 +574,7 @@ const AccountD = ({ onBack }) => {
 					{/* Save Button */}
 					<TouchableOpacity style={styles.saveButton} onPress={handleSave}>
 						<MaterialCommunityIcons name="content-save" size={20} color="#FFF" />
-						<Text style={styles.saveButtonText}>Save Changes</Text>
+						<Text style={[styles.saveButtonText, language === 'ta' && { fontSize: 14 }]}>{t('Save Changes')}</Text>
 					</TouchableOpacity>
 				</View>
 			</ScrollView>

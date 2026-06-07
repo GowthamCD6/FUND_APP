@@ -15,8 +15,10 @@ import GroupCard from '../../../../components/GroupCard/GroupCard';
 import Header from '../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../services/ApiService';
 import styles from './Portfoliosty';
+import { useLanguage } from '../../../../utils/LanguageContext';
 
 const ChitfundPortfolio = ({ navigation }) => {
+  const { t, language } = useLanguage();
   // Modal state for showing group details
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedModalGroup, setSelectedModalGroup] = useState(null);
@@ -213,8 +215,8 @@ const ChitfundPortfolio = ({ navigation }) => {
          <View style={styles.loadingContainer}>
            <View style={styles.loadingContent}>
              <ActivityIndicator size="large" color="#6B46C1" />
-             <Text style={styles.loadingText}>Loading your portfolio...</Text>
-             <Text style={styles.loadingSubtext}>Please wait while we fetch your investment details</Text>
+             <Text style={[styles.loadingText, language === 'ta' && { fontSize: 16 }]}>{t('Loading your portfolio...')}</Text>
+             <Text style={[styles.loadingSubtext, language === 'ta' && { fontSize: 13 }]}>{t('Please wait while we fetch your investment details')}</Text>
            </View>
          </View>
       </SafeAreaView>
@@ -228,14 +230,14 @@ const ChitfundPortfolio = ({ navigation }) => {
         <View style={styles.errorContainer}>
           <View style={styles.errorContent}>
             <MaterialCommunityIcons name="wifi-off" size={64} color="#DC2626" />
-            <Text style={styles.errorTitle}>Unable to Load Portfolio</Text>
+            <Text style={[styles.errorTitle, language === 'ta' && { fontSize: 18 }]}>{t('Unable to Load Portfolio')}</Text>
             <Text style={styles.errorMessage}>{error}</Text>
             <TouchableOpacity 
               style={styles.retryButton}
               onPress={fetchPortfolio}
             >
               <MaterialCommunityIcons name="refresh" size={20} color="#FFFFFF" />
-              <Text style={styles.retryButtonText}>Try Again</Text>
+              <Text style={[styles.retryButtonText, language === 'ta' && { fontSize: 14 }]}>{t('Try Again')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -250,13 +252,13 @@ const ChitfundPortfolio = ({ navigation }) => {
         <View style={styles.emptyPortfolioContainer}>
           <View style={styles.emptyPortfolioContent}>
             <MaterialCommunityIcons name="briefcase-outline" size={72} color="#D1D5DB" />
-            <Text style={styles.emptyPortfolioTitle}>No Portfolio Data</Text>
-            <Text style={styles.emptyPortfolioMessage}>You haven't joined any chit groups yet</Text>
+            <Text style={[styles.emptyPortfolioTitle, language === 'ta' && { fontSize: 18 }]}>{t('No Portfolio Data')}</Text>
+            <Text style={[styles.emptyPortfolioMessage, language === 'ta' && { fontSize: 14 }]}>{t("You haven't joined any chit groups yet")}</Text>
             <TouchableOpacity 
               style={styles.exploreButton}
               onPress={() => navigation?.navigate('Home')}
             >
-              <Text style={styles.exploreButtonText}>Explore Groups</Text>
+              <Text style={[styles.exploreButtonText, language === 'ta' && { fontSize: 14 }]}>{t('Explore Groups')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -275,18 +277,18 @@ const ChitfundPortfolio = ({ navigation }) => {
         <View style={styles.fixedHeader}>
             {/* NEW SUMMARY SECTION */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Summary</Text>
+                <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 12 }]}>{t('Summary')}</Text>
                 <View style={styles.summaryContainer}>
                     {/* Total Amount Invested Card */}
                     <View style={styles.summaryCard}>
-                        <Text style={styles.cardLabel}>Total Amount Invested</Text>
+                        <Text style={[styles.cardLabel, language === 'ta' && { fontSize: 12 }]}>{t('Total Amount Invested')}</Text>
                         <Text style={styles.cardValue}>{formatCurrency(totalAmountInvested)}</Text>
                     </View>
 
                     {/* Selected Group Card */}
                     <View style={styles.summaryCard}>
-                        <Text style={styles.cardLabel}>
-                           {selectedGroup ? selectedGroup.groupName : 'Select a Group'}
+                        <Text style={[styles.cardLabel, language === 'ta' && { fontSize: 12 }]}>
+                           {selectedGroup ? selectedGroup.groupName : t('Select a Group')}
                         </Text>
                         <Text style={styles.cardValue}>
                            {formatCurrency(amountPaidInSelectedGroup)}
@@ -326,7 +328,7 @@ const ChitfundPortfolio = ({ navigation }) => {
         <ScrollView style={styles.scrollableContent} showsVerticalScrollIndicator={false}>
             {/* View Group title below the divider */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>View Group</Text>
+                <Text style={[styles.sectionTitle1, language === 'ta' && { fontSize: 12 }]}>{t('View Group')}</Text>
 
                 {/* TABS SECTION */}
                 <View style={styles.tabContainer}>
@@ -339,9 +341,10 @@ const ChitfundPortfolio = ({ navigation }) => {
                     >
                         <Text style={[
                             styles.tabText,
-                            activeTab === 'active' && styles.activeTabText
+                            activeTab === 'active' && styles.activeTabText,
+                            language === 'ta' && { fontSize: 13 }
                         ]}>
-                            Active Groups ({activeGroups.length})
+                            {t('Active Groups')} ({activeGroups.length})
                         </Text>
                     </TouchableOpacity>
                     
@@ -354,9 +357,10 @@ const ChitfundPortfolio = ({ navigation }) => {
                     >
                         <Text style={[
                             styles.tabText,
-                            activeTab === 'completed' && styles.activeTabText
+                            activeTab === 'completed' && styles.activeTabText,
+                            language === 'ta' && { fontSize: 13 }
                         ]}>
-                            Completed Groups ({completedGroups.length})
+                            {t('Completed Groups')} ({completedGroups.length})
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -380,16 +384,16 @@ const ChitfundPortfolio = ({ navigation }) => {
                             size={48} 
                             color="#9CA3AF" 
                         />
-                        <Text style={styles.emptyStateText}>
+                        <Text style={[styles.emptyStateText, language === 'ta' && { fontSize: 15 }]}>
                             {activeTab === 'active' 
-                                ? 'No active groups found' 
-                                : 'No completed groups found'
+                                ? t('No active groups found') 
+                                : t('No completed groups found')
                             }
                         </Text>
-                        <Text style={styles.emptyStateSubtext}>
+                        <Text style={[styles.emptyStateSubtext, language === 'ta' && { fontSize: 13 }]}>
                             {activeTab === 'active' 
-                                ? 'Join a chit group to start your investment journey' 
-                                : 'Complete your active groups to see them here'
+                                ? t('Join a chit group to start your investment journey') 
+                                : t('Complete your active groups to see them here')
                             }
                         </Text>
                     </View>

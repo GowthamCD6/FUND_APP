@@ -34,8 +34,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     color: '#757575',
-    marginBottom: 25,
-    marginTop: -15,
+    marginBottom: 15,
+    marginTop: -5,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
+  },
+    sectionTitle1: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#757575',
+    marginBottom: 20,
+    marginTop: -23,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
   },
   summaryContainer: {

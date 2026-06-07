@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Back
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 /**
  * A reusable "Under Construction" screen component.
@@ -13,6 +14,7 @@ import LottieView from 'lottie-react-native';
 
 const LinkBA = ({ onBack, pageName = "This Page" }) => {
   const navigation = useNavigation();
+  const { t, language } = useLanguage();
   // Handle hardware back button to navigate back to profile page
   useEffect(() => {
     const backAction = () => {
@@ -37,19 +39,19 @@ const LinkBA = ({ onBack, pageName = "This Page" }) => {
           />
         </View>   
 
-        <Text style={styles.title}>Under Construction</Text>
+        <Text style={[styles.title, language === 'ta' && { fontSize: 24 }]}>{t('Under Construction')}</Text>
 
-        <Text style={styles.message}>
-          We're working hard to bring you something amazing. {"\n"}
-          {pageName} is not quite ready yet.
+        <Text style={[styles.message, language === 'ta' && { fontSize: 15 }]}>
+          {t("We're working hard to bring you something amazing.")} {"\n"}
+          {pageName} {t('is not quite ready yet.')}
         </Text>
 
-        <Text style={styles.subMessage}>
-          Please check back later!
+        <Text style={[styles.subMessage, language === 'ta' && { fontSize: 15 }]}>
+          {t('Please check back later!')}
         </Text>
 
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text style={[styles.backButtonText, language === 'ta' && { fontSize: 15 }]}>{t('Go Back')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

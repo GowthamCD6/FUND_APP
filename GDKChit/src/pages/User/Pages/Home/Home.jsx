@@ -16,6 +16,7 @@ import LottieView from 'lottie-react-native';
 import ChitPlans from './Chit Plans/ChitPlans';
 import styles from './Homesty';
 import ApiService from '../../../../services/ApiService';
+import { useLanguage } from '../../../../utils/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +26,7 @@ const SPACING = 12; // Gap between cards
 const SNAP_INTERVAL = CARD_WIDTH + SPACING; // Total scroll distance per slide
 
 const Home = () => {
+  const { t, language } = useLanguage();
   const [showAllPlans, setShowAllPlans] = useState(false);
   const [activePlanSlide, setActivePlanSlide] = useState(0);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
@@ -250,7 +252,7 @@ const Home = () => {
       {/* Badge */}
       {item.badge && (
         <View style={[styles.badge, { backgroundColor: item.color }]}>
-          <Text style={styles.planBadgeText}>{item.badge}</Text>
+          <Text style={styles.planBadgeText}>{t(item.badge)}</Text>
         </View>
       )}
 
@@ -265,14 +267,14 @@ const Home = () => {
       {/* Top Content */}
       <View>
         {/* Plan Title */}
-        <Text style={styles.planTitle}>{item.name}</Text>
+        <Text style={[styles.planTitle, language === 'ta' && { fontSize: 15 }]}>{t(item.name)}</Text>
 
         {/* Amount Section */}
         <View style={styles.amountRow}>
           <Text style={[styles.mainAmount, { color: item.color === '#E5E4E2' ? '#9CA3AF' : item.color }]}>
             {item.amount}
           </Text>
-          <Text style={styles.totalLabel}>Total Value</Text>
+          <Text style={styles.totalLabel}>{t('Total Value')}</Text>
         </View>
 
         {/* Monthly Info */}
@@ -283,7 +285,7 @@ const Home = () => {
 
       {/* Return Info - Bottom Footer */}
       <View style={styles.returnSection}>
-        <Text style={styles.returnLabel}>Expected Return</Text>
+        <Text style={styles.returnLabel}>{t('Expected Return')}</Text>
         <Text style={styles.returnAmount}>
           {item.return}
         </Text>
@@ -302,7 +304,7 @@ const Home = () => {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View style={styles.welcomeSection}>
-              <Text style={styles.welcomeText}>Welcome Back!</Text>
+              <Text style={[styles.welcomeText, language === 'ta' && { fontSize: 12 }]}>{t('Welcome Back!')}</Text>
               <Text style={styles.userName}>Gowtham</Text>
             </View>
             <TouchableOpacity style={styles.notificationButton} onPress={handleOpenNotifications}>
@@ -321,8 +323,8 @@ const Home = () => {
 
           <View style={styles.companyHeader}>
             <Text style={styles.companyName}>ஸ்ரீ பெரியநாயகி அம்மன்</Text>
-            <Text style={styles.companySubtitle}>CHITFUNDS</Text>
-            <Text style={styles.tagline}>Trusted Since 1999</Text>
+            <Text style={styles.companySubtitle}>{t('CHITFUNDS')}</Text>
+            <Text style={styles.tagline}>{t('Trusted Since 1999')}</Text>
           </View>
         </View>
 
@@ -338,20 +340,20 @@ const Home = () => {
           
           {/* Top Content */}
           <View style={styles.heroTopContent}>
-            <Text style={styles.heroTitle}>Grow Your Savings</Text>
-            <Text style={styles.heroSubtitle}>
-              Join 500+ families in our trusted chit fund community
+            <Text style={[styles.heroTitle, language === 'ta' && { fontSize: 18 }]}>{t('Grow Your Savings')}</Text>
+            <Text style={[styles.heroSubtitle, language === 'ta' && { fontSize: 12 }]}>
+              {t('Join 500+ families in our trusted chit fund community')}
             </Text>
             
             {/* Feature Pills */}
             <View style={styles.heroFeaturePills}>
               <View style={styles.heroFeaturePill}>
                 <MaterialCommunityIcons name="percent" size={12} color="#6B46C1" />
-                <Text style={styles.heroFeaturePillText}>Up to 95% Returns</Text>
+                <Text style={styles.heroFeaturePillText}>{t('Up to 95% Returns')}</Text>
               </View>
               <View style={styles.heroFeaturePill}>
                 <MaterialCommunityIcons name="shield-check" size={12} color="#10B981" />
-                <Text style={styles.heroFeaturePillText}>RBI Registered</Text>
+                <Text style={[styles.heroFeaturePillText, language === 'ta' && { fontSize: 10 }]}>{t('RBI Registered')}</Text>
               </View>
             </View>
           </View>
@@ -370,7 +372,7 @@ const Home = () => {
           <View style={styles.heroBottomContent}>
             {/* CTA Button */}
             <TouchableOpacity style={styles.heroButton} activeOpacity={0.85} onPress={scrollToPlans}>
-              <Text style={styles.heroButtonText}>Explore Plans</Text>
+              <Text style={[styles.heroButtonText, language === 'ta' && { fontSize: 12 }]}>{t('Explore Plans')}</Text>
               <View style={styles.heroButtonIcon}>
                 <MaterialCommunityIcons
                   name="arrow-right"
@@ -386,12 +388,12 @@ const Home = () => {
 
         {/* Stats Section */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Our Achievements</Text>
+          <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Our Achievements')}</Text>
           <View style={styles.statsGrid}>
             {stats.map((stat, index) => (
               <View key={index} style={styles.statCard}>
                 <Text style={styles.statValue}>{stat.value}</Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
+                <Text style={[styles.statLabel, language === 'ta' && { fontSize: 11 }]}>{t(stat.label)}</Text>
               </View>
             ))}
           </View>
@@ -405,7 +407,7 @@ const Home = () => {
           }}
         >
           <View style={styles.plansSectionHeader}>
-            <Text style={styles.plansSectionTitle}>Popular Plans</Text>
+            <Text style={[styles.plansSectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Popular Plans')}</Text>
             <TouchableOpacity
               onPress={() =>
                 openChitPlansForPlan(
@@ -413,7 +415,7 @@ const Home = () => {
                 )
               }
             >
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text style={styles.viewAllText}>{t('View All')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -443,7 +445,7 @@ const Home = () => {
 
         {/* Features Section - Professional Mobile UI */}
         <View style={styles.featuresSection}>
-          <Text style={styles.featuresSectionTitle}>Why Choose Us?</Text>
+          <Text style={[styles.featuresSectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Why Choose Us?')}</Text>
           <View style={styles.featuresContainer}>
             {features.map((feature, index) => (
               <View 
@@ -461,9 +463,9 @@ const Home = () => {
                   />
                 </View>
                 <View style={styles.featureTextContent}>
-                  <Text style={styles.featureItemTitle}>{feature.title}</Text>
-                  <Text style={styles.featureItemDescription}>
-                    {feature.description}
+                  <Text style={[styles.featureItemTitle, language === 'ta' && { fontSize: 14 }]}>{t(feature.title)}</Text>
+                  <Text style={[styles.featureItemDescription, language === 'ta' && { fontSize: 12 }]}>
+                    {t(feature.description)}
                   </Text>
                 </View>
               </View>
@@ -509,7 +511,7 @@ const Home = () => {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ width: width * 0.9, maxHeight: '80%', backgroundColor: '#fff', borderRadius: 16, padding: 20 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>Notifications</Text>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>{t('Notifications')}</Text>
               <TouchableOpacity onPress={() => setShowNotifications(false)}>
                 <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
@@ -538,7 +540,7 @@ const Home = () => {
               ) : (
                 <View style={{ padding: 30, alignItems: 'center' }}>
                   <MaterialCommunityIcons name="bell-sleep" size={48} color="#D1D5DB" />
-                  <Text style={{ marginTop: 15, color: '#6B7280', fontSize: 16 }}>No new notifications</Text>
+                  <Text style={{ marginTop: 15, color: '#6B7280', fontSize: 16 }}>{t('No new notifications')}</Text>
                 </View>
               )}
             </ScrollView>

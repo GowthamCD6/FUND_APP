@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Router from "./src/components/Routes/Routes";
 import "react-native-get-random-values";
 import { AuthProvider } from "./src/utils/AuthContext";
+import { LanguageProvider } from "./src/utils/LanguageContext";
 import BiometricService from "./src/services/BiometricService";
 import SecurityLockScreen from "./src/pages/User/Pages/Profile/Page/SecurityLock/SecurityLockScreen";
 
@@ -96,11 +97,13 @@ const AppContent = () => {
 const App = () => {
 
   return (
-    <AuthProvider>
-      {/* <ThemeProvider> */}
-        <AppContent />
-      {/* </ThemeProvider> */}
-    </AuthProvider> 
+    <LanguageProvider>
+      <AuthProvider>
+        {/* <ThemeProvider> */}
+          <AppContent />
+        {/* </ThemeProvider> */}
+      </AuthProvider>
+    </LanguageProvider>
   );
 };
 

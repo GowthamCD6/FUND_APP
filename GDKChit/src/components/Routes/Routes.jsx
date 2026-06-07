@@ -25,6 +25,7 @@ import UserPrivacyPolicy from "../../pages/User/Pages/Profile/Page/PrivacyPolicy
 import UserHelpSupport from "../../pages/User/Pages/Profile/Page/HelpAndSupport/Help&Support";
 import UserMyLocation from "../../pages/User/Pages/Profile/Page/MyLocation/MyLocation";
 import UserAdminLocation from "../../pages/User/Pages/Profile/Page/AdminLocation/AdminLocation";
+import LanguageSettings from "../../pages/User/Pages/Profile/Page/LanguageSettings/LanguageSettings";
 
 import { navigationRef } from "../../utils/navigation";
 
@@ -64,6 +65,7 @@ const Routes = () => {
                 <Stack.Screen name="UserHelpSupport" component={UserHelpSupport} />
                 <Stack.Screen name="UserMyLocation" component={UserMyLocation} />
                 <Stack.Screen name="UserAdminLocation" component={UserAdminLocation} />
+                <Stack.Screen name="LanguageSettings" component={LanguageSettings} />
             </Stack.Navigator>
         </NavigationContainer>
     )

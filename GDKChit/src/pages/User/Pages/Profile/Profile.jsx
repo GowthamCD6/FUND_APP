@@ -24,9 +24,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import ApiService from '../../../../services/ApiService';
 import { useAuth } from '../../../../utils/AuthContext';
+import { useLanguage } from '../../../../utils/LanguageContext';
 
 const Profile = () => {
   const { user: authUser } = useAuth();
+  const { t, language } = useLanguage();
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
   const [profileUser, setProfileUser] = useState(authUser);
@@ -104,15 +106,15 @@ const Profile = () => {
                       )}
                     </View>
                   </View>
-                  <Text style={styles.userName}>{displayName}</Text>
+                  <Text style={[styles.userName, language === 'ta' && { fontSize: 20 }]}>{displayName}</Text>
                   <Text style={styles.userPhone}>{displayPhone}</Text>
-                  <Text style={styles.userStatus}>
-                    increasing Periyanayagi amman ChitFund
+                  <Text style={[styles.userStatus, language === 'ta' && { fontSize: 12 }]}>
+                    {t('increasing Periyanayagi amman ChitFund')}
                   </Text>
                 </View>
                 {/* Profile Settings Section */}
                 <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>Profile Settings</Text>
+                  <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Profile Settings')}</Text>
                   <View style={styles.menuSection}>
                     <TouchableOpacity
                       style={styles.menuItem}
@@ -123,7 +125,7 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>Account Details</Text>
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Account Details')}</Text>
                       </View>
                       <MaterialCommunityIcons
                         name="chevron-right"
@@ -140,8 +142,8 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>
-                          Linked Bank Account
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>
+                          {t('Linked Bank Account')}
                         </Text>
                       </View>
                       <MaterialCommunityIcons
@@ -159,8 +161,8 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>
-                          Identity Verification
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>
+                          {t('Identity Verification')}
                         </Text>
                       </View>
                       <MaterialCommunityIcons
@@ -178,7 +180,7 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>Nominee Details</Text>
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Nominee Details')}</Text>
                       </View>
                       <MaterialCommunityIcons
                         name="chevron-right"
@@ -190,7 +192,7 @@ const Profile = () => {
                 </View>
                 {/* Advanced Features Section */}
                 <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>Advanced Features</Text>
+                  <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Advanced Features')}</Text>
                   <View style={styles.menuSection}>
                     <TouchableOpacity
                       style={styles.menuItem}
@@ -201,8 +203,8 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>
-                          Security & Permission
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>
+                          {t('Security & Permission')}
                         </Text>
                       </View>
                       <MaterialCommunityIcons
@@ -221,7 +223,7 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>My Location</Text>
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('My Location')}</Text>
                       </View>
                       <MaterialCommunityIcons
                         name="chevron-right"
@@ -239,7 +241,7 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>Admin Location</Text>
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Admin Location')}</Text>
                       </View>
                       <MaterialCommunityIcons
                         name="chevron-right"
@@ -251,7 +253,7 @@ const Profile = () => {
                 </View>
                 {/* General Section */}
                 <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>General</Text>
+                  <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('General')}</Text>
                   <View style={styles.menuSection}>
                     <TouchableOpacity
                       style={styles.menuItem}
@@ -262,7 +264,7 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>Privacy Policy</Text>
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Privacy Policy')}</Text>
                       </View>
                       <MaterialCommunityIcons
                         name="chevron-right"
@@ -280,7 +282,7 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>Help & Support</Text>
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Help & Support')}</Text>
                       </View>
                       <MaterialCommunityIcons
                         name="chevron-right"
@@ -298,8 +300,8 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>
-                          Share GDK Chit Fund
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>
+                          {t('Share GDK Chit Fund')}
                         </Text>
                       </View>
                       <MaterialCommunityIcons
@@ -318,8 +320,8 @@ const Profile = () => {
                           size={22}
                           color="#666666"
                         />
-                        <Text style={styles.menuItemText}>
-                          Rate GDK Chit Fund
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>
+                          {t('Rate GDK Chit Fund')}
                         </Text>
                       </View>
                       <MaterialCommunityIcons
@@ -328,12 +330,35 @@ const Profile = () => {
                         color="#CCCCCC"
                       />
                     </TouchableOpacity>
+                    <View style={styles.customDivider} />
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => navigation.navigate('LanguageSettings')}>
+                      <View style={styles.menuItemLeft}>
+                        <MaterialCommunityIcons
+                          name="translate"
+                          size={22}
+                          color="#666666"
+                        />
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Language')}</Text>
+                      </View>
+                      <View style={styles.languageBadgeRow}>
+                        <Text style={styles.languageBadgeText}>
+                          {language === 'en' ? 'EN' : 'தமிழ்'}
+                        </Text>
+                        <MaterialCommunityIcons
+                          name="chevron-right"
+                          size={22}
+                          color="#CCCCCC"
+                        />
+                      </View>
+                    </TouchableOpacity>
                   </View>
                 </View>
                 {/* Follow Us & Logout Section */}
                 <View style={styles.followSection}>
-                  <Text style={styles.followText}>
-                    Follow us, to stay updated
+                  <Text style={[styles.followText, language === 'ta' && { fontSize: 12 }]}>
+                    {t('Follow us, to stay updated')}
                   </Text>
                   <View style={styles.socialIcons}>
                     <TouchableOpacity style={styles.socialIcon}>
@@ -359,7 +384,7 @@ const Profile = () => {
                     </TouchableOpacity>
                   </View>
                   <TouchableOpacity style={styles.logoutButton} onPress={async () => handleLogout()}>
-                    <Text style={styles.logoutText}>Logout</Text>
+                    <Text style={[styles.logoutText, language === 'ta' && { fontSize: 14 }]}>{t('Logout')}</Text>
                   </TouchableOpacity>
                   <Text style={styles.versionText}>Version 3.1.4</Text>
                 </View>
@@ -542,6 +567,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: -15,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+    textAlign: 'center',
   },
   socialIcons: {
     flexDirection: 'row',
@@ -631,6 +657,22 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: '#FFFFFF',
     zIndex: 1000,
+  },
+  languageBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  languageBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B46C1',
+    backgroundColor: '#F3EEFF',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
   },
 });
 

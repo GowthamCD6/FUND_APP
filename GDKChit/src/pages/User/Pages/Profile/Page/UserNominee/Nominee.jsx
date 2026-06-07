@@ -15,9 +15,11 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useNavigation } from '@react-navigation/native';
 import ApiService from '../../../../../../services/ApiService';
 import Header from '../../../../../../components/HeaderComponent/Header';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const Nominee = ({ onBack }) => {
   const navigation = useNavigation();
+  const { t, language } = useLanguage();
   const [nomineeName, setNomineeName] = useState('');
   const [nomineePhone, setNomineePhone] = useState('');
   const [selectedRelationship, setSelectedRelationship] = useState('');
@@ -126,16 +128,16 @@ const Nominee = ({ onBack }) => {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color="#6D28D9" />
-            <Text style={styles.loadingText}>Loading nominee details...</Text>
+            <Text style={styles.loadingText}>{t('Loading nominee details...')}</Text>
           </View>
         ) : null}
 
         {/* Nominee Name Input */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Name</Text>
+          <Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Name')}</Text>
           <TextInput
             style={[styles.input, errors.name && styles.inputError]}
-            placeholder="Full Name"
+            placeholder={t('Full Name')}
             placeholderTextColor="#9CA3AF"
             value={nomineeName}
             onChangeText={(value) => {
@@ -150,7 +152,7 @@ const Nominee = ({ onBack }) => {
 
         {/* Nominee Phone Number Input */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Phone number</Text>
+          <Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Phone number')}</Text>
           <TextInput
             style={[styles.input, errors.phone && styles.inputError]}
             placeholder="1234567890"
@@ -170,13 +172,13 @@ const Nominee = ({ onBack }) => {
 
         {/* Nominee Relationship Input with Modal Trigger */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Relationship</Text>
+          <Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Relationship')}</Text>
           <TouchableOpacity
             style={[styles.relationshipInput, errors.relationship && styles.inputError]}
             onPress={() => setIsModalVisible(true)}
           >
             <Text style={selectedRelationship ? styles.relationshipText : styles.placeholderText}>
-              {selectedRelationship || 'Select'}
+              {selectedRelationship ? (t(selectedRelationship) || selectedRelationship) : t('Select')}
             </Text>
             <MaterialCommunityIcons name="chevron-down" size={20} color="#9CA3AF" />
           </TouchableOpacity>
@@ -186,7 +188,7 @@ const Nominee = ({ onBack }) => {
 
       {/* Save Button */}
       <TouchableOpacity style={[styles.saveButton, saving && styles.saveButtonDisabled]} onPress={handleSave} disabled={saving}>
-        <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save'}</Text>
+        <Text style={[styles.saveButtonText, language === 'ta' && { fontSize: 14 }]}>{saving ? t('Saving...') : t('Save')}</Text>
       </TouchableOpacity>
 
       {/* Relationship Selection Modal */}
@@ -199,7 +201,7 @@ const Nominee = ({ onBack }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nominee Relation</Text>
+              <Text style={[styles.modalTitle, language === 'ta' && { fontSize: 16 }]}>{t('Nominee Relation')}</Text>
               <TouchableOpacity onPress={() => setIsModalVisible(false)}>
                 <MaterialCommunityIcons name="close" size={24} color="#1F2937" />
               </TouchableOpacity>
@@ -212,7 +214,7 @@ const Nominee = ({ onBack }) => {
                   style={styles.relationshipItem}
                   onPress={() => handleSelectRelationship(item)}
                 >
-                  <Text style={styles.relationshipItemText}>{item}</Text>
+                  <Text style={[styles.relationshipItemText, language === 'ta' && { fontSize: 14 }]}>{t(item)}</Text>
                   {selectedRelationship === item && (
                     <MaterialCommunityIcons name="check" size={20} color="#10B981" />
                   )}

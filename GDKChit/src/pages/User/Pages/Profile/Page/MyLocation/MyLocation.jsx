@@ -35,9 +35,11 @@ import {
 } from '../../../../../../services/locationService';
 import { LOCATION_CONFIG, isGeocodingAvailable } from '../../../../../../config/locationConfig';
 import { useAuth } from '../../../../../../utils/AuthContext';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const MyLocation = ({ navigation }) => {
   const { user: authUser } = useAuth();
+  const { t, language } = useLanguage();
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -587,18 +589,18 @@ const MyLocation = ({ navigation }) => {
             <View style={styles.inputContainer}>
               <View style={styles.labelContainer}>
                 <MaterialCommunityIcons name="map-marker" size={16} color="#6B7280" />
-                <Text style={styles.inputLabel}>Share Your House Address</Text>
+                <Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Share Your House Address')}</Text>
               </View>
               <View style={styles.shareAddressCard}>
-                <Text style={styles.shareAddressCardTitle}>Help us locate your house for better service delivery</Text>
+                <Text style={[styles.shareAddressCardTitle, language === 'ta' && { fontSize: 12 }]}>{t('Help us locate your house for better service delivery')}</Text>
                 <TouchableOpacity 
                   style={styles.shareAddressButton}
                   onPress={shareHouseAddress}
                   disabled={loading}
                 >
                   <MaterialCommunityIcons name="map-marker-plus" size={20} color="#ffffff" />
-                  <Text style={styles.shareAddressButtonText}>
-                    {loading ? 'Getting Location...' : 'Share My Address'}
+                  <Text style={[styles.shareAddressButtonText, language === 'ta' && { fontSize: 13 }]}>
+                    {loading ? t('Getting Location...') : t('Share My Address')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -612,7 +614,7 @@ const MyLocation = ({ navigation }) => {
               onPress={() => setShowShareLocationInfo(true)}
             >
               <MaterialCommunityIcons name="help-circle-outline" size={20} color="#3B82F6" />
-              <Text style={styles.helpButtonText}>How this function works</Text>
+              <Text style={[styles.helpButtonText, language === 'ta' && { fontSize: 12 }]}>{t('How this function works')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -621,7 +623,7 @@ const MyLocation = ({ navigation }) => {
         {loading && (
           <View style={styles.loadingContent}>
             <ActivityIndicator size="large" color="#4CAF50" />
-            <Text style={styles.loadingTitle}>Getting Your Location...</Text>
+            <Text style={[styles.loadingTitle, language === 'ta' && { fontSize: 16 }]}>{t('Getting Your Location...')}</Text>
             <Text style={styles.loadingSubtitle}>
               {loading ? 'Trying multiple GPS strategies for best results...\nThis may take up to 30 seconds.' : 'Please make sure GPS is enabled and you\'re in a location with good signal'}
             </Text>
@@ -637,7 +639,7 @@ const MyLocation = ({ navigation }) => {
                 size={24} 
                 color="#4CAF50" 
               />
-              <Text style={styles.cardTitle}>Address Shared Successfully!</Text>
+              <Text style={[styles.cardTitle, language === 'ta' && { fontSize: 16 }]}>{t('Address Shared Successfully!')}</Text>
             </View>
             
             <View style={styles.successSection}>
@@ -678,7 +680,7 @@ const MyLocation = ({ navigation }) => {
                 {savedToDatabase && (
                   <View style={styles.databaseStatus}>
                     <MaterialCommunityIcons name="database-check" size={16} color="#4CAF50" />
-                    <Text style={styles.databaseStatusText}>Saved to database</Text>
+                    <Text style={styles.databaseStatusText}>{t('Saved to database')}</Text>
                   </View>
                 )}
               </View>
@@ -691,7 +693,7 @@ const MyLocation = ({ navigation }) => {
                   disabled={loading}
                 >
                   <MaterialCommunityIcons name="refresh" size={18} color="#4CAF50" />
-                  <Text style={styles.updateAddressButtonText}>Update Address</Text>
+                  <Text style={[styles.updateAddressButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Update Address')}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
@@ -699,7 +701,7 @@ const MyLocation = ({ navigation }) => {
                   onPress={shareLocation}
                 >
                   <MaterialCommunityIcons name="share" size={18} color="#2196F3" />
-                  <Text style={styles.shareLocationButtonText}>Share</Text>
+                  <Text style={[styles.shareLocationButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Share')}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
@@ -707,7 +709,7 @@ const MyLocation = ({ navigation }) => {
                   onPress={openInMaps}
                 >
                   <MaterialCommunityIcons name="map" size={18} color="#FF9800" />
-                  <Text style={styles.openMapsButtonText}>Maps</Text>
+                  <Text style={[styles.openMapsButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Maps')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -723,8 +725,8 @@ const MyLocation = ({ navigation }) => {
           />
           <Text style={styles.infoText}>
             {hasSharedAddress 
-              ? 'Your house address has been shared successfully. Admins can now navigate to your location when needed.'
-              : 'Share your house address to help our team locate your house for better service delivery. Your location data is kept secure and private.'
+              ? t('Your house address has been shared successfully. Admins can now navigate to your location when needed.')
+              : t('Share your house address to help our team locate your house for better service delivery. Your location data is kept secure and private.')
             }
           </Text>
         </View>
