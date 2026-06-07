@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../utils/env';
+import { Alert } from 'react-native';
+import { reset as resetNavigation } from '../utils/navigation';
 
 class ApiService {
   constructor() {
@@ -107,6 +109,41 @@ class ApiService {
 
       // If token expired, try to refresh and retry
       if (response.status === 401 || response.status === 403) {
+        if (response.status === 403) {
+          try {
+            const clone = response.clone();
+            const data = await clone.json();
+            if (data && data.message && data.message.toLowerCase().includes('blocked')) {
+              await this.clearTokens();
+              await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+              
+              Alert.alert(
+                'Account Blocked',
+                data.message || 'Your account has been blocked by an administrator. Please contact the admin.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      resetNavigation({
+                        index: 0,
+                        routes: [{ name: 'Welcome' }],
+                      });
+                    }
+                  }
+                ],
+                { cancelable: false }
+              );
+              
+              throw new Error(data.message || 'Your account has been blocked by an administrator. Please contact the admin.');
+            }
+          } catch (e) {
+            if (e.message && e.message.toLowerCase().includes('blocked')) {
+              throw e;
+            }
+            console.error('Error checking blocked status on 403:', e);
+          }
+        }
+
         const refreshToken = await this.getRefreshToken();
         if (!refreshToken) {
           await this.clearTokens();
@@ -119,6 +156,26 @@ class ApiService {
         } catch (refreshError) {
           // Refresh failed, redirect to login
           console.error('Refresh failed while requesting', url, refreshError);
+          if (refreshError.message && refreshError.message.toLowerCase().includes('blocked')) {
+            await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+            
+            Alert.alert(
+              'Account Blocked',
+              refreshError.message || 'Your account has been blocked by an administrator. Please contact the admin.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    resetNavigation({
+                      index: 0,
+                      routes: [{ name: 'Welcome' }],
+                    });
+                  }
+                }
+              ],
+              { cancelable: false }
+            );
+          }
           throw new Error(refreshError.message || 'Authentication failed');
         }
       }

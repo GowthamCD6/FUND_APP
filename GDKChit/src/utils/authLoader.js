@@ -36,6 +36,9 @@ const AuthLoader = () => {
           if (errorMessage.includes('Network')) {
             // Network error - allow user to continue, they can retry or login again
             console.warn('Network error during session validation - continuing without validation');
+          } else if (errorMessage.toLowerCase().includes('blocked')) {
+            // Suppress navigation here, as ApiService handles showing the alert and resetting navigation
+            return;
           } else {
             // Session error - clear tokens and return to login
             await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);

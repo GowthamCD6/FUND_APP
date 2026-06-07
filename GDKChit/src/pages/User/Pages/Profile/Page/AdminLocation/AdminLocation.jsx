@@ -20,7 +20,7 @@ import LottieView from 'lottie-react-native';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
 
-const AdminLocation = ({ onBack }) => {
+const AdminLocation = ({ navigation }) => {
   const [adminLocations, setAdminLocations] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [newAdminName, setNewAdminName] = useState('');
@@ -38,9 +38,7 @@ const AdminLocation = ({ onBack }) => {
         setShowNavigationModal(false);
         return true;
       }
-      if (onBack) {
-        onBack();
-      }
+      navigation.goBack();
       return true;
     };
 
@@ -50,7 +48,7 @@ const AdminLocation = ({ onBack }) => {
     );
 
     return () => backHandler.remove();
-  }, [onBack, showNavigationModal]);
+  }, [navigation, showNavigationModal]);
 
   const loadAdminLocations = async (isInitial = false) => {
     try {
@@ -251,7 +249,7 @@ const AdminLocation = ({ onBack }) => {
     <SafeAreaView style={styles.container}>
       <Header
         title="Admin Location"
-        onBack={onBack}
+        onBack={() => navigation.goBack()}
         showBackButton={true}
       />
 

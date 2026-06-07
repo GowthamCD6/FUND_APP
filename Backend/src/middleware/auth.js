@@ -31,7 +31,7 @@ const authenticateToken = (req, res, next) => {
       if (rows.length === 0 || rows[0].is_active === 0) {
         return res.status(403).json({
           success: false,
-          message: 'Your account has been blocked by an administrator.'
+          message: 'Your account has been blocked by an administrator. Please contact the admin.'
         });
       }
     } catch (dbErr) {

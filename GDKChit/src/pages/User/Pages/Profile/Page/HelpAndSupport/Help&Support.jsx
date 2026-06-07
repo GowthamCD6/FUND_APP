@@ -16,23 +16,20 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 
-const HelpSupport = ({ onBack }) => {
+const HelpSupport = ({ navigation }) => {
   const [expandedFAQ, setExpandedFAQ] = useState(null);
 
   // Handle hardware back button to navigate back to profile page
   useEffect(() => {
     const backAction = () => {
-      if (onBack) {
-        onBack(); // Navigate back to profile page
-        return true; // Prevent default back action
-      }
-      return true; // Block default navigation
+      navigation.goBack(); // Navigate back to profile page
+      return true; // Prevent default back action
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
-  }, [onBack]);
+  }, [navigation]);
 
   const faqData = [
     {
@@ -106,7 +103,7 @@ const HelpSupport = ({ onBack }) => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={26} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
@@ -122,7 +119,7 @@ const HelpSupport = ({ onBack }) => {
           <View style={styles.heroContent}>
             <View style={styles.heroIconContainer}>
               <LottieView
-                source={require('../../../../../animation/Customer_care.json')}
+                source={require('../../../../../../animation/Customer_care.json')}
                 autoPlay
                 loop
                 style={styles.heroAnimation}
@@ -248,7 +245,7 @@ const HelpSupport = ({ onBack }) => {
             </View>
             <View style={styles.contactAnimationContainer}>
               <LottieView
-                source={require('../../../../../animation/contact_us.json')}
+                source={require('../../../../../../animation/contact_us.json')}
                 autoPlay
                 loop
                 style={styles.contactAnimation}

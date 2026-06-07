@@ -21,10 +21,17 @@ import TabRouter from "../Tab/TabRouter";
 import UserTabs from "../Tab/UTab/UserTab";
 import AdminTab from "../Tab/ATab/AdminTab";
 
+import UserPrivacyPolicy from "../../pages/User/Pages/Profile/Page/PrivacyPolicy/PrivacyPolicy";
+import UserHelpSupport from "../../pages/User/Pages/Profile/Page/HelpAndSupport/Help&Support";
+import UserMyLocation from "../../pages/User/Pages/Profile/Page/MyLocation/MyLocation";
+import UserAdminLocation from "../../pages/User/Pages/Profile/Page/AdminLocation/AdminLocation";
+
+import { navigationRef } from "../../utils/navigation";
+
 const Routes = () => {
     const Stack = createNativeStackNavigator();
     return (
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
             <StatusBar barStyle="dark-content" backgroundColor="#ffffffff" />
             <Stack.Navigator initialRouteName="AuthLoader" screenOptions={{ headerShown: false }}>
 
@@ -53,6 +60,10 @@ const Routes = () => {
                 <Stack.Screen name="MembersDetails" component={MemberDetails} />
                 <Stack.Screen name="AuctionSettings" component={Auction} />
                 <Stack.Screen name="AdminEditProfile" component={AdminEditProfile} />
+                <Stack.Screen name="UserPrivacyPolicy" component={UserPrivacyPolicy} />
+                <Stack.Screen name="UserHelpSupport" component={UserHelpSupport} />
+                <Stack.Screen name="UserMyLocation" component={UserMyLocation} />
+                <Stack.Screen name="UserAdminLocation" component={UserAdminLocation} />
             </Stack.Navigator>
         </NavigationContainer>
     )

@@ -17,10 +17,6 @@ import AccountD from './Page/UserAccountDetails/AccountDetails';
 import Nominee from './Page/UserNominee/Nominee';
 import LinkBA from './Page/LinkBankAccount/LinkBankAccount';
 import IdentityV from './Page/Verification/IdentityVerification';
-import PrivacyPolicy from './Page/PrivacyPolicy';
-import HelpSupport from './Page/Help&Support';
-import MyLocation from './Page/MyLocation/MyLocation';
-import AdminLocation from './Page/AdminLocation/AdminLocation';
 import ShareModal from './Modals/Share';
 import RateModal from './Modals/Rate';
 import {Animated, Dimensions} from 'react-native';
@@ -31,10 +27,6 @@ import { useAuth } from '../../../../utils/AuthContext';
 
 const Profile = () => {
   const { user: authUser } = useAuth();
-  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
-  const [showHelpSupport, setShowHelpSupport] = useState(false);
-  const [showMyLocation, setShowMyLocation] = useState(false);
-  const [showAdminLocation, setShowAdminLocation] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
   const [profileUser, setProfileUser] = useState(authUser);
@@ -42,85 +34,7 @@ const Profile = () => {
   const [profileLoading, setProfileLoading] = useState(true);
   const navigation = useNavigation()
 
-  const privacyPolicyAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const helpSupportAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const myLocationAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const adminLocationAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
 
-  useEffect(() => {
-    console.log('Privacy Policy state changed:', showPrivacyPolicy);
-    if (showPrivacyPolicy) {
-      console.log('Showing Privacy Policy');
-      Animated.timing(privacyPolicyAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      console.log('Hiding Privacy Policy');
-      Animated.timing(privacyPolicyAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showPrivacyPolicy, privacyPolicyAnim]);
-
-  useEffect(() => {
-    if (showHelpSupport) {
-      Animated.timing(helpSupportAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(helpSupportAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showHelpSupport, helpSupportAnim]);
-
-  useEffect(() => {
-    if (showMyLocation) {
-      Animated.timing(myLocationAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(myLocationAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showMyLocation, myLocationAnim]);
-
-  useEffect(() => {
-    if (showAdminLocation) {
-      Animated.timing(adminLocationAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(adminLocationAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showAdminLocation, adminLocationAnim]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -169,12 +83,7 @@ const Profile = () => {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {/* Main Profile Content */}
       <View style={{flex: 1}}>
-        {/* Profile Content - Only show when no sub-page is open */}
-        {!showPrivacyPolicy &&
-          !showHelpSupport &&
-          !showMyLocation &&
-          !showAdminLocation && (
-            <>
+        {/* Profile Content */}
               <Header 
                 title="My Profile"
                 onBack={() => navigation.navigate('Home')}
@@ -305,7 +214,7 @@ const Profile = () => {
                     <View style={styles.customDivider} />
                     <TouchableOpacity
                       style={styles.menuItem}
-                      onPress={() => setShowMyLocation(true)}>
+                      onPress={() => navigation.navigate('UserMyLocation')}>
                       <View style={styles.menuItemLeft}>
                         <MaterialCommunityIcons
                           name="map-marker"
@@ -323,7 +232,7 @@ const Profile = () => {
                     <View style={styles.customDivider} />
                     <TouchableOpacity
                       style={styles.menuItem}
-                      onPress={() => setShowAdminLocation(true)}>
+                      onPress={() => navigation.navigate('UserAdminLocation')}>
                       <View style={styles.menuItemLeft}>
                         <MaterialCommunityIcons
                           name="map-check"
@@ -346,11 +255,7 @@ const Profile = () => {
                   <View style={styles.menuSection}>
                     <TouchableOpacity
                       style={styles.menuItem}
-                      onPress={() => {
-                        console.log('Privacy Policy clicked!');
-                        Alert.alert('Debug', 'Privacy Policy clicked!');
-                        setShowPrivacyPolicy(true);
-                      }}>
+                      onPress={() => navigation.navigate('UserPrivacyPolicy')}>
                       <View style={styles.menuItemLeft}>
                         <MaterialCommunityIcons
                           name="file-document-outline"
@@ -368,7 +273,7 @@ const Profile = () => {
                     <View style={styles.customDivider} />
                     <TouchableOpacity
                       style={styles.menuItem}
-                      onPress={() => setShowHelpSupport(true)}>
+                      onPress={() => navigation.navigate('UserHelpSupport')}>
                       <View style={styles.menuItemLeft}>
                         <MaterialCommunityIcons
                           name="help-circle-outline"
@@ -507,100 +412,6 @@ const Profile = () => {
                   </Text>
                 </TouchableOpacity>
               </View>
-            </>
-          )}
-
-        {/* Privacy Policy Overlay */}
-        {showPrivacyPolicy && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {
-                transform: [{translateX: privacyPolicyAnim}],
-              },
-            ]}>
-            <PrivacyPolicy
-              onBack={() => {
-                Animated.timing(privacyPolicyAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowPrivacyPolicy(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Help & Support Overlay */}
-        {showHelpSupport && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {
-                transform: [{translateX: helpSupportAnim}],
-              },
-            ]}>
-            <HelpSupport
-              onBack={() => {
-                Animated.timing(helpSupportAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowHelpSupport(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* My Location Page */}
-        {showMyLocation && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {
-                transform: [{translateX: myLocationAnim}],
-              },
-            ]}>
-            <MyLocation
-              onBack={() => {
-                Animated.timing(myLocationAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowMyLocation(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Admin Location Page */}
-        {showAdminLocation && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {
-                transform: [{translateX: adminLocationAnim}],
-              },
-            ]}>
-            <AdminLocation
-              onBack={() => {
-                Animated.timing(adminLocationAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowAdminLocation(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
       </View>
 
       {/* Share Modal */}

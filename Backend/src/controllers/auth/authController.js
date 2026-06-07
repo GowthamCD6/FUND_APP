@@ -63,7 +63,7 @@ exports.login = async (req, res) => {
     const user = results[0];
 
     if (user.is_active === 0) {
-      return res.status(403).json({ success: false, message: 'Your account has been blocked by an administrator.' });
+      return res.status(403).json({ success: false, message: 'Your account has been blocked by an administrator. Please contact the admin.' });
     }
 
     // Encrypt the password with AES first, then compare with bcrypt
@@ -156,7 +156,7 @@ exports.refreshToken = async (req, res) => {
     if (user.is_active === 0) {
       return res.status(403).json({
         success: false,
-        message: 'Your account has been blocked by an administrator.'
+        message: 'Your account has been blocked by an administrator. Please contact the admin.'
       });
     }
 

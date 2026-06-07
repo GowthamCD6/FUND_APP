@@ -15,21 +15,18 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 const { width } = Dimensions.get('window');
 
-const PrivacyPolicy = ({ onBack }) => {
+const PrivacyPolicy = ({ navigation }) => {
   // Handle hardware back button to navigate back to profile page
   useEffect(() => {
     const backAction = () => {
-      if (onBack) {
-        onBack(); // Navigate back to profile page
-        return true; // Prevent default back action
-      }
-      return true; // Block default navigation
+      navigation.goBack(); // Navigate back to profile page
+      return true; // Prevent default back action
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
-  }, [onBack]);
+  }, [navigation]);
 
   return (
   <SafeAreaView style={styles.safeArea}>
@@ -37,7 +34,7 @@ const PrivacyPolicy = ({ onBack }) => {
     {/* Modern Header with Gradient Effect */}
     <View style={styles.header}>
       <View style={styles.headerContent}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={26} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>

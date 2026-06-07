@@ -36,7 +36,7 @@ import {
 import { LOCATION_CONFIG, isGeocodingAvailable } from '../../../../../../config/locationConfig';
 import { useAuth } from '../../../../../../utils/AuthContext';
 
-const MyLocation = ({ onBack, animatedValue }) => {
+const MyLocation = ({ navigation }) => {
   const { user: authUser } = useAuth();
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationEnabled, setLocationEnabled] = useState(false);
@@ -71,13 +71,8 @@ const MyLocation = ({ onBack, animatedValue }) => {
         setShowShareLocationInfo(false);
         return true;
       }
-      if (onBack) {
-        console.log('Calling onBack from hardware button...');
-        onBack();
-        return true; // Prevent default back action
-      }
-      console.log('No onBack function available for hardware button');
-      return true; // Block default navigation to ensure staying in profile context
+      navigation.goBack();
+      return true; // Prevent default back action
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
@@ -86,7 +81,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
       console.log('MyLocation component unmounting');
       backHandler.remove();
     };
-  }, [onBack, showShareLocationInfo]);
+  }, [showShareLocationInfo, navigation]);
 
   useEffect(() => {
     if (authUser?.id || authUser?.userId) {
@@ -556,13 +551,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
         title="My Location"
         onBack={() => {
           console.log('Back button pressed in MyLocation');
-          if (onBack) {
-            console.log('Calling onBack function...');
-            onBack();
-          } else {
-            console.log('No onBack prop provided');
-            Alert.alert('Error', 'Back navigation not available');
-          }
+          navigation.goBack();
         }}
         showBackButton={true}
       />
