@@ -36,7 +36,6 @@ const PasswordManagement = ({ onClose }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  const [activeTab, setActiveTab] = useState('all'); // all, edit, reset
 
   useEffect(() => {
     const backAction = () => {
@@ -62,7 +61,7 @@ const PasswordManagement = ({ onClose }) => {
 
   useEffect(() => {
     filterUsers();
-  }, [searchQuery, users, activeTab]);
+  }, [searchQuery, users]);
 
   const fetchAllUsers = async () => {
     try {
@@ -270,10 +269,16 @@ const PasswordManagement = ({ onClose }) => {
           </View>
         </View>
         <View style={styles.userInfoContainer}>
-          <Text style={styles.userName}>{item.name}</Text>
+          <View style={styles.userNameRow}>
+            <Text style={styles.userName}>{item.name}</Text>
+            <View style={[styles.roleBadge, item.type === 'Admin' ? styles.adminBadge : styles.userBadge]}>
+              <Text style={[styles.roleText, item.type === 'Admin' ? styles.adminRoleText : styles.userRoleText]}>
+                {item.type}
+              </Text>
+            </View>
+          </View>
           <Text style={styles.userPhone}>{item.phone}</Text>
           {item.email && <Text style={styles.userEmail}>{item.email}</Text>}
-          <Text style={styles.userType}>{item.type}</Text>
         </View>
       </View>
 
@@ -284,13 +289,6 @@ const PasswordManagement = ({ onClose }) => {
         >
           <MaterialCommunityIcons name="pencil" size={18} color="#FFFFFF" />
           <Text style={styles.actionButtonText}>Change Password</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.resetButton]}
-          onPress={() => handleResetPassword(item)}
-        >
-          <MaterialCommunityIcons name="refresh" size={18} color="#FFFFFF" />
-          <Text style={styles.actionButtonText}>Reset to Default</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -321,46 +319,31 @@ const PasswordManagement = ({ onClose }) => {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <MaterialCommunityIcons
-          name="magnify"
-          size={20}
-          color="#999999"
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by name, phone, or email"
-          placeholderTextColor="#CCCCCC"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery !== '' && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <MaterialCommunityIcons
-              name="close-circle"
-              size={20}
-              color="#999999"
-            />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Tab Selection */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-          onPress={() => setActiveTab('all')}
-        >
-          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-            All Users ({users.length})
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.searchBar}>
+          <MaterialCommunityIcons name="magnify" size={22} color="#6B7280" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name, phone, or email..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#9CA3AF"
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <MaterialCommunityIcons
+                name="close-circle"
+                size={20}
+                color="#9CA3AF"
+              />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       {/* Users List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6B46C1" />
+          <ActivityIndicator size="large" color="#0066FF" />
           <Text style={styles.loadingText}>Loading users...</Text>
         </View>
       ) : filteredUsers.length > 0 ? (
@@ -379,42 +362,45 @@ const PasswordManagement = ({ onClose }) => {
       <Modal
         visible={showPasswordModal}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={handleClosePasswordModal}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.centeredModalOverlay}
+        >
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={handleClosePasswordModal}>
                 <MaterialCommunityIcons
-                  name="close"
+                  name="arrow-left"
                   size={24}
-                  color="#333333"
+                  color="#000000"
                 />
               </TouchableOpacity>
               <Text style={styles.modalTitle}>Change Password</Text>
               <View style={{ width: 24 }} />
             </View>
+            <View style={styles.modalHeaderSeparator} />
 
             {selectedUser && (
-              <ScrollView style={styles.modalContent}>
-                <View style={styles.userDetailsContainer}>
-                  <View style={styles.userDetailsAvatar}>
-                    <Text style={styles.detailsAvatarText}>
+              <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+                <View style={styles.modalUserInfo}>
+                  <View style={styles.modalAvatar}>
+                    <Text style={styles.modalAvatarText}>
                       {selectedUser.name.charAt(0).toUpperCase()}
                     </Text>
                   </View>
-                  <View style={styles.userDetailsInfo}>
-                    <Text style={styles.detailsName}>{selectedUser.name}</Text>
-                    <Text style={styles.detailsPhone}>{selectedUser.phone}</Text>
-                    <Text style={styles.detailsType}>{selectedUser.type}</Text>
+                  <View>
+                    <Text style={styles.modalUserName}>{selectedUser.name}</Text>
+                    <Text style={styles.modalUserPhone}>{selectedUser.phone}</Text>
                   </View>
                 </View>
 
                 {/* Password Status Information */}
                 {loadingDetails ? (
                   <View style={styles.loadingDetailsContainer}>
-                    <ActivityIndicator size="small" color="#6B46C1" />
+                    <ActivityIndicator size="small" color="#0066FF" />
                     <Text style={styles.loadingDetailsText}>Loading password details...</Text>
                   </View>
                 ) : selectedUserDetails ? (
@@ -425,7 +411,7 @@ const PasswordManagement = ({ onClose }) => {
                       <MaterialCommunityIcons
                         name="calendar"
                         size={18}
-                        color="#6B46C1"
+                        color="#0066FF"
                       />
                       <View style={styles.statusItemContent}>
                         <Text style={styles.statusLabel}>Account Created</Text>
@@ -453,6 +439,20 @@ const PasswordManagement = ({ onClose }) => {
 
                     <View style={styles.statusItem}>
                       <MaterialCommunityIcons
+                        name="key-variant"
+                        size={18}
+                        color="#EF4444"
+                      />
+                      <View style={styles.statusItemContent}>
+                        <Text style={styles.statusLabel}>Current Password</Text>
+                        <Text style={styles.statusValue}>
+                          {selectedUserDetails.currentPassword || 'N/A'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.statusItem}>
+                      <MaterialCommunityIcons
                         name="account-key"
                         size={18}
                         color="#10B981"
@@ -472,7 +472,7 @@ const PasswordManagement = ({ onClose }) => {
                     <TextInput
                       style={styles.passwordInput}
                       placeholder="Enter new password"
-                      placeholderTextColor="#CCCCCC"
+                      placeholderTextColor="#9CA3AF"
                       secureTextEntry={!showPassword}
                       value={newPassword}
                       onChangeText={setNewPassword}
@@ -483,7 +483,7 @@ const PasswordManagement = ({ onClose }) => {
                       <MaterialCommunityIcons
                         name={showPassword ? 'eye-off' : 'eye'}
                         size={20}
-                        color="#666666"
+                        color="#6B7280"
                       />
                     </TouchableOpacity>
                   </View>
@@ -496,7 +496,7 @@ const PasswordManagement = ({ onClose }) => {
                     <TextInput
                       style={styles.passwordInput}
                       placeholder="Confirm new password"
-                      placeholderTextColor="#CCCCCC"
+                      placeholderTextColor="#9CA3AF"
                       secureTextEntry={!showConfirmPassword}
                       value={confirmPassword}
                       onChangeText={setConfirmPassword}
@@ -507,7 +507,7 @@ const PasswordManagement = ({ onClose }) => {
                       <MaterialCommunityIcons
                         name={showConfirmPassword ? 'eye-off' : 'eye'}
                         size={20}
-                        color="#666666"
+                        color="#6B7280"
                       />
                     </TouchableOpacity>
                   </View>
@@ -520,7 +520,7 @@ const PasswordManagement = ({ onClose }) => {
                     <MaterialCommunityIcons
                       name={newPassword.length >= 4 ? 'check-circle' : 'circle-outline'}
                       size={18}
-                      color={newPassword.length >= 4 ? '#10B981' : '#CCCCCC'}
+                      color={newPassword.length >= 4 ? '#10B981' : '#D1D5DB'}
                     />
                     <Text style={styles.requirementText}>Minimum 4 characters</Text>
                   </View>
@@ -528,7 +528,7 @@ const PasswordManagement = ({ onClose }) => {
                     <MaterialCommunityIcons
                       name={newPassword === confirmPassword && confirmPassword !== '' ? 'check-circle' : 'circle-outline'}
                       size={18}
-                      color={newPassword === confirmPassword && confirmPassword !== '' ? '#10B981' : '#CCCCCC'}
+                      color={newPassword === confirmPassword && confirmPassword !== '' ? '#10B981' : '#D1D5DB'}
                     />
                     <Text style={styles.requirementText}>Passwords must match</Text>
                   </View>
@@ -560,7 +560,7 @@ const PasswordManagement = ({ onClose }) => {
               </ScrollView>
             )}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -569,54 +569,26 @@ const PasswordManagement = ({ onClose }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   searchContainer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  searchIcon: {
-    marginRight: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 58,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#333333',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 8,
-    padding: 4,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 6,
-  },
-  activeTab: {
-    backgroundColor: '#6B46C1',
-  },
-  tabText: {
-    fontSize: 12,
-    color: '#666666',
-    fontWeight: '500',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
-  },
-  activeTabText: {
-    color: '#FFFFFF',
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   listContainer: {
     paddingHorizontal: 16,
@@ -626,34 +598,34 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 80,
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 14,
-    color: '#666666',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+    fontSize: 16,
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
   },
   emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 80,
   },
   emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
     marginTop: 12,
-    fontSize: 16,
-    color: '#999999',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
   },
   userCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   userCardHeader: {
     flexDirection: 'row',
@@ -663,47 +635,69 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#6B46C1',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#DBEAFE',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#3B82F6',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   userInfoContainer: {
     flex: 1,
     justifyContent: 'center',
   },
+  userNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    flexWrap: 'wrap',
+  },
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
-    marginBottom: 4,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+  },
+  roleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  adminBadge: {
+    backgroundColor: '#E0F2FE',
+  },
+  userBadge: {
+    backgroundColor: '#F3F4F6',
+  },
+  roleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
+  },
+  adminRoleText: {
+    color: '#0369A1',
+  },
+  userRoleText: {
+    color: '#4B5563',
   },
   userPhone: {
     fontSize: 14,
-    color: '#666666',
+    color: '#6B7280',
     marginBottom: 2,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   userEmail: {
     fontSize: 12,
-    color: '#999999',
+    color: '#9CA3AF',
     marginBottom: 2,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
-  },
-  userType: {
-    fontSize: 12,
-    color: '#6B46C1',
-    fontWeight: '500',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   userCardActions: {
     flexDirection: 'row',
@@ -712,7 +706,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#6B46C1',
+    backgroundColor: '#0066FF',
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -727,124 +721,122 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
   },
-  modalOverlay: {
+  centeredModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
-    paddingTop: 16,
+    borderRadius: 24,
+    width: '90%',
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -5,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '600',
-    color: '#333333',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    color: '#000000',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+  },
+  modalHeaderSeparator: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
   },
   modalContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
-  userDetailsContainer: {
+  modalUserInfo: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
     padding: 12,
     borderRadius: 12,
     marginBottom: 20,
-    alignItems: 'center',
   },
-  userDetailsAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#6B46C1',
+  modalAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#DBEAFE',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  detailsAvatarText: {
+  modalAvatarText: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    fontWeight: 'bold',
+    color: '#3B82F6',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
-  userDetailsInfo: {
-    flex: 1,
-  },
-  detailsName: {
+  modalUserName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
-    marginBottom: 2,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    color: '#000',
+    marginBottom: 4,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
-  detailsPhone: {
+  modalUserPhone: {
     fontSize: 14,
-    color: '#666666',
-    marginBottom: 2,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
-  },
-  detailsType: {
-    fontSize: 12,
-    color: '#6B46C1',
-    fontWeight: '500',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   fieldContainer: {
     marginBottom: 16,
   },
   fieldLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333333',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#000000',
     marginBottom: 8,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
   },
   passwordInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 54,
   },
   passwordInput: {
     flex: 1,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#333333',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+    fontSize: 15,
+    color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   requirementsContainer: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 10,
+    padding: 14,
     marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
   },
   requirementsTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#1E40AF',
     marginBottom: 8,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   requirementItem: {
     flexDirection: 'row',
@@ -852,73 +844,70 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   requirementText: {
-    fontSize: 12,
-    color: '#333333',
+    fontSize: 13,
+    color: '#4B5563',
     marginLeft: 8,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   modalButtonsContainer: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 40,
+    marginTop: 8,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   cancelButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#666666',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    color: '#4B5563',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
   },
   updateButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#6B46C1',
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#0066FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   updateButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
   },
   loadingDetailsContainer: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F3F4F6',
     paddingVertical: 16,
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: 20,
     alignItems: 'center',
   },
   loadingDetailsText: {
     marginTop: 8,
-    fontSize: 12,
-    color: '#666666',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+    fontSize: 13,
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   passwordStatusContainer: {
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#6B46C1',
   },
   passwordStatusTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333333',
+    color: '#1F2937',
     marginBottom: 12,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
   statusItem: {
     flexDirection: 'row',
@@ -931,15 +920,15 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: '#6B7280',
     marginBottom: 2,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
   statusValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#333333',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    color: '#1F2937',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
 });
 

@@ -242,16 +242,36 @@ exports.getUserPasswordDetails = async (req, res) => {
     }
 
     try {
-        const [userRows] = await db.promise().query(
-            'SELECT id, name, phone, role, created_at, updated_at FROM users WHERE id = ? AND deleted_at IS NULL',
-            [userId]
-        );
+        const query = `
+            SELECT u.id, u.name, u.phone, u.role, u.password, u.created_at, u.updated_at, up.date_of_birth
+            FROM users u
+            LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
+            WHERE u.id = ? AND u.deleted_at IS NULL
+        `;
+        const [userRows] = await db.promise().query(query, [userId]);
 
         if (userRows.length === 0) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         const user = userRows[0];
+        
+        // Determine password display representation
+        let displayPassword = 'Modified (Secure Hashed)';
+        if (user.date_of_birth) {
+            const yob = new Date(user.date_of_birth).getFullYear();
+            const encryptedYOB = passwordEncryptAES(String(yob));
+            const isDefault = await bcrypt.compare(encryptedYOB, user.password);
+            if (isDefault) {
+                displayPassword = String(yob);
+            }
+        } else {
+            // Fallback check: if user has never updated their password, it's likely default
+            if (!user.updated_at) {
+                displayPassword = 'Default (Not changed)';
+            }
+        }
+
         return res.status(200).json({
             success: true,
             data: {
@@ -260,7 +280,8 @@ exports.getUserPasswordDetails = async (req, res) => {
                 phone: user.phone,
                 role: user.role,
                 createdAt: user.created_at,
-                lastUpdatedAt: user.updated_at
+                lastUpdatedAt: user.updated_at,
+                currentPassword: displayPassword
             }
         });
     } catch (error) {
