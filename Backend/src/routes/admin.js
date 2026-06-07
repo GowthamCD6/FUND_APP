@@ -32,6 +32,8 @@ router.post('/users/deleteUser', authenticateToken, userManagement.deleteUser);
 router.post('/users/updatePassword', authenticateToken, userManagement.updatePassword);
 router.post('/users/resetPassword', authenticateToken, userManagement.resetPassword);
 router.get('/users/:userId/passwordDetails', authenticateToken, userManagement.getUserPasswordDetails);
+router.post('/users/block', authenticateToken, userManagement.blockUser);
+router.post('/users/unblock', authenticateToken, userManagement.unblockUser);
 
 router.get('/collections/getMemberHistory', authenticateToken, monthlyCollection.getMemberPaymentHistory);
 

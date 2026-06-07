@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
+const db = require('../config/db');
 
 // Middleware to verify JWT tokens
 const authenticateToken = (req, res, next) => {
@@ -13,12 +14,28 @@ const authenticateToken = (req, res, next) => {
     });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, async (err, user) => {
     if (err) {
       return res.status(403).json({ 
         success: false, 
         message: 'Invalid or expired token' 
       });
+    }
+    
+    try {
+      const [rows] = await db.promise().query(
+        'SELECT is_active FROM users WHERE id = ? AND deleted_at IS NULL',
+        [user.userId || user.id]
+      );
+      
+      if (rows.length === 0 || rows[0].is_active === 0) {
+        return res.status(403).json({
+          success: false,
+          message: 'Your account has been blocked by an administrator.'
+        });
+      }
+    } catch (dbErr) {
+      console.error('Error in auth token validation db check:', dbErr);
     }
     
     req.user = user;

@@ -53,7 +53,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone and password are required' });
     }
 
-    const findUserSql = 'SELECT id, name as username, phone, role, password FROM users WHERE phone = ? AND deleted_at IS NULL';
+    const findUserSql = 'SELECT id, name as username, phone, role, password, is_active FROM users WHERE phone = ? AND deleted_at IS NULL';
     const [results] = await db.promise().query(findUserSql, [phone]);
 
     if (results.length === 0) {
@@ -61,6 +61,10 @@ exports.login = async (req, res) => {
     }
 
     const user = results[0];
+
+    if (user.is_active === 0) {
+      return res.status(403).json({ success: false, message: 'Your account has been blocked by an administrator.' });
+    }
 
     // Encrypt the password with AES first, then compare with bcrypt
     const encryptedPassword = passwordEncryptAES(password);
@@ -148,6 +152,13 @@ exports.refreshToken = async (req, res) => {
     }
 
     const user = userResults[0];
+
+    if (user.is_active === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been blocked by an administrator.'
+      });
+    }
 
     // Generate new access token
     const tokenPayload = {

@@ -13,11 +13,13 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   BackHandler,
+  ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../../../../../../components/HeaderComponent/Header';
+import ApiService from '../../../../../../services/ApiService';
 
 const BlockUserScreen = () => {
   const navigation = useNavigation();
@@ -27,39 +29,8 @@ const BlockUserScreen = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [blockReason, setBlockReason] = useState('');
 
-  const [blockedUsers, setBlockedUsers] = useState([]);
-  const [allUsers, setAllUsers] = useState([
-    {
-      id: '1',
-      name: 'Rajesh Kumar',
-      phone: '+91 9876543210',
-      status: 'Active',
-    },
-    {
-      id: '2',
-      name: 'Priya Singh',
-      phone: '+91 9876543211',
-      status: 'Active',
-    },
-    {
-      id: '3',
-      name: 'Amit Patel',
-      phone: '+91 9876543212',
-      status: 'Active',
-    },
-    {
-      id: '4',
-      name: 'Sneha Reddy',
-      phone: '+91 9876543213',
-      status: 'Active',
-    },
-    {
-      id: '5',
-      name: 'Vijay Kumar',
-      phone: '+91 9876543214',
-      status: 'Active',
-    },
-  ]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const backAction = () => {
@@ -80,22 +51,26 @@ const BlockUserScreen = () => {
   }, [navigation, showBlockModal]);
 
   useEffect(() => {
-    loadBlockedUsers();
+    fetchUsers();
   }, []);
 
-  const loadBlockedUsers = async () => {
+  const fetchUsers = async () => {
     try {
-      const blocked = await AsyncStorage.getItem('blockedUsers');
-      if (blocked) {
-        const blockedList = JSON.parse(blocked);
-        setBlockedUsers(blockedList);
-        // Remove blocked users from allUsers initially
-        setAllUsers(prev =>
-          prev.filter(user => !blockedList.some(b => b.id === user.id)),
-        );
+      setLoading(true);
+      const response = await ApiService.makeRequest('/admin/users/getAllUsers', {
+        method: 'GET',
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUsers(data.data);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to fetch users');
       }
     } catch (error) {
-      console.error('Error loading blocked users:', error);
+      console.error('Error fetching users:', error);
+      Alert.alert('Error', 'Failed to fetch users. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -109,32 +84,21 @@ const BlockUserScreen = () => {
         text: 'Unblock',
         style: 'destructive',
         onPress: async () => {
-          const user = blockedUsers.find(u => u.id === userId);
-          const updatedBlocked = blockedUsers.filter(u => u.id !== userId);
-          setBlockedUsers(updatedBlocked);
-
-          // Add the unblocked user back to allUsers (ensure unique ID handling in a real app)
-          if (user) {
-            setAllUsers(prev =>
-              [
-                ...prev,
-                {
-                  id: user.id,
-                  name: user.name,
-                  phone: user.phone,
-                  status: 'Active',
-                },
-              ].sort((a, b) => a.name.localeCompare(b.name)),
-            ); // Sort to maintain consistency
-          }
-
           try {
-            await AsyncStorage.setItem(
-              'blockedUsers',
-              JSON.stringify(updatedBlocked),
-            );
+            const response = await ApiService.makeRequest('/admin/users/unblock', {
+              method: 'POST',
+              body: JSON.stringify({ userId }),
+            });
+            const data = await response.json();
+            if (data.success) {
+              Alert.alert('Success', 'User has been unblocked');
+              fetchUsers();
+            } else {
+              Alert.alert('Error', data.message || 'Failed to unblock user');
+            }
           } catch (error) {
-            console.error('Error saving:', error);
+            console.error('Error unblocking user:', error);
+            Alert.alert('Error', 'Failed to unblock user. Please try again.');
           }
         },
       },
@@ -153,30 +117,27 @@ const BlockUserScreen = () => {
       return;
     }
 
-    const newBlockedUser = {
-      id: selectedUser.id,
-      name: selectedUser.name,
-      phone: selectedUser.phone,
-      blockedOn: new Date().toISOString().split('T')[0],
-      reason: blockReason,
-    };
-
-    const updatedBlocked = [...blockedUsers, newBlockedUser];
-    setBlockedUsers(updatedBlocked);
-    setAllUsers(allUsers.filter(u => u.id !== selectedUser.id)); // Remove from allUsers
-
-    setShowBlockModal(false);
-    setBlockReason('');
-    setSelectedUser(null);
-
     try {
-      await AsyncStorage.setItem(
-        'blockedUsers',
-        JSON.stringify(updatedBlocked),
-      );
-      Alert.alert('Success', 'User has been blocked');
+      const response = await ApiService.makeRequest('/admin/users/block', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          reason: blockReason,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        Alert.alert('Success', 'User has been blocked');
+        setShowBlockModal(false);
+        setBlockReason('');
+        setSelectedUser(null);
+        fetchUsers();
+      } else {
+        Alert.alert('Error', data.message || 'Failed to block user');
+      }
     } catch (error) {
-      console.error('Error saving:', error);
+      console.error('Error blocking user:', error);
+      Alert.alert('Error', 'Failed to block user. Please try again.');
     }
   };
 
@@ -190,6 +151,11 @@ const BlockUserScreen = () => {
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{item.name}</Text>
             <Text style={styles.userPhone}>{item.phone}</Text>
+            {item.blockReason ? (
+              <Text style={styles.blockReason} numberOfLines={1}>
+                Reason: {item.blockReason}
+              </Text>
+            ) : null}
           </View>
         </View>
         <View style={styles.rightSection}>
@@ -250,19 +216,22 @@ const BlockUserScreen = () => {
     </View>
   );
 
-  const filteredBlockedUsers = blockedUsers.filter(
+  const blockedUsersList = users.filter(u => u.isActive === 0);
+  const activeUsersList = users.filter(u => u.isActive === 1);
+
+  const filteredBlockedUsers = blockedUsersList.filter(
     user =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.phone.includes(searchQuery),
   );
 
-  const filteredAllUsers = allUsers
+  const filteredAllUsers = activeUsersList
     .filter(
       user =>
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.phone.includes(searchQuery),
     )
-    .sort((a, b) => a.name.localeCompare(b.name)); // Sort all users for consistency
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <View style={styles.container}>
@@ -287,7 +256,7 @@ const BlockUserScreen = () => {
                 activeTab === 'blocked' && styles.activeTabText,
               ]}
             >
-              Blocked ({blockedUsers.length})
+              Blocked ({blockedUsersList.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -300,7 +269,7 @@ const BlockUserScreen = () => {
                 activeTab === 'all' && styles.activeTabText,
               ]}
             >
-              All Users ({allUsers.length})
+              All Users ({activeUsersList.length})
             </Text>
           </TouchableOpacity>
         </View>
@@ -330,27 +299,34 @@ const BlockUserScreen = () => {
       </View>
 
       {/* User List */}
-      <FlatList
-        data={activeTab === 'blocked' ? filteredBlockedUsers : filteredAllUsers}
-        renderItem={activeTab === 'blocked' ? renderBlockedUser : renderAllUser}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContentContainer}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons
-              name={activeTab === 'blocked' ? 'account-check' : 'account-group'}
-              size={64}
-              color="#D1D5DB"
-            />
-            <Text style={styles.emptyStateText}>
-              {activeTab === 'blocked'
-                ? 'No blocked users found'
-                : 'No users available'}
-            </Text>
-          </View>
-        )}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0066FF" />
+          <Text style={styles.loadingText}>Loading users...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={activeTab === 'blocked' ? filteredBlockedUsers : filteredAllUsers}
+          renderItem={activeTab === 'blocked' ? renderBlockedUser : renderAllUser}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.listContentContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons
+                name={activeTab === 'blocked' ? 'account-check' : 'account-group'}
+                size={64}
+                color="#D1D5DB"
+              />
+              <Text style={styles.emptyStateText}>
+                {activeTab === 'blocked'
+                  ? 'No blocked users found'
+                  : 'No users available'}
+              </Text>
+            </View>
+          )}
+        />
+      )}
 
       {/* Block User Modal */}
       <Modal
@@ -770,6 +746,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontFamily:
       Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 80,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
   },
 });
 

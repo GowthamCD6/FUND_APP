@@ -61,7 +61,7 @@ exports.getAllUsers = async (req, res) => {
         
         const query = `
             SELECT 
-                u.id, u.name, u.nick_name, u.phone, u.mail, u.role, u.created_at,
+                u.id, u.name, u.nick_name, u.phone, u.mail, u.role, u.created_at, u.is_active, u.block_reason,
                 (
                     SELECT GROUP_CONCAT(g.group_name SEPARATOR ', ')
                     FROM user_grouping ug
@@ -82,7 +82,9 @@ exports.getAllUsers = async (req, res) => {
             type: user.role,
             joinedDate: user.created_at,
             dateOfBirth: '00-00-0000',
-            contributedGroups: user.contributed_groups || 'None'
+            contributedGroups: user.contributed_groups || 'None',
+            isActive: user.is_active,
+            blockReason: user.block_reason
         }));
         
         return res.status(200).json({ success: true, data: users });
@@ -322,5 +324,71 @@ exports.getUserLocations = async (req, res) => {
     } catch (error) {
         console.error('Error fetching user locations:', error);
         return res.status(500).json({ success: false, message: 'Failed to fetch user locations' });
+    }
+};
+
+exports.blockUser = async (req, res) => {
+    const { userId, reason } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
+
+    if (!userId || !reason) {
+        return res.status(400).json({ success: false, message: 'User ID and block reason are required' });
+    }
+
+    try {
+        const [result] = await db.promise().query(
+            'UPDATE users SET is_active = 0, block_reason = ?, updated_by = ?, version = version + 1 WHERE id = ? AND deleted_at IS NULL',
+            [reason, adminId ? Number(adminId) : null, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Log audit event
+        await logAuditEvent(req, {
+            actionType: 'UPDATE',
+            tableName: 'users',
+            recordId: Number(userId),
+            newValues: { is_active: 0, block_reason: reason }
+        });
+
+        return res.status(200).json({ success: true, message: 'User blocked successfully' });
+    } catch (error) {
+        console.error('Error blocking user:', error);
+        return res.status(500).json({ success: false, message: 'Failed to block user' });
+    }
+};
+
+exports.unblockUser = async (req, res) => {
+    const { userId } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
+
+    if (!userId) {
+        return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    try {
+        const [result] = await db.promise().query(
+            'UPDATE users SET is_active = 1, block_reason = NULL, updated_by = ?, version = version + 1 WHERE id = ? AND deleted_at IS NULL',
+            [adminId ? Number(adminId) : null, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Log audit event
+        await logAuditEvent(req, {
+            actionType: 'UPDATE',
+            tableName: 'users',
+            recordId: Number(userId),
+            newValues: { is_active: 1, block_reason: null }
+        });
+
+        return res.status(200).json({ success: true, message: 'User unblocked successfully' });
+    } catch (error) {
+        console.error('Error unblocking user:', error);
+        return res.status(500).json({ success: false, message: 'Failed to unblock user' });
     }
 };
