@@ -26,6 +26,10 @@ async function checkAndInitializeDatabase() {
       user: DB_CONFIG.user,
       password: DB_CONFIG.password,
       port: DB_CONFIG.port,
+      ssl: DB_CONFIG.host && DB_CONFIG.host.includes('tidbcloud.com') ? {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: true
+      } : undefined,
     });
 
     // Check if database exists

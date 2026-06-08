@@ -9,8 +9,9 @@ const db = require('./src/config/db');
 const checkAndInitializeDatabase = require('./src/utils/dbHealthCheck');
 const setupGracefulShutdown = require('./src/utils/gracefulShutdown');
 
-// Initialize WebSocket server
+// Initialize WebSocket servers
 const wss = new WebSocket.Server({ server, path: '/api/auction' });
+const chatWss = new WebSocket.Server({ server, path: '/api/chat' });
 
 // Store active auction sessions
 const auctionSessions = new Map();
@@ -74,6 +75,124 @@ wss.on('connection', (ws, req) => {
 
   } catch (error) {
     console.error('WebSocket authentication failed:', error.message);
+    ws.close(1008, 'Authentication failed');
+  }
+});
+
+// Chat WebSocket Connection Handler
+const chatClients = new Map(); // Store chat clients
+
+chatWss.on('connection', (ws, req) => {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const token = url.searchParams.get('token');
+    const userId = url.searchParams.get('userId');
+    const userType = url.searchParams.get('userType') || 'User'; // Admin or User
+
+    if (!token || !userId) {
+      ws.close(1008, 'Missing authentication');
+      return;
+    }
+
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Store chat client session
+    const clientId = `${userId}-${Date.now()}`;
+    chatClients.set(clientId, {
+      ws,
+      userId: Number(userId),
+      userType,
+      rooms: new Set() // Store active rooms they are looking at
+    });
+
+    console.log(`✅ Chat WebSocket connected: ${clientId} (${userType})`);
+
+    ws.on('message', async (message) => {
+      try {
+        const payload = JSON.parse(message);
+        
+        if (payload.type === 'join_room') {
+          const client = chatClients.get(clientId);
+          if (client) {
+            client.rooms.add(payload.roomId);
+            console.log(`Client ${clientId} joined room ${payload.roomId}`);
+          }
+        } 
+        else if (payload.type === 'leave_room') {
+          const client = chatClients.get(clientId);
+          if (client) {
+            client.rooms.delete(payload.roomId);
+          }
+        }
+        else if (payload.type === 'send_message') {
+          // Send via WebSocket (fallback for POST API)
+          const { roomId, text } = payload.data;
+          
+          // Verify room and routing logic similar to chatController
+          const [roomArr] = await db.promise().query('SELECT * FROM chat_rooms WHERE id = ?', [roomId]);
+          if (roomArr.length === 0) return;
+          const room = roomArr[0];
+
+          let targetRoomId = roomId;
+
+          if (userType === 'User' && room.type === 'group_broadcast') {
+            const [privateRoom] = await db.promise().query('SELECT id FROM chat_rooms WHERE type = ? AND user_id = ? AND group_id = ?', ['private', userId, room.group_id]);
+            if (privateRoom.length > 0) {
+              targetRoomId = privateRoom[0].id;
+            } else {
+              const [insertRes] = await db.promise().query('INSERT INTO chat_rooms (type, group_id, user_id) VALUES (?, ?, ?)', ['private', room.group_id, userId]);
+              targetRoomId = insertRes.insertId;
+            }
+          }
+
+          // Save message
+          const [insertMsg] = await db.promise().query(
+            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message) VALUES (?, ?, ?, ?)',
+            [targetRoomId, userId, userType, text]
+          );
+
+          const msgData = {
+            id: insertMsg.insertId,
+            roomId: targetRoomId,
+            senderId: Number(userId),
+            senderType: userType,
+            message: text,
+            created_at: new Date(),
+            sender_name: decoded.name || 'User'
+          };
+
+          // Broadcast to connected clients who are in this targetRoomId or admins
+          // For simple broadcasting, send to all who joined the room, and all admins (admins usually want to see updates)
+          chatClients.forEach(client => {
+            if (client.ws.readyState === WebSocket.OPEN) {
+              // If client is looking at this room, or is Admin and we just created a private reply room
+              if (client.rooms.has(targetRoomId) || client.rooms.has(roomId)) {
+                client.ws.send(JSON.stringify({
+                  type: 'new_message',
+                  data: msgData
+                }));
+              } else if (client.userType === 'Admin') {
+                // Also notify admin so chat list can update
+                client.ws.send(JSON.stringify({
+                  type: 'new_message_notification',
+                  data: msgData
+                }));
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Error handling chat WS message', err);
+      }
+    });
+
+    ws.on('close', () => {
+      chatClients.delete(clientId);
+      console.log(`🔌 Chat WebSocket disconnected: ${clientId}`);
+    });
+
+  } catch (error) {
     ws.close(1008, 'Authentication failed');
   }
 });

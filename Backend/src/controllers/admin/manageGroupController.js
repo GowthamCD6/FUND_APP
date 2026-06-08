@@ -60,6 +60,13 @@ exports.createGroup = async (req, res) => {
             creatorId ? Number(creatorId) : null
         ]);
 
+        // Auto-create group broadcast chat room
+        const chatSql = `
+            INSERT INTO chat_rooms (type, group_id) 
+            VALUES ('group_broadcast', ?)
+        `;
+        await connection.query(chatSql, [insertId]);
+
         // Log the audit event
         await logAuditEvent(req, {
             actionType: 'INSERT',

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -34,91 +35,90 @@ const ChatList = ({ navigation }) => {
   const [activeFilter, setActiveFilter] = useState('all');
   const searchAnim = new Animated.Value(0);
 
-  // Mock chats data - will be replaced with API calls
-  const mockChats = [
-    {
-      id: 1,
-      name: 'Priya Sharma',
-      lastMessage: 'That sounds good! 😊',
-      timestamp: new Date(Date.now() - 5 * 60000),
-      avatar: '👩‍🦰',
-      unread: 2,
-      isOnline: true,
-      isGroup: false,
-      archived: false,
-    },
-    {
-      id: 2,
-      name: 'Rajesh Kumar',
-      lastMessage: 'See you tomorrow!',
-      timestamp: new Date(Date.now() - 1 * 60000),
-      avatar: '👨‍💼',
-      unread: 0,
-      isOnline: true,
-      isGroup: false,
-      archived: false,
-    },
-    {
-      id: 3,
-      name: 'Admin Support',
-      lastMessage: 'Your payment has been confirmed.',
-      timestamp: new Date(Date.now() - 2 * 3600000),
-      avatar: '👨‍💻',
-      unread: 1,
-      isOnline: true,
-      isGroup: false,
-      archived: false,
-    },
-    {
-      id: 4,
-      name: 'Anita Devi',
-      lastMessage: 'Thanks for the update!',
-      timestamp: new Date(Date.now() - 1 * 86400000),
-      avatar: '👩',
-      unread: 0,
-      isOnline: false,
-      isGroup: false,
-      archived: false,
-    },
-    {
-      id: 5,
-      name: 'Suresh Patel',
-      lastMessage: 'Let\'s meet next week',
-      timestamp: new Date(Date.now() - 2 * 86400000),
-      avatar: '👨',
-      unread: 0,
-      isOnline: false,
-      isGroup: false,
-      archived: false,
-    },
-  ];
+  const ws = useRef(null);
 
-  // Load chats on component mount
+  // Load chats from API
+  const loadChats = async () => {
+    try {
+      setLoading(true);
+      const response = await ApiService.makeRequest('/chats');
+      const data = await response.json();
+      if (data.success) {
+        setChats(data.chats || []);
+        setFilteredChats(data.chats || []);
+      }
+    } catch (error) {
+      console.error('Error fetching chats:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const loadChats = () => {
+    loadChats();
+
+    // Setup WebSocket
+    const setupWebSocket = async () => {
       try {
-        // Using mock data for now
-        setChats(mockChats);
-        setFilteredChats(mockChats);
-      } catch (error) {
-        console.error('Error fetching chats:', error);
-      } finally {
-        setLoading(false);
+        const token = await AsyncStorage.getItem('accessToken') || await AsyncStorage.getItem('userToken');
+        const userData = await AsyncStorage.getItem('userData');
+        
+        let userId = 'unknown';
+        let userType = 'User'; // Default for user app
+        
+        if (userData) {
+          try {
+            const user = JSON.parse(userData);
+            userId = user.id || user.userId || 'unknown';
+            userType = user.role || 'User';
+          } catch(e) {}
+        }
+        
+        // Convert http:// API_URL to ws://
+        let wsUrl = ApiService.baseURL ? ApiService.baseURL.replace('http', 'ws') : 'ws://localhost:5000';
+        // The backend expects /api/chats for REST, but /api/chat or just / ? Actually the websocket is mounted on root in server.js but usually /api/chat. Wait, server.js handles upgrade on any path? It handles it on /
+        wsUrl = `${wsUrl.replace('/api/admin', '').replace('/api', '')}/?token=${token}&userId=${userId}&userType=${userType}`;
+        
+        ws.current = new WebSocket(wsUrl);
+        
+        ws.current.onopen = () => {
+          console.log('Chat WebSocket Connected (User)');
+        };
+        
+        const handleWsMessage = (event) => {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'new_message_notification' || payload.type === 'new_message') {
+            loadChats();
+          }
+        };
+        
+        ws.current.addEventListener('message', handleWsMessage);
+        
+        ws.current.onerror = (e) => {
+          console.log('Chat WS Error:', e.message);
+        };
+        
+        ws.current.onclose = () => {
+          console.log('Chat WS Closed');
+        };
+      } catch(e) {
+        console.error('Error setting up WS:', e);
       }
     };
+    
+    setupWebSocket();
 
-    const timer = setTimeout(loadChats, 500);
-    return () => clearTimeout(timer);
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
   }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    
-    const timer = setTimeout(() => {
-      setChats(mockChats);
-      setFilteredChats(mockChats);
-      setRefreshing(false);
-    }, 1000);
+    loadChats();
   };
 
   const handleSearch = (text) => {
@@ -166,7 +166,9 @@ const ChatList = ({ navigation }) => {
     }
   };
 
-  const formatTime = (date) => {
+  const formatTime = (dateInput) => {
+    if (!dateInput) return '';
+    const date = new Date(dateInput);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / 60000);
 
@@ -313,6 +315,7 @@ const ChatList = ({ navigation }) => {
             goBack: handleBackFromChat 
           }}
           onBack={handleBackFromChat}
+          ws={ws.current}
         />
       </Modal>
     );

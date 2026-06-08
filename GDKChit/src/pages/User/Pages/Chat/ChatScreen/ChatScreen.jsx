@@ -27,7 +27,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const ChatScreen = ({ route, navigation, onBack }) => {
+const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const { chatId, chatName, chatAvatar } = route.params || {};
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState('');
@@ -51,63 +51,26 @@ const ChatScreen = ({ route, navigation, onBack }) => {
     }
   };
 
-  // Mock messages with more details
-  const mockMessages = [
-    {
-      id: 1,
-      sender: 'other',
-      text: 'Hey! How are you doing?',
-      timestamp: new Date(Date.now() - 5 * 60000),
-      avatar: chatAvatar,
-      isRead: true,
-      status: 'delivered',
-    },
-    {
-      id: 2,
-      sender: 'user',
-      text: 'I\'m doing great! How about you?',
-      timestamp: new Date(Date.now() - 4 * 60000),
-      isRead: true,
-      status: 'read',
-    },
-    {
-      id: 3,
-      sender: 'other',
-      text: 'All good! Did you receive the payment confirmation?',
-      timestamp: new Date(Date.now() - 3 * 60000),
-      avatar: chatAvatar,
-      isRead: true,
-      status: 'delivered',
-    },
-    {
-      id: 4,
-      sender: 'user',
-      text: 'Yes, I got it. Thanks for the update!',
-      timestamp: new Date(Date.now() - 2 * 60000),
-      isRead: true,
-      status: 'read',
-    },
-    {
-      id: 5,
-      sender: 'other',
-      text: 'Great! Let me know if you need anything else.',
-      timestamp: new Date(Date.now() - 1 * 60000),
-      avatar: chatAvatar,
-      isRead: false,
-      status: 'sent',
-    },
-  ];
-
   // Load messages on component mount
   useEffect(() => {
-    const loadMessages = () => {
+    const loadMessages = async () => {
       try {
-        // Replace with actual API call
-        // const response = await ApiService.makeRequest(`/user/chats/${chatId}/messages`, { method: 'GET' });
-        // setMessages(response.data || []);
-
-        // Using mock data for now
-        setMessages(mockMessages);
+        setLoading(true);
+        const response = await ApiService.makeRequest(`/chats/messages/${chatId}`);
+        const data = await response.json();
+        if (data.success && data.messages) {
+          const formatted = data.messages.map(msg => ({
+            id: msg.id,
+            sender: msg.sender_type === 'User' ? 'user' : 'other', // User app perspective
+            text: msg.message,
+            timestamp: new Date(msg.created_at),
+            isRead: msg.is_read === 1,
+            status: 'read',
+            avatar: msg.sender_type === 'User' ? null : chatAvatar,
+            senderName: msg.sender_name
+          }));
+          setMessages(formatted);
+        }
       } catch (error) {
         console.error('Error loading messages:', error);
       } finally {
@@ -115,9 +78,59 @@ const ChatScreen = ({ route, navigation, onBack }) => {
       }
     };
 
-    const timer = setTimeout(loadMessages, 500);
-    return () => clearTimeout(timer);
-  }, []);
+    loadMessages();
+  }, [chatId]);
+
+  // Handle WebSocket messages
+  useEffect(() => {
+    if (!ws) return;
+    
+    if (ws.readyState === 1) {
+      ws.send(JSON.stringify({ type: 'join_room', roomId: chatId }));
+    } else {
+      // If not yet open, send once it opens
+      ws.addEventListener('open', () => {
+        ws.send(JSON.stringify({ type: 'join_room', roomId: chatId }));
+      });
+    }
+    
+    const handleWsMessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.type === 'new_message' && payload.data.roomId === chatId) {
+          setMessages(prev => {
+            if (prev.find(m => m.id === payload.data.id)) return prev;
+            
+            // Remove matching temp message if it exists
+            const filtered = prev.filter(m => !(String(m.id).startsWith('temp-') && m.text === payload.data.message));
+            
+            const newMsg = {
+              id: payload.data.id,
+              sender: payload.data.senderType === 'User' ? 'user' : 'other',
+              text: payload.data.message,
+              timestamp: new Date(payload.data.created_at),
+              isRead: true,
+              status: 'read',
+              avatar: payload.data.senderType === 'User' ? null : chatAvatar,
+              senderName: payload.data.sender_name
+            };
+            return [...filtered, newMsg];
+          });
+        }
+      } catch (e) {
+        console.error("WS error parsing message", e);
+      }
+    };
+    
+    ws.addEventListener('message', handleWsMessage);
+    
+    return () => {
+      if (ws.readyState === 1) {
+        ws.send(JSON.stringify({ type: 'leave_room', roomId: chatId }));
+      }
+      ws.removeEventListener('message', handleWsMessage);
+    };
+  }, [ws, chatId]);
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -126,11 +139,12 @@ const ChatScreen = ({ route, navigation, onBack }) => {
     }, 100);
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!messageText.trim()) return;
 
+    const tempId = 'temp-' + Date.now();
     const newMessage = {
-      id: messages.length + 1,
+      id: tempId,
       sender: 'user',
       text: messageText,
       timestamp: new Date(),
@@ -150,32 +164,49 @@ const ChatScreen = ({ route, navigation, onBack }) => {
     }, 100);
 
     try {
-      // Replace with actual API call
-      // const response = await ApiService.makeRequest('/user/messages/send', {
-      //   method: 'POST',
-      //   body: JSON.stringify({
-      //     chatId,
-      //     message: messageText,
-      //   }),
-      // });
-
-      // Simulate API delay with progressive status
-      setTimeout(() => {
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
-          )
-        );
-      }, 300);
-
-      setTimeout(() => {
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === newMessage.id ? { ...msg, status: 'read', isRead: true } : msg
-          )
-        );
+      if (ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({
+          type: 'send_message',
+          data: {
+            roomId: chatId,
+            text: newMessage.text,
+          }
+        }));
+        
+        // Optimistically set to delivered
+        setTimeout(() => {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === tempId ? { ...msg, status: 'delivered' } : msg
+            )
+          );
+          setIsSending(false);
+        }, 300);
+      } else {
+        // Fallback to HTTP if WS is down
+        const response = await ApiService.makeRequest('/chats/send', {
+          method: 'POST',
+          body: JSON.stringify({
+            roomId: chatId,
+            message: newMessage.text,
+          }),
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === tempId ? { 
+                ...msg, 
+                id: data.data.id,
+                status: 'read', 
+                isRead: true 
+              } : msg
+            )
+          );
+        }
         setIsSending(false);
-      }, 800);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       setIsSending(false);

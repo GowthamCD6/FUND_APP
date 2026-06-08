@@ -488,17 +488,53 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
   const currentMonthData = getCurrentMonthData();
 
+  const calculateDaysToNextChit = () => {
+    const dateStr = formData.createdDate || group.createdDate;
+    if (!dateStr) return 0;
+    const startDate = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let nextChitDate = new Date(today.getFullYear(), today.getMonth(), startDate.getDate());
+    
+    if (today > nextChitDate) {
+      nextChitDate.setMonth(nextChitDate.getMonth() + 1);
+    }
+    
+    const diffTime = nextChitDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays;
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
-      <Header title="Group Management" onBack={onBack} />
+      <Header 
+        title="Group Details"
+        onBack={onBack}
+        rightComponent={
+          <View style={{ 
+            backgroundColor: '#ECFDF5', 
+            paddingHorizontal: 12, 
+            paddingVertical: 4, 
+            borderRadius: 8, 
+            borderWidth: 1, 
+            borderColor: '#D1FAE5',
+            alignItems: 'center',
+            marginTop: -10,
+          }}>
+            <Text style={{ fontSize: 9, color: '#047857', marginBottom: 2, textTransform: 'uppercase', fontWeight: '700' }}>Next Chit In</Text>
+            <Text style={{ color: '#059669', fontWeight: '900', fontSize: 13 }}>{calculateDaysToNextChit()} Days</Text>
+          </View>
+        }
+      />
 
-        {/* Page intro below header (non-scrollable) */}
-        <View style={styles.pageHeader}>
-          <Text style={styles.pageHeaderSubtext}>Manage your group details and settings</Text>
-        </View>
+      {/* Page intro below header (non-scrollable) */}
+      <View style={styles.pageHeader}>
+        <Text style={styles.pageHeaderSubtext}>Manage your group details and settings</Text>
+      </View>
 
-  <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContentContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContentContainer} showsVerticalScrollIndicator={false}>
         {/* Group Info Card */}
         <View style={styles.listContainer}>
           <View style={pageStyles.groupCard}>

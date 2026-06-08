@@ -9,6 +9,7 @@ import Dashboard from '../../../pages/Admin/pages/Dashboard/Dashboard.jsx';
 import Reports from '../../../pages/Admin/pages/Reports/Reports.jsx';
 import Settings from '../../../pages/Admin/pages/Settings/setting.jsx';
 import AdminMoreModal from '../../../pages/Admin/Modals/more.jsx';
+import ChatList from '../../../pages/Admin/pages/Chat/ChatList/ChatList.jsx';
 import { API_URL } from '../../../utils/env.js';
 import { useAuth } from '../../../utils/AuthContext.js';
 
@@ -143,7 +144,7 @@ const AdminTab = () => {
         />
         <Tab.Screen
           name="Messages"
-          component={MembersScreen}
+          component={ChatList}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>

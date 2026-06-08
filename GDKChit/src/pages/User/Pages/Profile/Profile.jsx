@@ -249,6 +249,29 @@ const Profile = () => {
                         color="#CCCCCC"
                       />
                     </TouchableOpacity>
+                    <View style={styles.customDivider} />
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => navigation.navigate('LanguageSettings')}>
+                      <View style={styles.menuItemLeft}>
+                        <MaterialCommunityIcons
+                          name="translate"
+                          size={22}
+                          color="#666666"
+                        />
+                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Language')}</Text>
+                      </View>
+                      <View style={styles.languageBadgeRow}>
+                        <Text style={styles.languageBadgeText}>
+                          {language === 'en' ? 'EN' : 'தமிழ்'}
+                        </Text>
+                        <MaterialCommunityIcons
+                          name="chevron-right"
+                          size={22}
+                          color="#CCCCCC"
+                        />
+                      </View>
+                    </TouchableOpacity>
                   </View>
                 </View>
                 {/* General Section */}
@@ -329,29 +352,6 @@ const Profile = () => {
                         size={22}
                         color="#CCCCCC"
                       />
-                    </TouchableOpacity>
-                    <View style={styles.customDivider} />
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => navigation.navigate('LanguageSettings')}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="translate"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Language')}</Text>
-                      </View>
-                      <View style={styles.languageBadgeRow}>
-                        <Text style={styles.languageBadgeText}>
-                          {language === 'en' ? 'EN' : 'தமிழ்'}
-                        </Text>
-                        <MaterialCommunityIcons
-                          name="chevron-right"
-                          size={22}
-                          color="#CCCCCC"
-                        />
-                      </View>
                     </TouchableOpacity>
                   </View>
                 </View>

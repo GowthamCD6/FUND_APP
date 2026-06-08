@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import LottieView from 'lottie-react-native';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import { useLanguage } from '../../../../../../utils/LanguageContext';
 
@@ -30,8 +31,19 @@ const LanguageSettings = () => {
       />
 
       <View style={styles.container}>
+        {/* Animation */}
+        <View style={styles.animationContainer}>
+          <LottieView
+            source={require('../../../../../../animation/language.json')}
+            autoPlay
+            loop
+            speed={0.5}
+            style={styles.lottieAnimation}
+          />
+        </View>
+
         {/* Subtitle */}
-        <Text style={styles.subtitle}>{t('Choose your preferred language')}</Text>
+        <Text style={[styles.subtitle, language === 'ta' && { fontSize: 13 }]}>{t('Choose your preferred language')}</Text>
 
         {/* English Option */}
         <TouchableOpacity
@@ -113,6 +125,7 @@ const LanguageSettings = () => {
             }
           </Text>
         </View>
+
       </View>
     </SafeAreaView>
   );
@@ -127,6 +140,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 24,
+  },
+  animationContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  lottieAnimation: {
+    width: 250,
+    height: 250,
   },
   subtitle: {
     fontSize: 15,
@@ -213,8 +235,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 16,
     gap: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#6B46C1',
   },
   infoText: {
     flex: 1,

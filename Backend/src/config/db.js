@@ -13,10 +13,10 @@ const connection = mysql.createPool({
   keepAliveInitialDelayMs: 0,
   // IMPORTANT: Do NOT add any cleanup SQL here that would delete tables or database!
   // The database should persist between sessions
-  // ssl:{
-  //   rejectUnauthorized: true,
-  //   DB_CA_CERT: process.env.DB_CA_CERT
-  // },
+  ssl: process.env.DB_HOST && process.env.DB_HOST.includes('tidbcloud.com') ? {
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: true
+  } : undefined,
   port: process.env.DB_PORT, 
 });
 
