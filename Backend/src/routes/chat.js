@@ -21,5 +21,6 @@ router.get('/messages/starred', chatController.getStarredMessages);
 router.get('/rooms/:roomId/members', chatController.getRoomMembers);
 router.post('/rooms/:roomId/members/add', chatController.addRoomMembers);
 router.post('/rooms/:roomId/members/remove', chatController.removeRoomMembers);
+router.post('/rooms/delete', chatController.deleteRoom);
 
 module.exports = router;

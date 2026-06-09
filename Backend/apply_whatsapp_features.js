@@ -93,6 +93,16 @@ async function applyWhatsAppFeatures() {
     `);
     console.log('starred_messages table ready.');
 
+    // Add source_room_id to chat_messages if not exists
+    if (!(await columnExists('chat_messages', 'source_room_id'))) {
+      await connection.query(`
+        ALTER TABLE chat_messages 
+        ADD COLUMN source_room_id BIGINT(20) UNSIGNED DEFAULT NULL,
+        ADD CONSTRAINT FK_chat_messages_source FOREIGN KEY (source_room_id) REFERENCES chat_rooms(id) ON DELETE SET NULL;
+      `);
+      console.log('Added source_room_id column and foreign key to chat_messages.');
+    }
+
     console.log('WhatsApp features schema applied successfully!');
   } catch (error) {
     console.error('Error applying schema extensions:', error);

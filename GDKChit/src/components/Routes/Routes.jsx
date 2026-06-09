@@ -17,7 +17,7 @@ import MemberDetails from "../../pages/Admin/pages/Reports/pages/MemberDetails/M
 import Auction from "../../pages/Admin/pages/Settings/pages/Auction/Auction";
 import AdminEditProfile from "../../pages/Admin/pages/Settings/pages/AccountDetails/EditProfile";
 import NewGroup from "../../pages/Admin/pages/Chat/NewGroup/NewGroup";
-import NewGroupDetails from "../../pages/Admin/pages/Chat/NewGroup/NewGroupDetails/NewGroupDetails";
+import NewGroupDetails from "../../pages/Admin/pages/Chat/NewGroup/NewGroupDetails";
 import { StatusBar } from "react-native";
 import TabRouter from "../Tab/TabRouter";
 import UserTabs from "../Tab/UTab/UserTab";

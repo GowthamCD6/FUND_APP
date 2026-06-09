@@ -5,7 +5,7 @@ const { width, height } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDE5F5',
+    backgroundColor: '#f5f5f5',
   },
 
   // Enhanced Header Styles - Exact UI Match
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#EDE5F5',
+    backgroundColor: '#f5f5f5',
   },
 
   loadingText: {
@@ -133,8 +133,9 @@ const styles = StyleSheet.create({
   messagesList: {
     flexGrow: 1,
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#EDE5F5',
+    paddingTop: 0,
+    paddingBottom: 12,
+    backgroundColor: '#f5f5f5',
   },
   messageContainer: {
     flexDirection: 'row',
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
 
   // Input Container - Pixel Perfect
   inputContainer: {
-    backgroundColor: '#EDE5F5',
+    backgroundColor: '#f5f5f5',
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingBottom: 24,
@@ -414,6 +415,118 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  groupInfoModalOverlay: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  groupInfoModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  groupInfoModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginLeft: 16,
+  },
+  groupInfoContent: {
+    flex: 1,
+  },
+  groupInfoHeaderSection: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    borderBottomWidth: 8,
+    borderBottomColor: '#F3F4F6',
+  },
+  groupInfoAvatarContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  groupInfoAvatarEditIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#7C3AED',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  groupInfoNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  groupInfoNameText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
+    marginRight: 8,
+  },
+  groupInfoMembersSection: {
+    flex: 1,
+  },
+  groupInfoMembersHeader: {
+    padding: 16,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  groupInfoAddMemberButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  groupInfoAddMemberIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#7C3AED',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  groupInfoAddMemberText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  groupInfoMemberItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  groupInfoMemberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    overflow: 'hidden',
+  },
+  groupInfoMemberInfo: {
+    flex: 1,
+  },
+  groupInfoMemberName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  groupInfoMemberPhone: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
   },
 });
 

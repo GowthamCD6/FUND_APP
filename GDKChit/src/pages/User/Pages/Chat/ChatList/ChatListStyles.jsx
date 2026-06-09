@@ -5,12 +5,12 @@ const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
   },
 
   // Modern Header with Gradient Effect
   headerContainer: {
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
     paddingHorizontal: 20,
     paddingTop: 0,
     paddingBottom: 8,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
   },
 
   loadingText: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 0,
     paddingBottom: 100,
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
   },
 
   chatItem: {
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
 
   avatarCircleUnread: {
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
     borderWidth: 1.5,
     borderColor: '#6B46C1',
   },
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 30,
     paddingVertical: 40,
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
   },
 
   emptyStateText: {

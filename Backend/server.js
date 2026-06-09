@@ -135,26 +135,29 @@ chatWss.on('connection', (ws, req) => {
           const room = roomArr[0];
 
           let targetRoomId = roomId;
+          let sourceRoomId = null;
 
           if (userType === 'User' && room.type === 'group_broadcast') {
-            const [privateRoom] = await db.promise().query('SELECT id FROM chat_rooms WHERE type = ? AND user_id = ? AND group_id = ?', ['private', userId, room.group_id]);
+            const [privateRoom] = await db.promise().query('SELECT id FROM chat_rooms WHERE type = ? AND user_id = ? AND group_id IS NULL', ['private', userId]);
             if (privateRoom.length > 0) {
               targetRoomId = privateRoom[0].id;
             } else {
-              const [insertRes] = await db.promise().query('INSERT INTO chat_rooms (type, group_id, user_id) VALUES (?, ?, ?)', ['private', room.group_id, userId]);
+              const [insertRes] = await db.promise().query('INSERT INTO chat_rooms (type, group_id, user_id) VALUES (?, NULL, ?)', ['private', userId]);
               targetRoomId = insertRes.insertId;
             }
+            sourceRoomId = roomId;
           }
 
           // Save message
           const [insertMsg] = await db.promise().query(
-            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message) VALUES (?, ?, ?, ?)',
-            [targetRoomId, userId, userType, text]
+            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id) VALUES (?, ?, ?, ?, ?)',
+            [targetRoomId, userId, userType, text, sourceRoomId]
           );
 
           const msgData = {
             id: insertMsg.insertId,
             roomId: targetRoomId,
+            sourceRoomId: sourceRoomId,
             senderId: Number(userId),
             senderType: userType,
             message: text,
@@ -181,21 +184,42 @@ chatWss.on('connection', (ws, req) => {
           // Broadcast to connected clients who are in this room, or notify members/admins
           chatClients.forEach(client => {
             if (client.ws.readyState === WebSocket.OPEN) {
-              const isLookingAtRoom = client.rooms.has(targetRoomId) || client.rooms.has(roomId);
-              const isMember = memberUserIds.includes(client.userId);
               const isSender = client.userId === Number(userId);
+              const isAdmin = client.userType === 'Admin';
 
-              if (isLookingAtRoom) {
-                client.ws.send(JSON.stringify({
-                  type: 'new_message',
-                  data: msgData
-                }));
-              } else if (!isSender && (isMember || client.userType === 'Admin')) {
-                // Notify other members or admin so chat list updates
-                client.ws.send(JSON.stringify({
-                  type: 'new_message_notification',
-                  data: msgData
-                }));
+              if (sourceRoomId) {
+                // If it's a private reply from group broadcast, ONLY sender and admins should receive it.
+                if (isSender || isAdmin) {
+                  const isLookingAtRoom = client.rooms.has(targetRoomId) || (isSender && client.rooms.has(roomId));
+                  if (isLookingAtRoom) {
+                    client.ws.send(JSON.stringify({
+                      type: 'new_message',
+                      data: msgData
+                    }));
+                  } else {
+                    client.ws.send(JSON.stringify({
+                      type: 'new_message_notification',
+                      data: msgData
+                    }));
+                  }
+                }
+              } else {
+                // Standard room broadcast (not a private reply from group broadcast)
+                const isLookingAtRoom = client.rooms.has(targetRoomId) || client.rooms.has(roomId);
+                const isMember = memberUserIds.includes(client.userId);
+
+                if (isLookingAtRoom) {
+                  client.ws.send(JSON.stringify({
+                    type: 'new_message',
+                    data: msgData
+                  }));
+                } else if (!isSender && (isMember || isAdmin)) {
+                  // Notify other members or admin so chat list updates
+                  client.ws.send(JSON.stringify({
+                    type: 'new_message_notification',
+                    data: msgData
+                  }));
+                }
               }
             }
           });

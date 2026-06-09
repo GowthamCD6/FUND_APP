@@ -94,8 +94,8 @@ exports.getChats = async (req, res) => {
                     g.group_name,
                     g.avatar as group_avatar,
                     'Admin Support' as user_name,
-                    (SELECT message FROM chat_messages cm WHERE cm.room_id = cr.id ORDER BY cm.created_at DESC LIMIT 1) as lastMessage,
-                    (SELECT created_at FROM chat_messages cm WHERE cm.room_id = cr.id ORDER BY cm.created_at DESC LIMIT 1) as timestamp,
+                    (SELECT message FROM chat_messages cm WHERE (cm.room_id = cr.id OR (cm.source_room_id = cr.id AND cm.sender_id = ?)) ORDER BY cm.created_at DESC LIMIT 1) as lastMessage,
+                    (SELECT created_at FROM chat_messages cm WHERE (cm.room_id = cr.id OR (cm.source_room_id = cr.id AND cm.sender_id = ?)) ORDER BY cm.created_at DESC LIMIT 1) as timestamp,
                     (SELECT COUNT(*) FROM chat_messages cm WHERE cm.room_id = cr.id AND cm.is_read = 0 AND cm.sender_id != ?) as unread
                 FROM chat_rooms cr
                 LEFT JOIN \`groups\` g ON cr.group_id = g.id
@@ -107,7 +107,7 @@ exports.getChats = async (req, res) => {
                 GROUP BY cr.id
                 ORDER BY timestamp DESC
             `;
-            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId]);
+            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId, userId]);
 
             const chats = rows.map(r => {
                 let name = '';
@@ -152,14 +152,15 @@ exports.getMessages = async (req, res) => {
         const { roomId } = req.params;
         const userId = req.user.id || req.user.userId;
         const sql = `
-            SELECT cm.id, cm.room_id, cm.sender_id, cm.sender_type, cm.message, cm.created_at, u.name as sender_name,
+            SELECT cm.id, cm.room_id, cm.source_room_id, cm.sender_id, cm.sender_type, cm.message, cm.created_at, u.name as sender_name,
                    (SELECT COUNT(*) FROM starred_messages sm WHERE sm.message_id = cm.id AND sm.user_id = ?) as isStarred
             FROM chat_messages cm
             LEFT JOIN users u ON cm.sender_id = u.id
             WHERE cm.room_id = ?
+               OR (cm.source_room_id = ? AND cm.sender_id = ?)
             ORDER BY cm.created_at ASC
         `;
-        const [messages] = await db.promise().query(sql, [userId, roomId]);
+        const [messages] = await db.promise().query(sql, [userId, roomId, roomId, userId]);
 
         // Mark as read
         await db.promise().query(`UPDATE chat_messages SET is_read = 1 WHERE room_id = ? AND sender_id != ?`, [roomId, userId]);
@@ -195,31 +196,33 @@ exports.sendMessage = async (req, res) => {
         const room = roomArr[0];
 
         let targetRoomId = roomId;
+        let sourceRoomId = null;
 
         // Custom Routing Logic
-        // If User replies to a group broadcast, route to a private chat
+        // If User replies to a group broadcast, route to the main private support chat (group_id IS NULL)
         if (senderType === 'User' && room.type === 'group_broadcast') {
-            const [privateRoom] = await db.promise().query('SELECT id FROM chat_rooms WHERE type = ? AND user_id = ? AND group_id = ?', ['private', senderId, room.group_id]);
+            const [privateRoom] = await db.promise().query('SELECT id FROM chat_rooms WHERE type = ? AND user_id = ? AND group_id IS NULL', ['private', senderId]);
             
             if (privateRoom.length > 0) {
                 targetRoomId = privateRoom[0].id;
             } else {
-                // Create a new private room
-                const [insertRes] = await db.promise().query('INSERT INTO chat_rooms (type, group_id, user_id) VALUES (?, ?, ?)', ['private', room.group_id, senderId]);
+                // Create a new main private support room
+                const [insertRes] = await db.promise().query('INSERT INTO chat_rooms (type, group_id, user_id) VALUES (?, NULL, ?)', ['private', senderId]);
                 targetRoomId = insertRes.insertId;
             }
+            sourceRoomId = roomId;
         }
 
         // Save message
         const [insertMsg] = await db.promise().query(
-            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message) VALUES (?, ?, ?, ?)',
-            [targetRoomId, senderId, senderType, message]
+            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id) VALUES (?, ?, ?, ?, ?)',
+            [targetRoomId, senderId, senderType, message, sourceRoomId]
         );
 
         return res.json({ 
             success: true, 
             message: 'Message sent', 
-            data: { id: insertMsg.insertId, roomId: targetRoomId, senderId, senderType, message, created_at: new Date() } 
+            data: { id: insertMsg.insertId, roomId: targetRoomId, sourceRoomId, senderId, senderType, message, created_at: new Date() } 
         });
     } catch (error) {
         console.error('Error in sendMessage:', error);
@@ -490,13 +493,35 @@ exports.getStarredMessages = async (req, res) => {
 exports.getRoomMembers = async (req, res) => {
     try {
         const { roomId } = req.params;
-        const sql = `
-            SELECT u.id, u.name, u.phone, u.avatar, crm.role
-            FROM chat_room_members crm
-            JOIN users u ON crm.user_id = u.id
-            WHERE crm.room_id = ?
-        `;
-        const [members] = await db.promise().query(sql, [roomId]);
+        
+        // Find room details
+        const [roomRows] = await db.promise().query('SELECT * FROM chat_rooms WHERE id = ?', [roomId]);
+        if (roomRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Room not found' });
+        }
+        const room = roomRows[0];
+
+        let members = [];
+        if (room.type === 'group_broadcast') {
+            const sql = `
+                SELECT u.id AS userId, u.name, u.phone, u.avatar, 'Member' as role
+                FROM user_grouping ug
+                JOIN users u ON ug.user_id = u.id
+                WHERE ug.group_id = ? AND u.deleted_at IS NULL
+            `;
+            const [rows] = await db.promise().query(sql, [room.group_id]);
+            members = rows;
+        } else {
+            const sql = `
+                SELECT u.id AS userId, u.name, u.phone, u.avatar, crm.role
+                FROM chat_room_members crm
+                JOIN users u ON crm.user_id = u.id
+                WHERE crm.room_id = ? AND u.deleted_at IS NULL
+            `;
+            const [rows] = await db.promise().query(sql, [roomId]);
+            members = rows;
+        }
+        
         return res.json({ success: true, members });
     } catch (error) {
         console.error('Error in getRoomMembers:', error);
@@ -548,5 +573,53 @@ exports.removeRoomMembers = async (req, res) => {
     } catch (error) {
         console.error('Error in removeRoomMembers:', error);
         return res.status(500).json({ success: false, message: 'Failed to remove members' });
+    }
+};
+
+// Delete a chat room (only Admin or the authorized members/creator)
+exports.deleteRoom = async (req, res) => {
+    try {
+        const { roomId } = req.body;
+        const userId = req.user.id || req.user.userId;
+        const role = req.user.role;
+
+        if (!roomId) {
+            return res.status(400).json({ success: false, message: 'roomId is required' });
+        }
+
+        // Verify room exists
+        const [roomRows] = await db.promise().query('SELECT * FROM chat_rooms WHERE id = ?', [roomId]);
+        if (roomRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Room not found' });
+        }
+        const room = roomRows[0];
+
+        // Authorization check: Admin can delete any room.
+        // For standard Users, they can only delete if it's a private chat that belongs to them, or if they are admin of custom group.
+        if (role !== 'Admin') {
+            if (room.type === 'private' && room.user_id != userId) {
+                return res.status(403).json({ success: false, message: 'You are not authorized to delete this room' });
+            }
+            if (room.type === 'group' || room.type === 'community') {
+                const [memberRows] = await db.promise().query(
+                    'SELECT role FROM chat_room_members WHERE room_id = ? AND user_id = ?',
+                    [roomId, userId]
+                );
+                if (memberRows.length === 0 || memberRows[0].role !== 'Admin') {
+                    return res.status(403).json({ success: false, message: 'Only group admins can delete group chats' });
+                }
+            }
+            if (room.type === 'group_broadcast') {
+                return res.status(403).json({ success: false, message: 'Only Admins can delete group broadcast rooms' });
+            }
+        }
+
+        // Delete the room
+        await db.promise().query('DELETE FROM chat_rooms WHERE id = ?', [roomId]);
+
+        return res.json({ success: true, message: 'Chat room deleted successfully' });
+    } catch (error) {
+        console.error('Error in deleteRoom:', error);
+        return res.status(500).json({ success: false, message: 'Failed to delete chat room' });
     }
 };

@@ -355,7 +355,10 @@ const ChatList = ({ navigation }) => {
     setShowNewChatModal(false);
     try {
       // API call to create or get private room
-      const res = await ApiService.makeRequest('/chats/privateRoom', 'POST', { targetUserId: user.id });
+      const res = await ApiService.makeRequest('/chats/privateRoom', {
+        method: 'POST',
+        body: JSON.stringify({ targetUserId: user.id }),
+      });
       const data = await res.json();
       if (data.success) {
         setOpenChat({
@@ -621,6 +624,7 @@ const ChatList = ({ navigation }) => {
         animationType="slide"
         presentationStyle="fullScreen"
         onRequestClose={handleBackFromChat}
+        statusBarTranslucent={true}
       >
         <ChatScreen 
           route={{ params: openChat }}

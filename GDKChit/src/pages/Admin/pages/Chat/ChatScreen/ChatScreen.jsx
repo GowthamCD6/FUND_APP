@@ -54,6 +54,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const flatListRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const [onlineStatus, setOnlineStatus] = useState(true);
+  const [showStarredModal, setShowStarredModal] = useState(false);
 
   // Handle back navigation
   const handleGoBack = () => {
@@ -62,6 +63,40 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     } else if (navigation?.goBack) {
       navigation.goBack();
     }
+  };
+
+  const handleDeleteChat = async () => {
+    try {
+      const res = await ApiService.makeRequest('/chats/rooms/delete', {
+        method: 'POST',
+        body: JSON.stringify({ roomId: chatId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert('Success', 'Chat deleted successfully', [
+          { text: 'OK', onPress: () => handleGoBack() }
+        ]);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to delete chat');
+      }
+    } catch (e) {
+      console.log('Error deleting chat', e);
+      Alert.alert('Error', 'Something went wrong');
+    }
+  };
+
+  const confirmDeleteChat = () => {
+    setShowDropdown(false);
+    Alert.alert(
+      'Delete Chat',
+      isGroup 
+        ? 'Are you sure you want to delete this group chat and all its messages?' 
+        : 'Are you sure you want to delete this chat and all its messages?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', onPress: handleDeleteChat, style: 'destructive' }
+      ]
+    );
   };
 
   // Load messages on component mount
@@ -338,7 +373,10 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 text: 'Delete',
                 onPress: () => {
                   // Call backend API to delete message
-                  ApiService.makeRequest('/chats/delete', 'POST', { messageId: message.id })
+                  ApiService.makeRequest('/chats/delete', {
+                    method: 'POST',
+                    body: JSON.stringify({ messageId: message.id }),
+                  })
                     .then(response => response.json())
                     .then(data => {
                       if (data.success) {
@@ -633,15 +671,42 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             <TouchableOpacity style={styles.iconButton} onPress={() => setSearchActive(!searchActive)}>
               <MaterialCommunityIcons name="magnify" size={24} color="#000" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} onPress={() => { if(isGroup) setShowDropdown(!showDropdown); }}>
+            <TouchableOpacity style={styles.iconButton} onPress={() => setShowDropdown(!showDropdown)}>
               <MaterialCommunityIcons name="dots-vertical" size={24} color="#000" />
             </TouchableOpacity>
             
-            {showDropdown && isGroup && (
+            {showDropdown && (
               <View style={styles.dropdownMenu}>
-                <TouchableOpacity style={styles.dropdownItem} onPress={handleOpenGroupInfo}>
-                  <MaterialCommunityIcons name="information-outline" size={20} color="#7C3AED" />
-                  <Text style={styles.dropdownItemText}>Group Info</Text>
+                {isGroup && (
+                  <TouchableOpacity 
+                    style={styles.dropdownItem} 
+                    onPress={() => {
+                      setShowDropdown(false);
+                      handleOpenGroupInfo();
+                    }}
+                  >
+                    <MaterialCommunityIcons name="information-outline" size={20} color="#7C3AED" />
+                    <Text style={styles.dropdownItemText}>Group Info</Text>
+                  </TouchableOpacity>
+                )}
+                
+                <TouchableOpacity 
+                  style={styles.dropdownItem} 
+                  onPress={() => {
+                    setShowDropdown(false);
+                    setShowStarredModal(true);
+                  }}
+                >
+                  <MaterialCommunityIcons name="star-outline" size={20} color="#F59E0B" />
+                  <Text style={styles.dropdownItemText}>Starred Messages</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.dropdownItem} 
+                  onPress={confirmDeleteChat}
+                >
+                  <MaterialCommunityIcons name="delete-outline" size={20} color="#EF4444" />
+                  <Text style={[styles.dropdownItemText, { color: '#EF4444' }]}>Delete Chat</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1028,6 +1093,61 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 <Text style={styles.renameDialogButtonSaveText}>OK</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Starred Messages Modal */}
+      <Modal
+        visible={showStarredModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowStarredModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', paddingTop: 16, paddingBottom: 30 }}>
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' }} />
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 16 }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#1F2937' }}>Starred Messages</Text>
+              <TouchableOpacity onPress={() => setShowStarredModal(false)}>
+                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={messages.filter(m => m.isStarred)}
+              keyExtractor={item => item.id.toString()}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+              renderItem={({ item }) => (
+                <View
+                  style={{
+                    backgroundColor: '#F9FAFB',
+                    padding: 14,
+                    marginVertical: 6,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: '#E9D5FF',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B46C1' }}>
+                      {item.sender === 'user' ? 'You' : (item.senderName || 'Other')}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF' }}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 14, color: '#1F2937' }}>{item.text}</Text>
+                </View>
+              )}
+              ListEmptyComponent={
+                <View style={{ padding: 40, alignItems: 'center' }}>
+                  <Text style={{ color: '#9CA3AF' }}>No starred messages in this chat.</Text>
+                </View>
+              }
+            />
           </View>
         </View>
       </Modal>

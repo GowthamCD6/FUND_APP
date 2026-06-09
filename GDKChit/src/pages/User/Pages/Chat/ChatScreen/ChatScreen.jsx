@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
-  Dimensions,
   SafeAreaView,
   StatusBar,
   KeyboardAvoidingView,
@@ -19,12 +18,8 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Clipboard from '@react-native-clipboard/clipboard';
-import { launchImageLibrary } from 'react-native-image-picker';
 import styles from './ChatScreenStyle';
-import Header from '../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../services/ApiService';
-
-const { width, height } = Dimensions.get('window');
 
 // Enable long press context menu on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -32,11 +27,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const ChatScreen = ({ route, navigation, onBack, ws }) => {
-  const { chatId, chatName, chatAvatar, isGroup, groupId } = route.params || {};
+  const { chatId, chatName, chatAvatar, isGroup } = route.params || {};
   const [showDropdown, setShowDropdown] = useState(false);
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [showRemoveUserModal, setShowRemoveUserModal] = useState(false);
-  const [allUsers, setAllUsers] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState('');
@@ -45,11 +37,12 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMessage, setSelectedMessage] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
   const flatListRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const [onlineStatus, setOnlineStatus] = useState(true);
+  const onlineStatus = true;
+  const [showStarredModal, setShowStarredModal] = useState(false);
+  const [showGroupInfoModal, setShowGroupInfoModal] = useState(false);
 
   // Handle back navigation
   const handleGoBack = () => {
@@ -59,6 +52,57 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       navigation.goBack();
     }
   };
+
+  const handleOpenGroupInfo = () => {
+    setShowDropdown(false);
+    fetchGroupMembers();
+    setShowGroupInfoModal(true);
+  };
+
+  const handleDeleteChat = async () => {
+    try {
+      const res = await ApiService.makeRequest('/chats/rooms/delete', {
+        method: 'POST',
+        body: JSON.stringify({ roomId: chatId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert('Success', 'Chat deleted successfully', [
+          { text: 'OK', onPress: () => handleGoBack() }
+        ]);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to delete chat');
+      }
+    } catch (e) {
+      console.log('Error deleting chat', e);
+      Alert.alert('Error', 'Something went wrong');
+    }
+  };
+
+  const confirmDeleteChat = () => {
+    setShowDropdown(false);
+    Alert.alert(
+      'Delete Chat',
+      isGroup 
+        ? 'Are you sure you want to delete this group chat and all its messages?' 
+        : 'Are you sure you want to delete this chat and all its messages?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', onPress: handleDeleteChat, style: 'destructive' }
+      ]
+    );
+  };
+
+  // Fetch group members if isGroup on load
+  const fetchGroupMembers = React.useCallback(async () => {
+    try {
+      const res = await ApiService.makeRequest(`/chats/rooms/${chatId}/members`);
+      const data = await res.json();
+      if (data.success) setGroupMembers(data.members || []);
+    } catch (e) {
+      console.log('Error fetching members', e);
+    }
+  }, [chatId]);
 
   // Load messages on component mount
   useEffect(() => {
@@ -89,7 +133,13 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     };
 
     loadMessages();
-  }, [chatId]);
+  }, [chatId, chatAvatar]);
+
+  useEffect(() => {
+    if (isGroup) {
+      fetchGroupMembers();
+    }
+  }, [isGroup, fetchGroupMembers]);
 
   // Handle WebSocket messages
   useEffect(() => {
@@ -107,7 +157,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     const handleWsMessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
-        if (payload.type === 'new_message' && payload.data.roomId === chatId) {
+        if (payload.type === 'new_message' && (payload.data.roomId === chatId || payload.data.sourceRoomId === chatId)) {
           setMessages(prev => {
             if (prev.find(m => m.id === payload.data.id)) return prev;
             
@@ -141,7 +191,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       }
       ws.removeEventListener('message', handleWsMessage);
     };
-  }, [ws, chatId]);
+  }, [ws, chatId, chatAvatar]);
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -278,7 +328,6 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
   // Handle message long press for context menu
   const handleMessageLongPress = (message) => {
-    setSelectedMessage(message);
     Alert.alert(
       'Message Options',
       '',
@@ -287,7 +336,6 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           text: 'Copy',
           onPress: () => {
             Clipboard.setString(message.text);
-            setSelectedMessage(null);
           },
         },
         {
@@ -311,21 +359,18 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               console.error(err);
               Alert.alert('Error', 'Network error');
             }
-            setSelectedMessage(null);
           }
         },
         {
           text: 'Reply',
           onPress: () => {
             setReplyingTo(message);
-            setSelectedMessage(null);
           },
         },
         {
           text: 'Forward',
           onPress: () => {
             console.log('Forward:', message.text);
-            setSelectedMessage(null);
           },
         },
         ...(message.sender === 'user'
@@ -334,7 +379,10 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 text: 'Delete',
                 onPress: () => {
                   // Call backend API to delete message
-                  ApiService.makeRequest('/chats/delete', 'POST', { messageId: message.id })
+                  ApiService.makeRequest('/chats/delete', {
+                    method: 'POST',
+                    body: JSON.stringify({ messageId: message.id }),
+                  })
                     .then(response => response.json())
                     .then(data => {
                       if (data.success) {
@@ -354,7 +402,6 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           : []),
         {
           text: 'Cancel',
-          onPress: () => setSelectedMessage(null),
           style: 'cancel',
         },
       ]
@@ -474,100 +521,11 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     );
   };
 
-  const fetchGroupMembers = async () => {
-    try {
-      const res = await ApiService.makeRequest('/admin/groups/getMembers?groupId=' + groupId);
-      const data = await res.json();
-      if (data.success) setGroupMembers(data.members || []);
-    } catch (e) {
-      console.log('Error fetching members', e);
-    }
-  };
 
-  const fetchAllUsers = async () => {
-    try {
-      const res = await ApiService.makeRequest('/admin/users/getAllUsers');
-      const data = await res.json();
-      if (data.success) setAllUsers(data.users || []);
-    } catch (e) {
-      console.log('Error fetching users', e);
-    }
-  };
-
-  const handleOpenAddUser = () => {
-    setShowDropdown(false);
-    fetchGroupMembers();
-    fetchAllUsers();
-    setShowAddUserModal(true);
-  };
-
-  const handleOpenRemoveUser = () => {
-    setShowDropdown(false);
-    fetchGroupMembers();
-    setShowRemoveUserModal(true);
-  };
-
-  const handleAddUserToGroup = async (user) => {
-    try {
-      const res = await ApiService.makeRequest('/admin/groups/addMembers', {
-        method: 'POST',
-        body: JSON.stringify({ groupId, members: [user] })
-      });
-      const data = await res.json();
-      if (data.success) {
-        Alert.alert('Success', 'User added to group');
-        setShowAddUserModal(false);
-      } else {
-        Alert.alert('Error', data.message || 'Failed to add user');
-      }
-    } catch (e) {
-      Alert.alert('Error', 'Something went wrong');
-    }
-  };
-
-  const handleRemoveUserFromGroup = async (user) => {
-    try {
-      const res = await ApiService.makeRequest('/admin/groups/removeMembers', {
-        method: 'POST',
-        body: JSON.stringify({ groupId, members: [{ id: user.userId || user.id }] })
-      });
-      const data = await res.json();
-      if (data.success) {
-        Alert.alert('Success', 'User removed from group');
-        setShowRemoveUserModal(false);
-      } else {
-        Alert.alert('Error', data.message || 'Failed to remove user');
-      }
-    } catch (e) {
-      Alert.alert('Error', 'Something went wrong');
-    }
-  };
-
-  const handleChangeGroupPhoto = async () => {
-    setShowDropdown(false);
-    launchImageLibrary({ mediaType: 'photo', includeBase64: true, quality: 0.5 }, async (response) => {
-      if (response.didCancel || response.errorCode || !response.assets) return;
-      const base64 = `data:${response.assets[0].type};base64,${response.assets[0].base64}`;
-      try {
-        const res = await ApiService.makeRequest('/chats/groups/updateAvatar', {
-          method: 'POST',
-          body: JSON.stringify({ groupId, avatarBase64: base64 })
-        });
-        const data = await res.json();
-        if (data.success) {
-          Alert.alert('Success', 'Group photo updated!');
-        } else {
-          Alert.alert('Error', data.message || 'Failed to update photo');
-        }
-      } catch (e) {
-        Alert.alert('Error', 'Something went wrong');
-      }
-    });
-  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F1F7" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       {/* Enhanced Header with Profile Info - Exact Match */}
       <View style={styles.headerContainer}>
@@ -577,7 +535,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           </TouchableOpacity>
           
           {/* Profile Section */}
-          <View style={styles.profileSection}>
+          <TouchableOpacity style={styles.profileSection} onPress={() => { if(isGroup) handleOpenGroupInfo(); }} activeOpacity={isGroup ? 0.7 : 1}>
             <View style={styles.avatarWithStatus}>
               <View style={styles.profileAvatar}>
                 {chatAvatar && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
@@ -589,33 +547,54 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               {onlineStatus && <View style={styles.onlineStatusDot} />}
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{chatName}</Text>
-              <Text style={styles.profileStatus}>Online</Text>
+              <Text style={styles.profileName} numberOfLines={1}>{chatName}</Text>
+              <Text style={styles.profileStatus}>
+                {isGroup ? `${groupMembers.length > 0 ? groupMembers.length : ''} Members` : (onlineStatus ? 'Online' : 'Offline')}
+              </Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* Header Actions */}
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.iconButton} onPress={() => setSearchActive(!searchActive)}>
               <MaterialCommunityIcons name="magnify" size={24} color="#000" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} onPress={() => { if(isGroup) setShowDropdown(!showDropdown); }}>
+            <TouchableOpacity style={styles.iconButton} onPress={() => setShowDropdown(!showDropdown)}>
               <MaterialCommunityIcons name="dots-vertical" size={24} color="#000" />
             </TouchableOpacity>
             
-            {showDropdown && isGroup && (
+            {showDropdown && (
               <View style={styles.dropdownMenu}>
-                <TouchableOpacity style={styles.dropdownItem} onPress={handleOpenAddUser}>
-                  <MaterialCommunityIcons name="account-plus" size={20} color="#7C3AED" />
-                  <Text style={styles.dropdownItemText}>Add User</Text>
+                {isGroup && (
+                  <TouchableOpacity 
+                    style={styles.dropdownItem} 
+                    onPress={() => {
+                      setShowDropdown(false);
+                      handleOpenGroupInfo();
+                    }}
+                  >
+                    <MaterialCommunityIcons name="information-outline" size={20} color="#7C3AED" />
+                    <Text style={styles.dropdownItemText}>Group Info</Text>
+                  </TouchableOpacity>
+                )}
+                
+                <TouchableOpacity 
+                  style={styles.dropdownItem} 
+                  onPress={() => {
+                    setShowDropdown(false);
+                    setShowStarredModal(true);
+                  }}
+                >
+                  <MaterialCommunityIcons name="star-outline" size={20} color="#F59E0B" />
+                  <Text style={styles.dropdownItemText}>Starred Messages</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.dropdownItem} onPress={handleOpenRemoveUser}>
-                  <MaterialCommunityIcons name="account-minus" size={20} color="#EF4444" />
-                  <Text style={styles.dropdownItemText}>Remove User</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.dropdownItem} onPress={handleChangeGroupPhoto}>
-                  <MaterialCommunityIcons name="image-edit" size={20} color="#10B981" />
-                  <Text style={styles.dropdownItemText}>Change Group Photo</Text>
+
+                <TouchableOpacity 
+                  style={styles.dropdownItem} 
+                  onPress={confirmDeleteChat}
+                >
+                  <MaterialCommunityIcons name="delete-outline" size={20} color="#EF4444" />
+                  <Text style={[styles.dropdownItemText, { color: '#EF4444' }]}>Delete Chat</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -767,79 +746,111 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           </View>
         </View>
       </KeyboardAvoidingView>
-      {/* Add User Modal */}
-      <Modal visible={showAddUserModal} transparent animationType="fade" onRequestClose={() => setShowAddUserModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add User to Group</Text>
-              <TouchableOpacity onPress={() => setShowAddUserModal(false)} style={styles.modalCloseButton}>
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={allUsers.filter(u => !groupMembers.find(m => m.userId === u.id))}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <View style={styles.userListItem}>
-                  <View style={styles.userListItemLeft}>
-                    <View style={styles.userListAvatar}>
-                      {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('data:image')) ? (
-                        <Image source={{ uri: item.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                      ) : (
-                        <MaterialCommunityIcons name="account" size={24} color="#7C3AED" />
-                      )}
-                    </View>
-                    <View>
-                      <Text style={styles.userListName}>{item.name || item.nick_name}</Text>
-                      <Text style={styles.userListPhone}>{item.phone}</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity style={styles.addUserButton} onPress={() => handleAddUserToGroup(item)}>
-                    <Text style={styles.actionButtonText}>Add</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>No available users to add.</Text>}
-            />
+      {/* Group Info Full Modal */}
+      <Modal visible={showGroupInfoModal} animationType="slide" onRequestClose={() => setShowGroupInfoModal(false)}>
+        <SafeAreaView style={styles.groupInfoModalOverlay}>
+          {/* Header */}
+          <View style={styles.groupInfoModalHeader}>
+            <TouchableOpacity onPress={() => setShowGroupInfoModal(false)}>
+              <MaterialCommunityIcons name="arrow-left" size={28} color="#111827" />
+            </TouchableOpacity>
+            <Text style={styles.groupInfoModalTitle}>Group Info</Text>
           </View>
-        </View>
+
+          <ScrollView style={styles.groupInfoContent}>
+            {/* Top Section (Avatar & Name) */}
+            <View style={styles.groupInfoHeaderSection}>
+              <View style={styles.groupInfoAvatarContainer}>
+                {chatAvatar && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
+                  <Image source={{ uri: chatAvatar }} style={{ width: 120, height: 120, borderRadius: 60 }} />
+                ) : (
+                  <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
+                    <MaterialCommunityIcons name="account-group" size={60} color="#9CA3AF" />
+                  </View>
+                )}
+              </View>
+              
+              <View style={styles.groupInfoNameContainer}>
+                <Text style={styles.groupInfoNameText}>{chatName}</Text>
+              </View>
+            </View>
+
+            {/* Members Section */}
+            <View style={styles.groupInfoMembersSection}>
+              <Text style={styles.groupInfoMembersHeader}>{groupMembers.length} Members</Text>
+
+              {groupMembers.map((item) => (
+                <View key={item.userId || item.id} style={styles.groupInfoMemberItem}>
+                  <View style={styles.groupInfoMemberAvatar}>
+                    {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('data:image')) ? (
+                      <Image source={{ uri: item.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                    ) : (
+                      <Text style={styles.userListAvatarText}>
+                        {(item.name || 'U').substring(0, 2).toUpperCase()}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.groupInfoMemberInfo}>
+                    <Text style={styles.groupInfoMemberName}>{item.name}</Text>
+                    <Text style={styles.groupInfoMemberPhone}>{item.phone}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
       </Modal>
 
-      {/* Remove User Modal */}
-      <Modal visible={showRemoveUserModal} transparent animationType="fade" onRequestClose={() => setShowRemoveUserModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Remove User</Text>
-              <TouchableOpacity onPress={() => setShowRemoveUserModal(false)} style={styles.modalCloseButton}>
+      {/* Starred Messages Modal */}
+      <Modal
+        visible={showStarredModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowStarredModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', paddingTop: 16, paddingBottom: 30 }}>
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' }} />
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 16 }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#1F2937' }}>Starred Messages</Text>
+              <TouchableOpacity onPress={() => setShowStarredModal(false)}>
                 <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
+
             <FlatList
-              data={groupMembers}
-              keyExtractor={(item) => item.userId.toString()}
+              data={messages.filter(m => m.isStarred)}
+              keyExtractor={item => item.id.toString()}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
               renderItem={({ item }) => (
-                <View style={styles.userListItem}>
-                  <View style={styles.userListItemLeft}>
-                    <View style={styles.userListAvatar}>
-                      {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('data:image')) ? (
-                        <Image source={{ uri: item.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                      ) : (
-                        <MaterialCommunityIcons name="account" size={24} color="#7C3AED" />
-                      )}
-                    </View>
-                    <View>
-                      <Text style={styles.userListName}>{item.name}</Text>
-                      <Text style={styles.userListPhone}>{item.phone}</Text>
-                    </View>
+                <View
+                  style={{
+                    backgroundColor: '#F9FAFB',
+                    padding: 14,
+                    marginVertical: 6,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: '#E9D5FF',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B46C1' }}>
+                      {item.sender === 'user' ? 'You' : (item.senderName || 'Other')}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF' }}>
+                      {formatTime(item.timestamp)}
+                    </Text>
                   </View>
-                  <TouchableOpacity style={styles.removeUserButton} onPress={() => handleRemoveUserFromGroup(item)}>
-                    <Text style={styles.actionButtonText}>Remove</Text>
-                  </TouchableOpacity>
+                  <Text style={{ fontSize: 14, color: '#1F2937' }}>{item.text}</Text>
                 </View>
               )}
-              ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>No members found.</Text>}
+              ListEmptyComponent={
+                <View style={{ padding: 40, alignItems: 'center' }}>
+                  <Text style={{ color: '#9CA3AF' }}>No starred messages in this chat.</Text>
+                </View>
+              }
             />
           </View>
         </View>

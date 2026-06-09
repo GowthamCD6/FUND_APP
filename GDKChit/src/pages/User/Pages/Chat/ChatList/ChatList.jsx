@@ -340,6 +340,7 @@ const ChatList = ({ navigation }) => {
         animationType="slide"
         presentationStyle="fullScreen"
         onRequestClose={handleBackFromChat}
+        statusBarTranslucent={true}
       >
         <ChatScreen 
           route={{ params: openChat }}
