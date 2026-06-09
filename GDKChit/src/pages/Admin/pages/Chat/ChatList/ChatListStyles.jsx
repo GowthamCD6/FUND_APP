@@ -5,12 +5,12 @@ const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
   },
 
   // Modern Header with Gradient Effect
   headerContainer: {
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
     paddingHorizontal: 20,
     paddingTop: 0,
     paddingBottom: 8,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
   },
 
   loadingText: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 0,
     paddingBottom: 100,
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
   },
 
   chatItem: {
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
 
   avatarCircleUnread: {
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
     borderWidth: 1.5,
     borderColor: '#6B46C1',
   },
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 30,
     paddingVertical: 40,
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#f5f5f5',
   },
 
   emptyStateText: {
@@ -431,6 +431,47 @@ const styles = StyleSheet.create({
   fabInner: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  // Dropdown Menu Styles
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+
+  dropdownMenu: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 8,
+    minWidth: 180,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+  },
+
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+
+  dropdownItemText: {
+    fontSize: 15,
+    color: '#374151',
+    fontWeight: '500',
+    marginLeft: 12,
+  },
+
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 4,
   },
 });
 

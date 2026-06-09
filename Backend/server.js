@@ -162,18 +162,36 @@ chatWss.on('connection', (ws, req) => {
             sender_name: decoded.name || 'User'
           };
 
-          // Broadcast to connected clients who are in this targetRoomId or admins
-          // For simple broadcasting, send to all who joined the room, and all admins (admins usually want to see updates)
+          // Fetch members to notify for group, community, or broadcast room
+          let memberUserIds = [];
+          if (room.type === 'group' || room.type === 'community') {
+            const [memberRows] = await db.promise().query(
+              'SELECT user_id FROM chat_room_members WHERE room_id = ?',
+              [targetRoomId]
+            );
+            memberUserIds = memberRows.map(row => row.user_id);
+          } else if (room.type === 'group_broadcast') {
+            const [memberRows] = await db.promise().query(
+              'SELECT user_id FROM user_grouping WHERE group_id = ?',
+              [room.group_id]
+            );
+            memberUserIds = memberRows.map(row => row.user_id);
+          }
+
+          // Broadcast to connected clients who are in this room, or notify members/admins
           chatClients.forEach(client => {
             if (client.ws.readyState === WebSocket.OPEN) {
-              // If client is looking at this room, or is Admin and we just created a private reply room
-              if (client.rooms.has(targetRoomId) || client.rooms.has(roomId)) {
+              const isLookingAtRoom = client.rooms.has(targetRoomId) || client.rooms.has(roomId);
+              const isMember = memberUserIds.includes(client.userId);
+              const isSender = client.userId === Number(userId);
+
+              if (isLookingAtRoom) {
                 client.ws.send(JSON.stringify({
                   type: 'new_message',
                   data: msgData
                 }));
-              } else if (client.userType === 'Admin') {
-                // Also notify admin so chat list can update
+              } else if (!isSender && (isMember || client.userType === 'Admin')) {
+                // Notify other members or admin so chat list updates
                 client.ws.send(JSON.stringify({
                   type: 'new_message_notification',
                   data: msgData

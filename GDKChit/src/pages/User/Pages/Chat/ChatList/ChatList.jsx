@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
-  SafeAreaView,
   StatusBar,
   TextInput,
   Image,
@@ -16,6 +15,7 @@ import {
   Animated,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './ChatListStyles';
 import ApiService from '../../../../../services/ApiService';
@@ -33,8 +33,11 @@ const ChatList = ({ navigation }) => {
   const [openChat, setOpenChat] = useState(null);
   const [searchActive, setSearchActive] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
-  const searchAnim = new Animated.Value(0);
-
+  
+  // We'll add new hooks at the end, but since this might cause a fast refresh error, 
+  // the user might need to reload the app.
+  const searchAnim = useRef(new Animated.Value(0)).current;
+  const [sortMode, setSortMode] = useState('newest'); // 'newest', 'unread', 'name'
   const ws = useRef(null);
 
   // Load chats from API
@@ -45,7 +48,7 @@ const ChatList = ({ navigation }) => {
       const data = await response.json();
       if (data.success) {
         setChats(data.chats || []);
-        setFilteredChats(data.chats || []);
+        applyFiltersAndSort(data.chats || [], searchQuery, activeFilter, sortMode);
       }
     } catch (error) {
       console.error('Error fetching chats:', error);
@@ -61,24 +64,31 @@ const ChatList = ({ navigation }) => {
     // Setup WebSocket
     const setupWebSocket = async () => {
       try {
+        // Read accessToken (the key ApiService stores the JWT under)
         const token = await AsyncStorage.getItem('accessToken') || await AsyncStorage.getItem('userToken');
-        const userData = await AsyncStorage.getItem('userData');
         
+        // Read user info from individual AsyncStorage keys
+        const userName = await AsyncStorage.getItem('userName') || '';
+        const userRole = await AsyncStorage.getItem('userRole') || 'User';
+        
+        if (!token) return;
+
+        // Decode JWT for userId
         let userId = 'unknown';
-        let userType = 'User'; // Default for user app
-        
-        if (userData) {
-          try {
-            const user = JSON.parse(userData);
-            userId = user.id || user.userId || 'unknown';
-            userType = user.role || 'User';
-          } catch(e) {}
+        try {
+          const payloadBase64 = token.split('.')[1];
+          const payload = JSON.parse(atob(payloadBase64));
+          userId = payload.userId || payload.id || 'unknown';
+        } catch (e) {
+          console.warn('Could not decode JWT for userId:', e);
         }
+
+        const userType = userRole || 'User';
         
-        // Convert http:// API_URL to ws://
+        // Convert http:// API_URL to ws:// and use correct /api/chat path
         let wsUrl = ApiService.baseURL ? ApiService.baseURL.replace('http', 'ws') : 'ws://localhost:5000';
-        // The backend expects /api/chats for REST, but /api/chat or just / ? Actually the websocket is mounted on root in server.js but usually /api/chat. Wait, server.js handles upgrade on any path? It handles it on /
-        wsUrl = `${wsUrl.replace('/api/admin', '').replace('/api', '')}/?token=${token}&userId=${userId}&userType=${userType}`;
+        wsUrl = wsUrl.replace(/\/api\/admin\/?$/, '').replace(/\/api\/?$/, '');
+        wsUrl = `${wsUrl}/api/chat?token=${token}&userId=${userId}&userType=${userType}`;
         
         ws.current = new WebSocket(wsUrl);
         
@@ -87,10 +97,12 @@ const ChatList = ({ navigation }) => {
         };
         
         const handleWsMessage = (event) => {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'new_message_notification' || payload.type === 'new_message') {
-            loadChats();
-          }
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.type === 'new_message_notification' || payload.type === 'new_message') {
+              loadChats();
+            }
+          } catch(e) {}
         };
         
         ws.current.addEventListener('message', handleWsMessage);
@@ -123,11 +135,12 @@ const ChatList = ({ navigation }) => {
 
   const handleSearch = (text) => {
     setSearchQuery(text);
-    filterChats(text, activeFilter);
+    applyFiltersAndSort(chats, text, activeFilter, sortMode);
   };
 
-  const filterChats = (query, filter) => {
-    let filtered = chats;
+  // Combined filter + sort logic
+  const applyFiltersAndSort = (chatList, query, filter, sort) => {
+    let filtered = [...chatList];
 
     // Apply filter type
     if (filter === 'unread') {
@@ -141,9 +154,19 @@ const ChatList = ({ navigation }) => {
     // Apply search query
     if (query.trim() !== '') {
       filtered = filtered.filter(chat =>
-        chat.name.toLowerCase().includes(query.toLowerCase()) ||
-        chat.lastMessage.toLowerCase().includes(query.toLowerCase())
+        (chat.name || '').toLowerCase().includes(query.toLowerCase()) ||
+        (chat.lastMessage || '').toLowerCase().includes(query.toLowerCase())
       );
+    }
+
+    // Apply sort
+    if (sort === 'unread') {
+      filtered.sort((a, b) => (b.unread || 0) - (a.unread || 0));
+    } else if (sort === 'name') {
+      filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else {
+      // 'newest'
+      filtered.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
     }
 
     setFilteredChats(filtered);
@@ -151,7 +174,7 @@ const ChatList = ({ navigation }) => {
 
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
-    filterChats(searchQuery, filter);
+    applyFiltersAndSort(chats, searchQuery, filter, sortMode);
   };
 
   const toggleSearchActive = () => {
@@ -164,6 +187,15 @@ const ChatList = ({ navigation }) => {
     if (searchActive) {
       handleSearch('');
     }
+  };
+
+  // Tune button — cycle sort modes
+  const handleTunePress = () => {
+    const modes = ['newest', 'unread', 'name'];
+    const currentIndex = modes.indexOf(sortMode);
+    const nextMode = modes[(currentIndex + 1) % modes.length];
+    setSortMode(nextMode);
+    applyFiltersAndSort(chats, searchQuery, activeFilter, nextMode);
   };
 
   const formatTime = (dateInput) => {
@@ -186,18 +218,19 @@ const ChatList = ({ navigation }) => {
 
   const handleChatPress = (chat) => {
     setSelectedChat(chat.id);
-    // Open ChatScreen within this component instead of navigating
     setOpenChat({
       chatId: chat.id,
       chatName: chat.name,
       chatAvatar: chat.avatar,
+      isGroup: chat.isGroup,
+      groupId: chat.groupId,
     });
   };
 
   const handleBackFromChat = () => {
-    // Return to chat list
     setOpenChat(null);
     setSelectedChat(null);
+    loadChats();
   };
 
   const renderChat = ({ item, index }) => {
@@ -239,8 +272,12 @@ const ChatList = ({ navigation }) => {
         >
           {/* Avatar Section */}
           <View style={styles.chatAvatarContainer}>
-            <View style={[styles.avatarCircle, isUnread && styles.avatarCircleUnread]}>
-              <Text style={styles.avatarText}>{item.avatar}</Text>
+            <View style={[styles.avatarCircle, isUnread && styles.avatarCircleUnread, { overflow: 'hidden' }]}>
+              {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('data:image')) ? (
+                <Image source={{ uri: item.avatar }} style={{ width: '100%', height: '100%' }} />
+              ) : (
+                <MaterialCommunityIcons name={item.isGroup ? "account-group" : "account"} size={30} color={isUnread ? "#FFFFFF" : "#7C3AED"} />
+              )}
             </View>
             {item.isOnline && <View style={styles.onlineIndicator} />}
           </View>
@@ -292,10 +329,6 @@ const ChatList = ({ navigation }) => {
       <Text style={styles.emptyStateSubtext}>
         Connect with your group members and start meaningful conversations today
       </Text>
-      <TouchableOpacity style={styles.emptyStateButton}>
-        <MaterialCommunityIcons name="pencil-plus" size={22} color="#FFFFFF" />
-        <Text style={styles.emptyStateButtonText}>Compose Message</Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -339,7 +372,10 @@ const ChatList = ({ navigation }) => {
             >
               <MaterialCommunityIcons name="magnify" size={24} color="#6B46C1" />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.headerIconButton, styles.headerIconButtonPrimary]}>
+            <TouchableOpacity 
+              style={[styles.headerIconButton, styles.headerIconButtonPrimary]}
+              onPress={handleTunePress}
+            >
               <MaterialCommunityIcons name="tune" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </View>

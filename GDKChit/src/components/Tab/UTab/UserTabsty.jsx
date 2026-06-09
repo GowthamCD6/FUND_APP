@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    height: Platform.OS === 'ios' ? 105 : 95,
+    height: Platform.OS === 'ios' ? 90 : 70,
     borderTopWidth: 0,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -52,21 +52,21 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.15,
     shadowRadius: 12,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-    paddingTop: 17,
+    paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+    paddingTop: 10,
   },
 
   tabIconContainer: {
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    flex: 1,
-    minWidth: 60,
+    justifyContent: 'center',
     width: 60,
-    gap:0
-    // paddingTop: 15,
+    height: 56,
+    paddingTop: 0,
+    paddingBottom: 0,
+    marginTop: 20,
   },
   iconStyle: {
-    marginBottom: 6,
+    marginBottom: 0,
   },
   tabLabel: {
     fontSize: 11,
@@ -75,16 +75,16 @@ const styles = StyleSheet.create({
     numberOfLines: 1,
     includeFontPadding: false,
     lineHeight: 14,
-    marginTop: 2,
+    marginTop: 0,
   },
 
   customTabButton: {
-    top: 0,
+    top: -10,
     justifyContent: 'flex-start',
     alignItems: 'center',
     flex: 1,
     height: '100%',
-    paddingTop: 8,
+    paddingTop: 10,
   },
   customTabButtonInner: {
     width: 50,

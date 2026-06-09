@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    height: Platform.OS === 'ios' ? 130 : 100,
+    height: Platform.OS === 'ios' ? 90 : 70,
     borderTopWidth: 0,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -52,8 +52,8 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.15,
     shadowRadius: 12,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
-    paddingTop: 15,
+    paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+    paddingTop: 10,
   },
 
   tabIconContainer: {
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     height: 56,
     paddingTop: 0,
     paddingBottom: 0,
-    marginTop: 40,
+    marginTop: 20,
   },
   iconStyle: {
     marginBottom: 0,
@@ -79,12 +79,12 @@ const styles = StyleSheet.create({
   },
 
   customTabButton: {
-    top: 0,
+    top: -10, // Added slight negative top to lift it above the shorter tab bar
     justifyContent: 'flex-start',
     alignItems: 'center',
     flex: 1,
     height: '100%',
-    paddingTop: 15,
+    paddingTop: 10,
   },
   customTabButtonInner: {
     width: 50,

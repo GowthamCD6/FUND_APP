@@ -14,6 +14,7 @@ router.get('/groups/getGroups', authenticateToken, manageGroupController.getGrou
 
 // Group Info internals
 router.post('/groups/updateGroup', authenticateToken, groupManagement.updateGroup);
+router.post('/groups/renameGroup', authenticateToken, groupManagement.renameGroup);
 
 router.post('/groups/addMembers', authenticateToken, groupManagement.addGroupMembers);
 router.get('/groups/getMembers', authenticateToken, groupManagement.getGroupMembers);

@@ -703,3 +703,55 @@ exports.getGroupMonthSnapshot = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to fetch month snapshot' });
     }
 };
+
+exports.renameGroup = async (req, res) => {
+    const { groupId, groupName } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
+
+    if (!groupId || !groupName) {
+        return res.status(400).json({ success: false, message: 'groupId and groupName are required' });
+    }
+
+    const groupIdNum = Number(groupId);
+    if (Number.isNaN(groupIdNum)) {
+        return res.status(400).json({ success: false, message: 'Invalid groupId' });
+    }
+
+    try {
+        const sql = `
+            UPDATE \`groups\`
+            SET group_name = ?,
+                updated_by = ?,
+                version = version + 1
+            WHERE id = ? AND deleted_at IS NULL
+        `;
+
+        const [result] = await db.promise().query(sql, [groupName, adminId, groupIdNum]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Group not found or already deleted' });
+        }
+
+        // Log the rename action
+        await db.promise().query(
+            `INSERT INTO audit_logs 
+             (entity_type, entity_id, action, user_id, old_values, new_values, ip_address, user_agent)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                'GROUP',
+                groupIdNum,
+                'RENAME',
+                adminId,
+                JSON.stringify({ note: 'renamed' }),
+                JSON.stringify({ group_name: groupName }),
+                req.ip || null,
+                req.headers['user-agent'] || null
+            ]
+        );
+
+        res.json({ success: true, message: 'Group renamed successfully' });
+    } catch (error) {
+        console.error('Error renaming group:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
