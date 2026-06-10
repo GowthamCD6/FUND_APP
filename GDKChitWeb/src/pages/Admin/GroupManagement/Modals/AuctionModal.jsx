@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RiCloseLine, RiCheckLine, RiCalendarLine } from '../../../../icons.jsx';
+import { X as RiCloseLine, Check as RiCheckLine, Calendar as RiCalendarLine } from 'lucide-react';
 
 const AuctionModal = ({ visible, onClose, initialWinnerData, onSave }) => {
   const [formData, setFormData] = useState({

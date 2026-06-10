@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import { formatCurrency, formatDate } from '../../../utils/formatters.js';
 import {
-  RiRefreshLine, RiGroupLine, RiCheckLine, RiTimeLine, RiAlertLine,
-  RiCloseLine, RiLoader4Line, RiCalendarLine, RiUserLine,
-  RiHistoryLine, RiEditLine, RiArrowRightSLine, RiInformationLine,
-  RiFileListLine, RiMoneyDollarCircleLine, RiArrowLeftLine,
-} from '../../../icons.jsx';
+  RefreshCw as RiRefreshLine, Users as RiGroupLine, Check as RiCheckLine, Clock as RiTimeLine, AlertTriangle as RiAlertLine,
+  X as RiCloseLine, Loader2 as RiLoader4Line, Calendar as RiCalendarLine, User as RiUserLine,
+  History as RiHistoryLine, Pencil as RiEditLine, ChevronRight as RiArrowRightSLine, Info as RiInformationLine,
+  FileText as RiFileListLine, CircleDollarSign as RiMoneyDollarCircleLine, ArrowLeft as RiArrowLeftLine,
+} from 'lucide-react';
+import './Reports.css';
 
 /* ─── Constants ──────────────────────────────────────────────── */
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -568,78 +569,7 @@ const Reports = () => {
 
   return (
     <div className="rn-page">
-      <style>{`
-        /* ── Group Card ── */
-        .gc-card { background:#fff; border-radius:16px; margin-bottom:16px; box-shadow:0 2px 6px rgba(0,0,0,0.1); overflow:hidden; transition:box-shadow 0.18s, transform 0.18s; }
-        .gc-card:hover { box-shadow:0 6px 20px rgba(0,0,0,0.13); transform:translateY(-2px); }
-        .gc-header { display:flex; justify-content:space-between; align-items:flex-start; padding:20px 20px 12px; }
-        .gc-name { margin:0 0 8px; font-size:18px; font-weight:700; color:#1F2937; }
-        .gc-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:12px; font-size:10px; font-weight:700; color:#fff; }
-        .gc-arrow-btn { background:transparent; border:none; cursor:pointer; padding:8px; border-radius:8px; margin-left:8px; transition:background 0.15s; }
-        .gc-arrow-btn:hover { background:var(--primary-light); }
-        .gc-content { padding:0 20px 20px; }
-        .gc-info-row { display:flex; justify-content:space-between; margin-bottom:16px; }
-        .gc-info-item { display:flex; align-items:center; gap:6px; flex:1; }
-        .gc-info-text { font-size:14px; color:#6B7280; font-weight:500; }
-        .gc-progress-wrap { margin-bottom:16px; }
-        .gc-progress-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-        .gc-progress-txt { font-size:14px; font-weight:600; color:#374151; }
-        .gc-progress-pct { font-size:14px; font-weight:700; }
-        .gc-bar { height:6px; background:#E5E7EB; border-radius:3px; overflow:hidden; }
-        .gc-bar-fill { height:100%; border-radius:3px; transition:width 0.8s; }
-        .gc-footer { display:flex; justify-content:space-between; align-items:center; }
-        .gc-date { font-size:12px; color:#6B7280; }
-        .gc-collected { font-size:14px; font-weight:700; color:#059669; }
 
-        /* ── Member Details Panel ── */
-        .rp-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:200; display:flex; align-items:stretch; justify-content:flex-end; }
-        .rp-panel { background:var(--surface); width:100%; max-width:540px; display:flex; flex-direction:column; padding:0; overflow:hidden; animation:slideRight 0.28s cubic-bezier(0.34,1.56,0.64,1); }
-        .rp-panel-wide { max-width:600px; }
-        @keyframes slideRight { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
-        .rp-ph { display:flex; align-items:center; gap:12px; padding:20px; }
-        .rp-close { background:var(--surface2); border:none; border-radius:8px; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--muted); transition:background 0.15s; }
-        .rp-close:hover { background:var(--primary-light); color:var(--primary); }
-        .rp-hist-row { display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border); }
-        .rp-hist-row:last-child { border-bottom:none; }
-
-        /* ── Month selector ── */
-        .md-month-selector { padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg); }
-        .md-month-hd { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
-        .md-month-btn { display:flex; align-items:center; gap:8px; background:#EFF3FF; border:none; border-radius:10px; padding:10px 16px; cursor:pointer; transition:background 0.15s; }
-        .md-month-btn:hover { background:var(--primary-light); }
-        .md-month-picker { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin:0 20px; max-height:220px; overflow-y:auto; }
-        .md-month-item { display:block; width:100%; text-align:left; padding:10px 16px; border:none; background:transparent; font-size:14px; color:var(--text); cursor:pointer; transition:background 0.15s; }
-        .md-month-item:hover { background:var(--bg); }
-        .md-month-item.active { background:var(--primary-light); color:var(--primary); font-weight:700; }
-
-        /* ── Stats row ── */
-        .md-stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:14px 20px; border-bottom:1px solid var(--border); }
-        .md-stat-card { border-radius:var(--radius); padding:12px 8px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:4px; }
-        .md-stat-val { font-size:18px; font-weight:800; }
-        .md-stat-lbl { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; }
-
-        /* ── Member cards ── */
-        .md-member-card { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid var(--border); border-left:4px solid transparent; transition:background 0.15s; }
-        .md-member-card:hover { background:var(--bg); }
-        .md-member-left { display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
-        .md-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; flex-shrink:0; }
-        .md-name { margin:0 0 3px; font-size:15px; font-weight:700; color:var(--text); }
-        .md-member-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
-        .md-status-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:100px; font-size:10px; font-weight:700; color:#fff; }
-        .md-act-btn { background:var(--surface2); border:none; border-radius:6px; width:30px; height:30px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:background 0.15s; }
-        .md-act-btn:hover { background:var(--primary-light); color:var(--primary); }
-        .md-back-btn { background:var(--surface2); border:none; border-radius:8px; width:36px; height:36px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.15s; }
-        .md-back-btn:hover { background:var(--primary-light); color:var(--primary); }
-
-        /* ── List bg ── */
-        .rn-list { background:#F9FAFB; padding:20px; border-radius:var(--radius-lg); }
-
-        @media(max-width:640px) {
-          .md-stats-row { grid-template-columns:repeat(2,1fr); }
-          .rp-panel, .rp-panel-wide { max-width:100%; }
-        }
-        @keyframes spin { to { transform:rotate(360deg); } }
-      `}</style>
 
       {/* ── Page Header ── */}
       <div className="rn-header">

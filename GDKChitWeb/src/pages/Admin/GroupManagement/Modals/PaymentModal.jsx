@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RiCloseLine, RiCheckLine, RiMoneyDollarCircleLine } from '../../../../icons.jsx';
+import { X as RiCloseLine, Check as RiCheckLine, CircleDollarSign as RiMoneyDollarCircleLine } from 'lucide-react';
 
 const PaymentModal = ({ visible, onClose, initialPaymentData, onSave }) => {
   const [formData, setFormData] = useState({

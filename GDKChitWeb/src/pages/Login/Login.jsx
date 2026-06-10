@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
-  RiSmartphoneLine, RiPhoneLine, RiLockLine, RiKeyLine,
-  RiEyeLine, RiEyeOffLine, RiAlertLine, RiLoader4Line,
-  RiArrowRightLine, RiShieldLine, RiMoneyDollarCircleLine,
-  RiBarChartLine,
-} from '../../icons.jsx';
+  Smartphone as RiSmartphoneLine, Phone as RiPhoneLine, Lock as RiLockLine, Key as RiKeyLine,
+  Eye as RiEyeLine, EyeOff as RiEyeOffLine, AlertTriangle as RiAlertLine, Loader2 as RiLoader4Line,
+  ArrowRight as RiArrowRightLine, Shield as RiShieldLine, CircleDollarSign as RiMoneyDollarCircleLine,
+  BarChart3 as RiBarChartLine,
+} from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();

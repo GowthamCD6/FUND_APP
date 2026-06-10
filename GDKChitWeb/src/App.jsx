@@ -1,61 +1,87 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout.jsx';
+import UserLayout from './layouts/UserLayout.jsx';
 import { useAuth } from './context/AuthContext.jsx';
-import { RiLoader4Line } from './icons.jsx';
+import { Loader2 as RiLoader4Line } from 'lucide-react';
+
+// ── Admin Pages ──
 import Actions from './pages/Admin/Actions.jsx';
-import AddUser from './pages/Admin/AddUser.jsx';
-import CreateGroup from './pages/Admin/CreateGroup.jsx';
-import Dashboard from './pages/Admin/Dashboard.jsx';
+import AddUser from "./pages/Admin/AdminTools/AddUser/AddUser.jsx";
+import CreateGroup from "./pages/Admin/AdminTools/CreateGroup.jsx";
+import Dashboard from './pages/Admin/Dashboard/Dashboard.jsx';
 import Groups from './pages/Admin/GroupManagement/Groups.jsx';
-import Login from './pages/Login/Login.jsx';
 import ManageGroups from './pages/Admin/ManageGroups.jsx';
-import ManageUsers from './pages/Admin/ManageUsers.jsx';
+import ManageUsers from "./pages/Admin/AdminTools/ManageUsers.jsx";
+import Reports from './pages/Admin/Reports/Reports.jsx';
+import Settings from './pages/Admin/Settings/Settings.jsx';
+import Chat from './pages/Admin/Chat/Chat.jsx';
+
+// ── User Pages ──
+import UserHome from './pages/User/Home/Home.jsx';
+import Portfolio from './pages/User/Portfolio/Portfolio.jsx';
+import UserProfile from './pages/User/Profile/Profile.jsx';
+import UserChat from './pages/User/Chat/UserChat.jsx';
+
+// ── Public Pages ──
+import Landing from './pages/Landing/Landing.jsx';
+import Login from './pages/Login/Login.jsx';
 import NotAuthorized from './pages/Login/NotAuthorized.jsx';
 import NotFound from './pages/Login/NotFound.jsx';
-import Reports from './pages/Admin/ReportsCard/Reports.jsx';
-import Settings from './pages/Admin/Settings.jsx';
 
-const ProtectedRoute = ({ children }) => {
+/* ── Loading Spinner ── */
+const LoadingScreen = () => (
+  <div className="page">
+    <div className="panel" style={{ textAlign: 'center' }}>
+      <RiLoader4Line size={40} color="var(--primary)" style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
+      <p style={{ color: 'var(--muted)' }}>Loading session...</p>
+    </div>
+  </div>
+);
+
+/* ── Admin Protected Route ── */
+const AdminRoute = ({ children }) => {
   const { status, user, isAdminRole } = useAuth();
-
-  if (status === 'loading') {
-    return (
-      <div className="page">
-        <div className="panel" style={{ textAlign: 'center' }}>
-          <RiLoader4Line size={40} color="var(--primary)" style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
-          <p style={{ color: 'var(--muted)' }}>Loading session...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (status !== 'authed') {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!isAdminRole(user?.role)) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
+  if (status === 'loading') return <LoadingScreen />;
+  if (status !== 'authed') return <Navigate to="/login" replace />;
+  if (!isAdminRole(user?.role)) return <Navigate to="/user/home" replace />;
   return children;
+};
+
+/* ── User Protected Route ── */
+const UserRoute = ({ children }) => {
+  const { status, user, isAdminRole } = useAuth();
+  if (status === 'loading') return <LoadingScreen />;
+  if (status !== 'authed') return <Navigate to="/login" replace />;
+  // Users can access user pages; admins can too (for testing)
+  return children;
+};
+
+/* ── Smart Redirect after Login ── */
+const SmartRedirect = () => {
+  const { status, user, isAdminRole } = useAuth();
+  if (status === 'loading') return <LoadingScreen />;
+  if (status !== 'authed') return <Landing />;
+  if (isAdminRole(user?.role)) return <Navigate to="/admin/dashboard" replace />;
+  return <Navigate to="/user/home" replace />;
 };
 
 function App() {
   return (
     <Routes>
+      {/* ── Public ── */}
+      <Route path="/" element={<SmartRedirect />} />
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<NotAuthorized />} />
+
+      {/* ── Admin ── */}
       <Route
         path="/admin"
-        element={
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
-        }
+        element={<AdminRoute><AppLayout /></AdminRoute>}
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="chat" element={<Chat />} />
         <Route path="groups" element={<Groups />} />
         <Route path="users" element={<ManageUsers />} />
         <Route path="actions" element={<Actions />} />
@@ -65,7 +91,20 @@ function App() {
         <Route path="actions/manage-users" element={<ManageUsers />} />
         <Route path="settings" element={<Settings />} />
       </Route>
-      <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+
+      {/* ── User ── */}
+      <Route
+        path="/user"
+        element={<UserRoute><UserLayout /></UserRoute>}
+      >
+        <Route index element={<Navigate to="home" replace />} />
+        <Route path="home" element={<UserHome />} />
+        <Route path="portfolio" element={<Portfolio />} />
+        <Route path="chat" element={<UserChat />} />
+        <Route path="profile" element={<UserProfile />} />
+      </Route>
+
+      {/* ── 404 ── */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

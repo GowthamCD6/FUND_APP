@@ -110,7 +110,7 @@ exports.getGroups = async (req, res) => {
         console.log('Fetched groups from DB:', rows ? rows.length : 0, 'groups');
 
         if (!rows || rows.length === 0) {
-            return res.status(200).json({ success: true, groups: [] });
+            return res.status(200).json({ success: true, data: [] });
         }
 
         rows.forEach(group => {
@@ -183,7 +183,7 @@ exports.getGroups = async (req, res) => {
             }
         });
         
-        return res.status(200).json({ success: true, groups: rows });
+        return res.status(200).json({ success: true, data: rows });
     } catch (error) {
         console.error('ERROR in getGroups:', error.message, error.stack);
         return res.status(500).json({ success: false, message: 'Failed to fetch groups: ' + error.message });

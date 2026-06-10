@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { makeRequest, safeJson } from '../../api/apiClient.js';
+import { makeRequest, safeJson } from '../../../../api/apiClient.js';
 import {
-  RiArrowLeftLine, RiUserLine, RiPhoneLine, RiLockPasswordLine,
-  RiCheckLine, RiLoader4Line, RiShieldUserLine, RiAlertLine,
-} from '../../icons.jsx';
+  ArrowLeft as RiArrowLeftLine, User as RiUserLine, Phone as RiPhoneLine, Lock as RiLockPasswordLine,
+  Check as RiCheckLine, Loader2 as RiLoader4Line, ShieldCheck as RiShieldUserLine, AlertTriangle as RiAlertLine,
+} from 'lucide-react';
 
 const AddUser = () => {
   const navigate = useNavigate();

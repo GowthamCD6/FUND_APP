@@ -1,0 +1,88 @@
+/* Portfolio Page */
+.pf-page { display: flex; flex-direction: column; gap: 20px; }
+
+.pf-header { display: flex; justify-content: space-between; align-items: center; }
+.pf-title { margin: 0; font-size: 22px; font-weight: 800; color: var(--text); }
+.pf-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.pf-refresh {
+  width: 40px; height: 40px; border-radius: var(--radius); background: var(--surface);
+  border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all 0.15s;
+}
+.pf-refresh:hover { background: var(--primary-light); border-color: var(--primary); }
+
+/* Summary */
+.pf-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pf-sum-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 22px 20px; box-shadow: var(--shadow-sm);
+}
+.pf-sum-primary {
+  background: linear-gradient(135deg, #6B46C1, #553CB8); border: none; color: #fff;
+}
+.pf-sum-label { margin: 0 0 6px; font-size: 13px; font-weight: 600; opacity: 0.8; }
+.pf-sum-val { margin: 0 0 4px; font-size: 26px; font-weight: 900; }
+.pf-sum-primary .pf-sum-val { color: #fff; }
+.pf-sum-info { margin: 0; font-size: 12px; opacity: 0.6; }
+
+/* Selector */
+.pf-selector { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; scrollbar-width: none; }
+.pf-selector::-webkit-scrollbar { display: none; }
+.pf-chip {
+  flex-shrink: 0; padding: 8px 16px; border-radius: 100px; border: 1px solid var(--border);
+  background: var(--surface); font-size: 13px; font-weight: 600; color: var(--muted);
+  cursor: pointer; white-space: nowrap; transition: all 0.15s;
+}
+.pf-chip:hover { border-color: #6B46C1; color: #6B46C1; }
+.pf-chip.active { background: #6B46C1; color: #fff; border-color: #6B46C1; }
+
+/* Tabs */
+.pf-tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: var(--radius); padding: 4px; }
+.pf-tab {
+  flex: 1; padding: 10px 16px; border-radius: var(--radius-sm); border: none;
+  background: transparent; font-size: 14px; font-weight: 600; color: var(--muted);
+  cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.pf-tab.active { background: #fff; color: #6B46C1; box-shadow: var(--shadow-sm); }
+
+/* Group Cards */
+.pf-groups { display: flex; flex-direction: column; gap: 14px; }
+.pf-group-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 20px; cursor: pointer; transition: all 0.15s;
+}
+.pf-group-card:hover { border-color: #e5e7eb; box-shadow: var(--shadow); transform: translateY(-2px); }
+
+.pf-gc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+.pf-gc-name { margin: 0 0 4px; font-size: 16px; font-weight: 700; color: var(--text); }
+.pf-gc-members { margin: 0; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.pf-gc-status {
+  display: inline-block; padding: 3px 10px; border-radius: 100px;
+  font-size: 10px; font-weight: 800;
+}
+.pf-gc-amount { margin: 6px 0 0; font-size: 14px; font-weight: 700; color: var(--text); }
+
+.pf-gc-progress { margin-bottom: 14px; }
+.pf-gc-progress-hd { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.pf-gc-bar { height: 6px; background: #EEF0FF; border-radius: 3px; overflow: hidden; }
+.pf-gc-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s; }
+
+.pf-gc-footer { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--muted); }
+
+/* Empty States */
+.pf-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 20px; text-align: center; color: var(--muted);
+}
+.pf-empty h3 { margin: 16px 0 8px; font-size: 20px; font-weight: 700; color: var(--text); }
+.pf-retry {
+  display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 10px;
+  background: var(--primary); color: #fff; border: none; font-weight: 700; cursor: pointer; margin-top: 12px;
+}
+.pf-empty-sm { text-align: center; padding: 40px 20px; color: var(--muted); }
+
+@media (max-width: 768px) {
+  .pf-summary { grid-template-columns: 1fr; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

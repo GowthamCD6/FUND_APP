@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { makeRequest, safeJson } from '../../api/apiClient.js';
-import { formatDate } from '../../utils/formatters.js';
+import { makeRequest, safeJson } from '../../../api/apiClient.js';
+import { formatDate } from '../../../utils/formatters.js';
 import {
-  RiArrowLeftLine, RiUserAddLine, RiLoader4Line, RiAlertLine,
-  RiSearchLine, RiUserLine, RiShieldUserLine, RiEyeLine,
-  RiEditLine, RiDeleteBinLine, RiCloseLine, RiCheckLine,
-  RiPhoneLine, RiCalendarLine, RiArrowRightSLine, RiGroupLine,
-} from '../../icons.jsx';
+  ArrowLeft as RiArrowLeftLine, UserPlus as RiUserAddLine, Loader2 as RiLoader4Line, AlertTriangle as RiAlertLine,
+  Search as RiSearchLine, User as RiUserLine, ShieldCheck as RiShieldUserLine, Eye as RiEyeLine,
+  Pencil as RiEditLine, Trash2 as RiDeleteBinLine, X as RiCloseLine, Check as RiCheckLine,
+  Phone as RiPhoneLine, Calendar as RiCalendarLine, ChevronRight as RiArrowRightSLine, Users as RiGroupLine,
+} from 'lucide-react';
 
 const ROLE_STYLE = {
   admin: { bg: 'var(--primary-light)', color: 'var(--primary)', label: 'Admin' },

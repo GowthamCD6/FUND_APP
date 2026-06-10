@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { makeRequest, safeJson } from '../../api/apiClient.js';
 import { formatCurrency, formatDate } from '../../utils/formatters.js';
 import {
-  RiArrowLeftLine, RiAddLine, RiInformationLine, RiGroupLine,
-  RiUserAddLine, RiDeleteBinLine, RiCloseLine, RiLoader4Line,
-  RiCheckLine, RiAlertLine, RiSearchLine, RiRefreshLine, RiPhoneLine,
-} from '../../icons.jsx';
+  ArrowLeft as RiArrowLeftLine, Plus as RiAddLine, Info as RiInformationLine, Users as RiGroupLine,
+  UserPlus as RiUserAddLine, Trash2 as RiDeleteBinLine, X as RiCloseLine, Loader2 as RiLoader4Line,
+  Check as RiCheckLine, AlertTriangle as RiAlertLine, Search as RiSearchLine, RefreshCw as RiRefreshLine, Phone as RiPhoneLine,
+} from 'lucide-react';
 
 const STATUS_COLOR = {
   active: 'var(--success)', completed: 'var(--primary)',

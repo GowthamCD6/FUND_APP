@@ -4,10 +4,10 @@ import EditGroupModal from './Modals/EditGroupModal';
 import PaymentModal from './Modals/PaymentModal';
 import AuctionModal from './Modals/AuctionModal';
 import { 
-  RiArrowLeftLine, RiGroupLine, RiTimeLine, RiEditLine, 
-  RiMoneyDollarCircleLine, RiHistoryLine, RiStarLine, RiArrowRightSLine,
-  RiArrowLeftSLine, RiCloseLine, RiCheckLine
-} from '../../../icons.jsx';
+  ArrowLeft as RiArrowLeftLine, Users as RiGroupLine, Clock as RiTimeLine, Pencil as RiEditLine, 
+  CircleDollarSign as RiMoneyDollarCircleLine, History as RiHistoryLine, Star as RiStarLine, ChevronRight as RiArrowRightSLine,
+  ChevronLeft as RiArrowLeftSLine, X as RiCloseLine, Check as RiCheckLine
+} from 'lucide-react';
 
 const GroupDetails = ({ group, onBack, memberMappings = [], setShowMemberRegistration }) => {
   const [currentMonth, setCurrentMonth] = useState(0); // 0 = current, -1 = previous

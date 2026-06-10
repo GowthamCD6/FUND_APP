@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/AuthContext.jsx';
 import {
-  RiArrowLeftLine, RiArrowRightSLine, RiShieldUserLine, RiUserLine,
-  RiPhoneLine, RiBankLine, RiFileShieldLine, RiMapPinLine, RiMap2Line,
-  RiLockLine, RiFileInfoLine, RiQuestionLine, RiShareLine, RiStarLine,
-  RiStarFill, RiLogoutBoxLine, RiInstagramLine, RiYoutubeLine, RiWhatsappLine,
-  RiLinkLine, RiCheckLine,
-} from '../../icons.jsx';
+  ArrowLeft as RiArrowLeftLine, ChevronRight as RiArrowRightSLine, ShieldCheck as RiShieldUserLine, User as RiUserLine,
+  Phone as RiPhoneLine, Landmark as RiBankLine, FileLock as RiFileShieldLine, MapPin as RiMapPinLine, Map as RiMap2Line,
+  Lock as RiLockLine, FileText as RiFileInfoLine, HelpCircle as RiQuestionLine, Share2 as RiShareLine, Star as RiStarLine,
+  LogOut as RiLogoutBoxLine, Camera as RiInstagramLine, Play as RiYoutubeLine, MessageCircle as RiWhatsappLine,
+  Link as RiLinkLine, Check as RiCheckLine,
+} from 'lucide-react';
+const RiStarFill = RiStarLine;
 
 const SECTIONS = [
   {

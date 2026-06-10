@@ -3,20 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import GroupDetails from './GroupDetails.jsx';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import {
-  RiArrowLeftLine,
-  RiGroupLine,
-  RiTimeLine,
-  RiArrowRightSLine,
-  RiCheckLine,
-  RiDeleteBinLine,
-  RiCloseLine,
-  RiInformationLine,
-  RiUserAddLine,
-  RiLoader4Line,
-  RiAlertLine,
-  RiSearchLine,
-  RiPhoneLine
-} from '../../../icons.jsx';
+  ArrowLeft as RiArrowLeftLine,
+  Users as RiGroupLine,
+  Clock as RiTimeLine,
+  ChevronRight as RiArrowRightSLine,
+  Check as RiCheckLine,
+  Trash2 as RiDeleteBinLine,
+  X as RiCloseLine,
+  Info as RiInformationLine,
+  UserPlus as RiUserAddLine,
+  Loader2 as RiLoader4Line,
+  AlertTriangle as RiAlertLine,
+  Search as RiSearchLine,
+  Phone as RiPhoneLine
+} from 'lucide-react';
 
 const Groups = () => {
   const navigate = useNavigate();

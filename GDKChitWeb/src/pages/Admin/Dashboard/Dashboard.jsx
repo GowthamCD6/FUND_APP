@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { makeRequest, safeJson } from '../../api/apiClient.js';
-import { formatCurrency } from '../../utils/formatters.js';
+import { makeRequest, safeJson } from '../../../api/apiClient.js';
+import { formatCurrency } from '../../../utils/formatters.js';
 import {
-  RiGroupLine, RiRefreshLine, RiAddLine, RiUserAddLine,
-  RiSettings3Line, RiUserSettingsLine, RiBarChartLine,
-  RiMoneyDollarCircleLine, RiCheckLine, RiTimeLine,
-  RiAlertLine, RiArrowRightSLine, RiShieldUserLine,
-  RiUserLine, RiCalendarLine, RiLoader4Line, RiZapLine,
-} from '../../icons.jsx';
+  Users as RiGroupLine, RefreshCw as RiRefreshLine, Plus as RiAddLine, UserPlus as RiUserAddLine,
+  Settings as RiSettings3Line, UserCog as RiUserSettingsLine, BarChart3 as RiBarChartLine,
+  CircleDollarSign as RiMoneyDollarCircleLine, Check as RiCheckLine, Clock as RiTimeLine,
+  AlertTriangle as RiAlertLine, ChevronRight as RiArrowRightSLine, ShieldCheck as RiShieldUserLine,
+  User as RiUserLine, Calendar as RiCalendarLine, Loader2 as RiLoader4Line, Zap as RiZapLine,
+} from 'lucide-react';
 
 const deriveStats = (groups, users) => {
   const activeGroups    = groups.filter(g => String(g.status || '').toLowerCase() === 'active').length;

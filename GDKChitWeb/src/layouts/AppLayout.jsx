@@ -3,7 +3,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar.jsx';
 import Topbar from '../components/Topbar.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { RiLoader4Line } from '../icons.jsx';
+import { Loader2 as RiLoader4Line } from 'lucide-react';
 
 const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
