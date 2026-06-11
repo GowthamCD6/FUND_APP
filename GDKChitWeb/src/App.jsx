@@ -24,9 +24,7 @@ import UserChat from './pages/User/Chat/UserChat.jsx';
 
 // ── Public Pages ──
 import Landing from './pages/Landing/Landing.jsx';
-import Login from './pages/Login/Login.jsx';
-import NotAuthorized from './pages/Login/NotAuthorized.jsx';
-import NotFound from './pages/Login/NotFound.jsx';
+import Login, { NotAuthorized, NotFound } from './pages/Login/Login.jsx';
 
 /* ── Loading Spinner ── */
 const LoadingScreen = () => (

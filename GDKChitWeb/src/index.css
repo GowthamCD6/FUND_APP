@@ -1838,15 +1838,24 @@ textarea {
   transform: none;
 }
 
-/* Right — info panel */
+/* Right — info panel (hidden, replaced by auth-image) */
 .auth-panel {
-  background: linear-gradient(145deg, #EEF1FF 0%, #F0F3FF 40%, #E8EEFF 100%);
-  padding: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: none;
+}
+
+.auth-image {
+  background-image: url('./assets/login-bg.png');
+  background-size: cover;
+  background-position: center;
   position: relative;
   overflow: hidden;
+}
+
+.auth-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.1) 0%, rgba(15, 23, 42, 0.6) 100%);
 }
 
 /* Decorative circles (mirrors mobile heroDecoCircle) */
@@ -2028,7 +2037,7 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .auth-panel {
+  .auth-image {
     display: none;
   }
 

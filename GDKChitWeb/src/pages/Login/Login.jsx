@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import './Login.css';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
   Smartphone as RiSmartphoneLine, Phone as RiPhoneLine, Lock as RiLockLine, Key as RiKeyLine,
@@ -41,142 +42,93 @@ const Login = () => {
   ];
 
   return (
-    <div className="auth-page">
-      {/* ── Left: Form ── */}
-      <div className="auth-card">
-        {/* Brand badge */}
-        <div className="auth-logo-badge">
-          <span />
-          GDK Admin Portal
+    <div className="login-container">
+      {/* Left Side - Hero Section */}
+      <div className="hero-section">
+        <div className="hero-overlay"></div>
+        <div className="hero-content">
+          <div className="logo-section">
+            <div className="logo">
+               <span style={{ fontSize: '26px', fontWeight: '800', color: '#059669', letterSpacing: '-1px' }}>GDK</span>
+            </div>
+          </div>
+          <div className="company-name">GDK Chit Fund</div>
+          <div className="hero-tagline">ஸ்ரீ பெரியநாயகி அம்மன் - Trusted Since 1999</div>
         </div>
-
-        <h1 className="auth-heading">Welcome Back!</h1>
-        <p className="auth-subheading">Login to continue your journey</p>
-        <div className="auth-line" />
-
-        <form onSubmit={handleSubmit} className="auth-form" noValidate>
-          {/* Phone */}
-          <div className="auth-field">
-            <label htmlFor="login-phone" className="auth-label">
-              <span className="auth-label-icon"><RiSmartphoneLine size={14} /></span>
-              Mobile Number
-            </label>
-            <div className="auth-input-wrapper">
-              <span className="auth-input-icon" aria-hidden="true"><RiPhoneLine size={16} /></span>
-              <input
-                id="login-phone"
-                name="phone"
-                type="tel"
-                placeholder="Enter 10-digit phone number"
-                value={formState.phone}
-                onChange={handleChange}
-                required
-                autoComplete="tel"
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div className="auth-field">
-            <label htmlFor="login-password" className="auth-label">
-              <span className="auth-label-icon"><RiLockLine size={14} /></span>
-              Password
-            </label>
-            <div className="auth-input-wrapper">
-              <span className="auth-input-icon" aria-hidden="true"><RiKeyLine size={16} /></span>
-              <input
-                id="login-password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
-                value={formState.password}
-                onChange={handleChange}
-                required
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                className="auth-eye"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <RiEyeOffLine size={18} /> : <RiEyeLine size={18} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Forgot */}
-          <div className="auth-forgot">
-            <a href="#">Forgot Password?</a>
-          </div>
-
-          {/* Error */}
-          {error && (
-            <p className="form-error" role="alert" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <RiAlertLine size={15} style={{ flexShrink: 0 }} /> {error}
-            </p>
-          )}
-
-          {/* Submit */}
-          <button
-            id="login-submit"
-            type="submit"
-            className="auth-submit"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <RiLoader4Line size={18} style={{ animation: 'spin 0.8s linear infinite' }} />
-                Signing in...
-              </>
-            ) : (
-              <>
-                LOGIN <RiArrowRightLine size={18} />
-              </>
-            )}
-          </button>
-        </form>
-
-        <style>{`
-          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-          .auth-submit { display:flex; align-items:center; justify-content:center; gap:8px; }
-          .auth-label-icon { display:inline-flex; align-items:center; }
-        `}</style>
       </div>
 
-      {/* ── Right: Info Panel ── */}
-      <div className="auth-panel">
-        <div className="auth-panel-inner">
-          <p className="auth-panel-company">GDK Chit Fund</p>
-          <h2 className="auth-panel-name">ஸ்ரீ பெரியநாயகி அம்மன்</h2>
-          <p className="auth-panel-tagline">Admin-only portal — Trusted Since 1999</p>
-
-          <div className="auth-panel-features">
-            {FEATURES.map(({ Icon, title, desc }) => (
-              <div key={title} className="auth-panel-feature">
-                <div className="auth-panel-feature-icon">
-                  <Icon size={22} />
-                </div>
-                <div>
-                  <h4>{title}</h4>
-                  <p>{desc}</p>
-                </div>
-              </div>
-            ))}
+      {/* Right Side - Login Form */}
+      <div className="login-section">
+        <div className="login-box">
+          <div className="login-header">
+            <h2 className="login-title">Sign in to Admin Portal</h2>
+            <p className="login-subtitle">
+              Enter your credentials to access the admin dashboard
+            </p>
           </div>
 
-          <div className="auth-stats">
-            {[
-              { value: '500+', label: 'Active Members' },
-              { value: '₹50Cr+', label: 'Funds Managed' },
-              { value: '25+', label: 'Years Legacy' },
-              { value: '100%', label: 'Trust Score' },
-            ].map(s => (
-              <div key={s.label} className="auth-stat">
-                <div className="auth-stat-value">{s.value}</div>
-                <div className="auth-stat-label">{s.label}</div>
+          <div className="divider"><span>secure login</span></div>
+
+          {error && (
+            <div className="error-box">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">Phone Number</label>
+              <div className="phone-input">
+                <input 
+                  type="text" 
+                  className="country-code" 
+                  value="+91" 
+                  readOnly 
+                />
+                <input 
+                  type="tel" 
+                  className="form-input" 
+                  name="phone"
+                  placeholder="Enter 10-digit phone number" 
+                  value={formState.phone}
+                  onChange={handleChange}
+                  autoComplete="tel"
+                  required
+                />
               </div>
-            ))}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <div className="input-wrapper">
+                <input 
+                  type={showPassword ? "text" : "password"}
+                  className="form-input" 
+                  name="password"
+                  placeholder="Enter your password" 
+                  value={formState.password}
+                  onChange={handleChange}
+                  autoComplete="current-password"
+                  required
+                />
+                <button 
+                  type="button" 
+                  className="password-toggle"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? <RiEyeOffLine size={20} /> : <RiEyeLine size={20} />}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="sign-in-button" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign in'}
+            </button>
+          </form>
+
+          <div className="footer-text">
+            Having trouble? <a href="#" className="footer-link">Contact system admin</a>
           </div>
         </div>
       </div>
@@ -185,3 +137,27 @@ const Login = () => {
 };
 
 export default Login;
+
+export const NotAuthorized = () => (
+  <div className="page center">
+    <div className="panel">
+      <h2>Access restricted</h2>
+      <p className="muted">This portal is only available for admin accounts.</p>
+      <Link to="/login" className="primary-button">
+        Back to login
+      </Link>
+    </div>
+  </div>
+);
+
+export const NotFound = () => (
+  <div className="page center">
+    <div className="panel">
+      <h2>Page not found</h2>
+      <p className="muted">The page you are looking for does not exist.</p>
+      <Link to="/admin/dashboard" className="primary-button">
+        Go to dashboard
+      </Link>
+    </div>
+  </div>
+);
