@@ -59,10 +59,14 @@ const UserRoute = ({ children }) => {
 /* ── Smart Redirect after Login ── */
 const SmartRedirect = () => {
   const { status, user, isAdminRole } = useAuth();
-  if (status === 'loading') return <LoadingScreen />;
-  if (status !== 'authed') return <Landing />;
-  if (isAdminRole(user?.role)) return <Navigate to="/admin/dashboard" replace />;
-  return <Navigate to="/user/home" replace />;
+  
+  if (status === 'authed') {
+    if (isAdminRole(user?.role)) return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/user/home" replace />;
+  }
+  
+  // Render Landing page instantly while loading or if unauthenticated
+  return <Landing />;
 };
 
 function App() {
