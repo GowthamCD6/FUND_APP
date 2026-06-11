@@ -7,11 +7,11 @@ import { Loader2 as RiLoader4Line } from 'lucide-react';
 // ── Admin Pages ──
 import Actions from './pages/Admin/Actions.jsx';
 import AddUser from "./pages/Admin/AdminTools/AddUser/AddUser.jsx";
-import CreateGroup from "./pages/Admin/AdminTools/CreateGroup.jsx";
+import CreateGroup from "./pages/Admin/AdminTools/CreateGroup/CreateGroup.jsx";
 import Dashboard from './pages/Admin/Dashboard/Dashboard.jsx';
 import Groups from './pages/Admin/GroupManagement/Groups.jsx';
 import ManageGroups from './pages/Admin/ManageGroups.jsx';
-import ManageUsers from "./pages/Admin/AdminTools/ManageUsers.jsx";
+import ManageUsers from "./pages/Admin/AdminTools/ManageUser/ManageUsers.jsx";
 import Reports from './pages/Admin/Reports/Reports.jsx';
 import Settings from './pages/Admin/Settings/Settings.jsx';
 import Chat from './pages/Admin/Chat/Chat.jsx';

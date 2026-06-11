@@ -1,0 +1,534 @@
+.au-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  max-width: none;
+  margin: -24px -32px -48px -32px;
+  padding: 16px 24px;
+  background: var(--bg);
+}
+
+.au-main {
+  flex: 1;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  border: 1px solid var(--border);
+}
+
+.au-sidebar {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+/* SECTION TITLES */
+.au-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 16px 0;
+}
+
+.au-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin-left: 8px;
+}
+
+/* FORM */
+.au-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.au-form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.au-form-row>* {
+  flex: 1;
+}
+
+.au-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.au-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4B5563;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.au-label-req {
+  color: #EF4444;
+}
+
+.au-input {
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #111827;
+  font-family: inherit;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.au-input:focus {
+  outline: none;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.au-input.error {
+  border-color: #EF4444;
+  color: #EF4444;
+  background: #FEF2F2;
+}
+
+.au-input.error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.au-input-help {
+  font-size: 11px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.au-error-text {
+  font-size: 11px;
+  color: #EF4444;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+/* ROLES */
+.au-role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.au-role-card {
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.au-role-card:hover {
+  border-color: #BFDBFE;
+}
+
+.au-role-card.active {
+  border-color: #2563EB;
+  background: #F8FAFC;
+}
+
+.au-role-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #EFF6FF;
+  color: #2563EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.au-role-card.active .au-role-icon {
+  background: #DBEAFE;
+}
+
+.au-role-info {
+  flex: 1;
+}
+
+.au-role-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.au-role-desc {
+  font-size: 11px;
+  color: #6B7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.au-role-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.au-role-card.active .au-role-radio {
+  border-color: #2563EB;
+  background: #2563EB;
+}
+
+.au-role-card.active .au-role-radio::after {
+  content: '✓';
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.au-role-banner {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #1E40AF;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* PROGRESS */
+.au-progress-wrap {
+  margin: 16px 0 24px;
+}
+
+.au-progress-bar {
+  height: 4px;
+  background: #E5E7EB;
+  border-radius: 2px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.au-progress-fill {
+  height: 100%;
+  background: #2563EB;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.au-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B7280;
+}
+
+.au-progress-pct {
+  color: #2563EB;
+}
+
+/* BUTTONS */
+.au-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.au-btn-primary {
+  background: #2563EB;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  transition: background 0.2s;
+}
+
+.au-btn-primary:hover:not(:disabled) {
+  background: #1D4ED8;
+}
+
+.au-btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.au-btn-cancel {
+  background: white;
+  color: #111827;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  transition: background 0.2s;
+}
+
+.au-btn-cancel:hover {
+  background: #F3F4F6;
+}
+
+/* SIDEBAR CARDS */
+.au-side-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  border: 1px solid var(--border);
+}
+
+.au-side-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 16px 0;
+}
+
+/* PREVIEW CARD */
+.au-preview-avatar {
+  width: 64px;
+  height: 64px;
+  background: #2563EB;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin: 0 auto 16px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.au-preview-name {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.au-preview-nick {
+  text-align: center;
+  font-size: 12px;
+  color: #6B7280;
+  margin: 0 0 12px 0;
+}
+
+.au-preview-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #2563EB;
+  background: #EFF6FF;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  width: max-content;
+  margin: 0 auto 24px;
+}
+
+.au-preview-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 0 12px;
+}
+
+.au-preview-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.au-preview-info-icon {
+  width: 24px;
+  height: 24px;
+  background: #F3F4F6;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.au-preview-info-text {
+  font-size: 12px;
+  color: #4B5563;
+  margin: 0;
+  flex: 1;
+  font-style: italic;
+}
+
+.au-preview-info-text.filled {
+  font-style: normal;
+  color: #111827;
+  font-weight: 500;
+}
+
+/* STEPS CARD */
+.au-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.au-steps::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: #E5E7EB;
+  z-index: 0;
+}
+
+.au-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.au-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #F3F4F6;
+  color: #6B7280;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.au-step.active .au-step-num {
+  background: #2563EB;
+  color: white;
+}
+
+.au-step-text {
+  font-size: 12px;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.au-step.active .au-step-text {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* TIPS CARD */
+.au-tips-hd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.au-tips-icon {
+  width: 24px;
+  height: 24px;
+  background: #F59E0B;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.au-tips-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.au-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.au-tip:last-child {
+  margin-bottom: 0;
+}
+
+.au-tip-text {
+  font-size: 12px;
+  color: #4B5563;
+  margin: 0;
+  line-height: 1.4;
+}
+
+@media(max-width: 900px) {
+  .au-layout {
+    flex-direction: column;
+  }
+
+  .au-sidebar {
+    width: 100%;
+  }
+}
+
+@media(max-width: 600px) {
+  .au-form-row {
+    flex-direction: column;
+  }
+
+  .au-role-grid {
+    grid-template-columns: 1fr;
+  }
+}

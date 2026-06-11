@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { makeRequest, safeJson } from '../../../../api/apiClient.js';
+import Lottie from 'lottie-react';
+import addUserAnimation from '../../../../animation/Add-user.json';
 import {
-  ArrowLeft as RiArrowLeftLine, User as RiUserLine, Phone as RiPhoneLine, Lock as RiLockPasswordLine,
+  User as RiUserLine, Phone as RiPhoneLine, Lock as RiLockPasswordLine,
   Check as RiCheckLine, Loader2 as RiLoader4Line, ShieldCheck as RiShieldUserLine, AlertTriangle as RiAlertLine,
+  UserPlus, Calendar, Lightbulb, CheckCircle2, X, Key, AtSign, ShieldCheck, Info as RiInformationLine
 } from 'lucide-react';
+import './AddUser.css';
 
 const AddUser = () => {
   const navigate = useNavigate();
@@ -12,6 +16,23 @@ const AddUser = () => {
   const [errors, setErrors]   = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice]   = useState({ text: '', success: false });
+  const [completion, setCompletion] = useState(0);
+
+  console.log('Lottie type:', typeof Lottie, Lottie);
+  console.log('ShieldCheck type:', typeof ShieldCheck);
+  console.log('RiShieldUserLine type:', typeof RiShieldUserLine);
+
+  const LottieComponent = Lottie.default || Lottie;
+
+  // Calculate completion percentage
+  useEffect(() => {
+    let fields = 0;
+    if (formData.name) fields++;
+    if (formData.phoneNumber) fields++;
+    if (formData.yearOfBirth) fields++;
+    // Role is always set
+    setCompletion(Math.round((fields / 3) * 100));
+  }, [formData]);
 
   const updateField = e => {
     setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
@@ -24,7 +45,12 @@ const AddUser = () => {
     if (!formData.phoneNumber) errs.phoneNumber = 'Phone number is required';
     else if (!/^[0-9]{10}$/.test(formData.phoneNumber.replace(/\s/g, ''))) errs.phoneNumber = 'Enter a valid 10-digit number';
     if (!formData.yearOfBirth) errs.yearOfBirth = 'Year of birth is required';
-    else { const y = parseInt(formData.yearOfBirth, 10); if (!/^\d{4}$/.test(formData.yearOfBirth) || y < 1900 || y > new Date().getFullYear()) errs.yearOfBirth = 'Enter a valid year (e.g. 1990)'; }
+    else { 
+      const y = parseInt(formData.yearOfBirth, 10); 
+      if (!/^\d{4}$/.test(formData.yearOfBirth) || y < 1900 || y > new Date().getFullYear()) {
+        errs.yearOfBirth = 'Enter a valid year (e.g. 1990)'; 
+      }
+    }
     return errs;
   };
 
@@ -51,92 +77,99 @@ const AddUser = () => {
   const isAdmin = formData.role === 'admin';
 
   return (
-    <div className="rn-page">
-      <style>{`
-        .au-preview { display:flex; align-items:center; gap:16px; background:var(--primary-light); border-radius:var(--radius-lg); padding:20px; }
-        .au-preview-avatar { width:60px; height:60px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; flex-shrink:0; }
-        .au-preview-name { font-size:18px; font-weight:800; color:var(--text); margin:0 0 4px; }
-        .au-preview-sub { font-size:13px; color:var(--muted); margin:0; display:flex; align-items:center; gap:4px; }
-        .au-role-tag { display:inline-flex; align-items:center; gap:5px; padding:3px 12px; border-radius:100px; font-size:11px; font-weight:700; margin-top:6px; }
-      `}</style>
-
-      <div className="rn-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="rn-back" onClick={() => navigate('/admin/actions')}>
-            <RiArrowLeftLine size={18} />
-          </button>
-          <div>
-            <h2 className="rn-title">Add New User</h2>
-            <p className="rn-subtitle">Create a new member or admin account</p>
-          </div>
+    <div className="au-layout">
+      {/* ── LEFT COLUMN: MAIN FORM ── */}
+      <div className="au-main">
+        
+        {/* Personal Information */}
+        <div className="au-section-title">
+          <RiUserLine size={14} /> PERSONAL INFORMATION
         </div>
-      </div>
-
-      {/* Live preview */}
-      {formData.name && (
-        <div className="au-preview">
-          <div className="au-preview-avatar">
-            {formData.name.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <p className="au-preview-name">{formData.name}</p>
-            <p className="au-preview-sub">
-              <RiPhoneLine size={13} /> {formData.phoneNumber || 'No phone yet'}
-            </p>
-            <span className="au-role-tag" style={{ background: isAdmin ? 'var(--primary-light)' : '#dbeafe', color: isAdmin ? 'var(--primary)' : '#3b82f6' }}>
-              {isAdmin ? <RiShieldUserLine size={12} /> : <RiUserLine size={12} />}
-              {isAdmin ? 'Admin' : 'User'}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Form */}
-      <div className="rn-card">
-        <form className="rn-form" onSubmit={handleSubmit}>
-          <div className="rn-input-group">
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <RiUserLine size={13} /> Full Name *
-            </span>
-            <input name="name" value={formData.name} onChange={updateField} placeholder="Enter member's full name" required />
-            {errors.name && <span className="rn-error" style={{ display: 'flex', alignItems: 'center', gap: 4 }}><RiAlertLine size={12} /> {errors.name}</span>}
-          </div>
-
-          <div className="rn-input-group">
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <RiPhoneLine size={13} /> Phone Number *
-            </span>
-            <input name="phoneNumber" type="tel" value={formData.phoneNumber} onChange={updateField} placeholder="10-digit mobile number" maxLength={10} required />
-            {errors.phoneNumber && <span className="rn-error" style={{ display: 'flex', alignItems: 'center', gap: 4 }}><RiAlertLine size={12} /> {errors.phoneNumber}</span>}
-          </div>
-
-          <div className="rn-input-group">
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <RiUserLine size={13} /> Nickname (optional)
-            </span>
-            <input name="nickname" value={formData.nickname} onChange={updateField} placeholder="Short name or alias" />
-          </div>
-
-          <div className="rn-form-row">
-            <div className="rn-input-group">
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <RiLockPasswordLine size={13} /> Year of Birth *
-              </span>
-              <input name="yearOfBirth" value={formData.yearOfBirth} onChange={updateField} placeholder="e.g. 1990" maxLength={4} required />
-              {errors.yearOfBirth && <span className="rn-error" style={{ display: 'flex', alignItems: 'center', gap: 4 }}><RiAlertLine size={12} /> {errors.yearOfBirth}</span>}
+        
+        <form className="au-form" onSubmit={handleSubmit}>
+          
+          <div className="au-form-row">
+            <div className="au-input-group">
+              <label className="au-label"><RiUserLine size={14} /> Full Name <span className="au-label-req">*</span></label>
+              <input 
+                name="name" 
+                value={formData.name} 
+                onChange={updateField} 
+                className={`au-input ${errors.name ? 'error' : ''}`}
+                placeholder="Enter member's full name" 
+              />
+              {errors.name && <p className="au-error-text"><RiAlertLine size={12} /> {errors.name}</p>}
             </div>
-            <div className="rn-input-group">
-              Role *
-              <select name="role" value={formData.role} onChange={updateField}>
-                <option value="user">User (Member)</option>
-                <option value="admin">Admin</option>
-              </select>
+            
+            <div className="au-input-group">
+              <label className="au-label"><AtSign size={14} /> Nickname <span style={{ color: '#6B7280', fontSize: 11, fontWeight: 500 }}>(optional)</span></label>
+              <input 
+                name="nickname" 
+                value={formData.nickname} 
+                onChange={updateField} 
+                className="au-input"
+                placeholder="Short name or alias" 
+              />
+            </div>
+          </div>
+          
+          <div className="au-form-row">
+            <div className="au-input-group">
+              <label className="au-label"><RiPhoneLine size={14}/> Phone Number <span className="au-label-req">*</span></label>
+              <input 
+                name="phoneNumber" 
+                type="tel"
+                maxLength={10}
+                value={formData.phoneNumber} 
+                onChange={updateField} 
+                className={`au-input ${errors.phoneNumber ? 'error' : ''}`}
+                placeholder="10-digit mobile number" 
+              />
+              {errors.phoneNumber && <p className="au-error-text"><RiAlertLine size={12} /> {errors.phoneNumber}</p>}
+            </div>
+            
+            <div className="au-input-group">
+              <label className="au-label"><Calendar size={14}/> Year of Birth <span className="au-label-req">*</span></label>
+              <input 
+                name="yearOfBirth" 
+                value={formData.yearOfBirth} 
+                onChange={updateField} 
+                maxLength={4}
+                className={`au-input ${errors.yearOfBirth ? 'error' : ''}`}
+                placeholder="e.g. 1990" 
+              />
+              {errors.yearOfBirth 
+                ? <p className="au-error-text"><RiAlertLine size={12} /> {errors.yearOfBirth}</p>
+                : <p className="au-input-help">Used as default PIN for first login</p>
+              }
             </div>
           </div>
 
-          {/* Role info banner */}
-          <div style={{ background: isAdmin ? 'var(--primary-light)' : '#eff6ff', border: `1px solid ${isAdmin ? 'rgba(40,66,196,0.2)' : '#bfdbfe'}`, borderRadius: 'var(--radius)', padding: '12px 16px', fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            {isAdmin ? <RiShieldUserLine size={16} color="var(--primary)" style={{ flexShrink: 0, marginTop: 1 }} /> : <RiUserLine size={16} color="#3b82f6" style={{ flexShrink: 0, marginTop: 1 }} />}
+          {/* Account Role */}
+          <div className="au-section-title">
+            <ShieldCheck size={14} /> ACCOUNT ROLE
+          </div>
+
+          <div className="au-role-grid">
+            <div className={`au-role-card ${!isAdmin ? 'active' : ''}`} onClick={() => setFormData(p => ({ ...p, role: 'user' }))}>
+              <div className="au-role-icon"><RiUserLine size={16} /></div>
+              <div className="au-role-info">
+                <div className="au-role-name">User <div className="au-role-radio" /></div>
+                <p className="au-role-desc">Regular chit fund member. Mobile app access only.</p>
+              </div>
+            </div>
+
+            <div className={`au-role-card ${isAdmin ? 'active' : ''}`} onClick={() => setFormData(p => ({ ...p, role: 'admin' }))}>
+              <div className="au-role-icon"><RiShieldUserLine size={16} /></div>
+              <div className="au-role-info">
+                <div className="au-role-name">Admin <div className="au-role-radio" /></div>
+                <p className="au-role-desc">Can manage users, groups & collections via web dashboard.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="au-role-banner">
+            <RiInformationLine size={16} style={{ flexShrink: 0 }} />
             <span>
               {isAdmin
                 ? 'Admin users can log in to this web dashboard and manage groups, users, and collections.'
@@ -144,20 +177,116 @@ const AddUser = () => {
             </span>
           </div>
 
+          {/* Progress Bar */}
+          <div className="au-progress-wrap">
+            <div className="au-progress-bar">
+              <div className="au-progress-fill" style={{ width: `${completion}%` }} />
+            </div>
+            <div className="au-progress-labels">
+              <span>Form completion</span>
+              <span className="au-progress-pct">{completion}%</span>
+            </div>
+          </div>
+
           {notice.text && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: notice.success ? '#d1fae5' : '#fee2e2', color: notice.success ? '#065f46' : '#991b1b', fontWeight: 600, fontSize: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px', borderRadius: '6px', background: notice.success ? '#d1fae5' : '#fee2e2', color: notice.success ? '#065f46' : '#991b1b', fontWeight: 600, fontSize: 13, marginBottom: 12 }}>
               {notice.success ? <RiCheckLine size={16} /> : <RiAlertLine size={16} />} {notice.text}
             </div>
           )}
 
-          <button type="submit" className="rn-primary" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {submitting
-              ? <><RiLoader4Line size={18} style={{ animation: 'spin 1s linear infinite' }} /> Adding User...</>
-              : <><RiCheckLine size={18} /> Add User</>
-            }
-          </button>
+          {/* Action Buttons */}
+          <div className="au-actions">
+            <button type="button" className="au-btn-cancel" onClick={() => navigate('/admin/actions')}>
+              <X size={18} /> Cancel
+            </button>
+
+            <button type="submit" className="au-btn-primary" disabled={submitting}>
+              {submitting ? <RiLoader4Line size={18} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} /> : <UserPlus size={18} />}
+              {submitting ? 'Adding User...' : 'Add User'}
+            </button>
+          </div>
+
         </form>
       </div>
+
+      {/* ── RIGHT COLUMN: SIDEBAR ── */}
+      <div className="au-sidebar">
+        
+        {/* Preview Card */}
+        <div className="au-side-card">
+          <div 
+            className="au-preview-avatar" 
+            style={{ 
+              background: formData.name ? '#2563EB' : 'transparent',
+              overflow: formData.name ? 'hidden' : 'visible',
+              width: formData.name ? 64 : 164,
+              height: formData.name ? 64 : 164
+            }}
+          >
+            {formData.name ? formData.name.charAt(0).toUpperCase() : (
+              <LottieComponent animationData={addUserAnimation} loop={true} style={{ width: 156, height: 156 }} />
+            )}
+          </div>
+          <p className="au-preview-name">{formData.name || 'Waiting for name...'}</p>
+          <p className="au-preview-nick">{formData.nickname || 'Nickname not set'}</p>
+          
+          <div className="au-preview-badge">
+            {isAdmin ? <RiShieldUserLine size={14} /> : <RiUserLine size={14} />} 
+            {isAdmin ? 'Admin' : 'User'}
+          </div>
+          
+          <div className="au-preview-info-row">
+            <div className="au-preview-info-icon"><RiPhoneLine size={14} /></div>
+            <p className={`au-preview-info-text ${formData.phoneNumber ? 'filled' : ''}`}>
+              {formData.phoneNumber || 'No phone added'}
+            </p>
+          </div>
+          
+          <div className="au-preview-info-row">
+            <div className="au-preview-info-icon"><Calendar size={14} /></div>
+            <p className={`au-preview-info-text ${formData.yearOfBirth ? 'filled' : ''}`}>
+              {formData.yearOfBirth || 'Year of birth not set'}
+            </p>
+          </div>
+
+          <div className="au-preview-info-row">
+            <div className="au-preview-info-icon"><Key size={14} /></div>
+            <p className="au-preview-info-text">
+              {formData.yearOfBirth ? `PIN: ${formData.yearOfBirth}` : 'PIN will use birth year'}
+            </p>
+          </div>
+        </div>
+
+        {/* Steps Card */}
+        <div className="au-side-card">
+          <h3 className="au-side-title">WHAT HAPPENS NEXT</h3>
+          <div className="au-steps">
+            <div className="au-step active">
+              <div className="au-step-num">1</div>
+              <div className="au-step-text">Fill in user details</div>
+            </div>
+            <div className="au-step">
+              <div className="au-step-num">2</div>
+              <div className="au-step-text">Account is created</div>
+            </div>
+            <div className="au-step">
+              <div className="au-step-num">3</div>
+              <div className="au-step-text">User receives login info</div>
+            </div>
+            <div className="au-step">
+              <div className="au-step-num">4</div>
+              <div className="au-step-text">User logs in via mobile app</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
