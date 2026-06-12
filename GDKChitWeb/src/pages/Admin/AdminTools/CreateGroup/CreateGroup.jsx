@@ -248,7 +248,7 @@ const CreateGroup = () => {
 
           {/* Action Buttons */}
           <div className="cg-actions">
-            <button type="button" className="cg-btn-cancel" onClick={() => navigate('/admin/actions')}>
+            <button type="button" className="cg-btn-cancel" onClick={() => navigate('/admin/admintool')}>
               <X size={18} /> Cancel
             </button>
             <button type="submit" className="cg-btn-primary" disabled={loading}>

@@ -10,8 +10,8 @@ import AddUser from "../pages/Admin/AdminTools/AddUser/AddUser.jsx";
 import CreateGroup from "../pages/Admin/AdminTools/CreateGroup/CreateGroup.jsx";
 import Dashboard from '../pages/Admin/Dashboard/Dashboard.jsx';
 import Groups from '../pages/Admin/GroupManagement/Groups.jsx';
-import ManageGroups from '../pages/Admin/ManageGroups.jsx';
-import ManageUsers from "../pages/Admin/AdminTools/ManageUser/ManageUsers.jsx";
+import ManageGroups from '../pages/Admin/ManageGroup/ManageGroups.jsx';
+import ManageUsers from "../pages/Admin/ManageUser/ManageUsers.jsx";
 import Reports from '../pages/Admin/Reports/Reports.jsx';
 import Settings from '../pages/Admin/Settings/Settings.jsx';
 import Chat from '../pages/Admin/Chat/Chat.jsx';
@@ -56,12 +56,12 @@ const UserRoute = ({ children }) => {
 /* ── Smart Redirect after Login ── */
 const SmartRedirect = () => {
   const { status, user, isAdminRole } = useAuth();
-  
+
   if (status === 'authed') {
     if (isAdminRole(user?.role)) return <Navigate to="/admin/dashboard" replace />;
     return <Navigate to="/user/home" replace />;
   }
-  
+
   // Render Landing page instantly while loading or if unauthenticated
   return <Landing />;
 };
@@ -85,11 +85,13 @@ const AppNavigation = () => {
         <Route path="chat" element={<Chat />} />
         <Route path="groups" element={<Groups />} />
         <Route path="users" element={<ManageUsers />} />
+        <Route path="manage-groups" element={<ManageGroups />} />
+        <Route path="manage-users" element={<ManageUsers />} />
         <Route path="admintool" element={<AdminTool />} />
         <Route path="admintool/create-group" element={<CreateGroup />} />
         <Route path="admintool/add-user" element={<AddUser />} />
-        <Route path="admintool/manage-groups" element={<ManageGroups />} />
-        <Route path="admintool/manage-users" element={<ManageUsers />} />
+        <Route path="admintool/manage-groups" element={<Navigate to="/admin/manage-groups" replace />} />
+        <Route path="admintool/manage-users" element={<Navigate to="/admin/manage-users" replace />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

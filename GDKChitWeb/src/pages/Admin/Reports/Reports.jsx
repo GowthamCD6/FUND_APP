@@ -3,23 +3,29 @@ import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import { formatCurrency, formatDate } from '../../../utils/formatters.js';
 import {
   RefreshCw as RiRefreshLine, Users as RiGroupLine, Check as RiCheckLine, Clock as RiTimeLine, AlertTriangle as RiAlertLine,
-  X as RiCloseLine, Loader2 as RiLoader4Line, Calendar as RiCalendarLine, User as RiUserLine,
+  X as RiCloseLine, Loader2 as RiLoader4Line, Calendar as RiCalendarLine, Search as RiSearchLine,
   History as RiHistoryLine, Pencil as RiEditLine, ChevronRight as RiArrowRightSLine, Info as RiInformationLine,
   FileText as RiFileListLine, CircleDollarSign as RiMoneyDollarCircleLine, ArrowLeft as RiArrowLeftLine,
   ChevronDown as RiChevronDown,
 } from 'lucide-react';
 import './Reports.css';
 import MemberDetailsPanel from './MemberDetails/MemberDetailsPanel.jsx';
+import Lottie from 'lottie-react';
+import noFileAnimation from '../../../animation/no-file.json';
+
+const LottieComponent = Lottie.default || Lottie;
 
 /* ─── Constants ──────────────────────────────────────────────── */
 export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const SC = {
   active: '#10B981',
+  ongoing: '#10B981',
   completed: '#6B46C1',
   paid: '#10B981',
   pending: '#F59E0B',
   overdue: '#EF4444',
+  'not started': '#6B7280',
 };
 export const scOf = (s) => SC[String(s).toLowerCase()] || '#6B7280';
 
@@ -27,11 +33,41 @@ export const scOf = (s) => SC[String(s).toLowerCase()] || '#6B7280';
 /* ─── StatusIcon ─────────────────────────────────────────────── */
 export const StatusIcon = ({ status, size = 13 }) => {
   const s = String(status).toLowerCase();
-  const Icon = s === 'paid' || s === 'completed' ? RiCheckLine
+  const Icon = s === 'paid' || s === 'completed' || s === 'active' || s === 'ongoing' ? RiCheckLine
     : s === 'overdue' ? RiAlertLine
       : RiTimeLine;
   return <Icon size={size} color={scOf(s)} />;
 };
+
+
+const GroupCardSkeleton = () => (
+  <div className="gc-card skeleton-pulse" style={{ pointerEvents: 'none' }}>
+    <div className="gc-header" style={{ paddingBottom: 10 }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ width: '60%', height: 16, background: '#e2e8f0', borderRadius: 4, marginBottom: 8 }} />
+        <div style={{ width: '30%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+      </div>
+      <div style={{ width: 34, height: 34, background: '#e2e8f0', borderRadius: 6 }} />
+    </div>
+    <div className="gc-content">
+      <div className="gc-info-row" style={{ background: '#f8fafc', border: '1px solid #f1f5f9', padding: '10px 14px', borderRadius: 8, display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{ width: '40%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+        <div style={{ width: '40%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+      </div>
+      <div className="gc-progress-wrap" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ width: '50%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+          <div style={{ width: '15%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+        </div>
+        <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3 }} />
+      </div>
+      <div className="gc-footer" style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14, display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ width: '40%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+        <div style={{ width: '30%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+      </div>
+    </div>
+  </div>
+);
 
 /* ════════════════════════════════════════════════════════════════
    GROUP CARD  (mirrors RN GroupCard.jsx)
@@ -107,8 +143,7 @@ const Reports = () => {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [groupMembers, setGroupMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
-  const [selectedGroupFilter, setSelectedGroupFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadGroups = useCallback(async () => {
     try {
@@ -153,22 +188,26 @@ const Reports = () => {
 
   const counts = useMemo(() => ({
     all: groups.length,
-    active: groups.filter(g => g.status === 'active').length,
+    active: groups.filter(g => g.status === 'active' || g.status === 'ongoing').length,
     completed: groups.filter(g => g.status === 'completed').length,
-    notStarted: groups.filter(g => g.status.includes('not')).length,
+    notStarted: groups.filter(g => g.status.includes('not') || g.status === 'not started').length,
   }), [groups]);
 
   const filtered = useMemo(() => {
     let list = groups;
-    if (activeTab === 'active') list = groups.filter(g => g.status === 'active');
+    if (activeTab === 'active') list = groups.filter(g => g.status === 'active' || g.status === 'ongoing');
     else if (activeTab === 'completed') list = groups.filter(g => g.status === 'completed');
-    else if (activeTab === 'not-started') list = groups.filter(g => g.status.includes('not'));
+    else if (activeTab === 'not-started') list = groups.filter(g => g.status.includes('not') || g.status === 'not started');
 
-    if (selectedGroupFilter) {
-      list = list.filter(g => String(g.id) === String(selectedGroupFilter));
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(g => 
+        g.name.toLowerCase().includes(q) || 
+        String(g.id).toLowerCase().includes(q)
+      );
     }
     return list;
-  }, [groups, activeTab, selectedGroupFilter]);
+  }, [groups, activeTab, searchQuery]);
 
   const TABS = [
     { key: 'all', label: `All (${counts.all})` },
@@ -192,19 +231,6 @@ const Reports = () => {
         <>
           {/* ── Page Header & Action Bar Container ── */}
           <div className="reports-header-container">
-            {/* Title and Profile Row */}
-            <div className="reports-title-row">
-              <div className="reports-title-group">
-                <h2 className="reports-page-title">Reports</h2>
-                <p className="reports-page-subtitle">Live group monitoring and member payment tracking</p>
-              </div>
-              <div className="reports-profile-group">
-                <span className="reports-profile-name">Gowtham CD</span>
-                <div className="reports-profile-avatar">
-                  <RiUserLine size={18} />
-                </div>
-              </div>
-            </div>
 
             {/* Attached Action Bar (Tabs, Dropdowns, Action Button) */}
             <div className="reports-toolbar-row">
@@ -216,7 +242,7 @@ const Reports = () => {
                     className={`reports-tab-btn ${activeTab === t.key ? 'active' : ''}`}
                     onClick={() => {
                       setActiveTab(t.key);
-                      setSelectedGroupFilter(''); // Reset group filter on tab change
+                      setSearchQuery(''); // Reset search on tab change
                     }}
                   >
                     {t.label}
@@ -224,43 +250,27 @@ const Reports = () => {
                 ))}
               </div>
 
-              {/* Dropdowns & Action Button */}
+              {/* Search & Action Button */}
               <div className="reports-filters-wrapper">
-                {/* Group Selector Dropdown */}
-                <div className="reports-select-container">
-                  <select
-                    className="reports-select"
-                    value={selectedGroupFilter}
-                    onChange={(e) => setSelectedGroupFilter(e.target.value)}
-                  >
-                    <option value="">All Groups</option>
-                    {groups
-                      .filter(g => activeTab === 'all' || 
-                        (activeTab === 'active' && g.status === 'active') || 
-                        (activeTab === 'completed' && g.status === 'completed') || 
-                        (activeTab === 'not-started' && g.status.includes('not'))
-                      )
-                      .map(g => (
-                        <option key={g.id} value={g.id}>
-                          {g.name} ({g.totalMembers} members)
-                        </option>
-                      ))}
-                  </select>
-                  <RiChevronDown className="reports-select-icon" size={16} />
-                </div>
-
-                {/* Category/Branch Dropdown */}
-                <div className="reports-select-container">
-                  <select
-                    className="reports-select"
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                  >
-                    <option value="all">All Categories</option>
-                    <option value="frontend">Frontend</option>
-                    <option value="backend">Backend</option>
-                  </select>
-                  <RiChevronDown className="reports-select-icon" size={16} />
+                {/* Search Bar */}
+                <div className="reports-search-container">
+                  <RiSearchLine className="reports-search-icon" size={16} />
+                  <input
+                    type="text"
+                    className="reports-search-input"
+                    placeholder="Search groups..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button
+                      className="reports-search-clear"
+                      onClick={() => setSearchQuery('')}
+                      title="Clear search"
+                    >
+                      <RiCloseLine size={14} />
+                    </button>
+                  )}
                 </div>
 
                 {/* Refresh Button */}
@@ -281,9 +291,10 @@ const Reports = () => {
 
           {/* ── Content ── */}
           {apiStatus === 'loading' ? (
-            <div className="rn-card" style={{ textAlign: 'center', padding: 48, color: 'var(--muted)' }}>
-              <RiLoader4Line size={36} color="var(--primary)" style={{ animation: 'spin 1s linear infinite', marginBottom: 10 }} />
-              <p style={{ margin: 0 }}>Loading groups from server...</p>
+            <div className="rn-list">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <GroupCardSkeleton key={i} />
+              ))}
             </div>
           ) : apiStatus === 'error' ? (
             <div className="rn-empty">
@@ -295,10 +306,16 @@ const Reports = () => {
               </button>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="rn-empty">
-              <RiGroupLine size={48} color="var(--border)" style={{ marginBottom: 14 }} />
-              <h3>No groups found</h3>
-              <p>No {activeTab === 'all' ? '' : activeTab} groups available yet.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 220px)', padding: '40px 0', textAlign: 'center' }}>
+              <LottieComponent 
+                animationData={noFileAnimation} 
+                loop={true} 
+                style={{ width: 220, height: 220 }} 
+              />
+              <h3 style={{ margin: '12px 0 6px', fontSize: '16px', fontWeight: 700, color: '#030712' }}>No groups found</h3>
+              <p style={{ margin: 0, fontSize: '13px', color: '#334155', fontWeight: 500 }}>
+                No {activeTab === 'all' ? '' : activeTab === 'not-started' ? 'not started' : activeTab} groups available yet.
+              </p>
             </div>
           ) : (
             <div className="rn-list">

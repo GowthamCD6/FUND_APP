@@ -3,7 +3,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
   LayoutDashboard, BarChart3, Zap,
-  MessageSquare, Menu, LogOut, User as UserIcon, X, Loader2, Gavel
+  MessageSquare, Menu, LogOut, User as UserIcon, X, Loader2, Gavel,
+  Settings, UserCog
 } from 'lucide-react';
 
 /* ── NAV GROUPS ── */
@@ -24,6 +25,8 @@ const ADMIN_NAV_GROUPS = [
     title: 'MANAGEMENT',
     items: [
       { id: 'auction', to: '/admin/groups', label: 'Auction Page', Icon: Gavel },
+      { id: 'manage-groups', to: '/admin/manage-groups', label: 'Manage Groups', Icon: Settings },
+      { id: 'manage-users', to: '/admin/manage-users', label: 'Manage Members', Icon: UserCog },
     ]
   },
   {
@@ -53,11 +56,13 @@ const PAGE_TITLES = {
   '/admin/reports':                'Reports',
   '/admin/groups':                 'Chit Plans',
   '/admin/users':                  'Members',
-  '/admin/actions':                'Admin Tools',
-  '/admin/actions/create-group':   'Create Group',
-  '/admin/actions/manage-groups':  'Manage Groups',
-  '/admin/actions/manage-users':   'Manage Members',
-  '/admin/actions/add-user':       'Add Member',
+  '/admin/manage-groups':          'Manage Groups',
+  '/admin/manage-users':           'Manage Members',
+  '/admin/admintool':              'Admin Tools',
+  '/admin/admintool/create-group': 'Create Group',
+  '/admin/admintool/manage-groups': 'Manage Groups',
+  '/admin/admintool/manage-users':  'Manage Members',
+  '/admin/admintool/add-user':     'Add Member',
   '/admin/settings':               'Settings',
   '/admin/chat':                   'Chat',
   '/user/home':                    'Home',

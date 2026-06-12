@@ -196,7 +196,7 @@ const AddUser = () => {
 
           {/* Action Buttons */}
           <div className="au-actions">
-            <button type="button" className="au-btn-cancel" onClick={() => navigate('/admin/actions')}>
+            <button type="button" className="au-btn-cancel" onClick={() => navigate('/admin/admintool')}>
               <X size={18} /> Cancel
             </button>
 
