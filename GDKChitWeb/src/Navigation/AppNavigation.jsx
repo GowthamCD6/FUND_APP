@@ -5,7 +5,7 @@ import { Loader2 as RiLoader4Line } from 'lucide-react';
 import DefaultSidebar from '../components/Sidebar/DefaultSidebar.jsx';
 
 // ── Admin Pages ──
-import Actions from '../pages/Admin/Actions.jsx';
+import AdminTool from '../pages/Admin/AdminTools/AdminTool.jsx';
 import AddUser from "../pages/Admin/AdminTools/AddUser/AddUser.jsx";
 import CreateGroup from "../pages/Admin/AdminTools/CreateGroup/CreateGroup.jsx";
 import Dashboard from '../pages/Admin/Dashboard/Dashboard.jsx';
@@ -85,11 +85,11 @@ const AppNavigation = () => {
         <Route path="chat" element={<Chat />} />
         <Route path="groups" element={<Groups />} />
         <Route path="users" element={<ManageUsers />} />
-        <Route path="actions" element={<Actions />} />
-        <Route path="actions/create-group" element={<CreateGroup />} />
-        <Route path="actions/add-user" element={<AddUser />} />
-        <Route path="actions/manage-groups" element={<ManageGroups />} />
-        <Route path="actions/manage-users" element={<ManageUsers />} />
+        <Route path="admintool" element={<AdminTool />} />
+        <Route path="admintool/create-group" element={<CreateGroup />} />
+        <Route path="admintool/add-user" element={<AddUser />} />
+        <Route path="admintool/manage-groups" element={<ManageGroups />} />
+        <Route path="admintool/manage-users" element={<ManageUsers />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

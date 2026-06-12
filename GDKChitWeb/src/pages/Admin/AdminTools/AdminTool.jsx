@@ -1,24 +1,24 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus as RiAddLine, Settings as RiSettings3Line, UserPlus as RiUserAddLine, UserCog as RiUserSettingsLine,
-  ChevronRight as RiArrowRightSLine, Zap as RiZapLine
+  Plus, Settings, UserPlus, UserCog,
+  Zap, ArrowRight
 } from 'lucide-react';
 
 const ACTION_GROUPS = [
   {
     title: 'Group Management',
     actions: [
-      { id: 'create-group', Icon: RiAddLine, title: 'Create Groups', desc: 'Set up a new chit fund group with a plan', route: '/admin/actions/create-group', color: '#10B981', bg: '#ecfdf5' },
-      { id: 'manage-groups', Icon: RiSettings3Line, title: 'Manage Groups', desc: 'View, edit, and monitor existing groups', route: '/admin/actions/manage-groups', color: '#2842C4', bg: '#eff6ff' },
+      { id: 'create-group', Icon: Plus, title: 'Create Groups', desc: 'Set up a new chit fund group with a plan', route: '/admin/admintool/create-group', color: '#10b981', bg: '#ecfdf5' },
+      { id: 'manage-groups', Icon: Settings, title: 'Manage Groups', desc: 'View, edit, and monitor existing groups', route: '/admin/admintool/manage-groups', color: '#3b82f6', bg: '#eff6ff' },
     ]
   },
   {
     title: 'User Management',
     actions: [
-      { id: 'add-user', Icon: RiUserAddLine, title: 'Add User', desc: 'Add a new member or admin account', route: '/admin/actions/add-user', color: '#8B5CF6', bg: '#f5f3ff' },
-      { id: 'manage-users', Icon: RiUserSettingsLine, title: 'Manage Members', desc: 'View, edit, or remove existing members', route: '/admin/actions/manage-users', color: '#F59E0B', bg: '#fffbeb' },
-      { id: 'block-members', Icon: RiZapLine, title: 'Block Members', desc: 'Restrict access for specific members', route: '/admin/actions/manage-users', color: '#EF4444', bg: '#fef2f2' },
+      { id: 'add-user', Icon: UserPlus, title: 'Add User', desc: 'Add a new member or admin account', route: '/admin/admintool/add-user', color: '#8b5cf6', bg: '#f5f3ff' },
+      { id: 'manage-users', Icon: UserCog, title: 'Manage Members', desc: 'View, edit, or remove existing members', route: '/admin/admintool/manage-users', color: '#f59e0b', bg: '#fffbeb' },
+      { id: 'block-members', Icon: Zap, title: 'Block Members', desc: 'Restrict access for specific members', route: '/admin/admintool/manage-users', color: '#ef4444', bg: '#fef2f2' },
     ]
   }
 ];
@@ -32,7 +32,7 @@ const Actions = () => {
         .admin-tools-page {
           display: flex;
           flex-direction: column;
-          gap: 32px;
+          gap: 40px;
           padding: 8px 0;
         }
         .at-section {
@@ -42,35 +42,34 @@ const Actions = () => {
         }
         .at-section-title {
           margin: 0;
-          font-size: 15px;
+          font-size: 18px;
           font-weight: 700;
-          color: #111827;
-          border-bottom: 1px solid #e5e7eb;
+          color: #0f172a;
+          border-bottom: 1px solid #e2e8f0;
           padding-bottom: 12px;
         }
         .at-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 16px;
+          gap: 20px;
         }
         .at-card {
           display: flex;
           align-items: center;
           gap: 16px;
           background: #ffffff;
-          border: 1px solid #f3f4f6;
+          border: 1px solid #f1f5f9;
           border-radius: 12px;
           padding: 16px 20px;
           cursor: pointer;
           transition: all 0.2s ease;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
           text-align: left;
           width: 100%;
         }
         .at-card:hover {
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-          transform: translateY(-2px);
-          border-color: #e5e7eb;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+          transform: translateY(-1px);
+          border-color: #e2e8f0;
         }
         .at-icon-wrap {
           width: 44px;
@@ -87,21 +86,21 @@ const Actions = () => {
         }
         .at-title {
           margin: 0 0 4px;
-          font-size: 14px;
+          font-size: 16px;
           font-weight: 700;
-          color: #111827;
+          color: #0f172a;
         }
         .at-desc {
           margin: 0;
-          font-size: 12px;
-          color: #6b7280;
+          font-size: 14px;
+          color: #64748b;
           line-height: 1.4;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         .at-arrow {
-          color: #9ca3af;
+          color: #cbd5e1;
           flex-shrink: 0;
         }
         @media (max-width: 768px) {
@@ -118,14 +117,14 @@ const Actions = () => {
             {group.actions.map(action => (
               <button key={action.id} className="at-card" onClick={() => navigate(action.route)}>
                 <div className="at-icon-wrap" style={{ background: action.bg }}>
-                  <action.Icon size={20} color={action.color} />
+                  <action.Icon size={20} color={action.color} strokeWidth={2} />
                 </div>
                 <div className="at-content">
                   <p className="at-title">{action.title}</p>
                   <p className="at-desc">{action.desc}</p>
                 </div>
                 <div className="at-arrow">
-                  <RiArrowRightSLine size={20} />
+                  <ArrowRight size={18} strokeWidth={2} />
                 </div>
               </button>
             ))}

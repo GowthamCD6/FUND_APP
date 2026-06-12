@@ -30,7 +30,7 @@ const ADMIN_NAV_GROUPS = [
     title: 'TOOLS',
     items: [
       { id: 'chat', to: '/admin/chat', label: 'Chat', Icon: MessageSquare },
-      { id: 'actions', to: '/admin/actions', label: 'Admin Tools', Icon: Zap },
+      { id: 'actions', to: '/admin/admintool', label: 'Admin Tools', Icon: Zap },
     ]
   }
 ];
@@ -484,6 +484,7 @@ const styles = {
     flex: 1,
     overflow: "auto",
     padding: "24px",
+    backgroundColor: "#f8fafc",
   },
 };
 
