@@ -127,10 +127,25 @@
   box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.04);
 }
 
-.ul-metric-card.total .ul-metric-icon { background: #eff6ff; color: #2563eb; }
-.ul-metric-card.gps .ul-metric-icon { background: #ecfdf5; color: #10b981; }
-.ul-metric-card.offline .ul-metric-icon { background: #fffbeb; color: #d97706; }
-.ul-metric-card.sync .ul-metric-icon { background: #e0e7ff; color: #6366f1; }
+.ul-metric-card.total .ul-metric-icon {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.ul-metric-card.gps .ul-metric-icon {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.ul-metric-card.offline .ul-metric-icon {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.ul-metric-card.sync .ul-metric-icon {
+  background: #e0e7ff;
+  color: #6366f1;
+}
 
 .ul-metric-info {
   display: flex;
@@ -393,10 +408,13 @@
 }
 
 @keyframes pulse-ring {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.4;
     transform: scale(1.3);
@@ -671,8 +689,15 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 .spin-anim {
@@ -680,6 +705,11 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }

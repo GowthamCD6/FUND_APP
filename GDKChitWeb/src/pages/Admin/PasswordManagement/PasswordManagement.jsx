@@ -16,19 +16,28 @@ import {
   Calendar as RiCalendarLine
 } from 'lucide-react';
 import './PasswordManagement.css';
+import Lottie from 'lottie-react';
+import noUserFoundAnimation from '../../../animation/no-user-found.json';
+
+const LottieComponent = Lottie.default || Lottie;
+
 
 const PasswordSkeleton = () => (
   <div className="pm-list skeleton-pulse">
-    {Array.from({ length: 4 }).map((_, i) => (
+    {Array.from({ length: 6 }).map((_, i) => (
       <div key={i} className="pm-card-skeleton">
         <div className="pm-card-left">
           <div className="pm-avatar-skeleton" />
           <div className="pm-text-skeleton">
             <div className="pm-line-title" />
             <div className="pm-line-sub" />
+            <div className="pm-line-sub" />
           </div>
         </div>
-        <div className="pm-btn-skeleton" />
+        <div className="pm-card-right" style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px', marginTop: 'auto', display: 'flex', gap: '8px', width: '100%' }}>
+          <div className="pm-btn-skeleton" style={{ flex: 1, height: '38px', borderRadius: '8px', backgroundColor: '#f1f5f9' }} />
+          <div className="pm-btn-skeleton" style={{ flex: 1, height: '38px', borderRadius: '8px', backgroundColor: '#f1f5f9' }} />
+        </div>
       </div>
     ))}
   </div>
@@ -183,27 +192,37 @@ const PasswordManagement = () => {
 
   return (
     <div className="pm-page">
-      <div className="pm-header">
-        <div>
-          <h2 className="pm-title">Password Management</h2>
-          <p className="pm-subtitle">Change passwords, audit updates, and reset member credentials</p>
-        </div>
-        <button className="pm-refresh-btn" onClick={fetchUsers} disabled={loading}>
-          <RiRefreshLine size={16} className={loading ? 'spin-anim' : ''} />
-          <span>Refresh</span>
-        </button>
-      </div>
+      <div className="pm-header-container">
+        <div className="pm-toolbar-row">
+          <div className="pm-search-container">
+            <RiSearchLine size={16} className="pm-search-icon" />
+            <input
+              type="text"
+              className="pm-search-input"
+              placeholder="Search by name, phone, or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                className="pm-search-clear"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                <RiCloseLine size={14} />
+              </button>
+            )}
+          </div>
 
-      <div className="pm-toolbar">
-        <div className="pm-search-wrapper">
-          <RiSearchLine size={18} className="pm-search-icon" />
-          <input
-            type="text"
-            className="pm-search-input"
-            placeholder="Search by name, phone, or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <button 
+            className="pm-refresh-btn" 
+            onClick={fetchUsers} 
+            disabled={loading}
+            title="Refresh"
+          >
+            <RiRefreshLine size={16} className={loading ? 'spin-anim' : ''} />
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
@@ -211,10 +230,18 @@ const PasswordManagement = () => {
         {loading ? (
           <PasswordSkeleton />
         ) : filteredUsers.length === 0 ? (
-          <div className="pm-empty-state">
-            <RiKeyLine size={64} color="#D1D5DB" />
-            <h3>No Members Found</h3>
-            <p>{searchQuery ? 'Try adjusting your search query' : 'No registered members available.'}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 220px)', padding: '40px 0', textAlign: 'center' }}>
+            <LottieComponent 
+              animationData={noUserFoundAnimation} 
+              loop={true} 
+              style={{ width: 220, height: 220 }} 
+            />
+            <h3 style={{ margin: '12px 0 6px', fontSize: '16px', fontWeight: 700, color: '#030712' }}>
+              {searchQuery ? 'No members found' : 'No registered members'}
+            </h3>
+            <p style={{ margin: 0, fontSize: '13px', color: '#475569', fontWeight: 550 }}>
+              {searchQuery ? 'Try adjusting your search query' : 'No registered members available.'}
+            </p>
           </div>
         ) : (
           <div className="pm-list">

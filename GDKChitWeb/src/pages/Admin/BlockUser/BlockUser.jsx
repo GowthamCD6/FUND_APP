@@ -13,6 +13,11 @@ import {
   Phone as RiPhoneLine
 } from 'lucide-react';
 import './BlockUser.css';
+import Lottie from 'lottie-react';
+import noUserFoundAnimation from '../../../animation/no-user-found.json';
+
+const LottieComponent = Lottie.default || Lottie;
+
 
 const BlockUserSkeleton = () => (
   <div className="bu-list skeleton-pulse">
@@ -135,45 +140,63 @@ const BlockUser = () => {
   }, [activeTab, blockedUsers, activeUsers, searchQuery]);
 
   return (
-    <div className="bu-page">
-      <div className="bu-header">
-        <div>
-          <h2 className="bu-title">Block User Management</h2>
-          <p className="bu-subtitle">Manage member access and restriction rules</p>
-        </div>
-        <button className="bu-refresh-btn" onClick={fetchUsers} disabled={loading}>
-          <RiRefreshLine size={16} className={loading ? 'spin-anim' : ''} />
-          <span>Refresh</span>
-        </button>
-      </div>
+    <div className={`bu-page ${activeTab === 'blocked' ? 'tab-blocked' : 'tab-active'}`}>
+      <div className="bu-header-container">
+        <div className="bu-toolbar-row">
+          {/* Tab Bar */}
+          <div className="bu-tabs-wrapper">
+            <button 
+              className={`bu-tab-btn ${activeTab === 'blocked' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('blocked');
+                setSearchQuery('');
+              }}
+            >
+              Blocked Members ({blockedUsers.length})
+            </button>
+            <button 
+              className={`bu-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('all');
+                setSearchQuery('');
+              }}
+            >
+              Active Members ({activeUsers.length})
+            </button>
+          </div>
 
-      <div className="bu-toolbar">
-        {/* Tab Selector */}
-        <div className="bu-tab-bar">
-          <button 
-            className={`bu-tab-btn ${activeTab === 'blocked' ? 'active' : ''}`}
-            onClick={() => setActiveTab('blocked')}
-          >
-            Blocked Members ({blockedUsers.length})
-          </button>
-          <button 
-            className={`bu-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all')}
-          >
-            Active Members ({activeUsers.length})
-          </button>
-        </div>
+          {/* Search & Refresh */}
+          <div className="bu-filters-wrapper">
+            <div className="bu-search-container">
+              <RiSearchLine size={16} className="bu-search-icon" />
+              <input
+                type="text"
+                className="bu-search-input"
+                placeholder="Search by name or phone..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  className="bu-search-clear"
+                  onClick={() => setSearchQuery('')}
+                  title="Clear search"
+                >
+                  <RiCloseLine size={14} />
+                </button>
+              )}
+            </div>
 
-        {/* Search */}
-        <div className="bu-search-wrapper">
-          <RiSearchLine size={18} className="bu-search-icon" />
-          <input
-            type="text"
-            className="bu-search-input"
-            placeholder="Search by name or phone..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+            <button 
+              className="bu-refresh-btn" 
+              onClick={fetchUsers} 
+              disabled={loading}
+              title="Refresh"
+            >
+              <RiRefreshLine size={16} className={loading ? 'spin-anim' : ''} />
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -181,10 +204,18 @@ const BlockUser = () => {
         {loading ? (
           <BlockUserSkeleton />
         ) : filteredUsers.length === 0 ? (
-          <div className="bu-empty-state">
-            <RiUserCheckLine size={64} color="#D1D5DB" />
-            <h3>No Members Found</h3>
-            <p>{searchQuery ? 'Adjust your search query' : activeTab === 'blocked' ? 'No blocked users currently.' : 'No active users found.'}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 260px)', padding: '40px 0', textAlign: 'center' }}>
+            <LottieComponent 
+              animationData={noUserFoundAnimation} 
+              loop={true} 
+              style={{ width: 220, height: 220 }} 
+            />
+            <h3 style={{ margin: '12px 0 6px', fontSize: '16px', fontWeight: 700, color: '#030712' }}>
+              {searchQuery ? 'No members found' : activeTab === 'blocked' ? 'No blocked members' : 'No active members'}
+            </h3>
+            <p style={{ margin: 0, fontSize: '13px', color: '#475569', fontWeight: 550 }}>
+              {searchQuery ? 'Try adjusting your search query' : activeTab === 'blocked' ? 'No blocked users currently.' : 'No active users found.'}
+            </p>
           </div>
         ) : (
           <div className="bu-list">
