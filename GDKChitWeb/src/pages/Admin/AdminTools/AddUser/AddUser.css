@@ -3,9 +3,9 @@
   gap: 20px;
   align-items: flex-start;
   max-width: none;
-  margin: -24px -32px -48px -32px;
-  padding: 16px 24px;
-  background: var(--bg);
+  margin: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .au-main {
@@ -513,7 +513,7 @@
   line-height: 1.4;
 }
 
-@media(max-width: 900px) {
+@media(max-width: 1200px) {
   .au-layout {
     flex-direction: column;
   }

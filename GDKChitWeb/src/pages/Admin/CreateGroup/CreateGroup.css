@@ -3,9 +3,10 @@
   gap: 20px;
   align-items: flex-start;
   max-width: none;
-  margin: -24px -32px -48px -32px;
-  padding: 16px 24px;
-  background: var(--bg);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  --muted: #374151; /* Darken the default muted color for this page */
 }
 
 .cg-main {
@@ -30,11 +31,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   margin: 0 0 16px 0;
 }
 
@@ -49,7 +50,7 @@
 /* PRESETS */
 .cg-preset-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 12px;
   margin-bottom: 32px;
 }
@@ -72,27 +73,28 @@
 }
 
 .cg-preset.active {
-  border-color: #2563EB;
+  border-color: #1D4ED8;
   background: #EFF6FF;
 }
 
 .cg-preset-name {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14.5px;
+  font-weight: 600;
   color: #111827;
   margin: 0 0 6px 0;
 }
 
 .cg-preset-sub {
-  font-size: 13px;
-  font-weight: 800;
-  color: #2563EB;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #1D4ED8;
   margin: 0 0 4px 0;
 }
 
 .cg-preset-desc {
-  font-size: 10px;
-  color: #6B7280;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
   margin: 0 0 8px 0;
 }
 
@@ -107,8 +109,8 @@
 }
 
 .cg-preset.active .cg-preset-radio {
-  border-color: #2563EB;
-  background: #2563EB;
+  border-color: #1D4ED8;
+  background: #1D4ED8;
 }
 
 .cg-preset.active .cg-preset-radio::after {
@@ -141,9 +143,9 @@
 }
 
 .cg-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #2563EB;
+  font-size: 14.5px;
+  font-weight: 750;
+  color: #1E40AF;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -157,7 +159,8 @@
   border: 1px solid #D1D5DB;
   border-radius: 6px;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
   color: #111827;
   font-family: inherit;
   transition: all 0.2s;
@@ -166,13 +169,14 @@
 
 .cg-input:focus {
   outline: none;
-  border-color: #2563EB;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #1D4ED8;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
 }
 
 .cg-input-help {
-  font-size: 11px;
-  color: #6B7280;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: #374151;
   margin: 0;
 }
 
@@ -196,7 +200,7 @@
 .cg-summary-icon {
   width: 40px;
   height: 40px;
-  background: #2563EB;
+  background: #1D4ED8;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -205,15 +209,16 @@
 }
 
 .cg-summary-title {
-  font-size: 11px;
-  color: #6B7280;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #374151;
   margin: 0 0 4px 0;
 }
 
 .cg-summary-val {
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 800;
-  color: #2563EB;
+  color: #1E40AF;
   margin: 0;
   display: flex;
   align-items: baseline;
@@ -221,9 +226,9 @@
 }
 
 .cg-summary-unit {
-  font-size: 12px;
-  font-weight: 500;
-  color: #6B7280;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: #374151;
 }
 
 .cg-summary-right {
@@ -231,45 +236,17 @@
 }
 
 .cg-summary-right .cg-summary-title {
-  color: #6B7280;
+  color: #374151;
 }
 
 .cg-summary-right .cg-summary-val {
   color: #111827;
-  font-size: 16px;
+  font-size: 19px;
+  font-weight: 800;
 }
 
 /* PROGRESS */
-.cg-progress-wrap {
-  margin: 24px 0;
-}
-
-.cg-progress-bar {
-  height: 4px;
-  background: #E5E7EB;
-  border-radius: 2px;
-  margin-bottom: 8px;
-  overflow: hidden;
-}
-
-.cg-progress-fill {
-  height: 100%;
-  background: #2563EB;
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-.cg-progress-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  font-weight: 600;
-  color: #6B7280;
-}
-
-.cg-progress-pct {
-  color: #2563EB;
-}
+/* Progress Bar styling removed */
 
 /* BUTTONS */
 .cg-actions {
@@ -279,7 +256,7 @@
 }
 
 .cg-btn-primary {
-  background: #2563EB;
+  background: #1D4ED8;
   color: white;
   border: none;
   border-radius: 6px;
@@ -296,7 +273,7 @@
 }
 
 .cg-btn-primary:hover:not(:disabled) {
-  background: #1D4ED8;
+  background: #1E40AF;
 }
 
 .cg-btn-primary:disabled {
@@ -335,11 +312,11 @@
 }
 
 .cg-side-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: #6B7280;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   margin: 0 0 16px 0;
 }
 
@@ -347,7 +324,7 @@
 .cg-preview-icon {
   width: 56px;
   height: 56px;
-  background: #2563EB;
+  background: #1D4ED8;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -358,8 +335,8 @@
 
 .cg-preview-name {
   text-align: center;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   color: #111827;
   margin: 0 0 8px 0;
 }
@@ -369,12 +346,12 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  color: #2563EB;
+  color: #1D4ED8;
   background: #EFF6FF;
   padding: 4px 12px;
   border-radius: 100px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 750;
   width: max-content;
   margin: 0 auto 20px;
 }
@@ -393,16 +370,17 @@
 }
 
 .cg-preview-stat-val {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 17.5px;
+  font-weight: 850;
   color: #1E3A8A;
   margin: 0 0 2px 0;
 }
 
 .cg-preview-stat-lbl {
-  font-size: 11px;
-  color: #6B7280;
+  font-size: 12.5px;
+  color: #374151;
   margin: 0;
+  font-weight: 650;
 }
 
 /* STEPS CARD */
@@ -436,24 +414,24 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #F3F4F6;
-  color: #6B7280;
-  font-size: 11px;
-  font-weight: 700;
+  background: #E5E7EB;
+  color: #374151;
+  font-size: 12.5px;
+  font-weight: 850;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .cg-step.active .cg-step-num {
-  background: #2563EB;
+  background: #1D4ED8;
   color: white;
 }
 
 .cg-step-text {
-  font-size: 12px;
-  color: #6B7280;
-  font-weight: 500;
+  font-size: 13.5px;
+  color: #374151;
+  font-weight: 650;
 }
 
 .cg-step.active .cg-step-text {
@@ -481,8 +459,8 @@
 }
 
 .cg-tips-title {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   color: #111827;
   margin: 0;
 }
@@ -499,13 +477,14 @@
 }
 
 .cg-tip-text {
-  font-size: 12px;
-  color: #4B5563;
+  font-size: 13.5px;
+  color: #1F2937;
   margin: 0;
   line-height: 1.4;
+  font-weight: 550;
 }
 
-@media(max-width: 900px) {
+@media(max-width: 1200px) {
   .cg-layout {
     flex-direction: column;
   }

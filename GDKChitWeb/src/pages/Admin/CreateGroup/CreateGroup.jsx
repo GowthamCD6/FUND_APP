@@ -30,18 +30,6 @@ const CreateGroup = () => {
   });
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState({ text: '', success: false });
-  const [completion, setCompletion] = useState(0);
-
-  // Calculate completion percentage
-  useEffect(() => {
-    let fields = 0;
-    if (groupData.groupName) fields++;
-    if (groupData.totalMembers) fields++;
-    if (groupData.duration) fields++;
-    if (groupData.groupAmount) fields++;
-    if (groupData.startDate) fields++;
-    setCompletion(Math.round((fields / 5) * 100));
-  }, [groupData]);
 
   const applyPreset = (preset) => {
     setSelectedPreset(preset.label);
@@ -120,7 +108,7 @@ const CreateGroup = () => {
                   </>
                 ) : (
                   <>
-                    <p className="cg-preset-sub" style={{ color: isActive ? '#2563EB' : '#4B5563' }}>Set your own</p>
+                    <p className="cg-preset-sub" style={{ color: isActive ? '#1D4ED8' : '#1F2937' }}>Set your own</p>
                     <p className="cg-preset-desc">Any values</p>
                   </>
                 )}
@@ -229,17 +217,6 @@ const CreateGroup = () => {
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="cg-progress-wrap">
-            <div className="cg-progress-bar">
-              <div className="cg-progress-fill" style={{ width: `${completion}%` }} />
-            </div>
-            <div className="cg-progress-labels">
-              <span>Form completion</span>
-              <span className="cg-progress-pct">{completion}%</span>
-            </div>
-          </div>
-
           {notice.text && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px', borderRadius: '6px', background: notice.success ? '#d1fae5' : '#fee2e2', color: notice.success ? '#065f46' : '#991b1b', fontWeight: 600, fontSize: 13, marginBottom: 12 }}>
               {notice.success ? <RiCheckLine size={16} /> : <RiLoader4Line size={16} />} {notice.text}
@@ -335,10 +312,6 @@ const CreateGroup = () => {
           <div className="cg-tip">
             <CheckCircle2 size={14} color="#10B981" style={{ flexShrink: 0, marginTop: 1 }} />
             <p className="cg-tip-text">Use presets for standard plans</p>
-          </div>
-          <div className="cg-tip">
-            <CheckCircle2 size={14} color="#10B981" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p className="cg-tip-text">Group can be edited before the start date</p>
           </div>
         </div>
 
