@@ -373,12 +373,6 @@ const Settings = () => {
 
   return (
     <div className="set-page">
-      
-      {/* ── Page Header ── */}
-      <div className="set-header">
-        <h2 className="set-title">Admin Configuration Settings</h2>
-        <p className="set-subtitle">Manage account profile details, credentials, browser locks, and service location coordinates</p>
-      </div>
 
       {/* Main layout */}
       <div className="set-layout">
@@ -400,6 +394,10 @@ const Settings = () => {
             <p className="set-admin-phone">
               <RiPhoneLine size={13} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
               {profileForm.phone || 'Phone number'}
+            </p>
+            <p className="set-admin-phone" style={{ marginTop: 4 }}>
+              <RiMailLine size={13} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
+              {profileForm.email || 'Email address'}
             </p>
           </div>
 

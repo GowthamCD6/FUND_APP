@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { makeRequest, tokenStore, API_URL } from '../../../api/apiClient.js';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { makeRequest, tokenStore, API_URL } from '../../../../api/apiClient.js';
+import { useAuth } from '../../../../context/AuthContext.jsx';
 import { 
   Users as RiGroupLine, 
   User as RiUserLine, 

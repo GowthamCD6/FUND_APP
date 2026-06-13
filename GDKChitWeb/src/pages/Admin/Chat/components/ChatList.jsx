@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { makeRequest, tokenStore, API_URL } from '../../../api/apiClient.js';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { makeRequest, tokenStore, API_URL } from '../../../../api/apiClient.js';
+import { useAuth } from '../../../../context/AuthContext.jsx';
 import { Search as RiSearchLine, RefreshCw as RiRefreshLine, Plus as RiAddLine, Users as RiGroupLine, User as RiUserLine, MoreVertical as RiMore2Fill, Settings as RiSettings3Line } from 'lucide-react';
 
 const ChatList = ({ onSelectChat, selectedChatId }) => {
