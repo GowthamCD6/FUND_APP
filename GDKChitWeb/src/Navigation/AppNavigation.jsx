@@ -7,14 +7,17 @@ import DefaultSidebar from '../components/Sidebar/DefaultSidebar.jsx';
 // ── Admin Pages ──
 import AdminTool from '../pages/Admin/AdminTools/AdminTool.jsx';
 import AddUser from "../pages/Admin/AdminTools/AddUser/AddUser.jsx";
-import CreateGroup from "../pages/Admin/AdminTools/CreateGroup/CreateGroup.jsx";
+import CreateGroup from "../pages/Admin/CreateGroup/CreateGroup.jsx";
 import Dashboard from '../pages/Admin/Dashboard/Dashboard.jsx';
-import Groups from '../pages/Admin/GroupManagement/Groups.jsx';
 import ManageGroups from '../pages/Admin/ManageGroup/ManageGroups.jsx';
 import ManageUsers from "../pages/Admin/ManageUser/ManageUsers.jsx";
 import Reports from '../pages/Admin/Reports/Reports.jsx';
-import Settings from '../pages/Admin/Settings/Settings.jsx';
 import Chat from '../pages/Admin/Chat/Chat.jsx';
+import UserLocation from '../pages/Admin/UserLocation/UserLocation.jsx';
+import Auction from '../pages/Admin/Auction/Auction.jsx';
+import BlockUser from '../pages/Admin/BlockUser/BlockUser.jsx';
+import PasswordManagement from '../pages/Admin/PasswordManagement/PasswordManagement.jsx';
+import Settings from '../pages/Admin/Settings/Settings.jsx';
 
 // ── User Pages ──
 import UserHome from '../pages/User/Home/Home.jsx';
@@ -83,16 +86,21 @@ const AppNavigation = () => {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="reports" element={<Reports />} />
         <Route path="chat" element={<Chat />} />
-        <Route path="groups" element={<Groups />} />
         <Route path="users" element={<ManageUsers />} />
         <Route path="manage-groups" element={<ManageGroups />} />
         <Route path="manage-users" element={<ManageUsers />} />
+        <Route path="user-locations" element={<UserLocation />} />
+        <Route path="create-group" element={<CreateGroup />} />
+        <Route path="auction" element={<Auction />} />
+        <Route path="groups" element={<Navigate to="/admin/auction" replace />} />
+        <Route path="block-user" element={<BlockUser />} />
+        <Route path="password-management" element={<PasswordManagement />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="admintool" element={<AdminTool />} />
-        <Route path="admintool/create-group" element={<CreateGroup />} />
+        <Route path="admintool/create-group" element={<Navigate to="/admin/create-group" replace />} />
         <Route path="admintool/add-user" element={<AddUser />} />
         <Route path="admintool/manage-groups" element={<Navigate to="/admin/manage-groups" replace />} />
         <Route path="admintool/manage-users" element={<Navigate to="/admin/manage-users" replace />} />
-        <Route path="settings" element={<Settings />} />
       </Route>
 
       {/* ── User ── */}

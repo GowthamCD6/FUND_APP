@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import {
   LayoutDashboard, BarChart3, Zap,
   MessageSquare, Menu, LogOut, User as UserIcon, X, Loader2, Gavel,
-  Settings, UserCog
+  Settings, UserCog, MapPin, Plus, Ban, Key, Layers, Lock, Unlock
 } from 'lucide-react';
 
 /* ── NAV GROUPS ── */
@@ -24,15 +24,20 @@ const ADMIN_NAV_GROUPS = [
   {
     title: 'MANAGEMENT',
     items: [
-      { id: 'auction', to: '/admin/groups', label: 'Auction Page', Icon: Gavel },
-      { id: 'manage-groups', to: '/admin/manage-groups', label: 'Manage Groups', Icon: Settings },
+      { id: 'auction', to: '/admin/auction', label: 'Auction Page', Icon: Gavel },
+      { id: 'manage-groups', to: '/admin/manage-groups', label: 'Manage Groups', Icon: Layers },
       { id: 'manage-users', to: '/admin/manage-users', label: 'Manage Members', Icon: UserCog },
+      { id: 'user-locations', to: '/admin/user-locations', label: 'User Locations', Icon: MapPin },
+      { id: 'create-group', to: '/admin/create-group', label: 'Create Group', Icon: Plus },
     ]
   },
   {
     title: 'TOOLS',
     items: [
       { id: 'chat', to: '/admin/chat', label: 'Chat', Icon: MessageSquare },
+      { id: 'block-user', to: '/admin/block-user', label: 'Block User', Icon: Ban },
+      { id: 'password-management', to: '/admin/password-management', label: 'Passwords', Icon: Key },
+      { id: 'settings', to: '/admin/settings', label: 'Settings', Icon: Settings },
       { id: 'actions', to: '/admin/admintool', label: 'Admin Tools', Icon: Zap },
     ]
   }
@@ -54,21 +59,141 @@ const USER_NAV_GROUPS = [
 const PAGE_TITLES = {
   '/admin/dashboard':              'Dashboard',
   '/admin/reports':                'Reports',
+  '/admin/auction':                'Auction Page',
   '/admin/groups':                 'Chit Plans',
   '/admin/users':                  'Members',
+  '/admin/block-user':             'Block User',
+  '/admin/password-management':    'Passwords',
+  '/admin/settings':               'Settings',
   '/admin/manage-groups':          'Manage Groups',
   '/admin/manage-users':           'Manage Members',
+  '/admin/user-locations':         'User Locations',
+  '/admin/create-group':           'Create Group',
   '/admin/admintool':              'Admin Tools',
   '/admin/admintool/create-group': 'Create Group',
   '/admin/admintool/manage-groups': 'Manage Groups',
   '/admin/admintool/manage-users':  'Manage Members',
   '/admin/admintool/add-user':     'Add Member',
-  '/admin/settings':               'Settings',
   '/admin/chat':                   'Chat',
   '/user/home':                    'Home',
   '/user/portfolio':               'Portfolio',
   '/user/chat':                    'Chat',
   '/user/profile':                 'Profile',
+};
+
+/* ─── LOCK SCREEN OVERLAY ─── */
+const LockScreenOverlay = ({ onUnlock }) => {
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState(false);
+  const [time, setTime] = useState(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleKeyPress = (num) => {
+    if (error) {
+      setError(false);
+    }
+    if (pin.length < 4) {
+      const nextPin = pin + num;
+      setPin(nextPin);
+      if (nextPin.length === 4) {
+        const savedPIN = localStorage.getItem('webPasscodePIN') || '1234';
+        if (nextPin === savedPIN) {
+          sessionStorage.setItem('webSessionUnlocked', 'true');
+          onUnlock();
+        } else {
+          setError(true);
+          setTimeout(() => {
+            setPin('');
+            setError(false);
+          }, 1000);
+        }
+      }
+    }
+  };
+
+  const handleBackspace = () => {
+    setPin(prev => prev.slice(0, -1));
+  };
+
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false
+    });
+  };
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    });
+  };
+
+  return (
+    <div className="web-lock-overlay">
+      <div className="web-lock-container">
+        <div className="web-lock-time">{formatTime(time)}</div>
+        <div className="web-lock-date">{formatDate(time)}</div>
+
+        <div className={`web-lock-icon-wrap ${error ? 'error' : ''}`}>
+          <Lock size={40} />
+        </div>
+
+        <div className="web-lock-prompt">
+          {error ? 'Incorrect PIN code' : 'Verify passcode to unlock'}
+        </div>
+
+        <div className="web-lock-dots">
+          {[0, 1, 2, 3].map(i => (
+            <div 
+              key={i} 
+              className={`web-lock-dot ${pin.length > i ? 'active' : ''}`} 
+            />
+          ))}
+        </div>
+
+        <div className="web-lock-keypad">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+            <button 
+              key={num} 
+              className="web-lock-key"
+              onClick={() => handleKeyPress(String(num))}
+            >
+              {num}
+            </button>
+          ))}
+          <button 
+            className="web-lock-key action"
+            onClick={() => setPin('')}
+          >
+            Clear
+          </button>
+          <button 
+            className="web-lock-key"
+            onClick={() => handleKeyPress('0')}
+          >
+            0
+          </button>
+          <button 
+            className="web-lock-key action"
+            onClick={handleBackspace}
+          >
+            Del
+          </button>
+        </div>
+
+        <div className="web-lock-support">
+          For assistance, contact technical support at <span>+91-8610696889</span> or email <span>Gowthamnaveen124@gmail.com</span>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const DefaultSidebar = () => {
@@ -77,6 +202,11 @@ const DefaultSidebar = () => {
   const navigate = useNavigate();
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    const isLockEnabled = localStorage.getItem('webPasscodeEnabled') === 'true';
+    if (!isLockEnabled) return true;
+    return sessionStorage.getItem('webSessionUnlocked') === 'true';
+  });
 
   const isAdmin = isAdminRole(user?.role);
   const navGroups = isAdmin ? ADMIN_NAV_GROUPS : USER_NAV_GROUPS;
@@ -146,6 +276,10 @@ const DefaultSidebar = () => {
       </div>
     </>
   );
+
+  if (!isUnlocked && isAdmin) {
+    return <LockScreenOverlay onUnlock={() => setIsUnlocked(true)} />;
+  }
 
   return (
     <div style={styles.container}>

@@ -378,7 +378,7 @@ const ManageGroups = () => {
             {/* New Group Button */}
             <button
               className="reports-refresh-btn"
-              onClick={() => navigate('/admin/admintool/create-group')}
+              onClick={() => navigate('/admin/create-group')}
               title="New Group"
               style={{ border: '1px solid #2563eb', background: '#2563eb', color: '#ffffff' }}
             >

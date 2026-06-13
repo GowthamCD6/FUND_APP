@@ -150,7 +150,7 @@ const Dashboard = () => {
   });
 
   const quickActions = [
-    { title: 'Create Group',   Icon: RiAddLine,          color: '#10B981', route: '/admin/admintool/create-group' },
+    { title: 'Create Group',   Icon: RiAddLine,          color: '#10B981', route: '/admin/create-group' },
     { title: 'Add Member',     Icon: RiUserAddLine,      color: '#F59E0B', route: '/admin/admintool/add-user' },
     { title: 'Manage Groups',  Icon: RiSettings3Line,    color: '#2842C4', route: '/admin/manage-groups' },
     { title: 'Manage Members', Icon: RiUserSettingsLine, color: '#8B5CF6', route: '/admin/manage-users' },
@@ -270,7 +270,7 @@ const Dashboard = () => {
               {activeGroupList.length === 0 ? (
                 <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: 14 }}>
                   No active groups yet.
-                  <button onClick={() => navigate('/admin/admintool/create-group')} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', marginLeft: 4 }}>
+                  <button onClick={() => navigate('/admin/create-group')} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', marginLeft: 4 }}>
                     Create one <RiArrowRightSLine size={14} style={{ verticalAlign: 'middle' }} />
                   </button>
                 </div>

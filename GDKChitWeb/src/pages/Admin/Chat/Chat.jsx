@@ -8,7 +8,7 @@ const Chat = () => {
   const [selectedChat, setSelectedChat] = useState(null);
 
   return (
-    <div className="page" style={{ padding: '20px', height: '100%', boxSizing: 'border-box' }}>
+    <div className="page" style={{ padding: 0, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'stretch', boxSizing: 'border-box' }}>
       <div className="chat-container">
         <div className="chat-sidebar">
           <ChatList 

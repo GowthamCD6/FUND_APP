@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { makeRequest, safeJson } from '../../../../api/apiClient.js';
+import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import {
   Users as RiGroupLine, Clock as RiTimeLine, Calendar as RiCalendarLine,
   Check as RiCheckLine, Loader2 as RiLoader4Line, Zap as RiZapLine, BarChart3 as RiBarChartBoxLine,

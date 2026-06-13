@@ -1,7 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { makeRequest, tokenStore, API_URL } from '../../../api/apiClient.js';
 import { useAuth } from '../../../context/AuthContext.jsx';
-import { Users as RiGroupLine, User as RiUserLine, Check as RiCheckLine, MoreVertical as RiMore2Fill, Star as RiStarLine, Trash2 as RiDeleteBinLine, Info as RiInformationLine } from 'lucide-react';
+import { 
+  Users as RiGroupLine, 
+  User as RiUserLine, 
+  Check as RiCheckLine, 
+  CheckCheck as RiCheckCheckLine, 
+  MoreVertical as RiMore2Fill, 
+  Star as RiStarLine, 
+  Trash2 as RiDeleteBinLine, 
+  Info as RiInformationLine,
+  Search as RiSearchLine,
+  Plus as RiPlusLine,
+  Smile as RiSmileLine,
+  ChevronLeft as RiChevronLeftLine,
+  X as RiCloseLine,
+  ArrowLeft as RiArrowLeftLine,
+  Send as RiSendLine
+} from 'lucide-react';
 
 const ChatScreen = ({ chat, onBack }) => {
   const { user } = useAuth();
@@ -9,11 +25,31 @@ const ChatScreen = ({ chat, onBack }) => {
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [searchActive, setSearchActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [groupMembers, setGroupMembers] = useState([]);
   const messagesEndRef = useRef(null);
   const ws = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const fetchGroupMembers = async () => {
+    try {
+      let url = `/chats/rooms/${chat.chatId}/members`;
+      if (chat.groupId) {
+        url = `/admin/groups/getMembers?groupId=${chat.groupId}`;
+      }
+      const res = await makeRequest(url);
+      const data = await res.json();
+      if (data.success) {
+        setGroupMembers(data.members || data.data || []);
+      }
+    } catch (e) {
+      console.error('Error fetching group members:', e);
+    }
   };
 
   useEffect(() => {
@@ -29,7 +65,7 @@ const ChatScreen = ({ chat, onBack }) => {
             text: msg.message,
             timestamp: new Date(msg.created_at),
             isRead: msg.is_read === 1,
-            status: 'read',
+            status: msg.is_read === 1 ? 'read' : 'delivered',
             senderName: msg.sender_name,
           }));
           setMessages(formatted);
@@ -43,6 +79,9 @@ const ChatScreen = ({ chat, onBack }) => {
     };
 
     loadMessages();
+    if (chat.isGroup) {
+      fetchGroupMembers();
+    }
 
     // WebSocket Setup
     const setupWebSocket = () => {
@@ -155,104 +194,232 @@ const ChatScreen = ({ chat, onBack }) => {
   };
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   };
+
+  const formatDateSeparator = (date) => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+  };
+
+  const shouldShowDateSeparator = (currentMsg, previousMsg) => {
+    if (!previousMsg) return true;
+    const currentDate = new Date(currentMsg.timestamp).toDateString();
+    const previousDate = new Date(previousMsg.timestamp).toDateString();
+    return currentDate !== previousDate;
+  };
+
+  const shouldGroupWithPrevious = (currentMsg, previousMsg) => {
+    if (!previousMsg || !currentMsg) return false;
+    return (
+      previousMsg.sender === currentMsg.sender &&
+      (new Date(currentMsg.timestamp) - new Date(previousMsg.timestamp)) < 60000
+    );
+  };
+
+  const filteredMessages = searchQuery.trim()
+    ? messages.filter(msg => msg.text.toLowerCase().includes(searchQuery.toLowerCase()))
+    : messages;
 
   return (
     <>
       {/* Header */}
       <div className="chat-screen-header">
-        <div className="chat-screen-header-info">
+        <div className="chat-screen-header-info" onClick={() => { if (chat.isGroup) { fetchGroupMembers(); setShowGroupInfo(true); } }}>
           <div className="chat-screen-avatar">
             {chat.chatAvatar && chat.chatAvatar.startsWith('http') ? (
               <img src={chat.chatAvatar} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
               chat.isGroup ? <RiGroupLine size={20} /> : <RiUserLine size={20} />
             )}
+            {!chat.isGroup && <div className="online-dot" />}
           </div>
           <div>
             <h3 className="chat-screen-name">{chat.chatName}</h3>
-            <p className="chat-screen-status">{chat.isGroup ? 'Group' : 'User'}</p>
+            <p className="chat-screen-status">
+              {chat.isGroup ? `${groupMembers.length > 0 ? groupMembers.length : ''} Members` : 'Online'}
+            </p>
           </div>
         </div>
-        <div style={{ position: 'relative' }}>
-          <button 
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', padding: 8, color: 'var(--text)' }} 
-            onClick={() => setShowDropdown(!showDropdown)}
-          >
-            <RiMore2Fill size={20} />
+        <div className="chat-header-actions">
+          <button className="chat-header-action-btn" onClick={() => setSearchActive(!searchActive)}>
+            <RiSearchLine size={20} />
           </button>
-          {showDropdown && (
-            <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowDropdown(false)} />
-              <div style={{ position: 'absolute', right: 0, top: '100%', background: '#fff', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', padding: 8, zIndex: 20, minWidth: 160 }}>
-                {chat.isGroup && (
-                  <button style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text)', textAlign: 'left', borderRadius: '4px' }} className="hover-bg">
-                    <RiInformationLine size={16} color="var(--primary)" /> Group Info
+          <div style={{ position: 'relative' }}>
+            <button className="chat-header-action-btn" onClick={() => setShowDropdown(!showDropdown)}>
+              <RiMore2Fill size={20} />
+            </button>
+            {showDropdown && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowDropdown(false)} />
+                <div className="chat-dropdown-menu">
+                  {chat.isGroup && (
+                    <button className="chat-dropdown-item" onClick={() => { setShowDropdown(false); fetchGroupMembers(); setShowGroupInfo(true); }}>
+                      <RiInformationLine size={16} /> Group Info
+                    </button>
+                  )}
+                  <button className="chat-dropdown-item" onClick={() => setShowDropdown(false)}>
+                    <RiStarLine size={16} style={{ color: '#F59E0B' }} /> Starred Messages
                   </button>
-                )}
-                <button style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text)', textAlign: 'left', borderRadius: '4px' }} className="hover-bg">
-                  <RiStarLine size={16} color="#F59E0B" /> Starred Messages
-                </button>
-                <button style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--danger)', textAlign: 'left', borderRadius: '4px' }} className="hover-bg">
-                  <RiDeleteBinLine size={16} /> Delete Chat
-                </button>
-              </div>
-            </>
-          )}
+                  <button className="chat-dropdown-item danger" onClick={() => setShowDropdown(false)}>
+                    <RiDeleteBinLine size={16} /> Delete Chat
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Header Search Toggler overlay */}
+      {searchActive && (
+        <div className="chat-search-header-bar">
+          <div className="chat-search-inner-wrapper">
+            <RiSearchLine size={18} color="#9CA3AF" />
+            <input 
+              type="text" 
+              placeholder="Search in conversation..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoFocus
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')}>
+                <RiCloseLine size={18} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Messages Area */}
       <div className="chat-screen-messages">
         {loading ? (
           <div style={{ textAlign: 'center', marginTop: 20, color: 'var(--muted)' }}>Loading messages...</div>
-        ) : messages.length > 0 ? (
-          messages.map((msg, index) => (
-            <div key={msg.id} className={`chat-message-row ${msg.sender === 'user' ? 'sent' : 'received'}`}>
-              <div className="chat-bubble">
-                {msg.sender === 'other' && chat.isGroup && (
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#7C3AED', marginBottom: 2 }}>{msg.senderName}</div>
+        ) : filteredMessages.length > 0 ? (
+          filteredMessages.map((msg, index) => {
+            const showDate = shouldShowDateSeparator(msg, filteredMessages[index - 1]);
+            const isGrouped = shouldGroupWithPrevious(msg, filteredMessages[index - 1]);
+            
+            return (
+              <React.Fragment key={msg.id}>
+                {showDate && (
+                  <div className="chat-date-separator">
+                    <span className="chat-date-pill">{formatDateSeparator(msg.timestamp)}</span>
+                  </div>
                 )}
-                {msg.text}
-                <div className="chat-message-time">
-                  {formatTime(msg.timestamp)}
-                  {msg.sender === 'user' && (
-                    <RiCheckLine size={12} color={msg.status === 'read' ? '#4CAF50' : 'inherit'} style={{ marginLeft: 4, verticalAlign: 'middle' }} />
-                  )}
+                <div className={`chat-message-row ${msg.sender === 'user' ? 'sent' : 'received'} ${isGrouped ? 'grouped' : ''}`}>
+                  <div className="chat-bubble">
+                    {msg.sender === 'other' && chat.isGroup && !isGrouped && (
+                      <div className="chat-bubble-sender-name">{msg.senderName}</div>
+                    )}
+                    <div style={{ wordBreak: 'break-word' }}>{msg.text}</div>
+                    <div className="chat-message-footer">
+                      <span className="chat-message-time">{formatTime(msg.timestamp)}</span>
+                      {msg.sender === 'user' && (
+                        msg.status === 'read' 
+                          ? <RiCheckCheckLine size={14} color="#FFFFFF" style={{ marginLeft: 2 }} />
+                          : msg.status === 'delivered'
+                            ? <RiCheckCheckLine size={14} color="#D8BFD8" style={{ marginLeft: 2 }} />
+                            : <RiCheckLine size={14} color="#D8BFD8" style={{ marginLeft: 2 }} />
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))
+              </React.Fragment>
+            );
+          })
         ) : (
-          <div style={{ textAlign: 'center', marginTop: 40, color: 'var(--muted)' }}>
-            <p>No messages yet.</p>
-            <p style={{ fontSize: 13 }}>Send a message to start the conversation.</p>
+          <div className="chat-empty-state">
+            <div className="chat-empty-icon">
+              <RiUserLine size={36} />
+            </div>
+            <h3>No messages yet</h3>
+            <p>Start the conversation by typing below!</p>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <form className="chat-screen-input" onSubmit={handleSendMessage}>
-        <input 
-          type="text" 
-          className="chat-input-box" 
-          placeholder="Type a message..." 
-          value={messageText}
-          onChange={(e) => setMessageText(e.target.value)}
-        />
-        <button 
-          type="submit" 
-          className="chat-send-btn"
-          disabled={!messageText.trim()}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-        </button>
-      </form>
+      {/* Input Area (Redesigned Pill) */}
+      <div className="chat-screen-input-container">
+        <form className="chat-screen-input-wrapper" onSubmit={handleSendMessage}>
+          <button type="button" className="chat-input-action-btn">
+            <RiPlusLine size={22} />
+          </button>
+          
+          <input 
+            type="text" 
+            className="chat-input-box-redesign" 
+            placeholder="Type a message..." 
+            value={messageText}
+            onChange={(e) => setMessageText(e.target.value)}
+          />
+
+          <button type="button" className="chat-input-action-btn secondary">
+            <RiSmileLine size={22} />
+          </button>
+          
+          <button 
+            type="submit" 
+            className="chat-send-btn-redesign"
+            disabled={!messageText.trim()}
+          >
+            <RiSendLine size={18} />
+          </button>
+        </form>
+      </div>
+
+      {/* Group Info Sidebar Drawer */}
+      {showGroupInfo && (
+        <div className="group-info-modal-backdrop" onClick={() => setShowGroupInfo(false)}>
+          <div className="group-info-modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="group-info-header">
+              <button className="group-info-back-btn" onClick={() => setShowGroupInfo(false)}>
+                <RiArrowLeftLine size={24} />
+              </button>
+              <h3 className="group-info-title">Group Info</h3>
+            </div>
+            <div className="group-info-content-scroll">
+              <div className="group-info-hero">
+                <div className="group-info-avatar-wrapper">
+                  {chat.chatAvatar && chat.chatAvatar.startsWith('http') ? (
+                    <img src={chat.chatAvatar} alt="group avatar" className="group-info-avatar-img" />
+                  ) : (
+                    <div className="group-info-avatar-placeholder">
+                      <RiGroupLine size={60} color="#7C3AED" />
+                    </div>
+                  )}
+                </div>
+                <h4 className="group-info-name">{chat.chatName}</h4>
+              </div>
+              <div className="group-info-members-header">{groupMembers.length} Members</div>
+              <div className="group-info-members-list">
+                {groupMembers.map((member) => (
+                  <div key={member.userId || member.id} className="group-info-member-card">
+                    <div className="group-info-member-avatar">
+                      {(member.name || 'U').substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className="group-info-member-details">
+                      <p className="group-info-member-name">{member.name}</p>
+                      <p className="group-info-member-phone">{member.phone || 'No phone'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -9,7 +9,7 @@ const ACTION_GROUPS = [
   {
     title: 'Group Management',
     actions: [
-      { id: 'create-group', Icon: Plus, title: 'Create Groups', desc: 'Set up a new chit fund group with a plan', route: '/admin/admintool/create-group', color: '#10b981', bg: '#ecfdf5' },
+      { id: 'create-group', Icon: Plus, title: 'Create Groups', desc: 'Set up a new chit fund group with a plan', route: '/admin/create-group', color: '#10b981', bg: '#ecfdf5' },
       { id: 'manage-groups', Icon: Settings, title: 'Manage Groups', desc: 'View, edit, and monitor existing groups', route: '/admin/manage-groups', color: '#3b82f6', bg: '#eff6ff' },
     ]
   },
@@ -18,7 +18,7 @@ const ACTION_GROUPS = [
     actions: [
       { id: 'add-user', Icon: UserPlus, title: 'Add User', desc: 'Add a new member or admin account', route: '/admin/admintool/add-user', color: '#8b5cf6', bg: '#f5f3ff' },
       { id: 'manage-users', Icon: UserCog, title: 'Manage Members', desc: 'View, edit, or remove existing members', route: '/admin/manage-users', color: '#f59e0b', bg: '#fffbeb' },
-      { id: 'block-members', Icon: Zap, title: 'Block Members', desc: 'Restrict access for specific members', route: '/admin/manage-users', color: '#ef4444', bg: '#fef2f2' },
+      { id: 'block-members', Icon: Zap, title: 'Block Members', desc: 'Restrict access for specific members', route: '/admin/block-user', color: '#ef4444', bg: '#fef2f2' },
     ]
   }
 ];

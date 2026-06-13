@@ -122,23 +122,26 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
     <>
       <div className="chat-list-header">
         <div className="chat-list-title-row">
-          <h2 className="chat-list-title">Messages</h2>
+          <div>
+            <h2 className="chat-list-title">Messages</h2>
+            <div className="chat-list-subtitle">GDK Chit Fund Chat</div>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }} onClick={loadChats}>
-              <RiRefreshLine size={20} color="var(--primary)" />
+            <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', color: 'var(--chat-primary)' }} onClick={loadChats}>
+              <RiRefreshLine size={20} />
             </button>
             <div style={{ position: 'relative' }}>
-              <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }} onClick={() => setShowDropdown(!showDropdown)}>
-                <RiMore2Fill size={20} color="var(--text)" />
+              <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', color: '#1F2937' }} onClick={() => setShowDropdown(!showDropdown)}>
+                <RiMore2Fill size={20} />
               </button>
               {showDropdown && (
                 <>
                   <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowDropdown(false)} />
-                  <div style={{ position: 'absolute', right: 0, top: '100%', background: '#fff', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', padding: 8, zIndex: 20, minWidth: 160, marginTop: 8 }}>
-                    <button style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text)', textAlign: 'left', borderRadius: '4px' }} className="hover-bg">
+                  <div className="chat-dropdown-menu">
+                    <button className="chat-dropdown-item" onClick={() => setShowDropdown(false)}>
                       <RiAddLine size={16} /> New Chat
                     </button>
-                    <button style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text)', textAlign: 'left', borderRadius: '4px' }} className="hover-bg">
+                    <button className="chat-dropdown-item" onClick={() => setShowDropdown(false)}>
                       <RiSettings3Line size={16} /> Chat Settings
                     </button>
                   </div>
@@ -148,7 +151,7 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
           </div>
         </div>
         <div className="chat-search">
-          <RiSearchLine size={16} color="var(--muted)" />
+          <RiSearchLine size={16} color="#9CA3AF" />
           <input 
             type="text" 
             placeholder="Search conversations..." 
@@ -165,15 +168,16 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
           filteredChats.map((chat) => (
             <div 
               key={chat.id} 
-              className={`chat-item ${selectedChatId === chat.id ? 'active' : ''}`}
+              className={`chat-item ${chat.unread > 0 ? 'unread' : ''} ${selectedChatId === chat.id ? 'active' : ''}`}
               onClick={() => handleChatPress(chat)}
             >
               <div className="chat-avatar">
                 {chat.avatar && chat.avatar.startsWith('http') ? (
                   <img src={chat.avatar} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
-                  chat.isGroup ? <RiGroupLine size={24} /> : <RiUserLine size={24} />
+                  chat.isGroup ? <RiGroupLine size={22} /> : <RiUserLine size={22} />
                 )}
+                {!chat.isGroup && <div className="online-dot" />}
               </div>
               <div className="chat-item-info">
                 <div className="chat-item-top">
