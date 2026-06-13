@@ -62,6 +62,11 @@ async function main() {
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: undefined, // No database selected initially
+      port: parseInt(process.env.DB_PORT) || 3306,
+      ssl: process.env.DB_HOST && process.env.DB_HOST.includes('tidbcloud.com') ? {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: true
+      } : undefined,
     });
 
     log('✅ MySQL connection successful!', 'green');

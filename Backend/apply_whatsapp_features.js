@@ -8,6 +8,11 @@ async function applyWhatsAppFeatures() {
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'fundapp',
+    port: parseInt(process.env.DB_PORT) || 3306,
+    ssl: process.env.DB_HOST && process.env.DB_HOST.includes('tidbcloud.com') ? {
+      minVersion: 'TLSv1.2',
+      rejectUnauthorized: true
+    } : undefined,
   });
 
   try {
@@ -56,7 +61,10 @@ async function applyWhatsAppFeatures() {
     if (!(await columnExists('chat_rooms', 'parent_room_id'))) {
       await connection.query(`
         ALTER TABLE chat_rooms 
-        ADD COLUMN parent_room_id BIGINT(20) UNSIGNED DEFAULT NULL,
+        ADD COLUMN parent_room_id BIGINT(20) UNSIGNED DEFAULT NULL;
+      `);
+      await connection.query(`
+        ALTER TABLE chat_rooms
         ADD CONSTRAINT FK_chat_rooms_parent FOREIGN KEY (parent_room_id) REFERENCES chat_rooms(id) ON DELETE SET NULL;
       `);
       console.log('Added parent_room_id column and foreign key to chat_rooms.');
@@ -97,7 +105,10 @@ async function applyWhatsAppFeatures() {
     if (!(await columnExists('chat_messages', 'source_room_id'))) {
       await connection.query(`
         ALTER TABLE chat_messages 
-        ADD COLUMN source_room_id BIGINT(20) UNSIGNED DEFAULT NULL,
+        ADD COLUMN source_room_id BIGINT(20) UNSIGNED DEFAULT NULL;
+      `);
+      await connection.query(`
+        ALTER TABLE chat_messages
         ADD CONSTRAINT FK_chat_messages_source FOREIGN KEY (source_room_id) REFERENCES chat_rooms(id) ON DELETE SET NULL;
       `);
       console.log('Added source_room_id column and foreign key to chat_messages.');

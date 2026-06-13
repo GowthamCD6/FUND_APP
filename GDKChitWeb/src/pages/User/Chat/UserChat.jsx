@@ -15,16 +15,22 @@ const ChatList = ({ onSelect, selectedId }) => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const loadChats = async () => {
+  const loadChats = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await makeRequest('/chats');
       const data = await res.json();
       if (data.success) { setChats(data.chats || []); applyFilter(data.chats || [], search); }
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+    } catch (e) { console.error(e); } finally { if (showLoading) setLoading(false); }
   };
 
-  useEffect(() => { loadChats(); }, []);
+  useEffect(() => {
+    loadChats(true);
+    const interval = setInterval(() => {
+      loadChats(false);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [search]);
 
   const applyFilter = (list, q) => {
     let f = [...list];
@@ -91,50 +97,32 @@ const ChatScreen = ({ chat }) => {
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const endRef = useRef(null);
-  const ws = useRef(null);
 
   const scroll = () => endRef.current?.scrollIntoView({ behavior: 'smooth' });
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const res = await makeRequest(`/chats/messages/${chat.chatId}`);
-        const data = await res.json();
-        if (data.success && data.messages) {
-          setMessages(data.messages.map(m => ({
-            id: m.id, sender: m.sender_type === 'User' ? 'user' : 'other',
-            text: m.message, timestamp: new Date(m.created_at), senderName: m.sender_name,
-          })));
-          setTimeout(scroll, 100);
-        }
-      } catch (e) { console.error(e); } finally { setLoading(false); }
-    };
-    load();
-
-    // WS
+  const loadMessages = async (showLoading = false) => {
     try {
-      const token = tokenStore.getAccessToken();
-      if (!token) return;
-      let wsUrl = API_URL.replace('http', 'ws').replace(/\/api\/?$/, '');
-      wsUrl = `${wsUrl}/api/chat?token=${token}&userId=${user?.id || 'user'}&userType=User`;
-      ws.current = new WebSocket(wsUrl);
-      ws.current.onopen = () => ws.current.send(JSON.stringify({ type: 'join_room', roomId: chat.chatId }));
-      ws.current.onmessage = (e) => {
-        try {
-          const p = JSON.parse(e.data);
-          if (p.type === 'new_message' && p.data.roomId === chat.chatId) {
-            setMessages(prev => {
-              if (prev.find(m => m.id === p.data.id)) return prev;
-              const f = prev.filter(m => !(String(m.id).startsWith('temp-') && m.text === p.data.message));
-              return [...f, { id: p.data.id, sender: p.data.senderType === 'User' ? 'user' : 'other', text: p.data.message, timestamp: new Date(p.data.created_at), senderName: p.data.sender_name }];
-            });
-            setTimeout(scroll, 100);
-          }
-        } catch {}
-      };
-    } catch {}
-    return () => { if (ws.current) { ws.current.close(); } };
+      if (showLoading) setLoading(true);
+      const res = await makeRequest(`/chats/messages/${chat.chatId}`);
+      const data = await res.json();
+      if (data.success && data.messages) {
+        setMessages(data.messages.map(m => ({
+          id: m.id, sender: m.sender_type === 'User' ? 'user' : 'other',
+          text: m.message, timestamp: new Date(m.created_at), senderName: m.sender_name,
+        })));
+      }
+    } catch (e) { console.error(e); } finally { if (showLoading) setLoading(false); }
+  };
+
+  useEffect(() => {
+    loadMessages(true);
+    setTimeout(scroll, 100);
+
+    const interval = setInterval(() => {
+      loadMessages(false);
+    }, 5000);
+
+    return () => { clearInterval(interval); };
   }, [chat.chatId]);
 
   const send = async (e) => {
@@ -145,10 +133,10 @@ const ChatScreen = ({ chat }) => {
     const msg = text; setText('');
     setTimeout(scroll, 50);
     try {
-      if (ws.current?.readyState === 1) {
-        ws.current.send(JSON.stringify({ type: 'send_message', data: { roomId: chat.chatId, text: msg } }));
-      } else {
-        await makeRequest('/chats/send', { method: 'POST', body: JSON.stringify({ roomId: chat.chatId, message: msg }) });
+      const res = await makeRequest('/chats/send', { method: 'POST', body: JSON.stringify({ roomId: chat.chatId, message: msg }) });
+      const data = await res.json();
+      if (data.success) {
+        loadMessages(false);
       }
     } catch (e) { console.error(e); }
   };

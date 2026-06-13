@@ -30,8 +30,6 @@ const ChatScreen = ({ chat, onBack }) => {
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
   const messagesEndRef = useRef(null);
-  const ws = useRef(null);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -52,94 +50,44 @@ const ChatScreen = ({ chat, onBack }) => {
     }
   };
 
-  useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        setLoading(true);
-        const response = await makeRequest(`/chats/messages/${chat.chatId}`);
-        const data = await response.json();
-        if (data.success && data.messages) {
-          const formatted = data.messages.map(msg => ({
-            id: msg.id,
-            sender: msg.sender_type === 'Admin' ? 'user' : 'other',
-            text: msg.message,
-            timestamp: new Date(msg.created_at),
-            isRead: msg.is_read === 1,
-            status: msg.is_read === 1 ? 'read' : 'delivered',
-            senderName: msg.sender_name,
-          }));
-          setMessages(formatted);
-          setTimeout(scrollToBottom, 100);
-        }
-      } catch (error) {
-        console.error('Error loading messages:', error);
-      } finally {
-        setLoading(false);
+  const loadMessages = async (showLoading = false) => {
+    try {
+      if (showLoading) setLoading(true);
+      const response = await makeRequest(`/chats/messages/${chat.chatId}`);
+      const data = await response.json();
+      if (data.success && data.messages) {
+        const formatted = data.messages.map(msg => ({
+          id: msg.id,
+          sender: msg.sender_type === 'Admin' ? 'user' : 'other',
+          text: msg.message,
+          timestamp: new Date(msg.created_at),
+          isRead: msg.is_read === 1,
+          status: msg.is_read === 1 ? 'read' : 'delivered',
+          senderName: msg.sender_name,
+        }));
+        setMessages(formatted);
       }
-    };
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
 
-    loadMessages();
+  useEffect(() => {
+    loadMessages(true);
+    setTimeout(scrollToBottom, 100);
+
     if (chat.isGroup) {
       fetchGroupMembers();
     }
 
-    // WebSocket Setup
-    const setupWebSocket = () => {
-      try {
-        const token = tokenStore.getAccessToken();
-        if (!token) return;
-
-        let wsUrl = API_URL.replace('http', 'ws');
-        wsUrl = wsUrl.replace(/\/api\/?$/, '');
-        wsUrl = `${wsUrl}/api/chat?token=${token}&userId=${user?.id || 'admin'}&userType=Admin`;
-
-        ws.current = new WebSocket(wsUrl);
-
-        ws.current.onopen = () => {
-          ws.current.send(JSON.stringify({ type: 'join_room', roomId: chat.chatId }));
-        };
-        
-        ws.current.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data);
-            if (payload.type === 'new_message' && payload.data.roomId === chat.chatId) {
-              setMessages(prev => {
-                if (prev.find(m => m.id === payload.data.id)) return prev;
-                
-                const filtered = prev.filter(m => !(String(m.id).startsWith('temp-') && m.text === payload.data.message));
-                
-                const newMsg = {
-                  id: payload.data.id,
-                  sender: payload.data.senderType === 'Admin' ? 'user' : 'other',
-                  text: payload.data.message,
-                  timestamp: new Date(payload.data.created_at),
-                  isRead: true,
-                  status: 'read',
-                  senderName: payload.data.sender_name,
-                };
-                return [...filtered, newMsg];
-              });
-              setTimeout(scrollToBottom, 100);
-            }
-          } catch (e) {
-            console.error('WS parse error:', e);
-          }
-        };
-
-      } catch (e) {
-        console.error('Error setting up WS:', e);
-      }
-    };
-
-    setupWebSocket();
+    const interval = setInterval(() => {
+      loadMessages(false);
+    }, 5000);
 
     return () => {
-      if (ws.current) {
-        if (ws.current.readyState === 1) {
-          ws.current.send(JSON.stringify({ type: 'leave_room', roomId: chat.chatId }));
-        }
-        ws.current.close();
-      }
+      clearInterval(interval);
     };
   }, [chat.chatId, user]);
 
@@ -162,31 +110,18 @@ const ChatScreen = ({ chat, onBack }) => {
     setTimeout(scrollToBottom, 50);
 
     try {
-      if (ws.current && ws.current.readyState === 1) {
-        ws.current.send(JSON.stringify({
-          type: 'send_message',
-          data: {
-            roomId: chat.chatId,
-            text: newMessage.text,
-          }
-        }));
-        
-        setTimeout(() => {
-          setMessages(prev => prev.map(msg => msg.id === tempId ? { ...msg, status: 'delivered' } : msg));
-        }, 300);
-      } else {
-        const response = await makeRequest('/chats/send', {
-          method: 'POST',
-          body: JSON.stringify({
-            roomId: chat.chatId,
-            message: newMessage.text,
-          }),
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-          setMessages(prev => prev.map(msg => msg.id === tempId ? { ...msg, id: data.data.id, status: 'read', isRead: true } : msg));
-        }
+      const response = await makeRequest('/chats/send', {
+        method: 'POST',
+        body: JSON.stringify({
+          roomId: chat.chatId,
+          message: newMessage.text,
+        }),
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessages(prev => prev.map(msg => msg.id === tempId ? { ...msg, id: data.data.id, status: 'read', isRead: true } : msg));
+        loadMessages(false);
       }
     } catch (error) {
       console.error('Error sending message:', error);

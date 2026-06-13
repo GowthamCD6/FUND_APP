@@ -10,11 +10,9 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
-  const ws = useRef(null);
-
-  const loadChats = async () => {
+  const loadChats = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const response = await makeRequest('/chats');
       const data = await response.json();
       if (data.success) {
@@ -24,52 +22,21 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
     } catch (error) {
       console.error('Error fetching chats:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadChats();
+    loadChats(true);
 
-    // WebSocket Setup
-    const setupWebSocket = () => {
-      try {
-        const token = tokenStore.getAccessToken();
-        if (!token) return;
-
-        let wsUrl = API_URL.replace('http', 'ws');
-        wsUrl = wsUrl.replace(/\/api\/?$/, '');
-        wsUrl = `${wsUrl}/api/chat?token=${token}&userId=${user?.id || 'admin'}&userType=Admin`;
-
-        ws.current = new WebSocket(wsUrl);
-
-        ws.current.onopen = () => console.log('Chat WS Connected (Web Admin)');
-        
-        ws.current.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data);
-            if (payload.type === 'new_message_notification' || payload.type === 'new_message') {
-              loadChats();
-            }
-          } catch (e) {
-            console.error('WS parse error:', e);
-          }
-        };
-
-        ws.current.onerror = (e) => console.log('Chat WS Error');
-      } catch (e) {
-        console.error('Error setting up WS:', e);
-      }
-    };
-
-    setupWebSocket();
+    const interval = setInterval(() => {
+      loadChats(false);
+    }, 5000);
 
     return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
+      clearInterval(interval);
     };
-  }, [user]);
+  }, [user, searchQuery]);
 
   const applyFilters = (chatList, query) => {
     let filtered = [...chatList];

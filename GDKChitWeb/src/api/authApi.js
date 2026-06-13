@@ -15,6 +15,7 @@ const login = async (phone, password) => {
   localStorage.setItem('userRole', data.data.user?.role || '');
   localStorage.setItem('userName', data.data.user?.username || '');
   localStorage.setItem('userPhone', data.data.user?.phone || '');
+  localStorage.setItem('userId', data.data.user?.id || '');
 
   return data.data.user;
 };
@@ -33,6 +34,7 @@ const logout = async () => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('userName');
     localStorage.removeItem('userPhone');
+    localStorage.removeItem('userId');
   }
 };
 
@@ -48,5 +50,6 @@ const getProfile = async () => {
 const getStoredRole = () => localStorage.getItem('userRole') || '';
 const getStoredName = () => localStorage.getItem('userName') || '';
 const getStoredPhone = () => localStorage.getItem('userPhone') || '';
+const getStoredId = () => localStorage.getItem('userId') || '';
 
-export { login, logout, getProfile, getStoredRole, getStoredName, getStoredPhone };
+export { login, logout, getProfile, getStoredRole, getStoredName, getStoredPhone, getStoredId };

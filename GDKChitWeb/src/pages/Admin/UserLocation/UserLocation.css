@@ -1,57 +1,67 @@
-/* ── User Location Page Layout ── */
+/* ─── User Location Redesigned Styles ─── */
 
 .ul-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 24px;
   width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   box-sizing: border-box;
 }
 
+/* ─── Header area ─── */
 .ul-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  gap: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 20px;
 }
 
 .ul-title-area {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .ul-title {
-  margin: 0 0 4px 0;
-  font-size: 24px;
-  font-weight: 700;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
   color: #111827;
+  letter-spacing: -0.025em;
 }
 
 .ul-subtitle {
   margin: 0;
   font-size: 14px;
-  color: #6b7280;
+  color: #334155;
+  font-weight: 500;
 }
 
 .ul-refresh-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
   background-color: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #d1d5db;
   color: #374151;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.ul-refresh-btn:hover {
+.ul-refresh-btn:hover:not(:disabled) {
   background-color: #f9fafb;
-  border-color: #d1d5db;
+  border-color: #9ca3af;
   color: #111827;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .ul-refresh-btn:disabled {
@@ -59,21 +69,108 @@
   cursor: not-allowed;
 }
 
-/* ── Toolbar & Search ── */
+/* ─── KPI Metrics row ─── */
+.ul-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+}
 
+.ul-metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ul-metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+}
+
+/* Side line styles disabled */
+.ul-metric-card::before,
+.ul-metric-card::after,
+.ul-card::before,
+.ul-card::after {
+  display: none !important;
+  content: none !important;
+}
+
+.ul-metric-card {
+  /* Prevent style pollution */
+}
+
+.ul-card {
+  border: 1px solid #e2e8f0 !important;
+  background-color: #ffffff;
+}
+
+.ul-card.active {
+  border: 1px solid #2563eb !important;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e0f2fe 100%) !important;
+  box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.12), 0 4px 6px -4px rgba(37, 99, 235, 0.08) !important;
+}
+
+.ul-metric-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.ul-metric-card.total .ul-metric-icon { background: #eff6ff; color: #2563eb; }
+.ul-metric-card.gps .ul-metric-icon { background: #ecfdf5; color: #10b981; }
+.ul-metric-card.offline .ul-metric-icon { background: #fffbeb; color: #d97706; }
+.ul-metric-card.sync .ul-metric-icon { background: #e0e7ff; color: #6366f1; }
+
+.ul-metric-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ul-metric-val {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.ul-metric-lbl {
+  font-size: 11px;
+  color: #475569;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Search & Toolbar ─── */
 .ul-toolbar {
-  margin-bottom: 24px;
+  display: flex;
+  gap: 16px;
+  width: 100%;
 }
 
 .ul-search-wrapper {
   position: relative;
-  width: 100%;
-  max-width: 500px;
+  flex: 1;
 }
 
 .ul-search-icon {
   position: absolute;
-  left: 14px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
   color: #9ca3af;
@@ -82,58 +179,78 @@
 
 .ul-search-input {
   width: 100%;
-  height: 46px;
-  padding: 10px 16px 10px 42px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  height: 48px;
+  padding: 12px 16px 12px 48px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
   background-color: #ffffff;
   color: #111827;
   font-size: 15px;
+  font-weight: 500;
   box-sizing: border-box;
   transition: all 0.2s ease;
 }
 
 .ul-search-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  background-color: #ffffff;
 }
 
-/* ── Content Grid ── */
+/* ─── Main content layout ─── */
+.ul-content-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 28px;
+  align-items: start;
+}
 
-.ul-content {
-  flex: 1;
-  overflow-y: auto;
+@media (max-width: 1024px) {
+  .ul-content-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ul-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .ul-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-  padding-bottom: 40px;
+  padding-bottom: 24px;
 }
 
-/* ── User Location Cards ── */
-
+/* ─── Member Card Redesign ─── */
 .ul-card {
   background-color: #ffffff;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  cursor: pointer;
+  position: relative;
 }
 
 .ul-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-  border-color: #d1d5db;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  border-color: #cbd5e1;
+}
+
+.ul-card.active {
+  border-color: #2563eb;
+  background-color: #f0f7ff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
 }
 
 .ul-card-body {
-  padding: 20px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -151,7 +268,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  background: linear-gradient(135deg, #f0f7ff 0%, #e0f2fe 100%);
   color: #2563eb;
   font-weight: 700;
   font-size: 16px;
@@ -159,37 +276,55 @@
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(37, 99, 235, 0.1);
+  flex-shrink: 0;
+}
+
+.ul-card.active .ul-avatar {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
 }
 
 .ul-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .ul-member-name {
   margin: 0 0 2px 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ul-member-phone {
   margin: 0;
   font-size: 13px;
-  color: #6b7280;
+  color: #334155;
+  font-weight: 600;
   display: flex;
   align-items: center;
+  gap: 4px;
 }
 
 .ul-address-area {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background-color: #f9fafb;
+  background-color: #f8fafc;
   padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #f3f4f6;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
   flex: 1;
+}
+
+.ul-card.active .ul-address-area {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
 }
 
 .ul-pin-icon {
@@ -201,8 +336,14 @@
 .ul-address-text {
   margin: 0;
   font-size: 13px;
-  color: #4b5563;
+  color: #1e293b;
+  font-weight: 500;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
   word-break: break-word;
 }
 
@@ -211,17 +352,20 @@
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 1px solid #f3f4f6;
 }
 
-/* ── Badges ── */
+.ul-card.active .ul-footer {
+  border-top-color: #dbeafe;
+}
 
+/* Badges */
 .ul-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -233,7 +377,7 @@
 }
 
 .ul-badge.address {
-  background-color: #fef3c7;
+  background-color: #fffbeb;
   color: #d97706;
   border: 1px solid rgba(217, 119, 6, 0.1);
 }
@@ -257,44 +401,177 @@
   }
   50% {
     opacity: 0.4;
-    transform: scale(1.35);
+    transform: scale(1.3);
   }
 }
 
-/* ── Navigation Button ── */
-
-.ul-nav-btn {
-  display: inline-flex;
+.ul-card-nav-indicator {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  display: flex;
   align-items: center;
+  gap: 4px;
+}
+
+/* ─── Right Pane: Map Preview Panel ─── */
+.ul-map-preview-panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Custom scrollbar for map preview panel */
+.ul-map-preview-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ul-map-preview-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ul-map-preview-panel::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.ul-map-preview-panel::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.ul-map-preview-header {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 14px;
+}
+
+.ul-map-preview-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.ul-map-preview-sub {
+  font-size: 13px;
+  color: #334155;
+  font-weight: 600;
+  margin: 0;
+}
+
+.ul-map-frame-wrapper {
+  position: relative;
+  background-color: #f1f5f9;
+  border-radius: 12px;
+  overflow: hidden;
+  height: 300px;
+  border: 1px solid #e2e8f0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.ul-map-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #64748b;
+  text-align: center;
+  padding: 24px;
+}
+
+.ul-map-placeholder p {
+  font-size: 14px;
+  margin-top: 12px;
+  color: #334155;
+  font-weight: 500;
+}
+
+.ul-map-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.ul-detail-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.ul-detail-icon {
+  color: #2563eb;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ul-detail-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  letter-spacing: 0.05em;
+}
+
+.ul-detail-val {
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 650;
+  word-break: break-word;
+}
+
+.ul-map-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.ul-btn-nav-large {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background-color: #2563eb;
   color: #ffffff;
   border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
 }
 
-.ul-nav-btn:hover {
+.ul-btn-nav-large:hover {
   background-color: #1d4ed8;
-  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
 }
 
-/* ── State Screens ── */
-
+/* ─── State layouts ─── */
 .ul-error-state,
 .ul-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 20px;
+  padding: 80px 24px;
   text-align: center;
   background-color: #ffffff;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #e5e7eb;
 }
 
@@ -302,26 +579,26 @@
 .ul-empty-state h3 {
   margin: 16px 0 8px 0;
   color: #111827;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
 }
 
 .ul-error-state p,
 .ul-empty-state p {
-  margin: 0 0 20px 0;
+  margin: 0 0 24px 0;
   color: #6b7280;
   font-size: 14px;
   max-width: 400px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .ul-retry-btn {
   background-color: #ef4444;
   color: #ffffff;
   border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 700;
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -331,17 +608,16 @@
   background-color: #dc2626;
 }
 
-/* ── Skeletons ── */
-
+/* ─── Skeletons ─── */
 .ul-card-skeleton {
   background-color: #ffffff;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #e5e7eb;
-  padding: 20px;
+  padding: 24px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 130px;
+  flex-direction: column;
+  gap: 16px;
+  height: 180px;
   box-sizing: border-box;
 }
 
@@ -349,7 +625,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
 }
 
 .ul-avatar-skeleton {
@@ -367,24 +642,30 @@
 }
 
 .ul-line-title {
-  width: 140px;
+  width: 50%;
   height: 14px;
   background-color: #f3f4f6;
   border-radius: 4px;
 }
 
 .ul-line-sub {
-  width: 200px;
+  width: 35%;
   height: 10px;
   background-color: #f3f4f6;
   border-radius: 4px;
 }
 
+.ul-body-skeleton {
+  height: 40px;
+  background-color: #f9fafb;
+  border-radius: 10px;
+}
+
 .ul-btn-skeleton {
-  width: 80px;
-  height: 32px;
-  border-radius: 8px;
+  width: 100%;
+  height: 14px;
   background-color: #f3f4f6;
+  border-radius: 4px;
 }
 
 .skeleton-pulse div {
@@ -392,12 +673,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 .spin-anim {
@@ -405,10 +682,6 @@
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

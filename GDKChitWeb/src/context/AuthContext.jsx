@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { getProfile, getStoredName, getStoredPhone, getStoredRole, login as apiLogin, logout as apiLogout } from '../api/authApi.js';
+import { getProfile, getStoredName, getStoredPhone, getStoredRole, getStoredId, login as apiLogin, logout as apiLogout } from '../api/authApi.js';
 import { tokenStore } from '../api/apiClient.js';
 
 const AuthContext = createContext(null);
@@ -7,8 +7,23 @@ const AuthContext = createContext(null);
 const isAdminRole = (role) => String(role || '').toLowerCase().includes('admin');
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [status, setStatus] = useState('loading');
+  const [user, setUser] = useState(() => {
+    const accessToken = tokenStore.getAccessToken();
+    if (accessToken) {
+      return {
+        id: getStoredId() ? Number(getStoredId()) : null,
+        name: getStoredName(),
+        phone: getStoredPhone(),
+        role: getStoredRole(),
+      };
+    }
+    return null;
+  });
+
+  const [status, setStatus] = useState(() => {
+    const accessToken = tokenStore.getAccessToken();
+    return accessToken ? 'authed' : 'guest';
+  });
 
   const loadSession = useCallback(async () => {
     const accessToken = tokenStore.getAccessToken();
@@ -22,6 +37,7 @@ export const AuthProvider = ({ children }) => {
       const profile = await getProfile();
       const role = getStoredRole();
       setUser({
+        id: profile?.id || (getStoredId() ? Number(getStoredId()) : null),
         name: profile?.username || getStoredName(),
         phone: getStoredPhone(),
         role,
@@ -41,6 +57,7 @@ export const AuthProvider = ({ children }) => {
     const apiUser = await apiLogin(phone, password);
     const role = getStoredRole();
     setUser({
+      id: apiUser?.id || (getStoredId() ? Number(getStoredId()) : null),
       name: apiUser?.username || getStoredName(),
       phone: apiUser?.phone || getStoredPhone(),
       role,
