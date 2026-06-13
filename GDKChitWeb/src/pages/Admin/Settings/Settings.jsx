@@ -452,25 +452,31 @@ const Settings = () => {
                   <form className="set-form" onSubmit={handleProfileSave}>
                     
                     {/* User profile image uploader */}
-                    <div className="set-image-uploader">
-                      {profileForm.userImage ? (
-                        <img src={profileForm.userImage} alt="profile" className="set-image-preview" />
-                      ) : (
-                        <div className="set-image-placeholder">
-                          <RiUserLine size={32} />
+                    <div className="set-image-editor">
+                      <div className="set-image-circle-wrap" onClick={() => document.getElementById('profile-image-upload').click()}>
+                        {profileForm.userImage ? (
+                          <img src={profileForm.userImage} alt="profile" className="set-image-preview" />
+                        ) : (
+                          <div className="set-image-placeholder">
+                            <RiUserLine size={40} />
+                          </div>
+                        )}
+                        <div className="set-image-overlay">
+                          <RiInstagramLine size={24} />
                         </div>
-                      )}
-                      <div className="set-upload-btn-wrap">
-                        <label className="set-upload-btn">
-                          <RiUploadLine size={15} /> Upload Profile Image
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            style={{ display: 'none' }} 
-                            onChange={handleImageUpload} 
-                          />
+                      </div>
+                      <div className="set-image-info">
+                        <label className="set-upload-label" htmlFor="profile-image-upload">
+                          <RiUploadLine size={16} /> Upload New Photo
                         </label>
-                        <span style={{ fontSize: 11, color: '#6b7280' }}>JPEG or PNG, Max 2MB.</span>
+                        <input 
+                          id="profile-image-upload"
+                          type="file" 
+                          accept="image/*" 
+                          style={{ display: 'none' }} 
+                          onChange={handleImageUpload} 
+                        />
+                        <span className="set-image-hint">JPEG or PNG, Max 2MB.</span>
                       </div>
                     </div>
 
@@ -582,18 +588,8 @@ const Settings = () => {
                     </div>
 
                     {message.text && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '12px 16px',
-                        borderRadius: '8px',
-                        background: message.success ? '#d1fae5' : '#fee2e2',
-                        color: message.success ? '#065f46' : '#991b1b',
-                        fontSize: 14,
-                        fontWeight: 600
-                      }}>
-                        {message.success ? <RiCheckCircleLine size={16} /> : <RiShieldAlertLine size={16} />}
+                      <div className={`message-alert ${message.success ? 'success' : 'error'}`}>
+                        {message.success ? <RiCheckCircleLine size={18} /> : <RiShieldAlertLine size={18} />}
                         {message.text}
                       </div>
                     )}
@@ -656,7 +652,7 @@ const Settings = () => {
 
                     {/* PIN setup fields */}
                     {showPinSetup && (
-                      <div>
+                      <div className="set-pin-section">
                         {/* ENTER PIN */}
                         <div className="set-pin-input-group">
                           <span className="set-pin-input-label">Enter new 4-digit PIN:</span>
@@ -695,9 +691,9 @@ const Settings = () => {
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 16, borderTop: '1px solid #e5e7eb', paddingTop: 16 }}>
+                        <div className="set-pin-actions">
                           <button 
-                            className="set-upload-btn" 
+                            className="set-btn-cancel" 
                             type="button"
                             onClick={() => { setShowPinSetup(false); setLockEnabled(false); }}
                           >
@@ -708,7 +704,7 @@ const Settings = () => {
                             type="button"
                             onClick={savePin}
                           >
-                            <RiShieldCheckLine size={15} /> Save Passcode PIN
+                            <RiShieldCheckLine size={18} /> Save Passcode PIN
                           </button>
                         </div>
                       </div>
@@ -746,35 +742,35 @@ const Settings = () => {
                       onClick={handleDetectLocation}
                       disabled={locLoading}
                     >
-                      {locLoading ? <RiLoaderLine size={16} className="spin-anim" /> : <RiRefreshLine size={16} />}
+                      {locLoading ? <RiLoaderLine size={18} className="spin-anim" /> : <RiRefreshLine size={18} />}
                       {locLoading ? 'Capturing GPS...' : 'Detect & Update My Location'}
                     </button>
 
                     {syncStatus === 'synced' && (
                       <span className="set-loc-sync-badge">
-                        <RiCheckCircleLine size={13} /> Saved & Synced with Database
+                        <RiCheckCircleLine size={16} /> Saved & Synced with Database
                       </span>
                     )}
                     {syncStatus === 'failed' && (
-                      <span className="set-loc-sync-badge" style={{ background: '#fee2e2', color: '#991b1b' }}>
-                        <RiShieldAlertLine size={13} /> Sync Failed. Try again.
+                      <span className="set-loc-sync-badge error">
+                        <RiShieldAlertLine size={16} /> Sync Failed. Try again.
                       </span>
                     )}
 
                     {liveLocation && (
                       <div className="set-loc-results">
                         <div className="set-loc-result-row">
-                          <RiMapPinLine size={16} className="set-loc-result-icon" />
-                          <div>
+                          <RiMapPinLine size={20} className="set-loc-result-icon" />
+                          <div className="set-loc-result-content">
                             <div className="set-loc-result-label">Detected Address</div>
                             <div className="set-loc-result-value">{liveLocation.address}</div>
                           </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <div className="set-loc-grid">
                           <div className="set-loc-result-row">
-                            <RiMapLine size={16} className="set-loc-result-icon" style={{ color: '#2196f3' }} />
-                            <div>
+                            <RiMapLine size={20} className="set-loc-result-icon" />
+                            <div className="set-loc-result-content">
                               <div className="set-loc-result-label">Coordinates</div>
                               <div className="set-loc-result-value">
                                 {liveLocation.latitude.toFixed(6)}, {liveLocation.longitude.toFixed(6)}
@@ -783,8 +779,8 @@ const Settings = () => {
                           </div>
 
                           <div className="set-loc-result-row">
-                            <RiRefreshLine size={16} className="set-loc-result-icon" style={{ color: '#ff9800' }} />
-                            <div>
+                            <RiRefreshLine size={20} className="set-loc-result-icon" />
+                            <div className="set-loc-result-content">
                               <div className="set-loc-result-label">Accuracy / Time</div>
                               <div className="set-loc-result-value">
                                 ±{liveLocation.accuracy}m at {new Date(liveLocation.timestamp).toLocaleTimeString()}
@@ -820,7 +816,7 @@ const Settings = () => {
                     <p className="set-section-desc">Application details, ratings, and support avenues</p>
                   </div>
 
-                  <div className="set-general-section">
+                  <div className="set-general-grid">
                     
                     {/* Rate & Share */}
                     <div className="set-info-card">

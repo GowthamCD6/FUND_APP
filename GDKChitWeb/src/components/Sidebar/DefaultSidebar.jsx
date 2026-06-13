@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import logoImg from '../../assets/logo.png';
 import {
   LayoutDashboard, BarChart3, Zap,
   MessageSquare, Menu, LogOut, User as UserIcon, X, Loader2, Gavel,
@@ -16,28 +17,43 @@ const ADMIN_NAV_GROUPS = [
     ]
   },
   {
-    title: 'REPORTS',
+    title: 'ANALYTICS & REPORTS',
     items: [
-      { id: 'reports', to: '/admin/reports', label: 'Reports', Icon: BarChart3 },
+      { id: 'reports', to: '/admin/reports', label: 'Reports & Analytics', Icon: BarChart3 },
     ]
   },
   {
-    title: 'MANAGEMENT',
+    title: 'GROUP MANAGEMENT',
     items: [
-      { id: 'auction', to: '/admin/auction', label: 'Auction Page', Icon: Gavel },
       { id: 'manage-groups', to: '/admin/manage-groups', label: 'Manage Groups', Icon: Layers },
-      { id: 'manage-users', to: '/admin/manage-users', label: 'Manage Members', Icon: UserCog },
-      { id: 'user-locations', to: '/admin/user-locations', label: 'User Locations', Icon: MapPin },
-      { id: 'create-group', to: '/admin/create-group', label: 'Create Group', Icon: Plus },
+      { id: 'create-group', to: '/admin/create-group', label: 'Create New Group', Icon: Plus },
+      { id: 'auction', to: '/admin/auction', label: 'Auction Management', Icon: Gavel },
     ]
   },
   {
-    title: 'TOOLS',
+    title: 'MEMBER MANAGEMENT',
     items: [
-      { id: 'chat', to: '/admin/chat', label: 'Chat', Icon: MessageSquare },
-      { id: 'block-user', to: '/admin/block-user', label: 'Block User', Icon: Ban },
-      { id: 'password-management', to: '/admin/password-management', label: 'Passwords', Icon: Key },
-      { id: 'settings', to: '/admin/settings', label: 'Settings', Icon: Settings },
+      { id: 'manage-users', to: '/admin/manage-users', label: 'Manage Members', Icon: UserCog },
+      { id: 'user-locations', to: '/admin/user-locations', label: 'Member Locations', Icon: MapPin },
+    ]
+  },
+  {
+    title: 'COMMUNICATION',
+    items: [
+      { id: 'chat', to: '/admin/chat', label: 'Messaging', Icon: MessageSquare },
+    ]
+  },
+  {
+    title: 'ACCESS CONTROL',
+    items: [
+      { id: 'block-user', to: '/admin/block-user', label: 'Block / Unblock Users', Icon: Ban },
+      { id: 'password-management', to: '/admin/password-management', label: 'Password Management', Icon: Key },
+    ]
+  },
+  {
+    title: 'SYSTEM CONFIGURATION',
+    items: [
+      { id: 'settings', to: '/admin/settings', label: 'Application Settings', Icon: Settings },
       { id: 'actions', to: '/admin/admintool', label: 'Admin Tools', Icon: Zap },
     ]
   }
@@ -45,40 +61,55 @@ const ADMIN_NAV_GROUPS = [
 
 const USER_NAV_GROUPS = [
   {
-    title: 'PERSONAL',
+    title: '',
     items: [
       { id: 'user-home', to: '/user/home', label: 'Home', Icon: LayoutDashboard },
-      { id: 'portfolio', to: '/user/portfolio', label: 'Portfolio', Icon: BarChart3 },
-      { id: 'user-chat', to: '/user/chat', label: 'Chat', Icon: MessageSquare },
-      { id: 'profile', to: '/user/profile', label: 'Profile', Icon: UserIcon },
+    ]
+  },
+  {
+    title: 'MY PORTFOLIO',
+    items: [
+      { id: 'portfolio', to: '/user/portfolio', label: 'Investments & Plans', Icon: BarChart3 },
+    ]
+  },
+  {
+    title: 'COMMUNICATION',
+    items: [
+      { id: 'user-chat', to: '/user/chat', label: 'Messaging', Icon: MessageSquare },
+    ]
+  },
+  {
+    title: 'MY ACCOUNT',
+    items: [
+      { id: 'profile', to: '/user/profile', label: 'Profile Settings', Icon: UserIcon },
     ]
   }
 ];
 
 /* Page title map */
 const PAGE_TITLES = {
-  '/admin/dashboard':              'Dashboard',
-  '/admin/reports':                'Reports',
-  '/admin/auction':                'Auction Page',
-  '/admin/groups':                 'Chit Plans',
-  '/admin/users':                  'Members',
-  '/admin/block-user':             'Block User',
-  '/admin/password-management':    'Passwords',
-  '/admin/settings':               'Settings',
-  '/admin/manage-groups':          'Manage Groups',
-  '/admin/manage-users':           'Manage Members',
-  '/admin/user-locations':         'User Locations',
-  '/admin/create-group':           'Create Group',
-  '/admin/admintool':              'Admin Tools',
+  '/admin/dashboard': 'Dashboard',
+  '/admin/reports': 'Reports',
+  '/admin/auction': 'Auction Page',
+  '/admin/groups': 'Chit Plans',
+  '/admin/users': 'Members',
+  '/admin/block-user': 'Block User',
+  '/admin/password-management': 'Passwords',
+  '/admin/settings': 'Settings',
+  '/admin/manage-groups': 'Manage Groups',
+  '/admin/manage-users': 'Manage Members',
+  '/admin/user-locations': 'User Locations',
+  '/admin/create-group': 'Create Group',
+  '/admin/admintool': 'Admin Tools',
   '/admin/admintool/create-group': 'Create Group',
   '/admin/admintool/manage-groups': 'Manage Groups',
-  '/admin/admintool/manage-users':  'Manage Members',
-  '/admin/admintool/add-user':     'Add Member',
-  '/admin/chat':                   'Chat',
-  '/user/home':                    'Home',
-  '/user/portfolio':               'Portfolio',
-  '/user/chat':                    'Chat',
-  '/user/profile':                 'Profile',
+  '/admin/admintool/manage-users': 'Manage Members',
+  '/admin/admintool/add-user': 'Add Member',
+  '/admin/chat': 'Chat',
+  '/user/home': 'Home',
+  '/user/portfolio': 'Portfolio',
+  '/user/chat': 'Chat',
+  '/user/profile': 'Profile',
 };
 
 /* ─── LOCK SCREEN OVERLAY ─── */
@@ -120,15 +151,15 @@ const LockScreenOverlay = ({ onUnlock }) => {
   };
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
       hour12: false
     });
   };
 
   const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       day: 'numeric',
       month: 'long'
@@ -151,36 +182,36 @@ const LockScreenOverlay = ({ onUnlock }) => {
 
         <div className="web-lock-dots">
           {[0, 1, 2, 3].map(i => (
-            <div 
-              key={i} 
-              className={`web-lock-dot ${pin.length > i ? 'active' : ''}`} 
+            <div
+              key={i}
+              className={`web-lock-dot ${pin.length > i ? 'active' : ''}`}
             />
           ))}
         </div>
 
         <div className="web-lock-keypad">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-            <button 
-              key={num} 
+            <button
+              key={num}
               className="web-lock-key"
               onClick={() => handleKeyPress(String(num))}
             >
               {num}
             </button>
           ))}
-          <button 
+          <button
             className="web-lock-key action"
             onClick={() => setPin('')}
           >
             Clear
           </button>
-          <button 
+          <button
             className="web-lock-key"
             onClick={() => handleKeyPress('0')}
           >
             0
           </button>
-          <button 
+          <button
             className="web-lock-key action"
             onClick={handleBackspace}
           >
@@ -200,7 +231,7 @@ const DefaultSidebar = () => {
   const { user, status, isAdminRole, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(() => {
     const isLockEnabled = localStorage.getItem('webPasscodeEnabled') === 'true';
@@ -210,7 +241,7 @@ const DefaultSidebar = () => {
 
   const isAdmin = isAdminRole(user?.role);
   const navGroups = isAdmin ? ADMIN_NAV_GROUPS : USER_NAV_GROUPS;
-  
+
   const headerTitle = PAGE_TITLES[location.pathname] || (isAdmin ? 'GDK Admin' : 'GDK User');
 
   const handleLogout = () => {
@@ -240,20 +271,20 @@ const DefaultSidebar = () => {
     );
   };
 
-  const SidebarContent = () => (
+  const sidebarContent = (
     <>
       {/* LOGO */}
       <div style={styles.logo}>
         <div style={styles.logoContent}>
           <div style={styles.logoIcon}>
-            <div style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: 24 }}>G</div>
+            <img src={logoImg} alt="GDK Chit Logo" style={{ width: 90, height: 90, objectFit: 'contain' }} />
           </div>
           <span style={styles.logoText}>GDK Chit</span>
         </div>
       </div>
 
       {/* NAV + SCROLL */}
-      <div style={styles.navWrapper}>
+      <div style={styles.navWrapper} className="sidebar-scroll-area">
         <nav style={styles.nav}>
           {navGroups.map((group, i) => (
             <div key={i} style={styles.navSection}>
@@ -284,6 +315,25 @@ const DefaultSidebar = () => {
   return (
     <div style={styles.container}>
       <style>{`
+        /* Custom scrollbar for sidebar */
+        .sidebar-scroll-area {
+          scrollbar-width: thin;
+          scrollbar-color: #d1d5db transparent;
+        }
+        .sidebar-scroll-area::-webkit-scrollbar {
+          width: 5px;
+        }
+        .sidebar-scroll-area::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar-scroll-area::-webkit-scrollbar-thumb {
+          background: #d1d5db;
+          border-radius: 10px;
+        }
+        .sidebar-scroll-area::-webkit-scrollbar-thumb:hover {
+          background: #9ca3af;
+        }
+
         @media (max-width: 768px) {
           .desktop-sidebar {
             display: none !important;
@@ -319,7 +369,7 @@ const DefaultSidebar = () => {
 
       {/* ================= DESKTOP SIDEBAR ================= */}
       <aside style={styles.sidebar} className="desktop-sidebar">
-        <SidebarContent />
+        {sidebarContent}
       </aside>
 
       {/* ================= MOBILE MENU OVERLAY ================= */}
@@ -338,7 +388,7 @@ const DefaultSidebar = () => {
                 <X size={24} />
               </button>
             </div>
-            <SidebarContent />
+            {sidebarContent}
           </div>
         </div>
       )}
