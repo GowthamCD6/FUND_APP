@@ -159,7 +159,9 @@ const Settings = () => {
           icon: 'download',
           title: 'Data Export',
           iconColor: '#666666',
-          onPress: () => {},
+          onPress: () => {
+            navigation.navigate('AdminDataExport');
+          },
         },
         {
           icon: 'account-cancel',

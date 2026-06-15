@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import GroupInfoAdmin from './GroupManagement/GroupInfo.jsx';
 import ApiService from '../../../../../services/ApiService';
 import Header from '../../../../../components/HeaderComponent/Header';
 
-const ManageGroups = ({onBack}) => {
+const ManageGroups = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('Active');
   const [refreshing, setRefreshing] = useState(false);
   const [groups, setGroups] = useState([]);
@@ -139,7 +139,7 @@ const ManageGroups = ({onBack}) => {
         throw new Error(result?.message || 'Failed to fetch groups');
       }
 
-      const mapped = (result.groups || []).map(g => {
+      const mapped = (result.data || result.groups || []).map(g => {
         const totalNum = Number(g.totalMembers || g.total_members) || 1;
         const totalAmount = Number(g.groupAmount || g.group_amount) || 0;
         return {
@@ -206,7 +206,7 @@ const ManageGroups = ({onBack}) => {
 
   const openGroupDetails = group => {
     // console.log(group);
-    
+
     setSelectedGroup(group);
     setShowGroupDetails(true);
   };
@@ -220,7 +220,7 @@ const ManageGroups = ({onBack}) => {
 
   const handleActivateGroup = async () => {
     setShowActionModal(false);
-    
+
     Alert.alert(
       'Activate Group',
       `Are you sure you want to activate "${longPressedGroup.name}"?`,
@@ -239,22 +239,22 @@ const ManageGroups = ({onBack}) => {
                 method: 'POST',
                 body: JSON.stringify({ groupId: longPressedGroup.id }),
               });
-              
+
               const result = await response.json();
 
               if (!response.ok || !result.success) {
                 throw new Error(result.message || 'Failed to activate group');
               }
-              
+
               // Update locally after successful backend confirmation
               setGroups(prevGroups =>
                 prevGroups.map(g =>
                   g.id === longPressedGroup.id
-                    ? {...g, status: 'Active'}
+                    ? { ...g, status: 'Active' }
                     : g
                 )
               );
-              
+
               Alert.alert('Success', 'Group activated successfully');
               setLongPressedGroup(null);
             } catch (error) {
@@ -269,7 +269,7 @@ const ManageGroups = ({onBack}) => {
 
   const handleDeleteGroup = async () => {
     setShowActionModal(false);
-    
+
     Alert.alert(
       'Delete Group',
       `Are you sure you want to delete "${longPressedGroup.name}"? This action cannot be undone.`,
@@ -288,18 +288,18 @@ const ManageGroups = ({onBack}) => {
                 method: 'POST', // Backend route maps to POST /groups/delete
                 body: JSON.stringify({ groupId: longPressedGroup.id }),
               });
-              
+
               const result = await response.json();
 
               if (!response.ok || !result.success) {
                 throw new Error(result.message || 'Failed to delete group');
               }
-              
+
               // Update locally after successful backend confirmation
               setGroups(prevGroups =>
                 prevGroups.filter(g => g.id !== longPressedGroup.id)
               );
-              
+
               Alert.alert('Success', 'Group deleted successfully');
               setLongPressedGroup(null);
             } catch (error) {
@@ -335,13 +335,13 @@ const ManageGroups = ({onBack}) => {
     return Math.round((completed / total) * 100);
   };
 
-  const renderGroupCard = ({item}) => (
+  const renderGroupCard = ({ item }) => (
     <View style={styles.groupCard}>
       <TouchableOpacity
         onLongPress={() => handleLongPress(item)}
         delayLongPress={500}
         activeOpacity={1}
-        style={{flex: 1}}>
+        style={{ flex: 1 }}>
         {/* Header with Group Name and Arrow */}
         <View style={styles.groupCardHeader}>
           <View style={styles.groupNameContainer}>
@@ -349,7 +349,7 @@ const ManageGroups = ({onBack}) => {
             <View
               style={[
                 styles.statusBadge,
-                {backgroundColor: getStatusColor(item.status)},
+                { backgroundColor: getStatusColor(item.status) },
               ]}>
               <MaterialCommunityIcons
                 name="clock-outline"
@@ -361,7 +361,7 @@ const ManageGroups = ({onBack}) => {
               </Text>
             </View>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.arrowButton}
             onPress={() => openGroupDetails(item)}
             activeOpacity={0.6}>
@@ -447,7 +447,7 @@ const ManageGroups = ({onBack}) => {
   const getTabCounts = () => {
     const active = groups.filter(g => g.status === 'Active').length;
     const notStarted = groups.filter(g => g.status === 'Not Started').length;
-    return {active, notStarted};
+    return { active, notStarted };
   };
 
   const tabCounts = getTabCounts();
@@ -591,7 +591,7 @@ const ManageGroups = ({onBack}) => {
 };
 
 // Group Details Page Component
-const GroupDetailsPage = ({group, onBack}) => {
+const GroupDetailsPage = ({ group, onBack }) => {
   const formatDate = dateString => {
     if (!dateString) return 'Not Set';
     const date = new Date(dateString);
@@ -663,7 +663,7 @@ const GroupDetailsPage = ({group, onBack}) => {
           <View
             style={[
               styles.statusBadge,
-              {backgroundColor: getStatusColor(group.status)},
+              { backgroundColor: getStatusColor(group.status) },
             ]}>
             <MaterialCommunityIcons
               name={getStatusIcon(group.status)}

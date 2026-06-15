@@ -16,6 +16,7 @@ import Login from "../../pages/Fronter/Login/Login";
 import MemberDetails from "../../pages/Admin/pages/Reports/pages/MemberDetails/MemberDetails";
 import Auction from "../../pages/Admin/pages/Settings/pages/Auction/Auction";
 import AdminEditProfile from "../../pages/Admin/pages/Settings/pages/AccountDetails/EditProfile";
+import AdminDataExport from "../../pages/Admin/pages/Settings/pages/DataExport/DataExport";
 import NewGroup from "../../pages/Admin/pages/Chat/NewGroup/NewGroup";
 import NewGroupDetails from "../../pages/Admin/pages/Chat/NewGroup/NewGroupDetails";
 import { StatusBar } from "react-native";
@@ -65,6 +66,7 @@ const Routes = () => {
                 <Stack.Screen name="MembersDetails" component={MemberDetails} />
                 <Stack.Screen name="AuctionSettings" component={Auction} />
                 <Stack.Screen name="AdminEditProfile" component={AdminEditProfile} />
+                <Stack.Screen name="AdminDataExport" component={AdminDataExport} />
                 <Stack.Screen name="UserPrivacyPolicy" component={UserPrivacyPolicy} />
                 <Stack.Screen name="UserHelpSupport" component={UserHelpSupport} />
                 <Stack.Screen name="UserMyLocation" component={UserMyLocation} />

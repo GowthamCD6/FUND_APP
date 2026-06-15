@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
-import { 
-  User as RiUserLine, Mail as RiMailLine, Phone as RiPhoneLine, 
+import {
+  User as RiUserLine, Mail as RiMailLine, Phone as RiPhoneLine,
   Calendar as RiCalendarLine, MapPin as RiMapPinLine, Home as RiHomeLine,
   Lock as RiLockLine, CheckCircle2 as RiCheckCircleLine, ShieldAlert as RiShieldAlertLine,
   UploadCloud as RiUploadLine, HelpCircle as RiHelpLine, Share2 as RiShareLine,
@@ -20,15 +20,15 @@ const SOUTH_INDIAN_STATES = [
 ];
 
 const TAMIL_NADU_CITIES = [
-  'Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Erode', 'Vellore', 
-  'Tirunelveli', 'Thoothukudi', 'Dindigul', 'Thanjavur', 'Ranipet', 'Sivakasi', 'Karur', 
-  'Kanchipuram', 'Nagercoil', 'Kumbakonam', 'Rajapalayam', 'Pudukkottai', 'Hosur', 'Ambur', 
-  'Krishnagiri', 'Cuddalore', 'Tiruvannamalai', 'Pollachi', 'Nagapattinam', 'Viluppuram', 
-  'Tirupur', 'Ariyalur', 'Perambalur', 'Dharmapuri', 'Virudhunagar', 'Namakkal', 'Tenkasi', 
-  'Mayiladuthurai', 'Thiruvarur', 'Udhagamandalam', 'Gudiyatham', 'Panruti', 'Mettur', 
-  'Sankarankoil', 'Pattukkottai', 'Ramanathapuram', 'Arakkonam', 'Sirkazhi', 'Palani', 
-  'Papanasam', 'Gobichettipalayam', 'Manapparai', 'Paramakudi', 'Tiruchengode', 'Karaikudi', 
-  'Kovilpatti', 'Thiruvallur', 'Avadi', 'Tambaram', 'Tiruppur', 'Ambattur', 'Chengalpattu', 
+  'Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Erode', 'Vellore',
+  'Tirunelveli', 'Thoothukudi', 'Dindigul', 'Thanjavur', 'Ranipet', 'Sivakasi', 'Karur',
+  'Kanchipuram', 'Nagercoil', 'Kumbakonam', 'Rajapalayam', 'Pudukkottai', 'Hosur', 'Ambur',
+  'Krishnagiri', 'Cuddalore', 'Tiruvannamalai', 'Pollachi', 'Nagapattinam', 'Viluppuram',
+  'Tirupur', 'Ariyalur', 'Perambalur', 'Dharmapuri', 'Virudhunagar', 'Namakkal', 'Tenkasi',
+  'Mayiladuthurai', 'Thiruvarur', 'Udhagamandalam', 'Gudiyatham', 'Panruti', 'Mettur',
+  'Sankarankoil', 'Pattukkottai', 'Ramanathapuram', 'Arakkonam', 'Sirkazhi', 'Palani',
+  'Papanasam', 'Gobichettipalayam', 'Manapparai', 'Paramakudi', 'Tiruchengode', 'Karaikudi',
+  'Kovilpatti', 'Thiruvallur', 'Avadi', 'Tambaram', 'Tiruppur', 'Ambattur', 'Chengalpattu',
   'Sriperumbudur', 'Others'
 ];
 
@@ -376,7 +376,7 @@ const Settings = () => {
 
       {/* Main layout */}
       <div className="set-layout">
-        
+
         {/* LEFT COLUMN: Sidebar Navigation */}
         <div className="set-nav-panel">
           <div className="set-admin-card">
@@ -402,25 +402,25 @@ const Settings = () => {
           </div>
 
           <div className="set-menu-list">
-            <button 
+            <button
               className={`set-menu-btn ${activeTab === 'profile' ? 'active' : ''}`}
               onClick={() => { setActiveTab('profile'); setMessage({ text: '', success: false }); }}
             >
               <RiUserLine size={16} /> Edit Profile Details
             </button>
-            <button 
+            <button
               className={`set-menu-btn ${activeTab === 'security' ? 'active' : ''}`}
               onClick={() => { setActiveTab('security'); setMessage({ text: '', success: false }); }}
             >
               <RiLockLine size={16} /> Web Passcode Lock
             </button>
-            <button 
+            <button
               className={`set-menu-btn ${activeTab === 'location' ? 'active' : ''}`}
               onClick={() => { setActiveTab('location'); setMessage({ text: '', success: false }); }}
             >
               <RiMapPinLine size={16} /> GPS Location Tracking
             </button>
-            <button 
+            <button
               className={`set-menu-btn ${activeTab === 'general' ? 'active' : ''}`}
               onClick={() => { setActiveTab('general'); setMessage({ text: '', success: false }); }}
             >
@@ -431,7 +431,7 @@ const Settings = () => {
 
         {/* RIGHT COLUMN: Tab Panel */}
         <div className="set-content-panel">
-          
+
           {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 350 }}>
               <RiLoaderLine size={36} className="spin-anim" color="#6b46c1" />
@@ -448,7 +448,7 @@ const Settings = () => {
                   </div>
 
                   <form className="set-form" onSubmit={handleProfileSave}>
-                    
+
                     {/* User profile image uploader */}
                     <div className="set-image-editor">
                       <div className="set-image-circle-wrap" onClick={() => document.getElementById('profile-image-upload').click()}>
@@ -467,12 +467,12 @@ const Settings = () => {
                         <label className="set-upload-label" htmlFor="profile-image-upload">
                           <RiUploadLine size={16} /> Upload New Photo
                         </label>
-                        <input 
+                        <input
                           id="profile-image-upload"
-                          type="file" 
-                          accept="image/*" 
-                          style={{ display: 'none' }} 
-                          onChange={handleImageUpload} 
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={handleImageUpload}
                         />
                         <span className="set-image-hint">JPEG or PNG, Max 2MB.</span>
                       </div>
@@ -481,11 +481,11 @@ const Settings = () => {
                     <div className="set-form-row">
                       <div className="set-form-group">
                         <label className="set-label"><RiUserLine size={14} /> Full Name <span className="set-label-req">*</span></label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           name="name"
-                          value={profileForm.name} 
-                          onChange={handleInputChange} 
+                          value={profileForm.name}
+                          onChange={handleInputChange}
                           className={`set-input ${formErrors.name ? 'error' : ''}`}
                           placeholder="e.g. Gowtham"
                         />
@@ -494,11 +494,11 @@ const Settings = () => {
 
                       <div className="set-form-group">
                         <label className="set-label"><RiMailLine size={14} /> Email Address <span className="set-label-req">*</span></label>
-                        <input 
-                          type="email" 
+                        <input
+                          type="email"
                           name="email"
-                          value={profileForm.email} 
-                          onChange={handleInputChange} 
+                          value={profileForm.email}
+                          onChange={handleInputChange}
                           className={`set-input ${formErrors.email ? 'error' : ''}`}
                           placeholder="e.g. gowtham@gmail.com"
                         />
@@ -509,10 +509,10 @@ const Settings = () => {
                     <div className="set-form-row">
                       <div className="set-form-group">
                         <label className="set-label"><RiPhoneLine size={14} /> Phone Number <span style={{ color: '#6b7280', fontSize: 11 }}>(read-only)</span></label>
-                        <input 
-                          type="text" 
-                          value={profileForm.phone} 
-                          disabled 
+                        <input
+                          type="text"
+                          value={profileForm.phone}
+                          disabled
                           className="set-input"
                           style={{ background: '#f3f4f6', cursor: 'not-allowed', color: '#6b7280' }}
                         />
@@ -520,11 +520,11 @@ const Settings = () => {
 
                       <div className="set-form-group">
                         <label className="set-label"><RiCalendarLine size={14} /> Date of Birth <span className="set-label-req">*</span></label>
-                        <input 
-                          type="date" 
+                        <input
+                          type="date"
                           name="dateOfBirth"
-                          value={profileForm.dateOfBirth} 
-                          onChange={handleInputChange} 
+                          value={profileForm.dateOfBirth}
+                          onChange={handleInputChange}
                           className={`set-input ${formErrors.dateOfBirth ? 'error' : ''}`}
                         />
                         {formErrors.dateOfBirth && <p className="set-error-msg"><RiShieldAlertLine size={12} /> {formErrors.dateOfBirth}</p>}
@@ -533,10 +533,10 @@ const Settings = () => {
 
                     <div className="set-form-group">
                       <label className="set-label"><RiHomeLine size={14} /> Street Address <span className="set-label-req">*</span></label>
-                      <textarea 
+                      <textarea
                         name="streetAddress"
-                        value={profileForm.streetAddress} 
-                        onChange={handleInputChange} 
+                        value={profileForm.streetAddress}
+                        onChange={handleInputChange}
                         rows={3}
                         className={`set-textarea ${formErrors.streetAddress ? 'error' : ''}`}
                         placeholder="Enter house no, street name, locality..."
@@ -547,10 +547,10 @@ const Settings = () => {
                     <div className="set-form-row">
                       <div className="set-form-group">
                         <label className="set-label"><RiMapPinLine size={14} /> State <span className="set-label-req">*</span></label>
-                        <select 
-                          name="state" 
-                          value={profileForm.state} 
-                          onChange={handleInputChange} 
+                        <select
+                          name="state"
+                          value={profileForm.state}
+                          onChange={handleInputChange}
                           className={`set-select ${formErrors.state ? 'error' : ''}`}
                         >
                           <option value="">Select State</option>
@@ -562,22 +562,22 @@ const Settings = () => {
                       <div className="set-form-group">
                         <label className="set-label"><RiMapPinLine size={14} /> City <span className="set-label-req">*</span></label>
                         {profileForm.state === 'Tamil Nadu' ? (
-                          <select 
-                            name="city" 
-                            value={profileForm.city} 
-                            onChange={handleInputChange} 
+                          <select
+                            name="city"
+                            value={profileForm.city}
+                            onChange={handleInputChange}
                             className={`set-select ${formErrors.city ? 'error' : ''}`}
                           >
                             <option value="">Select City</option>
                             {TAMIL_NADU_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                           </select>
                         ) : (
-                          <input 
-                            type="text" 
-                            name="city" 
-                            value={profileForm.city} 
-                            onChange={handleInputChange} 
-                            className={`set-input ${formErrors.city ? 'error' : ''}`} 
+                          <input
+                            type="text"
+                            name="city"
+                            value={profileForm.city}
+                            onChange={handleInputChange}
+                            className={`set-input ${formErrors.city ? 'error' : ''}`}
                             placeholder="Enter City name"
                           />
                         )}
@@ -593,9 +593,9 @@ const Settings = () => {
                     )}
 
                     <div className="set-btn-row">
-                      <button 
-                        type="submit" 
-                        className="set-btn-primary" 
+                      <button
+                        type="submit"
+                        className="set-btn-primary"
                         disabled={saving}
                       >
                         {saving ? <RiLoaderLine size={16} className="spin-anim" /> : <RiCheckCircleLine size={16} />}
@@ -629,10 +629,10 @@ const Settings = () => {
                         </div>
                       </div>
                       <label className="set-switch">
-                        <input 
-                          type="checkbox" 
-                          checked={lockEnabled} 
-                          onChange={handleLockToggle} 
+                        <input
+                          type="checkbox"
+                          checked={lockEnabled}
+                          onChange={handleLockToggle}
                         />
                         <span className="set-slider"></span>
                       </label>
@@ -656,10 +656,10 @@ const Settings = () => {
                           <span className="set-pin-input-label">Enter new 4-digit PIN:</span>
                           <div className="set-pin-boxes">
                             {pinInputs.map((val, idx) => (
-                              <input 
+                              <input
                                 key={`enter-${idx}`}
                                 id={`enter-pin-${idx}`}
-                                type="password" 
+                                type="password"
                                 maxLength={1}
                                 value={val}
                                 onChange={(e) => handlePinInput(idx, e.target.value, 'enter')}
@@ -675,10 +675,10 @@ const Settings = () => {
                           <span className="set-pin-input-label">Confirm 4-digit PIN:</span>
                           <div className="set-pin-boxes">
                             {confirmPinInputs.map((val, idx) => (
-                              <input 
+                              <input
                                 key={`confirm-${idx}`}
                                 id={`confirm-pin-${idx}`}
-                                type="password" 
+                                type="password"
                                 maxLength={1}
                                 value={val}
                                 onChange={(e) => handlePinInput(idx, e.target.value, 'confirm')}
@@ -690,15 +690,15 @@ const Settings = () => {
                         </div>
 
                         <div className="set-pin-actions">
-                          <button 
-                            className="set-btn-cancel" 
+                          <button
+                            className="set-btn-cancel"
                             type="button"
                             onClick={() => { setShowPinSetup(false); setLockEnabled(false); }}
                           >
                             Cancel
                           </button>
-                          <button 
-                            className="set-btn-primary" 
+                          <button
+                            className="set-btn-primary"
                             type="button"
                             onClick={savePin}
                           >
@@ -735,8 +735,8 @@ const Settings = () => {
                       Detects your browser's physical coordinates to help local users and other team members locate your central office position.
                     </p>
 
-                    <button 
-                      className="set-loc-btn" 
+                    <button
+                      className="set-loc-btn"
                       onClick={handleDetectLocation}
                       disabled={locLoading}
                     >
@@ -788,10 +788,10 @@ const Settings = () => {
                         </div>
 
                         <div className="set-loc-action-bar">
-                          <a 
+                          <a
                             href={`https://maps.google.com/maps?q=${liveLocation.latitude},${liveLocation.longitude}`}
-                            target="_blank" 
-                            rel="noopener noreferrer" 
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="set-loc-action-btn maps"
                           >
                             Open in Google Maps
@@ -815,7 +815,7 @@ const Settings = () => {
                   </div>
 
                   <div className="set-general-grid">
-                    
+
                     {/* Rate & Share */}
                     <div className="set-info-card">
                       <h4 className="set-info-card-title"><RiStarLine size={16} /> Rate & Share App</h4>
@@ -847,7 +847,7 @@ const Settings = () => {
                       <p className="set-info-card-text" style={{ marginBottom: 12 }}>
                         If you experience database syncing issues, password lockouts, or billing discrepancies, please reach out via our support channels.
                       </p>
-                      
+
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <a href="tel:+918610696889" className="set-support-action">
                           Call Support: <span>+91-8610696889</span>
