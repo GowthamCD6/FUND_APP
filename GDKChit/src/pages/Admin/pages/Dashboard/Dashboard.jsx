@@ -42,21 +42,21 @@ const Dashboard = () => {
     monthlyTarget: '50,00,000',
     monthlyCollected: '42,50,000',
     collectionRate: '85.0',
-    
+
     // Member Payment Status
     totalMembers: '1,247',
     paidMembers: '1,089',
     partialPaidMembers: '94',
     unpaidMembers: '64',
-    
+
     // Overdue Information
     overdueAmount: '8,75,000',
     overdueCount: '47',
-    
+
     // Group Status
     activeGroups: '46',
     completedGroups: '12',
-    
+
     // Today's Activity
     todayCollection: '3,25,000',
     todayPayments: '28',
@@ -105,6 +105,9 @@ const Dashboard = () => {
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 2000);
     fetchAdminNotifications().finally(() => {
         setRefreshing(false);
     });
@@ -150,6 +153,7 @@ const Dashboard = () => {
         </View>
         <TouchableOpacity style={styles.notificationIcon} onPress={() => setShowNotifications(true)}>
           <MaterialCommunityIcons name="bell-outline" size={22} color="#1F2937" />
+          <View style={styles.notificationDot} />
           {notifications.length > 0 && (
             <View style={{
                 position: 'absolute',
@@ -180,11 +184,11 @@ const Dashboard = () => {
             <Text style={styles.collectionBadgeText}>{dashboardData.collectionRate}%</Text>
           </View>
         </View>
-        
+
         <View style={styles.collectionProgress}>
           <View style={[styles.collectionProgressFill, { width: `${dashboardData.collectionRate}%` }]} />
         </View>
-        
+
         <View style={styles.collectionFooter}>
           <Text style={styles.collectionTarget}>Target: ₹{dashboardData.monthlyTarget}</Text>
           <Text style={styles.collectionPending}>
@@ -310,7 +314,7 @@ const Dashboard = () => {
             <Text style={styles.viewAllLink}>View All</Text>
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.activitiesList}>
           {recentActivities.map((activity) => (
             <View key={activity.id} style={styles.activityItem}>
