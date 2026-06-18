@@ -19,6 +19,7 @@ import AdminEditProfile from "../../pages/Admin/pages/Settings/pages/AccountDeta
 import AdminDataExport from "../../pages/Admin/pages/Settings/pages/DataExport/DataExport";
 import NewGroup from "../../pages/Admin/pages/Chat/NewGroup/NewGroup";
 import NewGroupDetails from "../../pages/Admin/pages/Chat/NewGroup/NewGroupDetails";
+import AdminNotification from "../../pages/Admin/pages/Notification/Notification";
 import { StatusBar } from "react-native";
 import TabRouter from "../Tab/TabRouter";
 import UserTabs from "../Tab/UTab/UserTab";
@@ -61,6 +62,7 @@ const Routes = () => {
                 <Stack.Screen name="AdminPasswordManagement" component={AdminPasswordManagement} />
                 <Stack.Screen name="AdminBlockUser" component={AdminBlockUserScreen} />
                 <Stack.Screen name="AdminUserLocation" component={AdminUserLocation} />
+                <Stack.Screen name="AdminNotification" component={AdminNotification} />
                 <Stack.Screen name="NewGroup" component={NewGroup} />
                 <Stack.Screen name="NewGroupDetails" component={NewGroupDetails} />
                 <Stack.Screen name="MembersDetails" component={MemberDetails} />

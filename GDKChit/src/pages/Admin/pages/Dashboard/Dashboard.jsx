@@ -10,15 +10,16 @@ import {
   Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import styles from './DashboardStyles';
 import ApiService from '../../../../services/ApiService';
 
 const { width } = Dimensions.get('window');
 
 const Dashboard = () => {
+  const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
 
   const fetchAdminNotifications = async () => {
     try {
@@ -151,7 +152,7 @@ const Dashboard = () => {
             {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
           </Text>
         </View>
-        <TouchableOpacity style={styles.notificationIcon} onPress={() => setShowNotifications(true)}>
+        <TouchableOpacity style={styles.notificationIcon} onPress={() => navigation.navigate('AdminNotification')}>
           <MaterialCommunityIcons name="bell-outline" size={22} color="#1F2937" />
           <View style={styles.notificationDot} />
           {notifications.length > 0 && (
@@ -341,53 +342,6 @@ const Dashboard = () => {
       </View>
 
       <View style={styles.bottomSpacing} />
-
-      {/* Notifications Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={showNotifications}
-        onRequestClose={() => setShowNotifications(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ width: width * 0.9, maxHeight: '80%', backgroundColor: '#fff', borderRadius: 16, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>System Notifications</Text>
-              <TouchableOpacity onPress={() => setShowNotifications(false)}>
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {notifications.length > 0 ? (
-                notifications.map((notif, index) => (
-                  <View key={index} style={{ marginBottom: 15, padding: 15, backgroundColor: notif.type === 'danger' ? '#FEF2F2' : '#FFFBEB', borderRadius: 12, borderWidth: 1, borderColor: notif.type === 'danger' ? '#FECACA' : '#FEF3C7' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                      <MaterialCommunityIcons 
-                        name={notif.type === 'danger' ? 'alert-circle' : 'clock-alert'} 
-                        size={20} 
-                        color={notif.type === 'danger' ? '#EF4444' : '#F59E0B'} 
-                        style={{ marginRight: 8 }} 
-                      />
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: notif.type === 'danger' ? '#991B1B' : '#B45309' }}>
-                        {notif.title}
-                      </Text>
-                    </View>
-                    <Text style={{ fontSize: 14, color: '#4B5563', lineHeight: 20 }}>
-                      {notif.message}
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                <View style={{ padding: 30, alignItems: 'center' }}>
-                  <MaterialCommunityIcons name="bell-sleep" size={48} color="#D1D5DB" />
-                  <Text style={{ marginTop: 15, color: '#6B7280', fontSize: 16 }}>No pending tasks or renewals.</Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
     </ScrollView>
   );
