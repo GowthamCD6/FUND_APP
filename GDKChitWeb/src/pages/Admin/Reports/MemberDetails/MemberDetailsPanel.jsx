@@ -150,37 +150,42 @@ const MemberCard = ({ member, monthlyAmount, selMonth, selYear, onChitCard, onEd
   const initials = String(member.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div className="md-member-card" style={{ borderLeftColor: color }}>
-      {/* Avatar + Info */}
-      <div className="md-member-left">
-        <div className="md-avatar" style={{ background: `${color}18`, color }}>
-          {initials}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p className="md-name">{member.name || 'Unknown'}</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{member.phone || '--'}</span>
-            <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--muted)' }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{formatCurrency(payment?.amount || monthlyAmount)}</span>
+    <div className="gc-card" style={{ borderTop: `4px solid ${color}` }}>
+      <div className="gc-header" style={{ paddingBottom: 12 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="md-avatar" style={{ background: `${color}18`, color, width: 42, height: 42, fontSize: 16 }}>
+            {initials}
+          </div>
+          <div>
+            <h3 className="gc-name" style={{ margin: '0 0 4px', fontSize: 16 }}>{member.name || 'Unknown'}</h3>
+            <span className="gc-badge" style={{ background: color }}>
+              <StatusIcon status={status} size={10} /> {status.toUpperCase()}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Status + Actions */}
-      <div className="md-member-right">
-        <span className="md-status-badge" style={{ background: color }}>
-          <StatusIcon status={status} size={10} /> {status.toUpperCase()}
-        </span>
-        <div style={{ display: 'flex', gap: 5, marginTop: 6 }}>
-          <button className="md-act-btn" onClick={() => onChitCard(member)} title="Payment History">
-            <RiHistoryLine size={14} />
-          </button>
-          <button className="md-act-btn" onClick={() => onEdit(member, payment)} title="Edit Payment">
-            <RiEditLine size={14} />
-          </button>
-          <button className="md-act-btn" onClick={() => onChitCard(member)} title="Details">
-            <RiArrowRightSLine size={14} />
-          </button>
+      <div className="gc-content">
+        <div className="gc-info-row" style={{ marginBottom: 16 }}>
+          <div className="gc-info-item">
+            <RiUserLine size={16} color="#6B7280" />
+            <span className="gc-info-text">{member.phone || '--'}</span>
+          </div>
+          <div className="gc-info-item">
+            <RiMoneyDollarCircleLine size={16} color="#6B7280" />
+            <span className="gc-info-text">{formatCurrency(payment?.amount || monthlyAmount)}</span>
+          </div>
+        </div>
+
+        <div className="gc-footer" style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+            <button className="reports-refresh-btn" style={{ padding: '6px 12px', height: 'auto', flex: 1, justifyContent: 'center' }} onClick={() => onEdit(member, payment)}>
+              <RiEditLine size={14} /> <span style={{ fontSize: 12 }}>Status</span>
+            </button>
+            <button className="reports-refresh-btn" style={{ padding: '6px 12px', height: 'auto', flex: 1, justifyContent: 'center' }} onClick={() => onChitCard(member)}>
+              <RiHistoryLine size={14} /> <span style={{ fontSize: 12 }}>History</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -297,73 +302,84 @@ const MemberDetailsPanel = ({ group, apiMembers, loading, onClose }) => {
   const availableMonthsList = getAvailableMonths();
 
   return (
-    <div className="rp-full-page">
+    <>
+      {/* ── Page Header & Action Bar Container ── */}
+      <div className="reports-header-container">
+        <div className="reports-toolbar-row" style={{ borderTop: 'none', padding: '20px 24px', alignItems: 'center' }}>
+          
+          {/* Left: Back Button & Title */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+            <button className="md-back-btn" onClick={onClose}><RiArrowLeftLine size={18} /></button>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+                <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#030712' }}>{group.name}</h3>
+                {isCurrentMonth && (
+                  <span style={{ background: '#10B981', color: '#fff', padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <RiTimeLine size={11} /> Current Month
+                  </span>
+                )}
+              </div>
+              <p style={{ margin: 0, fontSize: 13, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 500 }}>
+                <RiMoneyDollarCircleLine size={14} /> {formatCurrency(monthlyAmt)}/month
+                <span style={{ color: '#cbd5e1' }}>·</span>
+                <RiGroupLine size={14} /> {members.length} members
+              </p>
+            </div>
+          </div>
 
-      {/* ── Header ── */}
-      <div className="rp-ph" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 14, marginBottom: 0 }}>
-        <button className="md-back-btn" onClick={onClose}><RiArrowLeftLine size={18} /></button>
-        <div style={{ flex: 1 }}>
-          <h3 style={{ margin: '0 0 2px', fontSize: 20, fontWeight: 800 }}>{group.name}</h3>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <RiMoneyDollarCircleLine size={13} /> {formatCurrency(monthlyAmt)}/month
-            <span style={{ color: 'var(--border)' }}>·</span>
-            <RiGroupLine size={13} /> {members.length} members
-          </p>
-        </div>
-        <button className="rp-close" onClick={onClose}><RiCloseLine size={18} /></button>
-      </div>
-
-      {/* ── Month Selector ── */}
-      <div className="md-month-selector">
-        <div className="md-month-hd">
-          <span style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>Payment Details for:</span>
-          {isCurrentMonth && (
-            <span style={{ background: '#10B981', color: '#fff', padding: '2px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <RiTimeLine size={11} /> Current Month
+          {/* Right: Month Selector */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+            <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+              Payment Month
             </span>
-          )}
+            <div style={{ position: 'relative' }}>
+              <button className="reports-refresh-btn" onClick={() => setShowMonthPicker(v => !v)}>
+                <RiCalendarLine size={16} color="#64748B" />
+                <span>{MONTHS[selMonth]} {selYear}</span>
+                <RiArrowRightSLine size={16} color="#64748B" style={{ transform: showMonthPicker ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
+              </button>
+              
+              {showMonthPicker && (
+                <div className="md-month-picker" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 50, width: 220, margin: 0 }}>
+                  {availableMonthsList.map((mInfo) => (
+                    <button key={mInfo.id} className={`md-month-item${mInfo.index === selMonth && mInfo.year === selYear ? ' active' : ''}`}
+                      onClick={() => { setSelMonth(mInfo.index); setSelYear(mInfo.year); setShowMonthPicker(false); }}>
+                      {mInfo.name} {mInfo.year}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          
         </div>
-        <button className="md-month-btn" onClick={() => setShowMonthPicker(v => !v)}>
-          <RiCalendarLine size={16} color="#64748B" />
-          <span style={{ fontWeight: 700, fontSize: 15 }}>{MONTHS[selMonth]} {selYear}</span>
-          <RiArrowRightSLine size={16} color="#64748B" style={{ transform: showMonthPicker ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
-        </button>
       </div>
-
-      {/* ── Month Picker ── */}
-      {showMonthPicker && (
-        <div className="md-month-picker">
-          {availableMonthsList.map((mInfo) => (
-            <button key={mInfo.id} className={`md-month-item${mInfo.index === selMonth && mInfo.year === selYear ? ' active' : ''}`}
-              onClick={() => { setSelMonth(mInfo.index); setSelYear(mInfo.year); setShowMonthPicker(false); }}>
-              {mInfo.name} {mInfo.year}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* ── Stats Row ── */}
-      <div className="md-stats-row">
+      <div className="md-stats-row" style={{ background: 'transparent', borderBottom: 'none', padding: '24px 0 16px', gap: 20 }}>
         {STAT_CARDS.map(s => (
-          <div key={s.label} className="md-stat-card" style={{ background: `${s.color}12` }}>
-            <s.Icon size={24} color={s.color} />
-            <span className="md-stat-val" style={{ color: s.color }}>{s.value}</span>
+          <div key={s.label} className="md-stat-card" style={{ background: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+            <div style={{ background: `${s.color}15`, padding: 8, borderRadius: 8, marginBottom: 8 }}>
+              <s.Icon size={20} color={s.color} />
+            </div>
+            <span className="md-stat-val" style={{ color: '#030712' }}>{s.value}</span>
             <span className="md-stat-lbl">{s.label}</span>
           </div>
         ))}
       </div>
 
       {/* ── Members List ── */}
-      <div style={{ overflowY: 'auto', flex: 1 }}>
+      <div className={loading || members.length === 0 ? "" : "rn-list"}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)' }}>
-            <RiLoader4Line size={32} color="var(--primary)" style={{ animation: 'spin 1s linear infinite', marginBottom: 8 }} />
-            <p style={{ margin: 0, fontSize: 14 }}>Loading members...</p>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
+            <RiLoader4Line size={36} color="var(--primary)" style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
+            <p style={{ margin: 0, fontSize: 15 }}>Loading members...</p>
           </div>
         ) : members.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)' }}>
-            <RiGroupLine size={48} color="var(--border)" style={{ marginBottom: 12 }} />
-            <p>No members in this group yet.</p>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
+            <RiGroupLine size={56} color="var(--border)" style={{ marginBottom: 16 }} />
+            <h3 style={{ margin: '0 0 6px', fontSize: 18, color: '#030712' }}>No Members</h3>
+            <p style={{ margin: 0, fontSize: 14 }}>There are no members in this group yet.</p>
           </div>
         ) : (
           members.map(m => (
@@ -401,7 +417,7 @@ const MemberDetailsPanel = ({ group, apiMembers, loading, onClose }) => {
           onClose={() => { setEditTarget(null); setEditPayment(null); }}
         />
       )}
-    </div>
+    </>
   );
 };
 
