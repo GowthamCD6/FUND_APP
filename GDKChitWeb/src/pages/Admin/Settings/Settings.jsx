@@ -392,11 +392,11 @@ const Settings = () => {
             <h4 className="set-admin-name">{profileForm.name || 'GDK Admin'}</h4>
             <span className="set-admin-role">Super Admin</span>
             <p className="set-admin-phone">
-              <RiPhoneLine size={13} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
+              <RiPhoneLine size={13} />
               {profileForm.phone || 'Phone number'}
             </p>
-            <p className="set-admin-phone" style={{ marginTop: 4 }}>
-              <RiMailLine size={13} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
+            <p className="set-admin-phone" style={{ marginTop: 2 }}>
+              <RiMailLine size={13} />
               {profileForm.email || 'Email address'}
             </p>
           </div>
@@ -438,7 +438,7 @@ const Settings = () => {
               <p style={{ marginTop: 12, color: '#6b7280', fontSize: 14 }}>Loading configurations...</p>
             </div>
           ) : (
-            <>
+            <div key={activeTab} className="set-tab-content-anim">
               {/* Profile Details Tab */}
               {activeTab === 'profile' && (
                 <div>
@@ -514,7 +514,6 @@ const Settings = () => {
                           value={profileForm.phone}
                           disabled
                           className="set-input"
-                          style={{ background: '#f3f4f6', cursor: 'not-allowed', color: '#6b7280' }}
                         />
                       </div>
 
@@ -641,8 +640,8 @@ const Settings = () => {
                     {/* Manual Lock button if enabled */}
                     {lockEnabled && !showPinSetup && (
                       <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 13, color: '#4b5563', fontWeight: 500 }}>Lock your browser dashboard immediately</span>
-                        <button className="set-btn-primary" onClick={handleManualLock} style={{ background: '#ef4444' }}>
+                        <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Lock your browser dashboard immediately</span>
+                        <button className="set-btn-primary" onClick={handleManualLock} style={{ background: '#dc2626' }}>
                           <RiLockLine size={15} /> Lock Screen Now
                         </button>
                       </div>
@@ -865,7 +864,7 @@ const Settings = () => {
                   </div>
                 </div>
               )}
-            </>
+            </div>
           )}
 
         </div>
