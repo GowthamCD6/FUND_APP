@@ -37,6 +37,7 @@ router.post('/users/block', authenticateToken, userManagement.blockUser);
 router.post('/users/unblock', authenticateToken, userManagement.unblockUser);
 
 router.get('/collections/getMemberHistory', authenticateToken, monthlyCollection.getMemberPaymentHistory);
+router.get('/collections/defaulters', authenticateToken, monthlyCollection.getGlobalDefaulters);
 
 router.get('/reports/groups', authenticateToken, reportsController.getReportGroups);
 router.get('/reports/group-members', authenticateToken, reportsController.getGroupMemberPayments);

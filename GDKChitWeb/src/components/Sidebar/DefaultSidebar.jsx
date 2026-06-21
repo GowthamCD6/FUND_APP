@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import logoImg from '../../assets/logo.png';
 import {
-  LayoutDashboard, BarChart3, Zap,
+  LayoutDashboard, BarChart3, Zap, AlertTriangle,
   MessageSquare, Menu, LogOut, User as UserIcon, X, Loader2, Gavel,
   Settings, UserCog, MapPin, Plus, Ban, Key, Layers, Lock, Unlock
 } from 'lucide-react';
@@ -20,6 +20,7 @@ const ADMIN_NAV_GROUPS = [
     title: 'ANALYTICS & REPORTS',
     items: [
       { id: 'reports', to: '/admin/reports', label: 'Reports & Analytics', Icon: BarChart3 },
+      { id: 'defaulters', to: '/admin/defaulters', label: 'Overdue Tracker', Icon: AlertTriangle },
     ]
   },
   {
@@ -90,6 +91,7 @@ const USER_NAV_GROUPS = [
 const PAGE_TITLES = {
   '/admin/dashboard': 'Dashboard',
   '/admin/reports': 'Reports',
+  '/admin/defaulters': 'Global Defaulters Tracker',
   '/admin/auction': 'Auction Page',
   '/admin/groups': 'Chit Plans',
   '/admin/users': 'Members',

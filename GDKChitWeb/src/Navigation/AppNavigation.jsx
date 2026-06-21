@@ -18,6 +18,7 @@ import Auction from '../pages/Admin/Auction/Auction.jsx';
 import BlockUser from '../pages/Admin/BlockUser/BlockUser.jsx';
 import PasswordManagement from '../pages/Admin/PasswordManagement/PasswordManagement.jsx';
 import Settings from '../pages/Admin/Settings/Settings.jsx';
+import Defaulters from '../pages/Admin/Defaulters/Defaulters.jsx';
 
 // ── User Pages ──
 import UserHome from '../pages/User/Home/Home.jsx';
@@ -88,6 +89,7 @@ const AppNavigation = () => {
         <Route path="chat" element={<Chat />} />
         <Route path="users" element={<ManageUsers />} />
         <Route path="manage-groups" element={<ManageGroups />} />
+        <Route path="defaulters" element={<Defaulters />} />
         <Route path="manage-users" element={<ManageUsers />} />
         <Route path="user-locations" element={<UserLocation />} />
         <Route path="create-group" element={<CreateGroup />} />

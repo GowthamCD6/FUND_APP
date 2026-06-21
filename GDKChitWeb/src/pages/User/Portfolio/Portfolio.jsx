@@ -5,6 +5,7 @@ import {
   CircleDollarSign as RiMoneyDollarCircleLine, ChevronRight as RiArrowRightSLine, X as RiCloseLine, Loader2 as RiLoader4Line,
 } from 'lucide-react';
 import './Portfolio.css';
+import GroupDetailedInfo from './GroupDetailedInfo.jsx';
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(amount) || 0);
@@ -170,35 +171,12 @@ const Portfolio = () => {
         )}
       </div>
 
-      {/* Detail Modal */}
+      {/* Detailed Info Panel */}
       {detailGroup && (
-        <div className="uh-modal-backdrop" onClick={() => setDetailGroup(null)}>
-          <div className="uh-modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{detailGroup.groupName}</h3>
-              <button onClick={() => setDetailGroup(null)} style={{ background: 'var(--surface2)', border: 'none', borderRadius: 8, width: 34, height: 34, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <RiCloseLine size={18} />
-              </button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {[
-                { label: 'Investment', val: formatCurrency(detailGroup.investmentAmount) },
-                { label: 'Monthly', val: formatCurrency(detailGroup.monthlyContribution) },
-                { label: 'Total Paid', val: formatCurrency(detailGroup.totalPaid || 0) },
-                { label: 'Status', val: detailGroup.paymentStatus?.toUpperCase() },
-                { label: 'Cycles', val: `${detailGroup.currentMonth || 0}/${detailGroup.totalMonths || 20}` },
-                { label: 'Members', val: detailGroup.totalMembers || '--' },
-                { label: 'Start Date', val: formatDate(detailGroup.startDate) },
-                { label: 'Next Due', val: formatDate(detailGroup.estimatedPayDate) },
-              ].map((item, i) => (
-                <div key={i} style={{ padding: 14, borderRadius: 12, background: '#f9fafb', border: '1px solid #f3f4f6' }}>
-                  <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>{item.label}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>{item.val}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <GroupDetailedInfo 
+          group={detailGroup} 
+          onClose={() => setDetailGroup(null)} 
+        />
       )}
     </div>
   );
