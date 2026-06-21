@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import {
   RefreshCw as RiRefreshLine, Users as RiGroupLine, Check as RiCheckLine, Clock as RiTimeLine, AlertTriangle as RiAlertLine,
   CircleDollarSign as RiMoneyDollarCircleLine, ChevronRight as RiArrowRightSLine, X as RiCloseLine, Loader2 as RiLoader4Line,
+  ChevronRight as RiChevronRightLine,
 } from 'lucide-react';
 import './Portfolio.css';
 import GroupDetailedInfo from './GroupDetailedInfo.jsx';
@@ -15,9 +16,23 @@ const formatDate = (d) => {
   return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-const scOf = (s) => {
-  const m = { paid: '#10B981', completed: '#10B981', active: '#F59E0B', pending: '#F59E0B', overdue: '#EF4444' };
-  return m[String(s).toLowerCase()] || '#6B7280';
+const SC = {
+  active: '#10B981',
+  ongoing: '#10B981',
+  completed: '#6B46C1',
+  paid: '#10B981',
+  pending: '#F59E0B',
+  overdue: '#EF4444',
+  'not started': '#6B7280',
+};
+const scOf = (s) => SC[String(s).toLowerCase()] || '#6B7280';
+
+const StatusIcon = ({ status, size = 11 }) => {
+  const s = String(status).toLowerCase();
+  const Icon = s === 'paid' || s === 'completed' || s === 'active' || s === 'ongoing' ? RiCheckLine
+    : s === 'overdue' ? RiAlertLine
+      : RiTimeLine;
+  return <Icon size={size} color={scOf(s)} style={{ verticalAlign: 'middle', marginRight: 4 }} />;
 };
 
 const Portfolio = () => {
@@ -57,121 +72,180 @@ const Portfolio = () => {
     return Math.min(100, Math.round((cur / total) * 100));
   };
 
+  const getColor = (status) => {
+    return status === 'completed' ? '#10B981' : '#F59E0B';
+  };
+
   if (loading) {
     return (
-      <div className="pf-empty">
-        <RiLoader4Line size={40} color="var(--primary)" style={{ animation: 'spin 1s linear infinite' }} />
-        <p>Loading your portfolio...</p>
+      <div className="rn-page" style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <div className="rn-empty">
+          <RiLoader4Line size={40} color="var(--primary)" style={{ animation: 'spin 1s linear infinite' }} />
+          <p style={{ marginTop: 16, fontWeight: 600 }}>Loading your portfolio...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="pf-empty">
-        <RiAlertLine size={48} color="#EF4444" />
-        <h3>Unable to Load Portfolio</h3>
-        <p>{error}</p>
-        <button className="pf-retry" onClick={load}><RiRefreshLine size={16} /> Try Again</button>
+      <div className="rn-page">
+        <div className="rn-empty">
+          <RiAlertLine size={48} color="#EF4444" />
+          <h3 style={{ marginTop: 16 }}>Unable to Load Portfolio</h3>
+          <p>{error}</p>
+          <button className="reports-refresh-btn" style={{ marginTop: 14, display: 'inline-flex', margin: '14px auto 0' }} onClick={load}>
+            <RiRefreshLine size={16} /> Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
   if (groups.length === 0) {
     return (
-      <div className="pf-empty">
-        <RiGroupLine size={56} color="#d1d5db" />
-        <h3>No Portfolio Data</h3>
-        <p>You haven't joined any chit groups yet.</p>
+      <div className="rn-page">
+        <div className="rn-empty" style={{ minHeight: 'calc(100vh - 120px)' }}>
+          <RiGroupLine size={56} color="#d1d5db" />
+          <h3 style={{ marginTop: 16 }}>No Portfolio Data</h3>
+          <p>You haven't joined any chit groups yet.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="pf-page">
-      <div className="pf-header">
-        <div>
-          <h2 className="pf-title">Portfolio</h2>
-          <p className="pf-sub">Your investment overview</p>
+    <div className="rn-page">
+      
+      {/* Header Container */}
+      <div className="reports-header-container">
+        <div className="reports-toolbar-row">
+          
+          <div className="reports-tabs-wrapper">
+            <button
+              className={`reports-tab-btn ${activeTab === 'active' ? 'active' : ''}`}
+              onClick={() => setActiveTab('active')}
+            >
+              Active Groups ({activeGroups.length})
+            </button>
+            <button
+              className={`reports-tab-btn ${activeTab === 'completed' ? 'active' : ''}`}
+              onClick={() => setActiveTab('completed')}
+            >
+              Completed ({completedGroups.length})
+            </button>
+          </div>
+
+          <div className="reports-filters-wrapper">
+            <button
+              className="reports-refresh-btn"
+              onClick={load}
+              disabled={loading}
+              title="Refresh"
+            >
+              <RiRefreshLine
+                size={16}
+                className={loading ? 'spin-anim' : ''}
+              />
+              <span>Refresh</span>
+            </button>
+          </div>
+          
         </div>
-        <button className="pf-refresh" onClick={load}><RiRefreshLine size={18} /></button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="pf-summary">
-        <div className="pf-sum-card pf-sum-primary">
-          <p className="pf-sum-label">Total Amount Invested</p>
-          <h3 className="pf-sum-val">{formatCurrency(totalInvested)}</h3>
-          <p className="pf-sum-info">{groups.length} groups joined</p>
+      {/* Hero Stats Row */}
+      <div className="pf-stats-row">
+        <div className="pf-stat-card primary">
+          <div className="pf-stat-icon total"><RiMoneyDollarCircleLine size={24} /></div>
+          <div className="pf-stat-info">
+            <h3>{formatCurrency(totalInvested)}</h3>
+            <p>Total Amount Invested</p>
+          </div>
         </div>
-        <div className="pf-sum-card">
-          <p className="pf-sum-label">{selectedGroup ? selectedGroup.groupName : 'Select a Group'}</p>
-          <h3 className="pf-sum-val">{formatCurrency(selectedPaid)}</h3>
-          <p className="pf-sum-info">Amount paid in this group</p>
+        <div className="pf-stat-card">
+          <div className="pf-stat-icon group"><RiGroupLine size={24} /></div>
+          <div className="pf-stat-info">
+            <h3 style={{ color: 'var(--primary)' }}>{formatCurrency(selectedPaid)}</h3>
+            <p>Paid in {selectedGroup ? selectedGroup.groupName : 'selected group'}</p>
+          </div>
         </div>
       </div>
 
-      {/* Group Selector */}
+      {/* Group Chips Selector */}
       <div className="pf-selector">
         {groups.map(g => (
-          <button key={g.id} className={`pf-chip ${selectedGroupId === g.id ? 'active' : ''}`}
-            onClick={() => setSelectedGroupId(g.id)}>
+          <button 
+            key={g.id} 
+            className={`pf-chip ${selectedGroupId === g.id ? 'active' : ''}`}
+            onClick={() => setSelectedGroupId(g.id)}
+          >
             {g.groupName} ({formatCurrency(g.investmentAmount)})
           </button>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="pf-tabs">
-        <button className={`pf-tab ${activeTab === 'active' ? 'active' : ''}`}
-          onClick={() => setActiveTab('active')}>
-          Active Groups ({activeGroups.length})
-        </button>
-        <button className={`pf-tab ${activeTab === 'completed' ? 'active' : ''}`}
-          onClick={() => setActiveTab('completed')}>
-          Completed ({completedGroups.length})
-        </button>
-      </div>
+      {/* Group Cards Grid */}
+      {currentGroups.length > 0 ? (
+        <div className="rn-list" style={{ marginTop: 12 }}>
+          {currentGroups.map(g => {
+            const pct = getProgress(g);
+            const color = getColor(g.paymentStatus);
+            return (
+              <div key={g.id} className="gc-card" onClick={() => setDetailGroup(g)}>
+                <div className="gc-header">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 className="gc-name">{g.groupName}</h3>
+                    <span className="gc-badge" style={{ background: color }}>
+                      <StatusIcon status={g.paymentStatus || 'ACTIVE'} size={10} />
+                      {(g.paymentStatus || 'ACTIVE').toUpperCase()}
+                    </span>
+                  </div>
+                  <button className="gc-arrow-btn" title="View Details">
+                    <RiChevronRightLine size={24} color="#9CA3AF" />
+                  </button>
+                </div>
+                
+                <div className="gc-content">
+                  <div className="gc-info-row">
+                    <div className="gc-info-item">
+                      <RiGroupLine size={16} color="#64748b" />
+                      <span className="gc-info-text">{g.totalMembers || '--'} Members</span>
+                    </div>
+                    <div className="gc-info-item" style={{ justifyContent: 'flex-end' }}>
+                      <RiMoneyDollarCircleLine size={16} color="#64748b" />
+                      <span className="gc-info-text">{formatCurrency(g.monthlyContribution)}/mo</span>
+                    </div>
+                  </div>
 
-      {/* Group Cards */}
-      <div className="pf-groups">
-        {currentGroups.length > 0 ? currentGroups.map(g => {
-          const pct = getProgress(g);
-          const color = g.paymentStatus === 'completed' ? '#10B981' : '#F59E0B';
-          return (
-            <div key={g.id} className="pf-group-card" onClick={() => setDetailGroup(g)}>
-              <div className="pf-gc-top">
-                <div>
-                  <h4 className="pf-gc-name">{g.groupName}</h4>
-                  <p className="pf-gc-members"><RiGroupLine size={13} /> {g.totalMembers || '--'} Members</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span className="pf-gc-status" style={{ background: `${color}18`, color }}>{g.paymentStatus?.toUpperCase()}</span>
-                  <p className="pf-gc-amount">{formatCurrency(g.monthlyContribution)}/mo</p>
-                </div>
-              </div>
-              <div className="pf-gc-progress">
-                <div className="pf-gc-progress-hd">
-                  <span>{g.currentMonth || 0}/{g.totalMonths || 20} Cycles</span>
-                  <span style={{ color, fontWeight: 700 }}>{pct}%</span>
-                </div>
-                <div className="pf-gc-bar"><div className="pf-gc-bar-fill" style={{ width: `${pct}%`, background: color }} /></div>
-              </div>
-              <div className="pf-gc-footer">
-                <span>Total: {formatCurrency(g.investmentAmount)}</span>
-                <span>Paid: {formatCurrency(g.totalPaid || 0)}</span>
-              </div>
-            </div>
-          );
-        }) : (
-          <div className="pf-empty-sm">
-            <RiGroupLine size={40} color="#d1d5db" />
-            <p>{activeTab === 'active' ? 'No active groups found' : 'No completed groups found'}</p>
-          </div>
-        )}
-      </div>
+                  <div className="gc-progress-wrap">
+                    <div className="gc-progress-hd">
+                      <span className="gc-progress-txt">{g.currentMonth || 0}/{g.totalMonths || 20} Cycles</span>
+                      <span className="gc-progress-pct" style={{ color }}>{pct}%</span>
+                    </div>
+                    <div className="gc-bar">
+                      <div className="gc-bar-fill" style={{ width: `${pct}%`, background: color }} />
+                    </div>
+                  </div>
 
-      {/* Detailed Info Panel */}
+                  <div className="gc-footer" style={{ marginBottom: 12 }}>
+                    <span className="gc-date">Total: {formatCurrency(g.investmentAmount)}</span>
+                    <span className="gc-date" style={{ textAlign: 'right', color: 'var(--primary)', fontWeight: 800 }}>Paid: {formatCurrency(g.totalPaid || 0)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rn-empty">
+          <RiGroupLine size={48} color="var(--subtle)" style={{ marginBottom: 16 }} />
+          <h3>No Groups Found</h3>
+          <p>{activeTab === 'active' ? 'You have no active chit groups.' : 'You have no completed chit groups.'}</p>
+        </div>
+      )}
+
+      {/* Detailed Info Panel Modal */}
       {detailGroup && (
         <GroupDetailedInfo 
           group={detailGroup} 
