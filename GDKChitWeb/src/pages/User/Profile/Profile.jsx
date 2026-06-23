@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { makeRequest } from '../../../api/apiClient.js';
 import {
@@ -32,28 +33,30 @@ const Profile = () => {
   const displayPhone = profileData?.phone || user?.phone || 'No phone number';
   const initial = displayName.charAt(0).toUpperCase();
 
+  const navigate = useNavigate();
+
   const SETTINGS = [
-    { icon: RiUserLine, label: 'Account Details', color: '#6B46C1' },
-    { icon: RiBankLine, label: 'Linked Bank Account', color: '#2842C4' },
-    { icon: RiShieldUserLine, label: 'Identity Verification', color: '#10B981' },
-    { icon: RiUserLine, label: 'Nominee Details', color: '#F59E0B' },
+    { icon: RiUserLine, label: 'Account Details', color: '#6B46C1', path: '/user/profile/account-details' },
+    { icon: RiBankLine, label: 'Linked Bank Account', color: '#2842C4', path: '/user/profile/link-bank-account' },
+    { icon: RiShieldUserLine, label: 'Identity Verification', color: '#10B981', path: '/user/profile/identity-verification' },
+    { icon: RiUserLine, label: 'Nominee Details', color: '#F59E0B', path: '/user/profile/nominee-details' },
   ];
 
   const ADVANCED = [
-    { icon: RiFileShieldLine, label: 'Security & Permission', color: '#EF4444' },
-    { icon: RiMapPinLine, label: 'My Location', color: '#6B46C1' },
-    { icon: RiMap2Line, label: 'Admin Location', color: '#2842C4' },
+    { icon: RiFileShieldLine, label: 'Security & Permission', color: '#EF4444', path: '/user/profile/security-permission' },
+    { icon: RiMapPinLine, label: 'My Location', color: '#6B46C1', path: '/user/profile/my-location' },
+    { icon: RiMap2Line, label: 'Admin Location', color: '#2842C4', path: '/user/profile/admin-location' },
   ];
 
   const GENERAL = [
-    { icon: RiFileShieldLine, label: 'Privacy Policy', color: '#6B7280' },
-    { icon: RiQuestionLine, label: 'Help & Support', color: '#6B7280' },
-    { icon: RiShareLine, label: 'Share GDK Chit Fund', color: '#6B7280' },
-    { icon: RiStarLine, label: 'Rate GDK Chit Fund', color: '#F59E0B' },
+    { icon: RiFileShieldLine, label: 'Privacy Policy', color: '#6B7280', path: '/user/profile/privacy-policy' },
+    { icon: RiQuestionLine, label: 'Help & Support', color: '#6B7280', path: '/user/profile/help-support' },
+    { icon: RiShareLine, label: 'Share GDK Chit Fund', color: '#6B7280', onClick: () => alert('Share functionality coming soon!') },
+    { icon: RiStarLine, label: 'Rate GDK Chit Fund', color: '#F59E0B', onClick: () => alert('Rating functionality coming soon!') },
   ];
 
-  const MenuItem = ({ icon: Icon, label, color, onClick }) => (
-    <button className="prof-menu-item" onClick={onClick}>
+  const MenuItem = ({ icon: Icon, label, color, path, onClick }) => (
+    <button className="prof-menu-item" onClick={() => path ? navigate(path) : onClick && onClick()}>
       <div className="prof-menu-left">
         <div className="prof-menu-icon" style={{ background: `${color}15`, color }}><Icon size={18} /></div>
         <span className="prof-menu-label">{label}</span>

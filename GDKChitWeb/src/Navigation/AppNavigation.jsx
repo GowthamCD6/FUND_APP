@@ -26,6 +26,17 @@ import Portfolio from '../pages/User/Portfolio/Portfolio.jsx';
 import UserProfile from '../pages/User/Profile/Profile.jsx';
 import UserChat from '../pages/User/Chat/UserChat.jsx';
 
+// ── User Profile Sub-Pages ──
+import AccountDetails from '../pages/User/Profile/Pages/AccountDetails.jsx';
+import LinkBankAccount from '../pages/User/Profile/Pages/LinkBankAccount.jsx';
+import IdentityVerification from '../pages/User/Profile/Pages/IdentityVerification.jsx';
+import NomineeDetails from '../pages/User/Profile/Pages/NomineeDetails.jsx';
+import SecurityPermission from '../pages/User/Profile/Pages/SecurityPermission.jsx';
+import MyLocation from '../pages/User/Profile/Pages/MyLocation.jsx';
+import AdminLocation from '../pages/User/Profile/Pages/AdminLocation.jsx';
+import PrivacyPolicy from '../pages/User/Profile/Pages/PrivacyPolicy.jsx';
+import HelpSupport from '../pages/User/Profile/Pages/HelpSupport.jsx';
+
 // ── Public Pages ──
 import Landing from '../pages/Landing/Landing.jsx';
 import Login, { NotAuthorized, NotFound } from '../pages/Login/Login.jsx';
@@ -115,6 +126,17 @@ const AppNavigation = () => {
         <Route path="portfolio" element={<Portfolio />} />
         <Route path="chat" element={<UserChat />} />
         <Route path="profile" element={<UserProfile />} />
+        
+        {/* Profile Sub-Pages */}
+        <Route path="profile/account-details" element={<AccountDetails />} />
+        <Route path="profile/link-bank-account" element={<LinkBankAccount />} />
+        <Route path="profile/identity-verification" element={<IdentityVerification />} />
+        <Route path="profile/nominee-details" element={<NomineeDetails />} />
+        <Route path="profile/security-permission" element={<SecurityPermission />} />
+        <Route path="profile/my-location" element={<MyLocation />} />
+        <Route path="profile/admin-location" element={<AdminLocation />} />
+        <Route path="profile/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="profile/help-support" element={<HelpSupport />} />
       </Route>
 
       {/* ── 404 ── */}

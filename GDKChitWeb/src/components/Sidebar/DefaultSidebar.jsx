@@ -5,7 +5,8 @@ import logoImg from '../../assets/logo.png';
 import {
   LayoutDashboard, BarChart3, Zap, AlertTriangle,
   MessageSquare, Menu, LogOut, User as UserIcon, X, Loader2, Gavel,
-  Settings, UserCog, MapPin, Plus, Ban, Key, Layers, Lock, Unlock
+  Settings, UserCog, MapPin, Plus, Ban, Key, Layers, Lock, Unlock,
+  Landmark, ShieldCheck, Users, ShieldAlert, Map, FileText, HelpCircle
 } from 'lucide-react';
 
 /* ── NAV GROUPS ── */
@@ -83,6 +84,20 @@ const USER_NAV_GROUPS = [
     title: 'MY ACCOUNT',
     items: [
       { id: 'profile', to: '/user/profile', label: 'Profile Settings', Icon: UserIcon },
+    ]
+  },
+  {
+    title: 'MORE OPTIONS',
+    items: [
+      { id: 'account-details', to: '/user/profile/account-details', label: 'Account Details', Icon: UserCog },
+      { id: 'link-bank', to: '/user/profile/link-bank-account', label: 'Linked Bank Account', Icon: Landmark },
+      { id: 'identity', to: '/user/profile/identity-verification', label: 'Identity Verification', Icon: ShieldCheck },
+      { id: 'nominee', to: '/user/profile/nominee-details', label: 'Nominee Details', Icon: Users },
+      { id: 'security', to: '/user/profile/security-permission', label: 'Security & Permission', Icon: ShieldAlert },
+      { id: 'my-location', to: '/user/profile/my-location', label: 'My Location', Icon: MapPin },
+      { id: 'admin-location', to: '/user/profile/admin-location', label: 'Admin Location', Icon: Map },
+      { id: 'privacy-policy', to: '/user/profile/privacy-policy', label: 'Privacy Policy', Icon: FileText },
+      { id: 'help-support', to: '/user/profile/help-support', label: 'Help & Support', Icon: HelpCircle },
     ]
   }
 ];
