@@ -26,6 +26,12 @@ import Portfolio from '../pages/User/Portfolio/Portfolio.jsx';
 import UserProfile from '../pages/User/Profile/Profile.jsx';
 import UserChat from '../pages/User/Chat/UserChat.jsx';
 
+// ── User Chit Pages ──
+import JoinGroup from '../pages/User/JoinGroup/JoinGroup.jsx';
+import GroupCard from '../pages/User/GroupCard/GroupCard.jsx';
+import UserAuction from '../pages/User/Auction/Auction.jsx';
+import Finance from '../pages/User/Finance/Finance.jsx';
+
 // ── User Profile Sub-Pages ──
 import AccountDetails from '../pages/User/Profile/Pages/AccountDetails.jsx';
 import LinkBankAccount from '../pages/User/Profile/Pages/LinkBankAccount.jsx';
@@ -126,6 +132,12 @@ const AppNavigation = () => {
         <Route path="portfolio" element={<Portfolio />} />
         <Route path="chat" element={<UserChat />} />
         <Route path="profile" element={<UserProfile />} />
+
+        {/* Chit Actions */}
+        <Route path="join-group" element={<JoinGroup />} />
+        <Route path="group-card" element={<GroupCard />} />
+        <Route path="auction" element={<UserAuction />} />
+        <Route path="finance" element={<Finance />} />
         
         {/* Profile Sub-Pages */}
         <Route path="profile/account-details" element={<AccountDetails />} />

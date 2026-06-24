@@ -105,49 +105,49 @@ const MoreModal = ({ visible, onClose, selectedGroup }) => {
   }
 
   return (
-  <Modal
-    animationType="slide"
-    transparent={true}
-    visible={visible}
-    onRequestClose={onClose}
-  >
-    <View style={styles.overlay}>
-      <View style={styles.container}>
-        {/* Modal Content */}
-        <View style={styles.menuList}>
-          <MenuItem
-            icon={<MaterialCommunityIcons name="account-group" size={26} color="#6B46C1" />}
-            title="Join the Group"
-            description="Enter the group code to join the group"
-            onPress={handleJoinPress}
-          />
-          <MenuItem
-            icon={<MaterialCommunityIcons name="credit-card" size={26} color="#6B46C1" />}
-            title="Group card"
-            description="View and confirm the pay details"
-            onPress={handleGroupCardPress}
-          />
-          <MenuItem
-            icon={<MaterialCommunityIcons name="gavel" size={26} color="#6B46C1" />}
-            title="Auction"
-            description="Participate in chit auction bidding"
-            onPress={handleAuctionPress}
-          />
-          <MenuItem
-            icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#6B46C1" />}
-            title="Finance"
-            description="Contribute and earn extra interest"
-            onPress={handleFinancePress}
-          />
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.overlay}>
+        <View style={styles.container}>
+          {/* Modal Content */}
+          <View style={styles.menuList}>
+            <MenuItem
+              icon={<MaterialCommunityIcons name="account-group" size={26} color="#6B46C1" />}
+              title="Join the Group"
+              description="Enter the group code to join the group"
+              onPress={handleJoinPress}
+            />
+            <MenuItem
+              icon={<MaterialCommunityIcons name="credit-card" size={26} color="#6B46C1" />}
+              title="Group card"
+              description="View and confirm the pay details"
+              onPress={handleGroupCardPress}
+            />
+            <MenuItem
+              icon={<MaterialCommunityIcons name="gavel" size={26} color="#6B46C1" />}
+              title="Auction"
+              description="Participate in chit auction bidding"
+              onPress={handleAuctionPress}
+            />
+            <MenuItem
+              icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#6B46C1" />}
+              title="Finance"
+              description="Contribute and earn extra interest"
+              onPress={handleFinancePress}
+            />
+          </View>
+          {/* X Button */}
+          <TouchableOpacity style={styles.xButton} onPress={handleModalClose}>
+            <Text style={styles.xButtonText}>×</Text>
+          </TouchableOpacity>
         </View>
-        {/* X Button */}
-        <TouchableOpacity style={styles.xButton} onPress={handleModalClose}>
-          <Text style={styles.xButtonText}>×</Text>
-        </TouchableOpacity>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
 };
 
 const MenuItem = ({ icon, title, description, onPress }) => (

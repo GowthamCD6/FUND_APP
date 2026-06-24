@@ -87,17 +87,12 @@ const USER_NAV_GROUPS = [
     ]
   },
   {
-    title: 'MORE OPTIONS',
+    title: 'CHIT ACTIONS',
     items: [
-      { id: 'account-details', to: '/user/profile/account-details', label: 'Account Details', Icon: UserCog },
-      { id: 'link-bank', to: '/user/profile/link-bank-account', label: 'Linked Bank Account', Icon: Landmark },
-      { id: 'identity', to: '/user/profile/identity-verification', label: 'Identity Verification', Icon: ShieldCheck },
-      { id: 'nominee', to: '/user/profile/nominee-details', label: 'Nominee Details', Icon: Users },
-      { id: 'security', to: '/user/profile/security-permission', label: 'Security & Permission', Icon: ShieldAlert },
-      { id: 'my-location', to: '/user/profile/my-location', label: 'My Location', Icon: MapPin },
-      { id: 'admin-location', to: '/user/profile/admin-location', label: 'Admin Location', Icon: Map },
-      { id: 'privacy-policy', to: '/user/profile/privacy-policy', label: 'Privacy Policy', Icon: FileText },
-      { id: 'help-support', to: '/user/profile/help-support', label: 'Help & Support', Icon: HelpCircle },
+      { id: 'join-group', to: '/user/join-group', label: 'Join the Group', Icon: Users },
+      { id: 'group-card', to: '/user/group-card', label: 'Group Card', Icon: Landmark },
+      { id: 'auction', to: '/user/auction', label: 'Auction', Icon: Gavel },
+      { id: 'finance', to: '/user/finance', label: 'Finance', Icon: Layers },
     ]
   }
 ];
@@ -127,6 +122,10 @@ const PAGE_TITLES = {
   '/user/portfolio': 'Portfolio',
   '/user/chat': 'Chat',
   '/user/profile': 'Profile',
+  '/user/join-group': 'Join Group',
+  '/user/group-card': 'Group Card',
+  '/user/auction': 'Auction',
+  '/user/finance': 'Finance',
 };
 
 /* ─── LOCK SCREEN OVERLAY ─── */
