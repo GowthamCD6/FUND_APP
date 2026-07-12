@@ -176,12 +176,12 @@ const AdminAuctionMonitor = ({
     }).format(amount);
   };
 
-  const getCurrentHighestBid = () => {
+  const getCurrentLowestBid = () => {
     const activeBids = participants.filter(p => p.bid > 0);
     if (activeBids.length === 0) {
       return parseFloat(initialAmount) || selectedGroup?.groupAmount || 90000;
     }
-    return Math.max(...activeBids.map(p => p.bid));
+    return Math.min(...activeBids.map(p => p.bid));
   };
 
   const startAuction = () => {
@@ -206,10 +206,12 @@ const AdminAuctionMonitor = ({
     }
 
     // Send auction start event via WebSocket
+    const participantIds = participants.map(p => p.id);
     AuctionWebSocketService.startAuction(
       selectedGroup.id,
       parseFloat(initialAmount),
-      300
+      300,
+      participantIds
     );
   };
 
@@ -268,7 +270,7 @@ const AdminAuctionMonitor = ({
     }
 
     const auctionWinner = validBids.reduce((prev, current) => 
-      (prev.bid > current.bid) ? prev : current
+      (prev.bid < current.bid) ? prev : current
     );
 
     // Send end auction event via WebSocket
@@ -385,9 +387,9 @@ const AdminAuctionMonitor = ({
           <MaterialCommunityIcons name="trophy" size={20} color="#6B46C1" />
         </View>
         <Text style={[styles.statValue, { fontSize: 14 }]}>
-          {formatCurrency(getCurrentHighestBid())}
+          {formatCurrency(getCurrentLowestBid())}
         </Text>
-        <Text style={styles.statLabel}>Highest Bid</Text>
+        <Text style={styles.statLabel}>Lowest Bid</Text>
       </View>
     </View>
   );
@@ -408,7 +410,7 @@ const AdminAuctionMonitor = ({
         <View>
           {participants
             .filter(p => p.bid > 0)
-            .sort((a, b) => b.bid - a.bid)
+            .sort((a, b) => a.bid - b.bid)
             .map((participant, index) => (
               <View key={participant.id} style={[styles.bidRow, index === 0 && styles.topBid]}>
                 <View style={styles.bidInfo}>
@@ -485,7 +487,7 @@ const AdminAuctionMonitor = ({
       ) : (
         <View>
           {activeBidders
-            .sort((a, b) => b.amount - a.amount)
+            .sort((a, b) => a.amount - b.amount)
             .map((bidder, index) => (
               <View key={bidder.userId} style={[styles.activeBidderRow, index === 0 && styles.topActiveBidder]}>
                 <View style={styles.bidderInfo}>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,14 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Svg, { Polygon, G, Circle } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuctionWebSocketService from '../../../../../../../services/AuctionWebSocketService';
 
 const { width, height } = Dimensions.get('window');
 
 const RandomAuction = ({
   participants = [],
+  selectedGroup,
   onAuctionComplete,
 }) => {
   
@@ -135,6 +138,21 @@ const RandomAuction = ({
       Alert.alert("Error", "No participants available for the random draw.");
       return;
     }
+
+    // Pre-select winner and dice value to synchronize with users in real-time
+    const maxDiceValue = Math.min(participants.length, 6);
+    const finalValue = Math.floor(Math.random() * maxDiceValue) + 1;
+    const winnerIndex = Math.floor(Math.random() * participants.length);
+    const winner = participants[winnerIndex];
+
+    if (selectedGroup?.id) {
+      AuctionWebSocketService.rollDice(
+        selectedGroup.id,
+        30000, // 30 seconds
+        finalValue,
+        winner
+      );
+    }
     
     setIsDiceRolling(true);
     setShowResult(false);
@@ -158,10 +176,6 @@ const RandomAuction = ({
       Vibration.vibrate([0, 40, 25, 40]);
     }
 
-    // Roll based on participant count - max 6 participants
-    const maxDiceValue = Math.min(participants.length, 6);
-    const finalValue = Math.floor(Math.random() * maxDiceValue) + 1;
-    
     // Reset animations
     diceAnimations.scale.setValue(1);
     diceAnimations.translateY.setValue(0);
@@ -406,11 +420,6 @@ const RandomAuction = ({
         setTimeout(() => {
           setIsDiceRolling(false);
           
-          // Select winner based on dice value and participant count
-          // Dice value directly maps to participant index (1-based to 0-based)
-          const winnerIndex = finalValue - 1;
-          const winner = participants[winnerIndex];
-
           if (onAuctionComplete && winner) {
             onAuctionComplete({
               type: 'random',
@@ -488,7 +497,7 @@ const RandomAuction = ({
                 stroke={isMainFace ? '#2D1B69' : '#4C1D95'}
                 strokeWidth={isMainFace ? 3.5 : 2.5}
               />
-              {renderDots(face.dots, face.vertices, maxParticipants)} {/* Pass maxParticipants to renderDots */}
+              {renderDots(face.dots, face.vertices, maxParticipants)}
             </G>
           );
         })}

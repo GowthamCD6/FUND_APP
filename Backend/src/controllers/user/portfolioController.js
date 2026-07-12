@@ -67,7 +67,17 @@ exports.getPortfolio = async (req, res) => {
           WHERE mc.group_id = g.id AND mc.user_id = ug.user_id AND mc.deleted_at IS NULL
           ORDER BY mc.collection_period DESC
           LIMIT 1
-        ) as latest_status
+        ) as latest_status,
+        (
+          SELECT COALESCE(SUM(amount), 0)
+          FROM monthly_collections mc
+          WHERE mc.group_id = g.id AND LOWER(mc.status) = 'paid' AND mc.deleted_at IS NULL
+        ) as group_collected_amount,
+        (
+          SELECT COUNT(id)
+          FROM group_auction_winners gaw
+          WHERE gaw.group_id = g.id AND gaw.deleted_at IS NULL
+        ) as group_completed_cycles
       FROM user_grouping ug
       INNER JOIN \`groups\` g ON ug.group_id = g.id
       INNER JOIN users u ON ug.user_id = u.id
@@ -132,6 +142,8 @@ exports.getPortfolio = async (req, res) => {
         monthlyContribution: monthlyAmount,
         currentMonth: completedCycles,
         totalMonths: safeDuration,
+        groupCollectedAmount: toSafeNumber(row.group_collected_amount, 0),
+        groupCompletedCycles: Number(row.group_completed_cycles) || 0,
       };
     });
 

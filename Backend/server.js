@@ -52,6 +52,32 @@ wss.on('connection', (ws, req) => {
       data: { clientId, userType }
     }));
 
+    // Send active auction if one exists for the user's groups
+    db.promise().query(
+      'SELECT group_id FROM user_grouping WHERE user_id = ?',
+      [userId]
+    ).then(([rows]) => {
+      rows.forEach(row => {
+        const auctionId = `auction-${row.group_id}`;
+        const activeAuction = auctionSessions.get(auctionId);
+        if (activeAuction && ws.readyState === WebSocket.OPEN) {
+          const elapsed = Math.floor((Date.now() - activeAuction.startTime) / 1000);
+          const remainingTime = Math.max(0, activeAuction.duration - elapsed);
+          ws.send(JSON.stringify({
+            type: 'auction_started',
+            data: {
+              groupId: activeAuction.groupId,
+              initialAmount: activeAuction.initialAmount,
+              duration: activeAuction.duration,
+              startTime: activeAuction.startTime,
+              remainingTime,
+              bids: activeAuction.bids,
+            }
+          }));
+        }
+      });
+    }).catch(err => console.error('Error fetching user groups on connection:', err));
+
     // Handle incoming messages
     ws.on('message', (message) => {
       try {
@@ -278,6 +304,53 @@ function handleAuctionMessage(type, data, clientId, userType) {
       }
       break;
     
+    case 'setup_auction':
+      if (userType === 'admin') {
+        const { groupId, type: auctionType, participantIds } = data;
+        // Broadcast setup alert to selected participants
+        db.promise().query(
+          'SELECT group_name FROM `groups` WHERE id = ?',
+          [groupId]
+        ).then(([rows]) => {
+          const groupName = rows[0]?.group_name || 'Group';
+          clientSessions.forEach((session, cid) => {
+            const match = participantIds && participantIds.map(pid => pid.toString()).includes(session.userId?.toString());
+            if (match && session.ws.readyState === WebSocket.OPEN) {
+              session.ws.send(JSON.stringify({
+                type: 'auction_created_alert',
+                data: {
+                  groupId,
+                  groupName,
+                  auctionType, // 'betting' or 'random'
+                  participantIds
+                }
+              }));
+            }
+          });
+        }).catch(err => console.error('Error fetching group name for alert:', err));
+      }
+      break;
+    
+    case 'roll_dice':
+      if (userType === 'admin') {
+        const { groupId, duration, finalValue, winner } = data;
+        // Broadcast dice rolling to all users
+        clientSessions.forEach((session, cid) => {
+          if (session.ws.readyState === WebSocket.OPEN) {
+            session.ws.send(JSON.stringify({
+              type: 'dice_rolling',
+              data: {
+                groupId,
+                duration,
+                finalValue,
+                winner
+              }
+            }));
+          }
+        });
+      }
+      break;
+
     default:
       console.warn('Unknown message type:', type);
   }
@@ -349,6 +422,24 @@ function placeBid(data, clientId) {
       client.ws.send(JSON.stringify({
         type: 'error',
         data: { message: 'Auction not found or not active' }
+      }));
+    }
+    return;
+  }
+
+  // Get current lowest bid
+  let currentLowest = auction.initialAmount;
+  if (auction.bids.length > 0) {
+    currentLowest = Math.min(...auction.bids.map(b => b.amount));
+  }
+
+  // Validate bid amount (must be strictly lower than current lowest bid)
+  if (Number(amount) >= currentLowest) {
+    const client = clientSessions.get(clientId);
+    if (client?.ws) {
+      client.ws.send(JSON.stringify({
+        type: 'error',
+        data: { message: `Your bid must be lower than current lowest bid (₹${currentLowest.toLocaleString('en-IN')})` }
       }));
     }
     return;
@@ -445,13 +536,13 @@ function endAuction(groupId, adminClientId) {
 
   auction.status = 'ended';
 
-  // Find winner (highest bid)
+  // Find winner (lowest bid)
   let winner = null;
   if (auction.bids.length > 0) {
-    const maxBid = auction.bids.reduce((max, bid) => 
-      bid.amount > max.amount ? bid : max
+    const minBid = auction.bids.reduce((min, bid) => 
+      bid.amount < min.amount ? bid : min
     );
-    winner = maxBid;
+    winner = minBid;
   }
 
   broadcastToGroup(groupId, {

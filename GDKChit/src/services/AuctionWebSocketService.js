@@ -61,11 +61,12 @@ class AuctionWebSocketService {
   }
 
   // Start auction
-  startAuction(groupId, initialAmount, duration = 300) {
+  startAuction(groupId, initialAmount, duration = 300, participantIds = []) {
     this.send('start_auction', {
       groupId,
       initialAmount,
       duration,
+      participantIds,
       startTime: Date.now(),
     });
   }
@@ -99,6 +100,25 @@ class AuctionWebSocketService {
   // Reset auction
   resetAuction(groupId) {
     this.send('reset_auction', { groupId });
+  }
+
+  // Setup auction
+  setupAuction(groupId, type, participantIds = []) {
+    this.send('setup_auction', {
+      groupId,
+      type,
+      participantIds,
+    });
+  }
+
+  // Roll dice
+  rollDice(groupId, duration, finalValue, winner) {
+    this.send('roll_dice', {
+      groupId,
+      duration,
+      finalValue,
+      winner,
+    });
   }
 
   // Send message

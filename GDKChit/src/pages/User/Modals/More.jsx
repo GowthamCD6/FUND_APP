@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Join from './Pages/JoinGroup/JoinGroup';
@@ -11,6 +11,12 @@ const MoreModal = ({ visible, onClose, selectedGroup }) => {
   const [showGroupCard, setShowGroupCard] = useState(false);
   const [showAuction, setShowAuction] = useState(false);
   const [showFinance, setShowFinance] = useState(false);
+
+  useEffect(() => {
+    if (selectedGroup) {
+      setShowAuction(true);
+    }
+  }, [selectedGroup]);
 
   const handleJoinPress = () => {
     setShowJoinPage(true);
@@ -86,7 +92,7 @@ const MoreModal = ({ visible, onClose, selectedGroup }) => {
         visible={visible}
         onRequestClose={handleModalClose}
       >
-        <Auction onClose={handleAuctionBack} />
+        <Auction onClose={handleAuctionBack} selectedGroupId={selectedGroup?.id} selectedGroupType={selectedGroup?.type} />
       </Modal>
     );
   }

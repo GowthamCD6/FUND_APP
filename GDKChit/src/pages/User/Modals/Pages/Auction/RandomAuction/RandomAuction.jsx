@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Svg, { Polygon, G, Circle } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuctionWebSocketService from '../../../../../../services/AuctionWebSocketService';
 
 const { width, height } = Dimensions.get('window');
 
-const RandomAuction = ({ participants = [], onAuctionComplete }) => {
+const RandomAuction = ({ participants = [], selectedGroup, onAuctionComplete }) => {
   const [diceValue, setDiceValue] = useState(1);
   const [isDiceRolling, setIsDiceRolling] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -220,21 +222,47 @@ const RandomAuction = ({ participants = [], onAuctionComplete }) => {
     );
   };
 
-  const rollDice = () => {
-    // This function is now for simulation/demo purposes only
-    // In real app, only admin can trigger this
-    if (isDiceRolling) return;
+  useEffect(() => {
+    let unsubscribeDice;
+
+    const initWebSocket = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const userId = await AsyncStorage.getItem('userId');
+        
+        if (token && userId) {
+          await AuctionWebSocketService.connect(token, userId, 'user');
+          
+          unsubscribeDice = AuctionWebSocketService.on('dice_rolling', (data) => {
+            const { groupId, duration, finalValue, winner } = data;
+            if (groupId && selectedGroup && groupId.toString() === selectedGroup.id.toString()) {
+              executeDiceRoll(finalValue, duration, winner);
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Failed to connect WebSocket on user RandomAuction:', err);
+      }
+    };
+
+    initWebSocket();
+
+    return () => {
+      unsubscribeDice?.();
+    };
+  }, [selectedGroup]);
+
+  const executeDiceRoll = (finalValue, duration, winner) => {
     setIsDiceRolling(true);
     setShowResult(false);
-
+    
     if (Platform.OS === 'ios') {
       Vibration.vibrate([0, 50, 30, 50]);
     } else {
       Vibration.vibrate([0, 40, 25, 40]);
     }
 
-    const finalValue = Math.floor(Math.random() * 6) + 1;
-
+    // Reset animations
     diceAnimations.scale.setValue(1);
     diceAnimations.translateY.setValue(0);
     diceAnimations.translateX.setValue(0);
@@ -242,8 +270,8 @@ const RandomAuction = ({ participants = [], onAuctionComplete }) => {
     diceAnimations.rotateY.setValue(0);
     diceAnimations.rotateZ.setValue(0);
 
-    const ROLL_DURATION = 2500;
-    const BOUNCE_COUNT = 15;
+    const ROLL_DURATION = duration || 30000;
+    const BOUNCE_COUNT = Math.floor(ROLL_DURATION / 200) || 150;
 
     const getTargetRotation = value => {
       const fullRotations = Math.PI * (8 + Math.floor(Math.random() * 4));
@@ -251,32 +279,13 @@ const RandomAuction = ({ participants = [], onAuctionComplete }) => {
       let y = fullRotations;
 
       switch (value) {
-        case 1:
-          x += 0;
-          y += 0;
-          break;
-        case 6:
-          x += 0;
-          y += Math.PI;
-          break;
-        case 4:
-          x += 0;
-          y += -Math.PI / 2;
-          break;
-        case 3:
-          x += 0;
-          y += Math.PI / 2;
-          break;
-        case 5:
-          x += -Math.PI / 2;
-          y += 0;
-          break;
-        case 2:
-          x += Math.PI / 2;
-          y += 0;
-          break;
-        default:
-          break;
+        case 1: x += 0;             y += 0;             break;
+        case 6: x += 0;             y += Math.PI;       break;
+        case 4: x += 0;             y += -Math.PI / 2;  break;
+        case 3: x += 0;             y += Math.PI / 2;   break;
+        case 5: x += -Math.PI / 2;  y += 0;             break;
+        case 2: x += Math.PI / 2;   y += 0;             break;
+        default: break;
       }
       return { x, y };
     };
@@ -290,7 +299,7 @@ const RandomAuction = ({ participants = [], onAuctionComplete }) => {
 
       for (let i = 0; i < BOUNCE_COUNT; i++) {
         const progress = i / BOUNCE_COUNT;
-        const intensity = 1 - progress * 0.9;
+        const intensity = 1 - (progress * progress * 0.95);
 
         const randomX = (Math.random() - 0.5) * 40 * intensity;
         const randomHeight = 50 + Math.random() * 40 * intensity;
@@ -343,44 +352,14 @@ const RandomAuction = ({ participants = [], onAuctionComplete }) => {
               useNativeDriver: true,
             }),
             Animated.timing(diceAnimations.rotateZ, {
-              toValue: spinSpeedZ,
+              toValue: diceAnimations.rotateZ._value + spinSpeedZ,
               duration: bounceDuration,
               easing: Easing.inOut(Easing.sin),
               useNativeDriver: true,
             }),
-
-            Animated.sequence([
-              Animated.timing(diceAnimations.scale, {
-                toValue: 1 + 0.2 * intensity,
-                duration: bounceDuration * 0.45,
-                easing: Easing.out(Easing.quad),
-                useNativeDriver: true,
-              }),
-              Animated.timing(diceAnimations.scale, {
-                toValue: 0.9,
-                duration: bounceDuration * 0.1,
-                easing: Easing.in(Easing.quad),
-                useNativeDriver: true,
-              }),
-              Animated.timing(diceAnimations.scale, {
-                toValue: 1,
-                duration: bounceDuration * 0.45,
-                easing: Easing.out(Easing.bounce),
-                useNativeDriver: true,
-              }),
-            ]),
-          ]),
+          ])
         );
-
-        if (i % 3 === 0 && i > 0) {
-          setTimeout(() => {
-            if (Platform.OS === 'android') {
-              Vibration.vibrate(20);
-            }
-          }, i * bounceDuration);
-        }
       }
-
       return Animated.sequence(animations);
     };
 
@@ -389,7 +368,7 @@ const RandomAuction = ({ participants = [], onAuctionComplete }) => {
       return Animated.parallel([
         Animated.sequence([
           Animated.timing(diceAnimations.translateY, {
-            toValue: -40,
+            toValue: -15,
             duration: settleDuration * 0.2,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
@@ -401,14 +380,12 @@ const RandomAuction = ({ participants = [], onAuctionComplete }) => {
             useNativeDriver: true,
           }),
         ]),
-
         Animated.spring(diceAnimations.translateX, {
           toValue: 0,
           friction: 8,
           tension: 80,
           useNativeDriver: true,
         }),
-
         Animated.spring(diceAnimations.rotateX, {
           toValue: targetRotation.x,
           friction: 12,
@@ -427,21 +404,6 @@ const RandomAuction = ({ participants = [], onAuctionComplete }) => {
           tension: 50,
           useNativeDriver: true,
         }),
-
-        Animated.sequence([
-          Animated.timing(diceAnimations.scale, {
-            toValue: 0.9,
-            duration: settleDuration * 0.2,
-            easing: Easing.in(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.spring(diceAnimations.scale, {
-            toValue: 1,
-            friction: 5,
-            tension: 100,
-            useNativeDriver: true,
-          }),
-        ]),
       ]);
     };
 
@@ -451,45 +413,30 @@ const RandomAuction = ({ participants = [], onAuctionComplete }) => {
     ]);
 
     let faceChangeCount = 0;
-    const totalFaceChanges = Math.floor(ROLL_DURATION / 100);
+    const totalFaceChanges = Math.floor(ROLL_DURATION / 150);
 
     const faceChangeInterval = setInterval(() => {
       if (faceChangeCount < totalFaceChanges) {
-        setDiceValue(Math.floor(Math.random() * 6) + 1);
+        setDiceValue(Math.floor(Math.random() * Math.min(participants.length, 6)) + 1);
         faceChangeCount++;
       } else {
         clearInterval(faceChangeInterval);
       }
-    }, 100);
+    }, 150);
 
     completeAnimation.start(() => {
       clearInterval(faceChangeInterval);
-
       setTimeout(() => {
         setDiceValue(finalValue);
         setShowResult(true);
-
         if (Platform.OS === 'ios') {
           Vibration.vibrate([0, 70, 40, 70]);
         } else {
           Vibration.vibrate([0, 60, 30, 60]);
         }
-
         setTimeout(() => {
           setIsDiceRolling(false);
-
-          if (participants.length === 0) {
-            Alert.alert(
-              'Error',
-              'No participants available for the random draw.',
-            );
-            return;
-          }
-
-          const winnerIndex = (finalValue - 1) % participants.length;
-          const winner = participants[winnerIndex];
-
-          if (onAuctionComplete) {
+          if (onAuctionComplete && winner) {
             onAuctionComplete({
               type: 'random',
               winner: winner,
@@ -499,6 +446,18 @@ const RandomAuction = ({ participants = [], onAuctionComplete }) => {
         }, 800);
       }, 400);
     });
+  };
+
+  const rollDice = () => {
+    if (isDiceRolling) return;
+    if (participants.length === 0) {
+      Alert.alert("Error", "No participants available for the random draw.");
+      return;
+    }
+    const finalValue = Math.floor(Math.random() * Math.min(participants.length, 6)) + 1;
+    const winnerIndex = Math.floor(Math.random() * participants.length);
+    const winner = participants[winnerIndex];
+    executeDiceRoll(finalValue, 2500, winner);
   };
 
   const Dice3D = () => {

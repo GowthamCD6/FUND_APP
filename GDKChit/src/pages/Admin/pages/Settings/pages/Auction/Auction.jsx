@@ -18,6 +18,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Header from '../../../../../../components/HeaderComponent/Header';
 import GroupCard from '../../../../../../components/GroupCard/GroupCard';
 import ApiService from '../../../../../../services/ApiService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuctionWebSocketService from '../../../../../../services/AuctionWebSocketService';
 import BettingAuction from './Betting-Auction/BettingAuction';
 import RandomAuction from './Random-Auction/RandomAuction';
 import MemberSelectingModal from './MemberSelecting/MemberSelectingModal';
@@ -47,9 +49,26 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [savingWinner, setSavingWinner] = useState(false);
 
-  // Fetch groups on component mount
+  // Fetch groups and connect WebSocket on component mount
   useEffect(() => {
     fetchGroups();
+
+    const initWebSocket = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const userId = await AsyncStorage.getItem('userId');
+        if (token && userId) {
+          await AuctionWebSocketService.connect(token, userId, 'admin');
+        }
+      } catch (error) {
+        console.error('Failed to connect WebSocket on admin Auction:', error);
+      }
+    };
+    initWebSocket();
+
+    return () => {
+      // Don't disconnect here because child components might still use it
+    };
   }, []);
 
   // Fetch groups from backend
@@ -63,8 +82,9 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
       const data = await response.json();
       console.log('Parsed Groups Data:', data);
       
-      if (data && data.success && Array.isArray(data.groups)) {
-        const transformedGroups = data.groups.map(group => ({
+      const groupsList = data.data || data.groups;
+      if (data && data.success && Array.isArray(groupsList)) {
+        const transformedGroups = groupsList.map(group => ({
           id: group.id,
           name: group.name || group.group_name || 'Unknown',
           totalMembers: group.totalMembers || group.total_members || group.members_count || 0,
@@ -131,8 +151,8 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
         month: new Date().getMonth(),
         year: new Date().getFullYear(),
         chitWinnerName: winner.name,
-        chitWinnerMemberId: winner.id,
-        amountTaken: selectedGroup.monthlyAmount,
+        chitWinnerMemberId: winner.phone || '',
+        amountTaken: (winner.bid !== undefined && winner.bid > 0) ? winner.bid : selectedGroup.groupAmount,
         datePicked: new Date().toISOString(),
         winnerUserId: winner.id,
       };
@@ -207,9 +227,29 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
     const auctionParticipants = selectedMembers.map(member => ({
       ...member,
       // Initialize bid for betting, 0 for random (will be assigned a number later)
-      bid: activeTab === 'betting' ? 90000 : 0 // Starting bid for betting auction
+      bid: activeTab === 'betting' ? (selectedGroup.groupAmount || 90000) : 0 // Starting bid for betting auction
     }));
     
+    // Broadcast setup to WebSocket to show bottom-up card on user panels
+    const participantIds = selectedMembers.map(m => m.id);
+    const sendSetup = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const userId = await AsyncStorage.getItem('userId');
+        if (token && userId) {
+          await AuctionWebSocketService.connect(token, userId, 'admin');
+          AuctionWebSocketService.setupAuction(
+            selectedGroup.id,
+            activeTab, // 'betting' or 'random'
+            participantIds
+          );
+        }
+      } catch (err) {
+        console.error('Error connecting or sending setup_auction over WS:', err);
+      }
+    };
+    sendSetup();
+
     setParticipants(auctionParticipants);
     setCurrentStep('auction');
   };
@@ -371,6 +411,7 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
       ) : (
         <RandomAuction
           participants={participants}
+          selectedGroup={selectedGroup}
           onAuctionComplete={handleAuctionComplete}
         />
       )}
@@ -470,15 +511,31 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
               </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => {
-                setShowResultModal(false);
-                resetAuction();
-              }}
-            >
-              <Text style={styles.actionButtonText}>Continue</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity 
+                style={[styles.actionButton, savingWinner && styles.disabledButton]}
+                onPress={() => {
+                  if (auctionResult?.winner) {
+                    saveAuctionWinnerToBackend(auctionResult.winner);
+                  }
+                }}
+                disabled={savingWinner}
+              >
+                {savingWinner ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.actionButtonText}>Confirm Winner</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowResultModal(false);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Close</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
       </View>

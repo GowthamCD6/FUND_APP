@@ -9,81 +9,93 @@ import {
   ScrollView,
   Alert,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import GroupCard from '../../../../../components/GroupCard/GroupCard';
 import Header from '../../../../../components/HeaderComponent/Header';
 import BettingAuction from './BettingAuction/BettingAuction';
 import RandomAuction from './RandomAuction/RandomAuction';
+import ApiService from '../../../../../services/ApiService';
 
-const Auction = ({ onClose }) => {
+const Auction = ({ onClose, selectedGroupId, selectedGroupType }) => {
   const [activeTab, setActiveTab] = useState('betting');
   const [participants, setParticipants] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [userGroups, setUserGroups] = useState([]);
-
-  // Mock user groups - replace with actual API call
-  const mockUserGroups = [
-    {
-      id: '1',
-      name: 'Friends Chit Group',
-      status: 'active',
-      totalMembers: 5,
-      currentMembers: 5,
-      monthlyAmount: 18000,
-      completedCycles: 2,
-      totalCycles: 12,
-      collectedAmount: 36000,
-      nextDueDate: '2024-06-15',
-      completedDate: null,
-      groupAmount: 90000,
-    },
-    {
-      id: '2',
-      name: 'Office Chit Group',
-      status: 'active',
-      totalMembers: 8,
-      currentMembers: 8,
-      monthlyAmount: 25000,
-      completedCycles: 1,
-      totalCycles: 8,
-      collectedAmount: 25000,
-      nextDueDate: '2024-06-20',
-      completedDate: null,
-      groupAmount: 200000,
-    },
-    {
-      id: '3',
-      name: 'Family Savings Group',
-      status: 'completed',
-      totalMembers: 6,
-      currentMembers: 6,
-      monthlyAmount: 15000,
-      completedCycles: 12,
-      totalCycles: 12,
-      collectedAmount: 180000,
-      nextDueDate: null,
-      completedDate: '2024-05-30',
-      groupAmount: 90000,
-    },
-  ];
-
-  // Mock participants for a group
-  const mockParticipants = [
-    { id: '1', name: 'You', bid: 0, bidTime: null, avatar: 'U' },
-    { id: '2', name: 'Pranesh', bid: 0, bidTime: null, avatar: 'PK' },
-    { id: '3', name: 'Rohith', bid: 0, bidTime: null, avatar: 'R' },
-    { id: '4', name: 'Sundar', bid: 0, bidTime: null, avatar: 'SR' },
-    { id: '5', name: 'Lakshmi', bid: 0, bidTime: null, avatar: 'LN' },
-  ];
+  const [loadingGroups, setLoadingGroups] = useState(true);
 
   useEffect(() => {
-    setUserGroups(mockUserGroups);
-    setParticipants(mockParticipants);
+    fetchUserGroups();
   }, []);
 
-  const handleGroupSelect = (group) => {
+  useEffect(() => {
+    if (selectedGroupId && userGroups.length > 0) {
+      const matched = userGroups.find(g => g.id.toString() === selectedGroupId.toString());
+      if (matched) {
+        handleGroupSelect(matched);
+        if (selectedGroupType) {
+          setActiveTab(selectedGroupType);
+        }
+      }
+    }
+  }, [selectedGroupId, selectedGroupType, userGroups]);
+
+  const fetchUserGroups = async () => {
+    try {
+      setLoadingGroups(true);
+      const response = await ApiService.makeRequest('/user/portfolio', { method: 'GET' });
+      const data = await response.json();
+      if (data && data.success && Array.isArray(data.data)) {
+        const transformedGroups = data.data.map(group => {
+          const totalMonths = Number(group.totalMonths) || 20;
+          const investmentAmount = Number(group.investmentAmount) || 0;
+          return {
+            id: group.id.toString(),
+            name: group.groupName || 'Unknown',
+            totalMembers: group.totalMembers || 0,
+            currentMembers: group.currentMembers || 0,
+            monthlyAmount: group.monthlyContribution || Math.round(investmentAmount / totalMonths),
+            completedCycles: group.groupCompletedCycles !== undefined ? group.groupCompletedCycles : 0,
+            totalCycles: totalMonths,
+            collectedAmount: group.groupCollectedAmount !== undefined ? group.groupCollectedAmount : 0,
+            nextDueDate: group.startDate,
+            groupAmount: investmentAmount,
+            status: group.paymentStatus || 'Not Started',
+          };
+        });
+        setUserGroups(transformedGroups);
+      } else {
+        setUserGroups([]);
+      }
+    } catch (error) {
+      console.error('Error fetching user groups:', error);
+      setUserGroups([]);
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
+  const handleGroupSelect = async (group) => {
     setSelectedGroup(group);
+    try {
+      const response = await ApiService.makeRequest(`/user/groups/getMembers?groupId=${group.id}`, { method: 'GET' });
+      const data = await response.json();
+      if (data && data.success && Array.isArray(data.members)) {
+        const transformedMembers = data.members.map(member => ({
+          id: member.id?.toString(),
+          name: member.name || member.user_name || '',
+          phone: member.phone || '',
+          avatar: (member.name || member.user_name || 'U').substring(0, 2).toUpperCase(),
+        }));
+        setParticipants(transformedMembers);
+      } else {
+        setParticipants([]);
+      }
+    } catch (error) {
+      console.error('Error fetching group members:', error);
+      setParticipants([]);
+    }
   };
 
   const handleBackFromAuction = () => {
@@ -120,12 +132,20 @@ const Auction = ({ onClose }) => {
     />
   );
 
-  const renderGroupsList = () => (
-    <ScrollView 
-      style={styles.groupsContainer}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.groupsContent}
-    >
+  const renderGroupsList = () => {
+    if (loadingGroups) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
+          <ActivityIndicator size="large" color="#6B46C1" />
+        </View>
+      );
+    }
+    return (
+      <ScrollView 
+        style={styles.groupsContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.groupsContent}
+      >
       {userGroups.length === 0 ? (
         <View style={styles.emptyState}>
           <MaterialCommunityIcons name="inbox-outline" size={48} color="#D1D5DB" />
@@ -153,7 +173,8 @@ const Auction = ({ onClose }) => {
         />
       )}
     </ScrollView>
-  );
+    );
+  };
 
   const renderAuctionTabs = () => (
     <View style={styles.tabContainer}>
@@ -237,12 +258,13 @@ const Auction = ({ onClose }) => {
             participants={participants}
             setParticipants={setParticipants}
             selectedGroup={selectedGroup}
-            selectedMembers={mockParticipants}
+            selectedMembers={participants}
             onAuctionComplete={handleAuctionComplete}
           />
         ) : (
           <RandomAuction
             participants={participants}
+            selectedGroup={selectedGroup}
             onAuctionComplete={handleAuctionComplete}
           />
         )}

@@ -567,6 +567,21 @@ exports.saveAuctionWinner = async (req, res) => {
             [groupIdNum, collectionPeriodStr]
         );
 
+        // Prevent a member from winning multiple times in the same group (reverse auction rules)
+        if (winnerUserId) {
+            const [[alreadyWon]] = await connection.query(
+                'SELECT collection_period FROM group_auction_winners WHERE group_id = ? AND winner_user_id = ? AND collection_period != ? AND deleted_at IS NULL LIMIT 1',
+                [groupIdNum, Number(winnerUserId), collectionPeriodStr]
+            );
+            if (alreadyWon) {
+                connection.release();
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'This member has already won the auction in another cycle/month for this group' 
+                });
+            }
+        }
+
         await connection.query(
             `
             INSERT INTO group_auction_winners
@@ -594,6 +609,31 @@ exports.saveAuctionWinner = async (req, res) => {
                 adminId ? Number(adminId) : null,
             ],
         );
+
+        // Get group details to update status automatically based on duration and cycle count
+        const [[groupDetails]] = await connection.query(
+            'SELECT duration FROM `groups` WHERE id = ? LIMIT 1',
+            [groupIdNum]
+        );
+        const groupDuration = groupDetails ? Number(groupDetails.duration) : 20;
+
+        const [[winnerCountRow]] = await connection.query(
+            'SELECT COUNT(id) AS totalWinners FROM group_auction_winners WHERE group_id = ? AND deleted_at IS NULL',
+            [groupIdNum]
+        );
+        const totalWinnersCount = Number(winnerCountRow.totalWinners);
+
+        if (totalWinnersCount >= groupDuration) {
+            await connection.query(
+                'UPDATE `groups` SET status = "Completed" WHERE id = ?',
+                [groupIdNum]
+            );
+        } else {
+            await connection.query(
+                'UPDATE `groups` SET status = "OnGoing" WHERE id = ?',
+                [groupIdNum]
+            );
+        }
 
         // Audit log
         await logAuditEvent(req, {

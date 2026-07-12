@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   FlatList,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuctionWebSocketService from '../../../../../../services/AuctionWebSocketService';
 
 const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = [], onAuctionComplete }) => {
   // All useState hooks MUST come first, before any other code
@@ -22,17 +24,19 @@ const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = []
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [allBids, setAllBids] = useState([]);
   const [isSubmittingBid, setIsSubmittingBid] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  const unsubscribeRef = useRef([]);
 
-  // Now all useEffect hooks come after useState
   const initialAmount = selectedGroup?.groupAmount || 90000;
 
   // Memoized sorted bids to prevent sorting on every render
   const sortedBids = useMemo(() => 
-    [...allBids].sort((a, b) => b.bid - a.bid),
+    [...allBids].sort((a, b) => a.bid - b.bid), // Lowest bid first
     [allBids]
   );
 
-  // Helper functions - must be defined before useEffect
+  // Helper functions
   const formatTime = useCallback((seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -47,77 +51,131 @@ const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = []
     }).format(amount);
   }, []);
 
-  const getCurrentHighestBid = useCallback(() => {
+  const getCurrentLowestBid = useCallback(() => {
     const bids = allBids.map(b => b.bid);
-    return bids.length > 0 ? Math.max(...bids) : initialAmount;
+    return bids.length > 0 ? Math.min(...bids) : initialAmount;
   }, [allBids, initialAmount]);
 
-  const endAuction = useCallback(() => {
+  // Load user data on mount
+  useEffect(() => {
+    AsyncStorage.getItem('userId').then(id => {
+      if (id) setCurrentUserId(id);
+    });
+  }, []);
+
+  // Connect to WebSocket on mount
+  useEffect(() => {
+    const initWebSocket = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const userId = await AsyncStorage.getItem('userId');
+        
+        if (token && userId) {
+          await AuctionWebSocketService.connect(token, userId, 'user');
+          setWsConnected(true);
+
+          const unsub1 = AuctionWebSocketService.on('auction_started', handleAuctionStartedEvent);
+          const unsub2 = AuctionWebSocketService.on('bid_placed', handleBidPlacedEvent);
+          const unsub3 = AuctionWebSocketService.on('time_update', handleTimeUpdateEvent);
+          const unsub4 = AuctionWebSocketService.on('auction_ended', handleAuctionEndedEvent);
+          const unsub5 = AuctionWebSocketService.on('participants_updated', handleParticipantsUpdatedEvent);
+          const unsub6 = AuctionWebSocketService.on('error', handleWebSocketError);
+
+          unsubscribeRef.current = [unsub1, unsub2, unsub3, unsub4, unsub5, unsub6];
+        }
+      } catch (error) {
+        console.error('Failed to connect WebSocket:', error);
+      }
+    };
+
+    initWebSocket();
+
+    return () => {
+      unsubscribeRef.current.forEach(unsub => unsub?.());
+      AuctionWebSocketService.disconnect();
+    };
+  }, []);
+
+  // WebSocket event handlers
+  const handleAuctionStartedEvent = (data) => {
+    setAuctionStatus('active');
+    setTimeRemaining(data.remainingTime !== undefined ? data.remainingTime : (data.duration || 300));
+    
+    if (Array.isArray(data.bids)) {
+      const formattedBids = data.bids.map(b => ({
+        id: b.userId,
+        name: b.userName,
+        bid: b.amount,
+        bidTime: new Date(b.timestamp),
+        avatar: b.userName.substring(0, 2).toUpperCase(),
+        isMe: b.userId === currentUserId,
+      }));
+      setAllBids(formattedBids);
+      const myPrebid = formattedBids.find(b => b.isMe);
+      if (myPrebid) {
+        setMyBid(myPrebid.bid);
+      }
+    } else {
+      setAllBids([]);
+    }
+  };
+
+  const handleBidPlacedEvent = (data) => {
+    const { userId, userName, amount, timestamp } = data;
+    const bidTime = new Date(timestamp);
+    
+    setAllBids(prev => {
+      const filtered = prev.filter(b => b.id !== userId);
+      return [...filtered, {
+        id: userId,
+        name: userName,
+        bid: amount,
+        bidTime,
+        avatar: userName.substring(0, 2).toUpperCase(),
+        isMe: userId === currentUserId || userId.toString() === currentUserId?.toString(),
+      }];
+    });
+    
+    if (userId === currentUserId || userId.toString() === currentUserId?.toString()) {
+      setMyBid(amount);
+    }
+  };
+
+  const handleTimeUpdateEvent = (data) => {
+    setTimeRemaining(data.remainingTime);
+  };
+
+  const handleAuctionEndedEvent = (data) => {
     setAuctionStatus('ended');
-    
-    const topBidder = allBids.reduce((max, bid) => 
-      bid.bid > max.bid ? bid : max, 
-      allBids[0] || {}
-    );
-    
-    if (topBidder.id) {
-      setWinner(topBidder);
+    const { winner: winnerData } = data;
+    if (winnerData) {
+      const winnerObj = {
+        id: winnerData.userId,
+        name: winnerData.userName,
+        bid: winnerData.amount,
+        avatar: winnerData.userName.substring(0, 2).toUpperCase(),
+      };
+      setWinner(winnerObj);
       setShowWinnerModal(true);
       if (onAuctionComplete) {
         onAuctionComplete({
           type: 'betting',
-          winner: topBidder,
-          amount: topBidder.bid,
+          winner: winnerObj,
+          amount: winnerData.amount,
         });
       }
     }
-  }, [allBids, onAuctionComplete]);
+  };
 
-  // Initialize mock bids
-  useEffect(() => {
-    const mockBids = (selectedMembers || []).map((member, index) => ({
-      id: member.id,
-      name: member.name,
-      bid: initialAmount - (index * 5000),
-      bidTime: new Date(Date.now() - index * 10000),
-      avatar: member.avatar || member.name.substring(0, 2).toUpperCase(),
-    })).filter(b => b.bid > 0);
-    
-    setAllBids(mockBids);
-  }, [selectedMembers, initialAmount]);
+  const handleParticipantsUpdatedEvent = (data) => {
+    // optional
+  };
 
-  // Timer effect
-  useEffect(() => {
-    let timer;
-    if (auctionStatus === 'active' && timeRemaining > 0) {
-      timer = setTimeout(() => setTimeRemaining(t => t - 1), 1000);
-    } else if (timeRemaining === 0 && auctionStatus === 'active') {
-      // Call endAuction directly to avoid dependency cycles
-      setAuctionStatus('ended');
-      
-      const topBidder = allBids.reduce((max, bid) => 
-        bid.bid > max.bid ? bid : max, 
-        allBids[0] || {}
-      );
-      
-      if (topBidder.id) {
-        setWinner(topBidder);
-        setShowWinnerModal(true);
-        if (onAuctionComplete) {
-          onAuctionComplete({
-            type: 'betting',
-            winner: topBidder,
-            amount: topBidder.bid,
-          });
-        }
-      }
-    }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [auctionStatus, timeRemaining, allBids, onAuctionComplete]);
+  const handleWebSocketError = (err) => {
+    console.error('WebSocket error:', err);
+  };
 
-  const submitBid = useCallback(() => {
+  const submitBid = useCallback(async () => {
     if (auctionStatus !== 'active') {
       Alert.alert('Auction Ended', 'This auction has already concluded.');
       return;
@@ -129,10 +187,10 @@ const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = []
     }
 
     const newBid = parseFloat(bidAmount);
-    const currentHighest = getCurrentHighestBid();
+    const currentLowest = getCurrentLowestBid();
 
-    if (newBid <= currentHighest) {
-      Alert.alert('Error', `Your bid must be higher than ${formatCurrency(currentHighest)}`);
+    if (newBid >= currentLowest) {
+      Alert.alert('Error', `Your bid must be lower than ${formatCurrency(currentLowest)}`);
       return;
     }
 
@@ -142,30 +200,31 @@ const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = []
     }
 
     setIsSubmittingBid(true);
-    
-    setTimeout(() => {
-      setMyBid(newBid);
-      setAllBids(prev => [
-        ...prev.filter(b => b.id !== 'me'),
-        {
-          id: 'me',
-          name: 'You',
-          bid: newBid,
-          bidTime: new Date(),
-          avatar: 'U',
-          isMe: true,
-        }
-      ]);
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      const userName = await AsyncStorage.getItem('userName') || 'You';
+      
+      AuctionWebSocketService.placeBid(
+        selectedGroup.id,
+        newBid,
+        userId,
+        userName
+      );
       setBidAmount('');
+    } catch (error) {
+      console.error('Failed to submit bid:', error);
+      Alert.alert('Error', 'Failed to place bid. Please try again.');
+    } finally {
       setIsSubmittingBid(false);
-      Alert.alert('Success', `Your bid of ${formatCurrency(newBid)} has been placed!`);
-    }, 500);
-  }, [auctionStatus, bidAmount, getCurrentHighestBid, formatCurrency]);
+    }
+  }, [auctionStatus, bidAmount, getCurrentLowestBid, formatCurrency, selectedGroup]);
 
-  const quickBid = useCallback((increment) => {
-    const newAmount = getCurrentHighestBid() + increment;
-    setBidAmount(newAmount.toString());
-  }, [getCurrentHighestBid]);
+  const quickBid = useCallback((decrement) => {
+    const newAmount = getCurrentLowestBid() - decrement;
+    if (newAmount > 0) {
+      setBidAmount(newAmount.toString());
+    }
+  }, [getCurrentLowestBid]);
 
   const renderTimer = () => (
     <View style={styles.timerCard}>
@@ -192,9 +251,9 @@ const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = []
     <View style={styles.highestBidCard}>
       <View style={styles.highestBidHeader}>
         <MaterialCommunityIcons name="trophy" size={20} color="#F59E0B" />
-        <Text style={styles.highestBidLabel}>Highest Bid</Text>
+        <Text style={styles.highestBidLabel}>Lowest Bid</Text>
       </View>
-      <Text style={styles.highestBidAmount}>{formatCurrency(getCurrentHighestBid())}</Text>
+      <Text style={styles.highestBidAmount}>{formatCurrency(getCurrentLowestBid())}</Text>
       {myBid > 0 && (
         <Text style={styles.yourBidText}>Your bid: {formatCurrency(myBid)}</Text>
       )}
@@ -211,7 +270,7 @@ const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = []
           style={styles.bidInput}
           value={bidAmount}
           onChangeText={setBidAmount}
-          placeholder={`Min ${formatCurrency(getCurrentHighestBid() + 100)}`}
+          placeholder={`Max ${formatCurrency(getCurrentLowestBid() - 100)}`}
           keyboardType="numeric"
           placeholderTextColor="#9CA3AF"
           editable={auctionStatus === 'active' && !isSubmittingBid}
@@ -224,21 +283,21 @@ const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = []
           onPress={() => quickBid(1000)}
           disabled={auctionStatus !== 'active'}
         >
-          <Text style={styles.quickBidText}>+₹1K</Text>
+          <Text style={styles.quickBidText}>-₹1K</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.quickBidBtn}
           onPress={() => quickBid(5000)}
           disabled={auctionStatus !== 'active'}
         >
-          <Text style={styles.quickBidText}>+₹5K</Text>
+          <Text style={styles.quickBidText}>-₹5K</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.quickBidBtn}
           onPress={() => quickBid(10000)}
           disabled={auctionStatus !== 'active'}
         >
-          <Text style={styles.quickBidText}>+₹10K</Text>
+          <Text style={styles.quickBidText}>-₹10K</Text>
         </TouchableOpacity>
       </View>
 
