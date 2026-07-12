@@ -66,6 +66,7 @@ const AccountD = ({ onBack }) => {
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
+		phone: '',
 		dateOfBirth: '',
 		streetAddress: '',
 		city: '',
@@ -92,6 +93,7 @@ const AccountD = ({ onBack }) => {
 					...prev,
 					name: profile.name || user.name || user.username || '',
 					email: profile.email || user.email || '',
+					phone: user.phone || '',
 					dateOfBirth: parseStoredDate(profile.dateOfBirth) ? formatDateForSave(parseStoredDate(profile.dateOfBirth)) : '',
 					streetAddress: profile.streetAddress || '',
 					city: profile.city || '',
@@ -387,11 +389,24 @@ const AccountD = ({ onBack }) => {
 						{errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 					</View>
 
+					{/* Phone Number Field (Read-only) */}
+					<View style={styles.inputContainer}>
+						<View style={styles.labelContainer}>
+							<MaterialCommunityIcons name="phone" size={16} color="#6B7280" />
+							<Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Phone number')}</Text>
+						</View>
+						<TextInput
+							style={styles.textInput}
+							value={formData.phone}
+							editable={false}
+						/>
+					</View>
+
 					{/* Email Field */}
 					<View style={styles.inputContainer}>
 						<View style={styles.labelContainer}>
 							<MaterialCommunityIcons name="email" size={16} color="#6B7280" />
-							<Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Phone number')}</Text>
+							<Text style={[styles.inputLabel, language === 'ta' && { fontSize: 14 }]}>{t('Email')}</Text>
 						</View>
 						<TextInput
 							style={[styles.textInput, errors.email && styles.errorInput]}

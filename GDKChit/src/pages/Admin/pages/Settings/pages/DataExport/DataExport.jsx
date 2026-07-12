@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
   Platform,
@@ -12,12 +11,12 @@ import {
   TextInput,
   Modal,
   Dimensions,
+  Share,
+  SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
 
@@ -276,15 +275,47 @@ const DataExport = () => {
         </html>
       `;
 
-      const { uri } = await Print.printToFileAsync({
-        html: htmlContent,
-      });
+      let expoAvailable = false;
+      let Print, Sharing;
+      try {
+        Print = require('expo-print');
+        Sharing = require('expo-sharing');
+        expoAvailable = true;
+      } catch (e) {
+        console.log('Expo print/sharing modules not available natively, using fallback');
+      }
 
-      await Sharing.shareAsync(uri, {
-        mimeType: 'application/pdf',
-        dialogTitle: `Share ${htmlTitle}`,
-        UTI: 'com.adobe.pdf',
-      });
+      if (expoAvailable && Print && Sharing) {
+        const { uri } = await Print.printToFileAsync({
+          html: htmlContent,
+        });
+
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: `Share ${htmlTitle}`,
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        // Fallback to CSV string sharing using native Share API
+        const csvHeader = headers.join(',') + '\n';
+        const csvRows = cleanedData.map(row => 
+          headers.map(h => {
+            let val = row[h] || '';
+            val = String(val).replace(/"/g, '""');
+            if (val.includes(',') || val.includes('\n') || val.includes('"')) {
+              val = `"${val}"`;
+            }
+            return val;
+          }).join(',')
+        ).join('\n');
+        
+        const csvContent = csvHeader + csvRows;
+
+        await Share.share({
+          title: htmlTitle,
+          message: csvContent,
+        });
+      }
 
     } catch (error) {
       console.error('Export error:', error);

@@ -12,6 +12,29 @@ const formatDateLocal = (dateStr) => {
   return new Date(d.getTime() - offset).toISOString().split('T')[0];
 };
 
+const getElapsedMonths = (startDateStr) => {
+  if (!startDateStr) return 0;
+  const parts = startDateStr.split('-');
+  if (parts.length < 2) return 0;
+  
+  const startYear = parseInt(parts[0], 10);
+  const startMonth = parseInt(parts[1], 10) - 1; // 0-indexed
+  
+  const today = new Date();
+  const todayYear = today.getFullYear();
+  const todayMonth = today.getMonth();
+  
+  const yearDiff = todayYear - startYear;
+  const monthDiff = todayMonth - startMonth;
+  const totalMonthDiff = yearDiff * 12 + monthDiff;
+  
+  if (totalMonthDiff < 0) {
+    return 0; // Future start date
+  }
+  
+  return totalMonthDiff + 1; // Include the starting month
+};
+
 exports.getPortfolio = async (req, res) => {
   const userId = req.user.userId || req.user.id;
 
@@ -67,6 +90,19 @@ exports.getPortfolio = async (req, res) => {
       let reportStatus = 'pending';
       if (isFullyPaid) {
           reportStatus = 'completed';
+      } else if (row.start_date) {
+          const startDateStr = formatDateLocal(row.start_date);
+          const elapsed = Math.min(safeDuration, getElapsedMonths(startDateStr));
+          if (elapsed > 0) {
+              if (paidCycles >= elapsed) {
+                  reportStatus = 'paid';
+              } else {
+                  reportStatus = (row.latest_status && row.latest_status.toLowerCase() === 'overdue') ? 'overdue' : 'pending';
+              }
+          } else {
+              // Group hasn't started yet
+              reportStatus = (paidCycles > 0) ? 'paid' : 'pending';
+          }
       } else if (row.latest_status) {
           reportStatus = (row.latest_status.toLowerCase() === 'paid') ? 'paid' : 'pending';
       }

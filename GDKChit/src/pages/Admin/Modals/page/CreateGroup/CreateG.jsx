@@ -16,7 +16,7 @@ import Header from '../../../../../components/HeaderComponent/Header';
 
 const CreateGroup = ({ onBack, navigation }) => {
   const [groupData, setGroupData] = useState({
-    // groupId: '',
+    groupId: '',
     groupName: '',
     totalMembers: '20',
     groupAmount: '',
@@ -27,16 +27,16 @@ const CreateGroup = ({ onBack, navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pickerDate, setPickerDate] = useState(new Date());
 
-  // useEffect(() => {
-  //   generateGroupId();
-  // }, []);
+  useEffect(() => {
+    generateGroupId();
+  }, []);
 
-  // const generateGroupId = () => {
-  //   const timestamp = Date.now().toString().slice(-6);
-  //   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  //   const groupId = `GRP${timestamp}${random}`;
-  //   setGroupData(prev => ({ ...prev, groupId }));
-  // };
+  const generateGroupId = () => {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const groupId = `GRP${timestamp}${random}`;
+    setGroupData(prev => ({ ...prev, groupId }));
+  };
 
   const handleInputChange = (field, value) => {
     setGroupData(prev => ({ ...prev, [field]: value }));
@@ -124,6 +124,7 @@ const CreateGroup = ({ onBack, navigation }) => {
     try {
       const newGroup = {
         ...groupData,
+        groupCode: groupData.groupId,
         totalMembers: parseInt(groupData.totalMembers),
         groupAmount: parseFloat(groupData.groupAmount),
         duration: parseInt(groupData.duration),
@@ -169,18 +170,18 @@ const CreateGroup = ({ onBack, navigation }) => {
         <View style={styles.content}>
           <View style={styles.formContainer}>
             {/* Group ID Display */}
-            {/* <View style={styles.groupIdContainer}>
-            <View style={styles.labelContainer}>
-              <MaterialCommunityIcons name="identifier" size={20} color="#212121" />
-              <Text style={styles.groupIdLabel}>Auto-Generated Group ID</Text>
-              <TouchableOpacity onPress={generateGroupId} style={styles.refreshButton}>
-                <MaterialCommunityIcons name="refresh" size={18} color="#666666" />
-              </TouchableOpacity>
+            <View style={styles.groupIdContainer}>
+              <View style={styles.labelContainer}>
+                <MaterialCommunityIcons name="identifier" size={20} color="#212121" />
+                <Text style={styles.groupIdLabel}>Auto-Generated Group ID</Text>
+                <TouchableOpacity onPress={generateGroupId} style={styles.refreshButton}>
+                  <MaterialCommunityIcons name="refresh" size={18} color="#666666" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.groupIdBox}>
+                <Text style={styles.groupIdText}>{groupData.groupId}</Text>
+              </View>
             </View>
-            <View style={styles.groupIdBox}>
-              <Text style={styles.groupIdText}>{groupData.groupId}</Text>
-            </View>
-          </View> */}
 
             {/* Form Fields */}
             <View style={styles.formSection}>

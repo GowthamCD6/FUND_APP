@@ -87,10 +87,10 @@ const GroupCardInfo = ({ onClose, group }) => {
 
   const computeDefaultDueDate = (monthDate, startDate) => {
     if (!startDate || !monthDate) return null;
-    const start = new Date(startDate);
-    if (isNaN(start.getTime())) return null;
-
-    const day = start.getDate();
+    const parts = startDate.split('-');
+    if (parts.length < 3) return null;
+    
+    const day = parseInt(parts[2], 10);
     const dueDay = day > 1 ? day - 1 : 0;
 
     let dueDate;
@@ -100,7 +100,10 @@ const GroupCardInfo = ({ onClose, group }) => {
       dueDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), 0);
     }
 
-    return dueDate.toISOString().split('T')[0];
+    const yyyy = dueDate.getFullYear();
+    const mm = String(dueDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(dueDate.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   };
 
   const effectiveDueDate = monthData.dueDate || computeDefaultDueDate(selectedDate, groupInfo.startDate);

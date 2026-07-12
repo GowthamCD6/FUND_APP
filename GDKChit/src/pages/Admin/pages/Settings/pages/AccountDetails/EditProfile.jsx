@@ -217,7 +217,7 @@ const EditProfile = ({ onBack }) => {
 						Alert.alert(
 							'Success',
 							'Profile updated successfully!',
-							[{ text: 'OK', onPress: () => handleBack() }]
+							[{ text: 'OK', onPress: () => navigation.goBack() }]
 						);
 						return;
 					}

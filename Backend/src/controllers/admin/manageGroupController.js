@@ -4,7 +4,7 @@ const { logAuditEvent } = require('../../utils/auditLogger');
 
 // Group Creation
 exports.createGroup = async (req, res) => {
-    const { groupName, totalMembers, groupAmount, duration, startDate } = req.body;
+    const { groupCode, groupName, totalMembers, groupAmount, duration, startDate } = req.body;
     const creatorId = req.user ? (req.user.userId || req.user.id) : null;
 
     const connection = await db.promise().getConnection();
@@ -20,7 +20,7 @@ exports.createGroup = async (req, res) => {
             const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
             return `GRP${timestamp}${random}`;
         };
-        const groupId = generateGroupId();
+        const groupId = groupCode || generateGroupId();
 
         const end_date = start && duration
             ? new Date(start.getFullYear(), start.getMonth() + Number(duration), start.getDate())

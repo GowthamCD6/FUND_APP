@@ -93,6 +93,7 @@ const Profile = () => {
               
               <ScrollView
                 style={styles.content}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}>
                 {/* ...existing profile, settings, general, follow, and nav sections... */}
                 {/* Profile Info Section */}
@@ -389,54 +390,6 @@ const Profile = () => {
                   <Text style={styles.versionText}>Version 3.1.4</Text>
                 </View>
               </ScrollView>
-              {/* Bottom Navigation */}
-              <View style={styles.bottomNav}>
-                <TouchableOpacity style={styles.navItem}>
-                  <MaterialCommunityIcons
-                    name="home-outline"
-                    size={24}
-                    color="#999999"
-                  />
-                  <Text style={styles.navText}>Home</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                  <MaterialCommunityIcons
-                    name="chart-line"
-                    size={24}
-                    color="#999999"
-                  />
-                  <Text style={styles.navText}>Portfolio</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.navItem, styles.navItemCenter]}>
-                  <View style={styles.centerNavButton}>
-                    <MaterialCommunityIcons
-                      name="star-four-points"
-                      size={24}
-                      color="#FFFFFF"
-                    />
-                  </View>
-                  <Text style={styles.navTextCenter}>More</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                  <MaterialCommunityIcons
-                    name="format-list-bulleted"
-                    size={24}
-                    color="#999999"
-                  />
-                  <Text style={styles.navText}>Orders</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                  <MaterialCommunityIcons
-                    name="account-outline"
-                    size={24}
-                    color="#6B46C1"
-                  />
-                  <Text style={[styles.navText, styles.navTextActive]}>
-                    Profile
-                  </Text>
-                </TouchableOpacity>
-              </View>
       </View>
 
       {/* Share Modal */}
@@ -462,6 +415,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 60,
   },
   profileSection: {
     backgroundColor: '#FFFFFF',
