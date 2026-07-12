@@ -1,5 +1,4 @@
 import { NavigationContainer } from "@react-navigation/native";
-import TabNavigator from "../Tab/UTab/UserTab";
 import AccountD from "../../pages/User/Pages/Profile/Page/UserAccountDetails/AccountDetails";
 import LinkBA from "../../pages/User/Pages/Profile/Page/LinkBankAccount/LinkBankAccount";
 import Nominee from "../../pages/User/Pages/Profile/Page/UserNominee/Nominee";
@@ -16,7 +15,6 @@ import Login from "../../pages/Fronter/Login/Login";
 import MemberDetails from "../../pages/Admin/pages/Reports/pages/MemberDetails/MemberDetails";
 import Auction from "../../pages/Admin/pages/Settings/pages/Auction/Auction";
 import AdminEditProfile from "../../pages/Admin/pages/Settings/pages/AccountDetails/EditProfile";
-import AdminDataExport from "../../pages/Admin/pages/Settings/pages/DataExport/DataExport";
 import NewGroup from "../../pages/Admin/pages/Chat/NewGroup/NewGroup";
 import NewGroupDetails from "../../pages/Admin/pages/Chat/NewGroup/NewGroupDetails";
 import AdminNotification from "../../pages/Admin/pages/Notification/Notification";
@@ -32,6 +30,11 @@ import UserAdminLocation from "../../pages/User/Pages/Profile/Page/AdminLocation
 import LanguageSettings from "../../pages/User/Pages/Profile/Page/LanguageSettings/LanguageSettings";
 
 import { navigationRef } from "../../utils/navigation";
+
+const AdminDataExport = props => {
+    const DataExportScreen = require("../../pages/Admin/pages/Settings/pages/DataExport/DataExport").default;
+    return <DataExportScreen {...props} />;
+};
 
 const Routes = () => {
     const Stack = createNativeStackNavigator();

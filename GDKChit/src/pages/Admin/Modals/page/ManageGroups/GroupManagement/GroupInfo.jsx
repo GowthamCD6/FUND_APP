@@ -93,6 +93,13 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           elathThalupadi: payment.elathThalupadi?.toString() || '',
           commission: payment.commission?.toString() || '',
         }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          currentMonthAmount: '',
+          elathThalupadi: '',
+          commission: '',
+        }));
       }
 
       if (winner) {
@@ -103,13 +110,9 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           amountTaken: winner.amountTaken?.toString() || '',
           datePicked: winner.datePicked || '',
         }));
-      }
-
-      if (!payment && !winner) {
+      } else {
         setFormData((prev) => ({
           ...prev,
-          elathThalupadi: '',
-          commission: '',
           chitWinnerName: '',
           chitWinnerMemberId: '',
           amountTaken: '',
@@ -126,6 +129,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
             amount: Number(payment?.currentMonthAmount || 0),
             discount: Number(payment?.elathThalupadi || 0),
             commission: Number(payment?.commission || 0),
+            hasPayment: Boolean(payment),
             winner: winner
               ? {
                   name: winner.chitWinnerName,
@@ -134,6 +138,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                   date: winner.datePicked,
                 }
               : null,
+            hasWinner: Boolean(winner),
             mappedMembers: [],
           },
           ...withoutCurrent,
@@ -293,7 +298,9 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
             amount: Number(paymentData.currentMonthAmount) || 0,
             discount: Number(paymentData.elathThalupadi) || 0,
             commission: Number(paymentData.commission) || 0,
+            hasPayment: true,
             winner: currentEntry?.winner || null,
+            hasWinner: Boolean(currentEntry?.winner),
             mappedMembers: [],
           },
           ...withoutCurrent,
@@ -437,12 +444,14 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
             amount: Number(currentEntry?.amount || formData.currentMonthAmount || 0),
             discount: Number(currentEntry?.discount || formData.elathThalupadi || 0),
             commission: Number(currentEntry?.commission || formData.commission || 0),
+            hasPayment: Boolean(currentEntry?.hasPayment || formData.currentMonthAmount),
             winner: {
               name: winnerData.chitWinnerName,
               memberId: winnerData.chitWinnerMemberId,
               amountTaken: Number(winnerData.amountTaken || 0),
               date: winnerData.datePicked,
             },
+            hasWinner: true,
             mappedMembers: currentEntry?.mappedMembers || [],
           },
           ...withoutCurrent,
@@ -467,6 +476,8 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     return monthlyData.find(m => m.month === currentMonth) || null;
   };
 
+  const currentMonthData = getCurrentMonthData();
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return '#10B981';
@@ -485,8 +496,6 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     }
     return false; // Safest default is to allow previous if no creation date
   };
-
-  const currentMonthData = getCurrentMonthData();
 
   const calculateDaysToNextChit = () => {
     const dateStr = formData.createdDate || group.createdDate;
@@ -838,6 +847,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
       <AuctionW
         visible={showAuctionModal}
         onClose={() => setShowAuctionModal(false)}
+        groupMembers={memberMappings}
         initialWinnerData={{
           chitWinnerName: formData.chitWinnerName,
           chitWinnerMemberId: formData.chitWinnerMemberId,

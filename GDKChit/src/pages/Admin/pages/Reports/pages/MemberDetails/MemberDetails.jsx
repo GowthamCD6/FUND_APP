@@ -120,6 +120,136 @@ class MemberDetails extends Component {
     });
   };
 
+  parseDateValue = (value) => {
+    if (!value) return null;
+
+    const normalizedValue = typeof value === 'string' ? value.replace(' ', 'T') : value;
+    const parsedDate = new Date(normalizedValue);
+
+    if (Number.isNaN(parsedDate.getTime())) return null;
+    return parsedDate;
+  };
+
+  isSelectedPeriodPast = () => {
+    const { selectedMonth, selectedYear } = this.state;
+    const now = new Date();
+
+    if (selectedYear < now.getFullYear()) return true;
+    if (selectedYear > now.getFullYear()) return false;
+    return selectedMonth < now.getMonth();
+  };
+
+  isCurrentSelectedMonth = () => {
+    const { selectedMonth, selectedYear } = this.state;
+    const now = new Date();
+
+    return selectedMonth === now.getMonth() && selectedYear === now.getFullYear();
+  };
+
+  getComparableHistoryDate = (entry) => {
+    const historyDate = this.parseDateValue(entry?.collection_period || entry?.dueDate || entry?.due_date);
+    if (historyDate) return historyDate;
+
+    const month = Number(entry?.month);
+    const year = Number(entry?.year);
+    if (Number.isInteger(month) && Number.isInteger(year)) {
+      return new Date(year, month, 1);
+    }
+
+    return new Date(0);
+  };
+
+  isPaymentOverdue = (paymentHistory, targetMonth, targetYear) => {
+    if (!Array.isArray(paymentHistory) || paymentHistory.length === 0) return false;
+
+    const targetPayment = paymentHistory.find(
+      (entry) => Number(entry?.month) === Number(targetMonth) && Number(entry?.year) === Number(targetYear),
+    );
+
+    if (!targetPayment || String(targetPayment.status).toLowerCase() === 'paid') {
+      return false;
+    }
+
+    const sortedHistory = [...paymentHistory].sort(
+      (a, b) => this.getComparableHistoryDate(b).getTime() - this.getComparableHistoryDate(a).getTime(),
+    );
+
+    let unpaidCount = 0;
+
+    for (let i = 0; i < sortedHistory.length; i += 1) {
+      const status = String(sortedHistory[i]?.status || '').toLowerCase();
+
+      if (status === 'pending' || status === 'overdue') {
+        unpaidCount += 1;
+        if (unpaidCount >= 2) {
+          return true;
+        }
+      } else if (status === 'paid') {
+        unpaidCount = 0;
+      }
+    }
+
+    return false;
+  };
+
+  getComputedPaymentStatus = (member) => {
+    const rawStatus = String(member?.currentPayment?.status || 'pending').toLowerCase();
+
+    if (rawStatus === 'paid' || rawStatus === 'closed') {
+      return rawStatus;
+    }
+
+    if (rawStatus === 'overdue') {
+      return 'overdue';
+    }
+
+    const paymentHistory = Array.isArray(member?.paymentHistory) ? member.paymentHistory : [];
+    const targetMonth = Number(member?.currentPayment?.month ?? this.state.selectedMonth);
+    const targetYear = Number(member?.currentPayment?.year ?? this.state.selectedYear);
+
+    if (this.isCurrentSelectedMonth()) {
+      const previousMonth = targetMonth === 0 ? 11 : targetMonth - 1;
+      const previousYear = targetMonth === 0 ? targetYear - 1 : targetYear;
+      const previousMonthPayment = paymentHistory.find(
+        (entry) => Number(entry?.month) === previousMonth && Number(entry?.year) === previousYear,
+      );
+      const previousMonthStatus = String(previousMonthPayment?.status || '').toLowerCase();
+
+      if (previousMonthPayment && previousMonthStatus !== 'paid') {
+        return 'overdue';
+      }
+    }
+
+    if (this.isPaymentOverdue(paymentHistory, targetMonth, targetYear)) {
+      return 'overdue';
+    }
+
+    const dueDate = this.parseDateValue(
+      member?.currentPayment?.dueDate ||
+        member?.currentPayment?.due_date ||
+        member?.paymentHistory?.[0]?.dueDate ||
+        member?.paymentHistory?.[0]?.due_date,
+    );
+
+    if (dueDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const normalizedDueDate = new Date(dueDate);
+      normalizedDueDate.setHours(0, 0, 0, 0);
+
+      if (normalizedDueDate < today) {
+        return 'overdue';
+      }
+    }
+
+    if (this.isSelectedPeriodPast()) {
+      return 'overdue';
+    }
+
+    return rawStatus || 'pending';
+  };
+
   loadMemberPayments = async () => {
     const { group, selectedMonth, selectedYear } = this.state;
 
@@ -164,13 +294,13 @@ class MemberDetails extends Component {
 
   getMonthlyStats = () => {
     const members = this.state.groupData.members || [];
-    const paid = members.filter((m) => m?.currentPayment?.status === 'paid').length;
-    const pending = members.filter((m) => m?.currentPayment?.status === 'pending').length;
-    const overdue = members.filter((m) => m?.currentPayment?.status === 'overdue').length;
+    const paid = members.filter((m) => this.getComputedPaymentStatus(m) === 'paid').length;
+    const pending = members.filter((m) => this.getComputedPaymentStatus(m) === 'pending').length;
+    const overdue = members.filter((m) => this.getComputedPaymentStatus(m) === 'overdue').length;
 
     const totalAmount = members.reduce((sum, m) => {
       const payment = Number(m?.currentPayment?.amount || 0);
-      return m?.currentPayment?.status === 'paid' ? sum + payment : sum;
+      return this.getComputedPaymentStatus(m) === 'paid' ? sum + payment : sum;
     }, 0);
 
     return { paid, pending, overdue, totalAmount, total: members.length };
@@ -251,12 +381,20 @@ class MemberDetails extends Component {
   };
 
   openPaymentEditor = (item) => {
-    this.setState({ selectedMember: item });
+    this.setState({
+      selectedMember: {
+        ...item,
+        currentPayment: {
+          ...item.currentPayment,
+          status: this.getComputedPaymentStatus(item),
+        },
+      },
+    });
   };
 
   renderMemberCard = ({ item }) => {
     const { groupData } = this.state;
-    const paymentStatus = item?.currentPayment?.status || 'pending';
+    const paymentStatus = this.getComputedPaymentStatus(item);
 
     return (
       <TouchableOpacity
@@ -390,6 +528,11 @@ class MemberDetails extends Component {
 
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
+            <MaterialCommunityIcons name="alert-circle" size={24} color="#EF4444" />
+            <Text style={styles.statValue}>{stats.overdue}</Text>
+            <Text style={styles.statLabel}>Overdue</Text>
+          </View>
+          <View style={styles.statCard}>
             <MaterialCommunityIcons name="check-circle" size={24} color="#10B981" />
             <Text style={styles.statValue}>{stats.paid}</Text>
             <Text style={styles.statLabel}>Paid</Text>
@@ -398,11 +541,6 @@ class MemberDetails extends Component {
             <MaterialCommunityIcons name="clock-outline" size={24} color="#F59E0B" />
             <Text style={styles.statValue}>{stats.pending}</Text>
             <Text style={styles.statLabel}>Pending</Text>
-          </View>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons name="alert-circle" size={24} color="#EF4444" />
-            <Text style={styles.statValue}>{stats.overdue}</Text>
-            <Text style={styles.statLabel}>Overdue</Text>
           </View>
         </View>
 

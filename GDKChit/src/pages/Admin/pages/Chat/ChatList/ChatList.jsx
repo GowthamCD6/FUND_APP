@@ -246,7 +246,7 @@ const ChatList = ({ navigation }) => {
     const diffInDays = Math.floor(diffInMinutes / 1440);
     if (diffInDays < 7) return `${diffInDays}d`;
 
-    return date.toLocaleDateString('en-IN', { day: 'short', month: 'short' });
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   };
 
   const handleChatPress = (chat) => {
