@@ -28,6 +28,23 @@ const RandomAuction = ({
   const [isDiceRolling, setIsDiceRolling] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [rollTimer, setRollTimer] = useState(0);
+  const [joinedParticipants, setJoinedParticipants] = useState(new Set());
+  
+  useEffect(() => {
+    const handleUserJoined = (data) => {
+      if (data.groupId === selectedGroup?.id) {
+        setJoinedParticipants(prev => {
+          const newSet = new Set(prev);
+          newSet.add(data.userId.toString());
+          return newSet;
+        });
+      }
+    };
+    const unsubscribe = AuctionWebSocketService.on('user_joined_auction', handleUserJoined);
+    return () => unsubscribe();
+  }, [selectedGroup]);
+
+  const allJoined = participants.length > 0 && participants.every(p => joinedParticipants.has(p.id.toString()));
   
   // 3D Cube Animation Values
   const diceAnimations = useMemo(() => ({
@@ -136,6 +153,10 @@ const RandomAuction = ({
     if (isDiceRolling) return;
     if (participants.length === 0) {
       Alert.alert("Error", "No participants available for the random draw.");
+      return;
+    }
+    if (!allJoined) {
+      Alert.alert("Waiting", "Please wait for all selected participants to join the auction.");
       return;
     }
 
@@ -599,6 +620,11 @@ const RandomAuction = ({
             <Text style={styles.participantName} numberOfLines={1}>
               {participant.name.split(' ')[0]}
             </Text>
+            <View style={[styles.statusBadge, joinedParticipants.has(participant.id.toString()) ? {backgroundColor: '#D1FAE5'} : {backgroundColor: '#FEF3C7'}]}>
+              <Text style={[styles.statusBadgeText, joinedParticipants.has(participant.id.toString()) ? {color: '#065F46'} : {color: '#92400E'}]}>
+                {joinedParticipants.has(participant.id.toString()) ? 'Joined' : 'Pending'}
+              </Text>
+            </View>
             <View style={styles.participantNumber}>
               <Text style={styles.participantNumberText}>{index + 1}</Text>
             </View>
@@ -615,9 +641,10 @@ const RandomAuction = ({
       
       {!isDiceRolling && (
         <TouchableOpacity 
-          style={styles.startButton}
+          style={[styles.startButton, !allJoined && styles.disabledButton]}
           onPress={rollDice}
           activeOpacity={0.8}
+          disabled={!allJoined}
         >
           <MaterialCommunityIcons 
             name="dice-multiple" 
@@ -625,7 +652,7 @@ const RandomAuction = ({
             color="#FFFFFF" 
           />
           <Text style={styles.startButtonText}>
-            Start Lucky Draw
+            {allJoined ? 'Start Lucky Draw' : 'Waiting for Participants...'}
           </Text>
         </TouchableOpacity>
       )}
@@ -798,14 +825,22 @@ const styles = StyleSheet.create({
   },
   participantCard: {
     width: (width - 80) / 3,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: '#F3F4F6',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
     marginBottom: 12,
     position: 'relative',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 6,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   participantAvatar: {
     width: 44,

@@ -18,7 +18,10 @@ import BettingAuction from './BettingAuction/BettingAuction';
 import RandomAuction from './RandomAuction/RandomAuction';
 import ApiService from '../../../../../services/ApiService';
 
-const Auction = ({ onClose, selectedGroupId, selectedGroupType }) => {
+const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupType }) => {
+  const paramGroupId = route?.params?.groupId || selectedGroupId;
+  const paramGroupType = route?.params?.auctionType || selectedGroupType;
+
   const [activeTab, setActiveTab] = useState('betting');
   const [participants, setParticipants] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
@@ -30,16 +33,16 @@ const Auction = ({ onClose, selectedGroupId, selectedGroupType }) => {
   }, []);
 
   useEffect(() => {
-    if (selectedGroupId && userGroups.length > 0) {
-      const matched = userGroups.find(g => g.id.toString() === selectedGroupId.toString());
+    if (paramGroupId && userGroups.length > 0) {
+      const matched = userGroups.find(g => g.id.toString() === paramGroupId.toString());
       if (matched) {
         handleGroupSelect(matched);
-        if (selectedGroupType) {
-          setActiveTab(selectedGroupType);
+        if (paramGroupType) {
+          setActiveTab(paramGroupType);
         }
       }
     }
-  }, [selectedGroupId, selectedGroupType, userGroups]);
+  }, [paramGroupId, paramGroupType, userGroups]);
 
   const fetchUserGroups = async () => {
     try {
@@ -99,8 +102,14 @@ const Auction = ({ onClose, selectedGroupId, selectedGroupType }) => {
   };
 
   const handleBackFromAuction = () => {
-    setSelectedGroup(null);
-    setActiveTab('betting');
+    if (onClose) {
+      onClose();
+    } else if (navigation && navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      setSelectedGroup(null);
+      setActiveTab('betting');
+    }
   };
 
   const handleAuctionComplete = result => {
@@ -124,7 +133,10 @@ const Auction = ({ onClose, selectedGroupId, selectedGroupType }) => {
   const renderGroupSelectHeader = () => (
     <Header 
       title="Select Group" 
-      onBack={onClose}
+      onBack={() => {
+        if (onClose) onClose();
+        else if (navigation && navigation.canGoBack()) navigation.goBack();
+      }}
       showBackButton={true}
       rightComponent={
         <MaterialCommunityIcons name="gavel" size={24} color="#6B46C1" />

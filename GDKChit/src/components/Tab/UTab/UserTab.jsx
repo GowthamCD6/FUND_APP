@@ -13,7 +13,6 @@ import ChatList from '../../../pages/User/Pages/Chat/ChatList/ChatList';
 // Import MaterialCommunityIcons for consistent iconography
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import AuctionWebSocketService from '../../../services/AuctionWebSocketService';
 
 import MoreModal from '../../../pages/User/Modals/More';
 import AdminTab, { ADMIN_PHONE, ADMIN_PASSWORD } from '../ATab/AdminTab';
@@ -40,46 +39,7 @@ const CustomTabBarButton = ({ children, onPress }) => (
 
 const UserTabs = () => {
   const [showMoreModal, setShowMoreModal] = useState(false);
-  const [activeAuctionAlert, setActiveAuctionAlert] = useState(null);
   const [preselectedGroup, setPreselectedGroup] = useState(null);
-
-  useEffect(() => {
-    let unsubscribeAlert;
-
-    const connectWebSocket = async () => {
-      try {
-        const token = await AsyncStorage.getItem('accessToken');
-        const userId = await AsyncStorage.getItem('userId');
-        
-        if (token && userId) {
-          await AuctionWebSocketService.connect(token, userId, 'user');
-          
-          const unsub = AuctionWebSocketService.on('auction_created_alert', (data) => {
-            const { groupId, groupName, auctionType, participantIds } = data;
-            
-            // Check if current user is one of the participants
-            if (!participantIds || participantIds.map(pid => pid.toString()).includes(userId.toString())) {
-              setActiveAuctionAlert({
-                id: groupId,
-                name: groupName,
-                type: auctionType || 'betting'
-              });
-            }
-          });
-
-          unsubscribeAlert = unsub;
-        }
-      } catch (err) {
-        console.error('Error connecting WebSocket in UserTabs:', err);
-      }
-    };
-
-    connectWebSocket();
-
-    return () => {
-      unsubscribeAlert?.();
-    };
-  }, []);
 
   const handleCloseMoreModal = () => {
     setShowMoreModal(false);
@@ -194,40 +154,6 @@ const UserTabs = () => {
           }}
         />
       </Tab.Navigator>
-
-      {activeAuctionAlert && (
-        <View style={styles.alertCard}>
-          <View style={styles.alertHeader}>
-            <MaterialCommunityIcons name="gavel" size={22} color="#6B46C1" />
-            <Text style={styles.alertTitle}>Live Auction Invitation</Text>
-          </View>
-          <Text style={styles.alertBody}>
-            You are part of the auction for group: {activeAuctionAlert.name}
-          </Text>
-          <View style={styles.alertButtons}>
-            <TouchableOpacity 
-              style={styles.dismissBtn} 
-              onPress={() => setActiveAuctionAlert(null)}
-            >
-              <Text style={styles.dismissBtnText}>Dismiss</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.joinBtn} 
-              onPress={() => {
-                setPreselectedGroup({ 
-                  id: activeAuctionAlert.id, 
-                  name: activeAuctionAlert.name,
-                  type: activeAuctionAlert.type 
-                });
-                setShowMoreModal(true);
-                setActiveAuctionAlert(null);
-              }}
-            >
-              <Text style={styles.joinBtnText}>Join Now</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
 
       <MoreModal visible={showMoreModal} onClose={handleCloseMoreModal} selectedGroup={preselectedGroup} />
     </>

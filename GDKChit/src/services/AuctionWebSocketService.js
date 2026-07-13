@@ -121,6 +121,14 @@ class AuctionWebSocketService {
     });
   }
 
+  // Join auction (User approves)
+  joinAuction(groupId, userId) {
+    this.send('user_joined_auction', {
+      groupId,
+      userId,
+    });
+  }
+
   // Send message
   send(type, data) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {

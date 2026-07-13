@@ -14,6 +14,7 @@ import Welcome from "../../pages/Fronter/Welcome/Welcome";
 import Login from "../../pages/Fronter/Login/Login";
 import MemberDetails from "../../pages/Admin/pages/Reports/pages/MemberDetails/MemberDetails";
 import Auction from "../../pages/Admin/pages/Settings/pages/Auction/Auction";
+import UserAuctionScreen from "../../pages/User/Modals/Pages/Auction/Auction";
 import AdminEditProfile from "../../pages/Admin/pages/Settings/pages/AccountDetails/EditProfile";
 import NewGroup from "../../pages/Admin/pages/Chat/NewGroup/NewGroup";
 import NewGroupDetails from "../../pages/Admin/pages/Chat/NewGroup/NewGroupDetails";
@@ -70,6 +71,7 @@ const Routes = () => {
                 <Stack.Screen name="NewGroupDetails" component={NewGroupDetails} />
                 <Stack.Screen name="MembersDetails" component={MemberDetails} />
                 <Stack.Screen name="AuctionSettings" component={Auction} />
+                <Stack.Screen name="AuctionScreen" component={UserAuctionScreen} />
                 <Stack.Screen name="AdminEditProfile" component={AdminEditProfile} />
                 <Stack.Screen name="AdminDataExport" component={AdminDataExport} />
                 <Stack.Screen name="UserPrivacyPolicy" component={UserPrivacyPolicy} />

@@ -94,14 +94,20 @@ const AppContent = () => {
   );
 };
 
+import { AuctionProvider } from "./src/utils/AuctionContext";
+import GlobalAuctionModal from "./src/components/GlobalAuctionModal/GlobalAuctionModal";
+
 const App = () => {
 
   return (
     <LanguageProvider>
       <AuthProvider>
-        {/* <ThemeProvider> */}
-          <AppContent />
-        {/* </ThemeProvider> */}
+        <AuctionProvider>
+          {/* <ThemeProvider> */}
+            <AppContent />
+            <GlobalAuctionModal />
+          {/* </ThemeProvider> */}
+        </AuctionProvider>
       </AuthProvider>
     </LanguageProvider>
   );

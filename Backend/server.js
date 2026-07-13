@@ -350,6 +350,24 @@ function handleAuctionMessage(type, data, clientId, userType) {
         });
       }
       break;
+    
+    case 'user_joined_auction':
+      if (userType === 'user' || userType === 'User') {
+        const { groupId, userId } = data;
+        // Broadcast to admins that a user has joined
+        clientSessions.forEach((session, cid) => {
+          if ((session.userType === 'admin' || session.userType === 'Admin') && session.ws.readyState === WebSocket.OPEN) {
+            session.ws.send(JSON.stringify({
+              type: 'user_joined_auction',
+              data: {
+                groupId,
+                userId
+              }
+            }));
+          }
+        });
+      }
+      break;
 
     default:
       console.warn('Unknown message type:', type);

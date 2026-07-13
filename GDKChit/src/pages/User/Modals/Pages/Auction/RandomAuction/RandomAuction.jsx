@@ -201,7 +201,7 @@ const RandomAuction = ({ participants = [], selectedGroup, onAuctionComplete }) 
     ));
   };
 
-  const joinDraw = () => {
+  const joinDraw = async () => {
     if (!drawInProgress) {
       Alert.alert('Draw Ended', 'This lucky draw has already concluded.');
       return;
@@ -213,6 +213,15 @@ const RandomAuction = ({ participants = [], selectedGroup, onAuctionComplete }) 
         'You have already joined this lucky draw. Wait for the admin to roll the dice!',
       );
       return;
+    }
+
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (userId && selectedGroup?.id) {
+        AuctionWebSocketService.joinAuction(selectedGroup.id, userId);
+      }
+    } catch (e) {
+      console.error(e);
     }
 
     setHasJoined(true);
