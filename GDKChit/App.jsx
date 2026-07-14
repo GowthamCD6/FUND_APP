@@ -17,20 +17,20 @@ const AppContent = () => {
 
   useEffect(() => {
     console.log('App.jsx: Starting security initialization...');
-    
+
     // Initialize security state
     const initSecurity = async () => {
       try {
         console.log('App.jsx: Calling BiometricService.init()');
         // Ensure BiometricService is fully initialized
         await BiometricService.init();
-        
+
         // Small delay to ensure async storage is read
         await new Promise(resolve => setTimeout(resolve, 100));
-        
+
         const state = BiometricService.getState();
         console.log('App.jsx: Initial security state received:', state);
-        
+
         setSecurityState({
           ...state,
           isLoading: false
@@ -87,9 +87,7 @@ const AppContent = () => {
   console.log('App.jsx: Showing main Router');
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={[styles.container]}>
-        <Router />
-      </SafeAreaView>
+      <Router />
     </SafeAreaProvider>
   );
 };
@@ -104,8 +102,8 @@ const App = () => {
       <AuthProvider>
         <AuctionProvider>
           {/* <ThemeProvider> */}
-            <AppContent />
-            <GlobalAuctionModal />
+          <AppContent />
+          <GlobalAuctionModal />
           {/* </ThemeProvider> */}
         </AuctionProvider>
       </AuthProvider>

@@ -9,10 +9,10 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LeftArrowIcon from '../../assets/Icon/left-arrow.svg';
 
-const Header = ({ 
-  title, 
-  onBack, 
-  showBackButton = true, 
+const Header = ({
+  title,
+  onBack,
+  showBackButton = true,
   backIconWidth = 20,
   backIconHeight = 20,
   backIconFill = '#1F2937',
@@ -20,31 +20,31 @@ const Header = ({
   headerStyle = {},
   showDivider = true,
   dividerStyle = {},
-  rightComponent = null 
+  rightComponent = null
 }) => {
   return (
     <View style={[styles.container, headerStyle]}>
       {/* Header Content */}
       <View style={styles.header}>
         {showBackButton && (
-          <TouchableOpacity 
-            onPress={onBack} 
+          <TouchableOpacity
+            onPress={onBack}
             style={styles.backButton}
             activeOpacity={0.6}
           >
-            <LeftArrowIcon 
-              width={backIconWidth} 
-              height={backIconHeight} 
-              fill={backIconFill} 
+            <LeftArrowIcon
+              width={backIconWidth}
+              height={backIconHeight}
+              fill={backIconFill}
               marginTop={-10}
             />
           </TouchableOpacity>
         )}
-        
+
         <Text style={[styles.headerTitle, titleStyle]}>
           {title}
         </Text>
-        
+
         {/* Right side component (optional) */}
         {rightComponent && (
           <View style={styles.rightComponent}>

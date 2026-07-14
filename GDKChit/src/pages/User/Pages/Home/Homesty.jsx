@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 0,
-    paddingBottom: 16,
+    paddingBottom: 10,
   },
   greetingTextContainer: {
     flex: 1,
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   heroSection: {
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     marginHorizontal: 16,
-    marginTop: 14,
+    marginTop: 8,
     marginBottom: 20,
     borderRadius: 24,
     paddingTop: 22,
@@ -247,12 +247,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   statLabel: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#1E293B',
     fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
     textAlign: 'left',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   exploreSection: {
     marginHorizontal: 16,
@@ -498,12 +498,12 @@ const styles = StyleSheet.create({
   },
   amountRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     marginTop: 8,
     marginBottom: 2,
   },
   mainAmount: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     marginBottom: 0,
     color: '#FFFFFF',
@@ -606,10 +606,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   whatsappContent: {
-    paddingVertical: 16,
+    paddingVertical: 22,
     paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 14,
+    gap: 20,
     zIndex: 2,
   },
   whatsappHeaderRow: {
@@ -632,11 +632,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   whatsappTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
     flex: 1,
-    lineHeight: 22,
+    lineHeight: 24,
   },
   whatsappButton: {
     backgroundColor: '#FFFFFF',

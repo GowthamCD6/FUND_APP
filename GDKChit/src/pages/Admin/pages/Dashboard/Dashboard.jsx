@@ -110,7 +110,7 @@ const Dashboard = () => {
       setRefreshing(false);
     }, 2000);
     fetchAdminNotifications().finally(() => {
-        setRefreshing(false);
+      setRefreshing(false);
     });
   }, []);
 
@@ -119,7 +119,7 @@ const Dashboard = () => {
   };
 
   const getActivityIcon = (type) => {
-    switch(type) {
+    switch (type) {
       case 'payment': return 'check-circle-outline';
       case 'partial': return 'alert-circle-outline';
       case 'overdue': return 'close-circle-outline';
@@ -129,7 +129,7 @@ const Dashboard = () => {
   };
 
   const getActivityColor = (type) => {
-    switch(type) {
+    switch (type) {
       case 'payment': return '#10B981';
       case 'partial': return '#F59E0B';
       case 'overdue': return '#EF4444';
@@ -157,18 +157,18 @@ const Dashboard = () => {
           <View style={styles.notificationDot} />
           {notifications.length > 0 && (
             <View style={{
-                position: 'absolute',
-                top: -2,
-                right: -2,
-                backgroundColor: '#EF4444',
-                borderRadius: 10,
-                minWidth: 16,
-                minHeight: 16,
-                justifyContent: 'center',
-                alignItems: 'center',
-                paddingHorizontal: 4,
-              }}>
-                <Text style={{color: 'white', fontSize: 10, fontWeight: 'bold'}}>{notifications.length}</Text>
+              position: 'absolute',
+              top: -2,
+              right: -2,
+              backgroundColor: '#EF4444',
+              borderRadius: 10,
+              minWidth: 16,
+              minHeight: 16,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingHorizontal: 4,
+            }}>
+              <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>{notifications.length}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -320,10 +320,10 @@ const Dashboard = () => {
           {recentActivities.map((activity) => (
             <View key={activity.id} style={styles.activityItem}>
               <View style={[styles.activityIconContainer, { backgroundColor: getActivityColor(activity.type) + '15' }]}>
-                <MaterialCommunityIcons 
-                  name={getActivityIcon(activity.type)} 
-                  size={16} 
-                  color={getActivityColor(activity.type)} 
+                <MaterialCommunityIcons
+                  name={getActivityIcon(activity.type)}
+                  size={16}
+                  color={getActivityColor(activity.type)}
                 />
               </View>
               <View style={styles.activityDetails}>

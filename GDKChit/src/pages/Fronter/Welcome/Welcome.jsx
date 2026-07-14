@@ -1,4 +1,4 @@
-import {Text, TouchableOpacity, View, ScrollView} from 'react-native';
+import { Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import LottieView from 'lottie-react-native';
 import styles from '../Welcome/Welcomesty.jsx';
 import React from 'react';
@@ -15,8 +15,8 @@ const Welcome = () => {
         source={require('../../../animation/Revenue.json')}
         autoPlay
         loop={false}
-        style={{width: 290, height: 300,  backgroundColor: 'transparent',}}
-          resizeMode="contain" 
+        style={{ width: 290, height: 300, backgroundColor: 'transparent', }}
+        resizeMode="contain"
       />
 
       <Text style={styles.mainText}>Hello !</Text>

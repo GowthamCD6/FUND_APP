@@ -11,6 +11,7 @@ import AdminBlockUserScreen from "../../pages/Admin/pages/Settings/pages/BlockUs
 import AdminUserLocation from "../../pages/Admin/pages/Settings/pages/UserLocation/UserL";
 import AuthLoader from "../../utils/authLoader";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Welcome from "../../pages/Fronter/Welcome/Welcome";
 import Login from "../../pages/Fronter/Login/Login";
 import MemberDetails from "../../pages/Admin/pages/Reports/pages/MemberDetails/MemberDetails";
@@ -59,7 +60,8 @@ const Routes = () => {
                 backgroundColor={isHomeRoute ? "#411E73" : "#ffffffff"}
                 translucent={false}
             />
-            <Stack.Navigator initialRouteName="AuthLoader" screenOptions={{ headerShown: false }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: isHomeRoute ? '#411E73' : '#ffffffff' }} edges={isHomeRoute ? [] : ['top', 'left', 'right']}>
+                <Stack.Navigator initialRouteName="AuthLoader" screenOptions={{ headerShown: false }}>
 
                 <Stack.Screen name="Welcome" component={Welcome} />
 
@@ -96,7 +98,8 @@ const Routes = () => {
                 <Stack.Screen name="UserMyLocation" component={UserMyLocation} />
                 <Stack.Screen name="UserAdminLocation" component={UserAdminLocation} />
                 <Stack.Screen name="LanguageSettings" component={LanguageSettings} />
-            </Stack.Navigator>
+                </Stack.Navigator>
+            </SafeAreaView>
         </NavigationContainer>
     )
 }

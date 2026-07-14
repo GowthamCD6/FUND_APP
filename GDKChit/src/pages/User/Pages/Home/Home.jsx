@@ -22,6 +22,7 @@ import styles from './Homesty';
 
 const t = (value) => value;
 const language = 'en';
+const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 47 : (StatusBar.currentHeight || 0);
 
 const iconMap = {
   'bell-outline': 'bell-outline',
@@ -179,7 +180,8 @@ const Home = () => {
     setShowNotifications(true);
   };
 
-  useEffect(() => {
+  const triggerRangoliAnimation = useCallback(() => {
+    goldenFade.setValue(0);
     Animated.sequence([
       Animated.timing(goldenFade, {
         toValue: 1,
@@ -200,17 +202,20 @@ const Home = () => {
     useCallback(() => {
       StatusBar.setBarStyle('light-content');
       if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('#411E73');
+        StatusBar.setTranslucent(true);
+        StatusBar.setBackgroundColor('transparent');
       }
-      StatusBar.setTranslucent(false);
+
+      triggerRangoliAnimation();
 
       return () => {
         StatusBar.setBarStyle('dark-content');
         if (Platform.OS === 'android') {
+          StatusBar.setTranslucent(false);
           StatusBar.setBackgroundColor('#FFFFFF');
         }
       };
-    }, [])
+    }, [triggerRangoliAnimation])
   );
 
   // Scroll to Popular Plans section
@@ -576,7 +581,7 @@ const Home = () => {
           </View>
 
           {/* Greeting Header Section */}
-          <View style={styles.greetingHeader}>
+          <View style={[styles.greetingHeader, { paddingTop: STATUSBAR_HEIGHT > 0 ? STATUSBAR_HEIGHT + 2 : 12 }]}>
             <View style={styles.greetingTextContainer}>
               <Text style={styles.greetingTitle}>{t('Hello, ') + userName}</Text>
             </View>
@@ -601,12 +606,6 @@ const Home = () => {
             {/* Top Content */}
             <View style={styles.heroTopContent}>
               <Text style={styles.heroTitle}>ஸ்ரீ பெரியநாயகி அம்மன்</Text>
-              <View style={styles.heroSubtitleContainer}>
-                <Text style={styles.heroSubtitle}>{t('CHITFUNDS')}</Text>
-                <Text style={styles.heroTagline}>{t('Since 1999')}</Text>
-              </View>
-
-
             </View>
 
             {/* Animation Above Button */}
@@ -698,8 +697,8 @@ const Home = () => {
             {stats.map((stat, index) => {
               const isEvenRow = Math.floor(index / 2) % 2 === 0;
               const isFirstInRow = index % 2 === 0;
-              const cardWidth = isEvenRow 
-                ? (isFirstInRow ? '52%' : '44%') 
+              const cardWidth = isEvenRow
+                ? (isFirstInRow ? '52%' : '44%')
                 : (isFirstInRow ? '44%' : '52%');
 
               // Pastel colors matching features
@@ -714,24 +713,24 @@ const Home = () => {
                     <Text style={[styles.statLabel, language === 'ta' && { fontSize: 13 }]}>{t(stat.label)}</Text>
                     <Text style={styles.statValue}>{stat.value}</Text>
                   </View>
-                  <Image 
+                  <Image
                     source={
-                      stat.icon === 'star-circle' 
+                      stat.icon === 'star-circle'
                         ? require('../../../../assets/UserHomePage/trust.png')
                         : stat.icon === 'account-group'
                           ? require('../../../../assets/UserHomePage/ActiveMembers.png')
                           : stat.icon === 'calendar-check'
                             ? require('../../../../assets/UserHomePage/YearsLegacy.png')
                             : require('../../../../assets/UserHomePage/FundManagement.png')
-                    } 
-                    style={{ 
-                      width: stat.icon === 'currency-inr' ? 115 : stat.icon === 'calendar-check' ? 100 : 90, 
-                      height: stat.icon === 'currency-inr' ? 115 : stat.icon === 'calendar-check' ? 100 : 90, 
-                      position: 'absolute', 
-                      bottom: (stat.icon === 'currency-inr' || stat.icon === 'calendar-check') ? 0 : 2, 
-                      right: (stat.icon === 'currency-inr' || stat.icon === 'calendar-check') ? 4 : 8 
-                    }} 
-                    resizeMode="contain" 
+                    }
+                    style={{
+                      width: stat.icon === 'currency-inr' ? 115 : stat.icon === 'calendar-check' ? 100 : 90,
+                      height: stat.icon === 'currency-inr' ? 115 : stat.icon === 'calendar-check' ? 100 : 90,
+                      position: 'absolute',
+                      bottom: (stat.icon === 'currency-inr' || stat.icon === 'calendar-check') ? 0 : 2,
+                      right: (stat.icon === 'currency-inr' || stat.icon === 'calendar-check') ? 4 : 8
+                    }}
+                    resizeMode="contain"
                   />
                 </View>
               );
@@ -748,8 +747,8 @@ const Home = () => {
             {exploreFeatures.map((feature, index) => {
               const isEvenRow = Math.floor(index / 2) % 2 === 0;
               const isFirstInRow = index % 2 === 0;
-              const cardWidth = isEvenRow 
-                ? (isFirstInRow ? '52%' : '44%') 
+              const cardWidth = isEvenRow
+                ? (isFirstInRow ? '52%' : '44%')
                 : (isFirstInRow ? '44%' : '52%');
 
               return (
@@ -758,7 +757,7 @@ const Home = () => {
                     <Text style={styles.exploreTitle}>{t(feature.title)}</Text>
                     <Text style={styles.exploreSubtitle}>{t(feature.subtitle)}</Text>
                   </View>
-                  <Image 
+                  <Image
                     source={
                       feature.icon === 'map-pin'
                         ? require('../../../../assets/UserHomePage/Location.png')
@@ -768,14 +767,14 @@ const Home = () => {
                             ? require('../../../../assets/UserHomePage/OnlineTransation.png')
                             : require('../../../../assets/UserHomePage/DuelLanguage.png')
                     }
-                    style={{ 
-                      width: feature.icon === 'map-pin' ? 125 : 100, 
-                      height: feature.icon === 'map-pin' ? 125 : 100, 
-                      position: 'absolute', 
-                      bottom: feature.icon === 'map-pin' ? -8 : 0, 
-                      right: feature.icon === 'credit-card' ? -10 : 4 
-                    }} 
-                    resizeMode="contain" 
+                    style={{
+                      width: feature.icon === 'map-pin' ? 125 : 100,
+                      height: feature.icon === 'map-pin' ? 125 : 100,
+                      position: 'absolute',
+                      bottom: feature.icon === 'map-pin' ? -8 : 0,
+                      right: feature.icon === 'credit-card' ? -10 : 4
+                    }}
+                    resizeMode="contain"
                   />
                 </View>
               );
