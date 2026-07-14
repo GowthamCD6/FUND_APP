@@ -3,65 +3,218 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
+  Image,
   TouchableOpacity,
   Dimensions,
-  FlatList,
-  Linking,
-  Image,
   Modal,
+  StyleSheet,
+  StatusBar,
+  Platform,
+  Animated,
+  Easing,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useFocusEffect } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
-import ChitPlans from './Chit Plans/ChitPlans';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, RadialGradient as SvgRadialGradient, Stop, Rect, Path } from 'react-native-svg';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import ChitPlans from '../Home/Chit Plans/ChitPlans';
 import styles from './Homesty';
-import ApiService from '../../../../services/ApiService';
-import { useLanguage } from '../../../../utils/LanguageContext';
+
+const t = (value) => value;
+const language = 'en';
+
+const iconMap = {
+  'bell-outline': 'bell-outline',
+  percent: 'percent-outline',
+  'shield-check': 'shield-check',
+  'arrow-right': 'arrow-right',
+  'account-group': 'account-group',
+  'currency-inr': 'currency-inr',
+  'calendar-check': 'calendar-check',
+  'star-circle': 'star-circle-outline',
+  gavel: 'gavel',
+  'cash-check': 'cash-check',
+  'cellphone-check': 'cellphone-check',
+  close: 'close',
+  'bell-sleep': 'bell-sleep',
+  'alert-circle': 'alert-circle-outline',
+  'clock-alert': 'clock-alert-outline',
+  'badge-check': 'check-decagram-outline',
+  'map-pin': 'map-marker',
+  fingerprint: 'fingerprint',
+  'credit-card': 'credit-card-outline',
+  languages: 'translate',
+};
+
+const Icon = ({ name, size = 16, color = '#000' }) => {
+  const iconName = iconMap[name] || 'check-decagram-outline';
+
+  return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+};
+
+const WhatsappIcon = ({ size = 28, color = '#25D366' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.762.455 3.42 1.257 4.872L2 22l5.244-1.222A9.957 9.957 0 0012.004 22C17.528 22 22 17.528 22 12.004 22 6.48 17.528 2 12.004 2z"
+      fill={color}
+    />
+    <Path
+      d="M16.924 14.184c-.27-.136-1.597-.79-1.844-.88-.248-.09-.43-.136-.61.136-.18.27-.7.88-.86 1.06-.157.18-.315.203-.585.068a7.378 7.378 0 01-2.176-1.344 8.136 8.136 0 01-1.508-1.879c-.157-.27-.015-.417.12-.552.124-.12.27-.315.405-.473.136-.157.18-.27.27-.45.09-.18.045-.338-.023-.473-.068-.135-.61-1.467-.834-2.012-.22-.527-.443-.455-.61-.462-.158-.008-.338-.008-.518-.008-.18 0-.473.068-.72.338-.248.27-.946.923-.946 2.25 0 1.328.968 2.61 1.103 2.79.136.18 1.905 2.91 4.613 4.078.645.278 1.148.444 1.54.569.65.207 1.24.178 1.706.108.52-.078 1.598-.653 1.823-1.283.225-.63.225-1.17.157-1.283-.067-.113-.247-.203-.517-.338z"
+      fill="#FFFFFF"
+    />
+  </Svg>
+);
 
 const { width } = Dimensions.get('window');
 
 // Configuration for the Perfect Slider
-const CARD_WIDTH = width * 0.95; // Card takes 85% of screen width
-const SPACING = 12; // Gap between cards
+const CARD_WIDTH = width * 0.80; // Card takes 80% of screen width
+const SPACING = -4; // Gap between cards
 const SNAP_INTERVAL = CARD_WIDTH + SPACING; // Total scroll distance per slide
 
+const plans = [
+  {
+    id: 1,
+    name: '1 Lakh Plan',
+    badge: 'Popular',
+    amount: '₹1,00,000',
+    monthly: '₹5,000',
+    duration: '20 Months',
+    return: '₹95,000',
+    color: '#D97706',
+    gradient: ['#D97706', '#B45309'],
+    lottie: require('../../../../animation/UserHome/1LAkhLotte.json'),
+  },
+  {
+    id: 2,
+    name: '2 Lakh Plan',
+    badge: 'Best Value',
+    amount: '₹2,00,000',
+    monthly: '₹10,000',
+    duration: '20 Months',
+    return: '₹1,90,000',
+    color: '#0D9488',
+    gradient: ['#0D9488', '#0F766E'],
+    lottie: require('../../../../animation/UserHome/2LakhLotte.json'),
+  },
+  {
+    id: 3,
+    name: '3 Lakh Plan',
+    badge: 'Trending',
+    amount: '₹3,00,000',
+    monthly: '₹15,000',
+    duration: '20 Months',
+    return: '₹2,85,000',
+    color: '#7C3AED',
+    gradient: ['#7C3AED', '#6D28D9'],
+    lottie: require('../../../../animation/UserHome/3LakhLotte.json'),
+  },
+  {
+    id: 4,
+    name: '5 Lakh Plan',
+    badge: 'Premium',
+    amount: '₹5,00,000',
+    monthly: '₹25,000',
+    duration: '20 Months',
+    return: '₹4,75,000',
+    color: '#DB2777',
+    gradient: ['#DB2777', '#BE185D'],
+    lottie: require('../../../../animation/UserHome/5LakhLotte.json'),
+  },
+];
+
+// Create infinite loop data by duplicating plans multiple times
+const infiniteData = [...plans, ...plans, ...plans];
+const initialIndex = plans.length; // Start from middle set
+
 const Home = () => {
-  const { t, language } = useLanguage();
+  // eslint-disable-next-line no-unused-vars
+  const [userName, setUserName] = useState('User Name');
+  // eslint-disable-next-line no-unused-vars
+  const [totalInvested, setTotalInvested] = useState('');
   const [showAllPlans, setShowAllPlans] = useState(false);
   const [activePlanSlide, setActivePlanSlide] = useState(0);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const flatListRef = useRef(null);
   const scrollTimer = useRef(null);
   const mainScrollRef = useRef(null);
+  const scrollX = useRef(new Animated.Value(plans.length * SNAP_INTERVAL)).current;
+  const autoScrollVal = useRef(new Animated.Value(0)).current;
+  const currentScrollX = useRef(plans.length * SNAP_INTERVAL);
+
+  useEffect(() => {
+    const xListener = scrollX.addListener(({ value }) => {
+      currentScrollX.current = value;
+    });
+    const autoScrollListener = autoScrollVal.addListener(({ value }) => {
+      if (flatListRef.current) {
+        flatListRef.current.scrollTo({
+          x: value,
+          animated: false,
+        });
+      }
+    });
+
+    return () => {
+      scrollX.removeListener(xListener);
+      autoScrollVal.removeListener(autoScrollListener);
+    };
+  }, [scrollX, autoScrollVal]);
+
   const plansLayoutY = useRef(0);
 
+  const goldenFade = useRef(new Animated.Value(0)).current;
+
   // Notifications State
-  const [notifications, setNotifications] = useState([]);
+  const [notifications] = useState([
+    {
+      title: 'Welcome to ChitFunds',
+      message: 'Your latest plan updates will appear here.',
+      type: 'info',
+    },
+  ]);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // Fetch Notifications
-  const fetchNotifications = async () => {
-    try {
-      const response = await ApiService.makeRequest('/user/notifications', { method: 'GET' });
-      const result = await response.json();
-      if (result.success) {
-        setNotifications(result.data || []);
-      }
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
-    }
-  };
-
   const handleOpenNotifications = async () => {
-    await fetchNotifications();
     setShowNotifications(true);
   };
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    Animated.sequence([
+      Animated.timing(goldenFade, {
+        toValue: 1,
+        duration: 3000,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(goldenFade, {
+        toValue: 0,
+        duration: 3000,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [goldenFade]);
+
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle('light-content');
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#411E73');
+      }
+      StatusBar.setTranslucent(false);
+
+      return () => {
+        StatusBar.setBarStyle('dark-content');
+        if (Platform.OS === 'android') {
+          StatusBar.setBackgroundColor('#FFFFFF');
+        }
+      };
+    }, [])
+  );
 
   // Scroll to Popular Plans section
+  // eslint-disable-next-line no-unused-vars
   const scrollToPlans = () => {
     if (mainScrollRef.current) {
       mainScrollRef.current.scrollTo({
@@ -71,56 +224,6 @@ const Home = () => {
     }
   };
 
-  const plans = [
-    {
-      id: 1,
-      name: '1 Lakh Plan',
-      badge: 'Popular',
-      amount: '₹1,00,000',
-      monthly: '₹5,000',
-      duration: '20 Months',
-      return: '₹95,000',
-      color: '#FFD700',
-      gradient: ['#FFD700', '#FFA500'],
-    },
-    {
-      id: 2,
-      name: '2 Lakh Plan',
-      badge: 'Best Value',
-      amount: '₹2,00,000',
-      monthly: '₹10,000',
-      duration: '20 Months',
-      return: '₹1,90,000',
-      color: '#E5E4E2',
-      gradient: ['#E5E4E2', '#C0C0C0'],
-    },
-    {
-      id: 3,
-      name: '3 Lakh Plan',
-      badge: 'Trending',
-      amount: '₹3,00,000',
-      monthly: '₹15,000',
-      duration: '20 Months',
-      return: '₹2,85,000',
-      color: '#B9F2FF',
-      gradient: ['#B9F2FF', '#87CEEB'],
-    },
-    {
-      id: 4,
-      name: '5 Lakh Plan',
-      badge: 'Premium',
-      amount: '₹5,00,000',
-      monthly: '₹25,000',
-      duration: '20 Months',
-      return: '₹4,75,000',
-      color: '#DA70D6',
-      gradient: ['#DA70D6', '#BA55D3'],
-    },
-  ];
-
-  // Create infinite loop data by duplicating plans multiple times
-  const infiniteData = [...plans, ...plans, ...plans];
-  const initialIndex = plans.length; // Start from middle set
 
   // --- START: INFINITE CAROUSEL LOGIC ---
 
@@ -128,74 +231,98 @@ const Home = () => {
   useEffect(() => {
     if (flatListRef.current) {
       setTimeout(() => {
-        flatListRef.current.scrollToIndex({ 
-          index: initialIndex, 
-          animated: false 
+        flatListRef.current.scrollTo({
+          x: initialIndex * SNAP_INTERVAL,
+          animated: false
         });
       }, 100);
     }
   }, []);
 
-  // Auto Scroll - Always moves forward (right to left)
+  const stopAutoScroll = useCallback(() => {
+    if (scrollTimer.current) {
+      clearInterval(scrollTimer.current);
+      scrollTimer.current = null;
+    }
+    autoScrollVal.stopAnimation();
+  }, [autoScrollVal]);
+
   const startAutoScroll = useCallback(() => {
     stopAutoScroll();
     scrollTimer.current = setInterval(() => {
       if (flatListRef.current) {
         setActivePlanSlide((prev) => {
           const nextIndex = prev + 1;
-          
-          flatListRef.current.scrollToIndex({ 
-            index: nextIndex, 
-            animated: true,
+
+          autoScrollVal.setValue(currentScrollX.current);
+          Animated.timing(autoScrollVal, {
+            toValue: nextIndex * SNAP_INTERVAL,
+            duration: 2000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: false,
+          }).start(({ finished }) => {
+            if (finished) {
+              if (nextIndex >= plans.length * 2) {
+                const resetIndex = nextIndex - plans.length;
+                scrollX.setValue(resetIndex * SNAP_INTERVAL);
+                autoScrollVal.setValue(resetIndex * SNAP_INTERVAL);
+                if (flatListRef.current) {
+                  flatListRef.current.scrollTo({
+                    x: resetIndex * SNAP_INTERVAL,
+                    animated: false,
+                  });
+                }
+                setActivePlanSlide(resetIndex);
+              }
+            }
           });
-          
+
           return nextIndex;
         });
       }
-    }, 3500);
-  }, []);
-
-  const stopAutoScroll = () => {
-    if (scrollTimer.current) {
-      clearInterval(scrollTimer.current);
-      scrollTimer.current = null;
-    }
-  };
+    }, 5000);
+  }, [autoScrollVal, stopAutoScroll, scrollX]);
 
   // Reset to middle when reaching edges (seamless loop)
-  const handleScrollEnd = (event) => {
+  const handleScrollEnd = useCallback((event) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const currentIndex = Math.round(offsetX / SNAP_INTERVAL);
-    
+
     // If we've scrolled past the middle set, reset to middle
     if (currentIndex >= plans.length * 2) {
-      flatListRef.current.scrollToIndex({
-        index: currentIndex - plans.length,
-        animated: false,
-      });
-      setActivePlanSlide(currentIndex - plans.length);
+      const resetIndex = currentIndex - plans.length;
+      scrollX.setValue(resetIndex * SNAP_INTERVAL);
+      autoScrollVal.setValue(resetIndex * SNAP_INTERVAL);
+      if (flatListRef.current) {
+        flatListRef.current.scrollTo({
+          x: resetIndex * SNAP_INTERVAL,
+          animated: false,
+        });
+      }
+      setActivePlanSlide(resetIndex);
     } else if (currentIndex < plans.length) {
-      flatListRef.current.scrollToIndex({
-        index: currentIndex + plans.length,
-        animated: false,
-      });
-      setActivePlanSlide(currentIndex + plans.length);
+      const resetIndex = currentIndex + plans.length;
+      scrollX.setValue(resetIndex * SNAP_INTERVAL);
+      autoScrollVal.setValue(resetIndex * SNAP_INTERVAL);
+      if (flatListRef.current) {
+        flatListRef.current.scrollTo({
+          x: resetIndex * SNAP_INTERVAL,
+          animated: false,
+        });
+      }
+      setActivePlanSlide(resetIndex);
+    } else {
+      setActivePlanSlide(currentIndex);
     }
-  };
+  }, [scrollX, autoScrollVal]);
 
   // Lifecycle management
   useEffect(() => {
     setActivePlanSlide(initialIndex);
     startAutoScroll();
     return () => stopAutoScroll();
-  }, [startAutoScroll]);
+  }, [startAutoScroll, stopAutoScroll]);
 
-  // Performance optimization for FlatList
-  const getItemLayout = (data, index) => ({
-    length: SNAP_INTERVAL,
-    offset: SNAP_INTERVAL * index,
-    index,
-  });
 
   // --- END: INFINITE CAROUSEL LOGIC ---
 
@@ -225,9 +352,44 @@ const Home = () => {
 
   const stats = [
     { value: '500+', label: 'Active Members', icon: 'account-group' },
-    { value: '₹50Cr+', label: 'Funds Managed', icon: 'currency-inr' },
-    { value: '25+', label: 'Years Legacy', icon: 'calendar-check' },
     { value: '100%', label: 'Trust Score', icon: 'star-circle' },
+    { value: '25+', label: 'Years Legacy', icon: 'calendar-check' },
+    { value: '₹50Cr+', label: 'Funds Managed', icon: 'currency-inr' },
+  ];
+
+  const exploreFeatures = [
+    {
+      id: 'location',
+      bgColor: '#EEF2FF',
+      iconColor: '#4F46E5',
+      icon: 'map-pin',
+      title: 'Admin Location',
+      subtitle: 'Share office\nlocation',
+    },
+    {
+      id: 'biometric',
+      bgColor: '#ECFDF5',
+      iconColor: '#10B981',
+      icon: 'fingerprint',
+      title: 'Biometrics',
+      subtitle: 'Fingerprint\nsecurity',
+    },
+    {
+      id: 'online',
+      bgColor: '#FFFBEB',
+      iconColor: '#F59E0B',
+      icon: 'credit-card',
+      title: 'Online Pay',
+      subtitle: 'Digital\ntransactions',
+    },
+    {
+      id: 'language',
+      bgColor: '#FDF2F8',
+      iconColor: '#EC4899',
+      icon: 'languages',
+      title: 'Dual Language',
+      subtitle: 'Tamil & English\nsupport',
+    },
   ];
 
   const openChitPlansForPlan = (planId) => {
@@ -237,177 +399,237 @@ const Home = () => {
     setShowAllPlans(true);
   };
 
-  const renderPlanItem = ({ item }) => (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={() => openChitPlansForPlan(item.id)}
-    >
-      <View
-        style={[
-          styles.planCard,
-          styles.planCardDynamic,
-          { width: CARD_WIDTH },
-        ]}
+  const renderPlanItem = ({ item, index }) => {
+    const inputRange = [
+      (index - 1) * SNAP_INTERVAL,
+      index * SNAP_INTERVAL,
+      (index + 1) * SNAP_INTERVAL,
+    ];
+
+    const scale = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.92, 1.0, 0.92],
+      extrapolate: 'clamp',
+    });
+
+    const opacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.7, 1.0, 0.7],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View
+        key={`${item.id}-${index}`}
+        style={{
+          width: CARD_WIDTH,
+          marginRight: SPACING,
+          transform: [{ scale }],
+          opacity,
+        }}
       >
-      {/* Badge */}
-      {item.badge && (
-        <View style={[styles.badge, { backgroundColor: item.color }]}>
-          <Text style={styles.planBadgeText}>{t(item.badge)}</Text>
-        </View>
-      )}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => openChitPlansForPlan(item.id)}
+          style={[
+            styles.planCard,
+            { backgroundColor: item.color, width: '100%' },
+          ]}
+        >
 
-      {/* Decorative Elements */}
-      <View
-        style={[styles.decorativeCircle, { backgroundColor: item.color }]}
-      />
-      <View
-        style={[styles.decorativeCircleSmall, { backgroundColor: item.color }]}
-      />
+          {/* Badge */}
+          {item.badge && (
+            <View style={styles.badge}>
+              <Text style={styles.planBadgeText}>{t(item.badge)}</Text>
+            </View>
+          )}
 
-      {/* Top Content */}
-      <View>
-        {/* Plan Title */}
-        <Text style={[styles.planTitle, language === 'ta' && { fontSize: 15 }]}>{t(item.name)}</Text>
+          {/* Decorative Elements */}
+          <View style={styles.decorativeCircle} />
+          <View style={styles.decorativeCircleSmall} />
 
-        {/* Amount Section */}
-        <View style={styles.amountRow}>
-          <Text style={[styles.mainAmount, { color: item.color === '#E5E4E2' ? '#9CA3AF' : item.color }]}>
-            {item.amount}
-          </Text>
-          <Text style={styles.totalLabel}>{t('Total Value')}</Text>
-        </View>
+          {/* Lottie Gold Coin Animation */}
+          <LottieView
+            source={item.lottie}
+            autoPlay
+            loop
+            cacheComposition={true}
+            renderMode="HARDWARE"
+            style={[
+              styles.cardLottieCoin,
+              item.id !== 3 && { top: 32 },
+              item.id === 1 && { top: 20 },
+              item.id === 4 && { width: 120, height: 120, top: 22, right: -2 },
+            ]}
+            pointerEvents="none"
+          />
 
-        {/* Monthly Info */}
-        <Text style={styles.monthlyInfo}>
-          {item.monthly} per month for {item.duration}
-        </Text>
-      </View>
+          {/* Top Content */}
+          <View>
+            {/* Plan Title */}
+            <Text
+              style={[
+                styles.planTitle,
+                language === 'ta' && { fontSize: 15 },
+              ]}
+            >
+              {t(item.name)}
+            </Text>
 
-      {/* Return Info - Bottom Footer */}
-      <View style={styles.returnSection}>
-        <Text style={styles.returnLabel}>{t('Expected Return')}</Text>
-        <Text style={styles.returnAmount}>
-          {item.return}
-        </Text>
-      </View>
-      </View>
-    </TouchableOpacity>
-  );
+            {/* Amount Section */}
+            <View style={styles.amountRow}>
+              <Text style={styles.mainAmount}>
+                {item.amount}
+              </Text>
+              <Text style={styles.totalLabel}>({t('Total Value')})</Text>
+            </View>
+
+            {/* Monthly Info */}
+            <Text style={styles.monthlyInfo}>
+              {item.monthly} per month for {item.duration}
+            </Text>
+          </View>
+
+          {/* Return Info - Bottom Footer */}
+          <View style={styles.returnSection}>
+            <Text style={styles.returnLabel}>{t('Expected Return')}</Text>
+            <Text style={styles.returnAmount}>
+              {item.return}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         ref={mainScrollRef}
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}>
-        {/* Header Section */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View style={styles.welcomeSection}>
-              <Text style={[styles.welcomeText, language === 'ta' && { fontSize: 12 }]}>{t('Welcome Back!')}</Text>
-              <Text style={styles.userName}>Gowtham</Text>
-            </View>
-            <TouchableOpacity style={styles.notificationButton} onPress={handleOpenNotifications}>
-              <MaterialCommunityIcons
-                name="bell-outline"
-                size={24}
-                color="#1A2A4E"
-              />
-              {notifications.length > 0 && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.badgeText}>{notifications.length}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
+        {/* Unified Top Purple Area */}
+        <View style={styles.topPurpleContainer}>
+          {/* Background Gradient */}
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <Defs>
+              <SvgRadialGradient
+                id="purpleGrad"
+                cx="90%"
+                cy="10%"
+                rx="90%"
+                ry="90%"
+                fx="90%"
+                fy="10%"
+              >
+                <Stop offset="0%" stopColor="#8C52FF" />
+                <Stop offset="100%" stopColor="#411E73" />
+              </SvgRadialGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#purpleGrad)" />
+          </Svg>
 
-          <View style={styles.companyHeader}>
-            <Text style={styles.companyName}>ஸ்ரீ பெரியநாயகி அம்மன்</Text>
-            <Text style={styles.companySubtitle}>{t('CHITFUNDS')}</Text>
-            <Text style={styles.tagline}>{t('Trusted Since 1999')}</Text>
-          </View>
-        </View>
+          {/* Background Rangoli */}
+          <Image
+            source={require('../../../../assets/UserHomePage/ZoomRangoli.png')}
+            style={styles.backgroundRangoliImage}
+            resizeMode="cover"
+            pointerEvents="none"
+          />
+          <Animated.Image
+            source={require('../../../../assets/UserHomePage/ZoomGoldenRangoli.png')}
+            style={[
+              styles.backgroundRangoliImage,
+              {
+                tintColor: '#FFD700',
+                opacity: goldenFade.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 0.35],
+                }),
+              },
+            ]}
+            resizeMode="cover"
+            pointerEvents="none"
+          />
 
-        {/* Hero Section - Premium UI */}
-        <View style={styles.heroSection}>
-          {/* Decorative Background Elements */}
-          <View style={styles.heroDecoCircle1} />
-          <View style={styles.heroDecoCircle2} />
-          <View style={styles.heroDecoCircle3} />
-          <View style={styles.heroDecoCircle4} />
-          <View style={styles.heroDecoCircle5} />
-          <View style={styles.heroDecoCircle6} />
-          
-          {/* Top Content */}
-          <View style={styles.heroTopContent}>
-            <Text style={[styles.heroTitle, language === 'ta' && { fontSize: 18 }]}>{t('Grow Your Savings')}</Text>
-            <Text style={[styles.heroSubtitle, language === 'ta' && { fontSize: 12 }]}>
-              {t('Join 500+ families in our trusted chit fund community')}
-            </Text>
-            
-            {/* Feature Pills */}
-            <View style={styles.heroFeaturePills}>
-              <View style={styles.heroFeaturePill}>
-                <MaterialCommunityIcons name="percent" size={12} color="#6B46C1" />
-                <Text style={styles.heroFeaturePillText}>{t('Up to 95% Returns')}</Text>
-              </View>
-              <View style={styles.heroFeaturePill}>
-                <MaterialCommunityIcons name="shield-check" size={12} color="#10B981" />
-                <Text style={[styles.heroFeaturePillText, language === 'ta' && { fontSize: 10 }]}>{t('RBI Registered')}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Animation Above Button */}
-          <View style={styles.heroAnimation}>
-            <LottieView
-              source={require('../../../../animation/Finance.json')}
-              autoPlay
-              loop
-              style={styles.lottieHero}
+          {/* Bottom Right Rangoli */}
+          <View style={styles.bottomRangoliContainer} pointerEvents="none">
+            <Image
+              source={require('../../../../assets/UserHomePage/rangoli.png')}
+              style={styles.bottomRangoliImage}
+              resizeMode="contain"
+            />
+            <Animated.Image
+              source={require('../../../../assets/UserHomePage/GoldenRangoli.png')}
+              style={[
+                styles.bottomRangoliImage,
+                {
+                  tintColor: '#FFD700',
+                  opacity: goldenFade.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 0.35],
+                  }),
+                },
+              ]}
+              resizeMode="contain"
             />
           </View>
 
-          {/* Bottom Content */}
-          <View style={styles.heroBottomContent}>
-            {/* CTA Button */}
-            <TouchableOpacity style={styles.heroButton} activeOpacity={0.85} onPress={scrollToPlans}>
-              <Text style={[styles.heroButtonText, language === 'ta' && { fontSize: 12 }]}>{t('Explore Plans')}</Text>
-              <View style={styles.heroButtonIcon}>
-                <MaterialCommunityIcons
-                  name="arrow-right"
-                  size={16}
-                  color="#FFFFFF"
-                />
-              </View>
-            </TouchableOpacity>
-
-         
+          {/* Greeting Header Section */}
+          <View style={styles.greetingHeader}>
+            <View style={styles.greetingTextContainer}>
+              <Text style={styles.greetingTitle}>{t('Hello, ') + userName}</Text>
+            </View>
+            <View style={styles.headerRightActions}>
+              <TouchableOpacity style={styles.investmentButton} activeOpacity={0.8}>
+                <Icon name="currency-inr" size={14} color="#FDE68A" />
+                <Text style={styles.investmentAmount}>{totalInvested ? `₹${totalInvested}` : '₹ --'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.notificationButton} onPress={handleOpenNotifications}>
+                <Icon name="bell-outline" size={20} color="#FFFFFF" />
+                {notifications.length > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.badgeText}>{notifications.length}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        {/* Stats Section */}
-        <View style={styles.statsSection}>
-          <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Our Achievements')}</Text>
-          <View style={styles.statsGrid}>
-            {stats.map((stat, index) => (
-              <View key={index} style={styles.statCard}>
-                <Text style={styles.statValue}>{stat.value}</Text>
-                <Text style={[styles.statLabel, language === 'ta' && { fontSize: 11 }]}>{t(stat.label)}</Text>
+          {/* Hero Section - Premium UI */}
+          <View style={styles.heroSection}>
+            {/* Top Content */}
+            <View style={styles.heroTopContent}>
+              <Text style={styles.heroTitle}>ஸ்ரீ பெரியநாயகி அம்மன்</Text>
+              <View style={styles.heroSubtitleContainer}>
+                <Text style={styles.heroSubtitle}>{t('CHITFUNDS')}</Text>
+                <Text style={styles.heroTagline}>{t('Since 1999')}</Text>
               </View>
-            ))}
+
+
+            </View>
+
+            {/* Animation Above Button */}
+            <View style={styles.heroAnimation}>
+              <LottieView
+                source={require('../../../../animation/UserHome/MoneyIncreaseGraph.json')}
+                autoPlay
+                loop
+                style={styles.lottieHero}
+              />
+            </View>
           </View>
         </View>
 
         {/* --- START: UPDATED PLANS SECTION --- */}
-        <View 
+        <View
           style={styles.plansSection}
           onLayout={(event) => {
             plansLayoutY.current = event.nativeEvent.layout.y;
           }}
         >
           <View style={styles.plansSectionHeader}>
-            <Text style={[styles.plansSectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Popular Plans')}</Text>
+            <Text style={[styles.plansSectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Popular Plans 🌟')}</Text>
             <TouchableOpacity
               onPress={() =>
                 openChitPlansForPlan(
@@ -419,11 +641,8 @@ const Home = () => {
             </TouchableOpacity>
           </View>
 
-          <FlatList
+          <Animated.ScrollView
             ref={flatListRef}
-            data={infiniteData}
-            renderItem={renderPlanItem}
-            keyExtractor={(item, index) => `${item.id}-${index}`}
             horizontal
             showsHorizontalScrollIndicator={false}
             snapToInterval={SNAP_INTERVAL}
@@ -433,39 +652,200 @@ const Home = () => {
               styles.plansScrollContent,
               { paddingHorizontal: (width - CARD_WIDTH) / 2 },
             ]}
-            snapToAlignment="center"
+            snapToAlignment="start"
+            removeClippedSubviews={false}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+              { useNativeDriver: true }
+            )}
+            scrollEventThrottle={16}
             onScrollBeginDrag={() => stopAutoScroll()}
-            onScrollEndDrag={() => startAutoScroll()}
+            onScrollEndDrag={(event) => {
+              handleScrollEnd(event);
+              startAutoScroll();
+            }}
             onMomentumScrollEnd={handleScrollEnd}
-            getItemLayout={getItemLayout}
-            initialScrollIndex={initialIndex}
-          />
+            contentOffset={{ x: initialIndex * SNAP_INTERVAL, y: 0 }}
+          >
+            {infiniteData.map((item, index) => renderPlanItem({ item, index }))}
+          </Animated.ScrollView>
+
+          {/* Pagination Dots */}
+          <View style={styles.paginationContainer}>
+            {plans.map((plan, index) => {
+              const isActive = (activePlanSlide % plans.length) === index;
+              return (
+                <View
+                  key={plan.id}
+                  style={[
+                    styles.paginationDot,
+                    isActive && [
+                      styles.paginationDotActive,
+                      { backgroundColor: plan.color },
+                    ],
+                  ]}
+                />
+              );
+            })}
+          </View>
         </View>
         {/* --- END: UPDATED PLANS SECTION --- */}
 
-        {/* Features Section - Professional Mobile UI */}
+        {/* Stats Section */}
+        <View style={styles.statsSection}>
+          <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Our Achievements')}</Text>
+          <View style={styles.statsGrid}>
+            {stats.map((stat, index) => {
+              const isEvenRow = Math.floor(index / 2) % 2 === 0;
+              const isFirstInRow = index % 2 === 0;
+              const cardWidth = isEvenRow 
+                ? (isFirstInRow ? '52%' : '44%') 
+                : (isFirstInRow ? '44%' : '52%');
+
+              // Pastel colors matching features
+              const bgColors = ['#EEF2FF', '#ECFDF5', '#FFFBEB', '#FDF2F8'];
+              const iconColors = ['#4F46E5', '#10B981', '#F59E0B', '#EC4899'];
+              const bgColor = bgColors[index % bgColors.length];
+              const iconColor = iconColors[index % iconColors.length];
+
+              return (
+                <View key={index} style={[styles.statCard, { width: cardWidth, overflow: 'hidden' }]}>
+                  <View style={styles.cardHeader}>
+                    <Text style={[styles.statLabel, language === 'ta' && { fontSize: 13 }]}>{t(stat.label)}</Text>
+                    <Text style={styles.statValue}>{stat.value}</Text>
+                  </View>
+                  <Image 
+                    source={
+                      stat.icon === 'star-circle' 
+                        ? require('../../../../assets/UserHomePage/trust.png')
+                        : stat.icon === 'account-group'
+                          ? require('../../../../assets/UserHomePage/ActiveMembers.png')
+                          : stat.icon === 'calendar-check'
+                            ? require('../../../../assets/UserHomePage/YearsLegacy.png')
+                            : require('../../../../assets/UserHomePage/FundManagement.png')
+                    } 
+                    style={{ 
+                      width: stat.icon === 'currency-inr' ? 115 : stat.icon === 'calendar-check' ? 100 : 90, 
+                      height: stat.icon === 'currency-inr' ? 115 : stat.icon === 'calendar-check' ? 100 : 90, 
+                      position: 'absolute', 
+                      bottom: (stat.icon === 'currency-inr' || stat.icon === 'calendar-check') ? 0 : 2, 
+                      right: (stat.icon === 'currency-inr' || stat.icon === 'calendar-check') ? 4 : 8 
+                    }} 
+                    resizeMode="contain" 
+                  />
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Explore GDK ChitFunds Section */}
+        <View style={styles.exploreSection}>
+          <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>
+            {t('Explore GDK ChitFunds')}
+          </Text>
+          <View style={styles.exploreGrid}>
+            {exploreFeatures.map((feature, index) => {
+              const isEvenRow = Math.floor(index / 2) % 2 === 0;
+              const isFirstInRow = index % 2 === 0;
+              const cardWidth = isEvenRow 
+                ? (isFirstInRow ? '52%' : '44%') 
+                : (isFirstInRow ? '44%' : '52%');
+
+              return (
+                <View key={feature.id} style={[styles.exploreCard, { width: cardWidth, overflow: 'hidden' }]}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.exploreTitle}>{t(feature.title)}</Text>
+                    <Text style={styles.exploreSubtitle}>{t(feature.subtitle)}</Text>
+                  </View>
+                  <Image 
+                    source={
+                      feature.icon === 'map-pin'
+                        ? require('../../../../assets/UserHomePage/Location.png')
+                        : feature.icon === 'fingerprint'
+                          ? require('../../../../assets/UserHomePage/Biometric.png')
+                          : feature.icon === 'credit-card'
+                            ? require('../../../../assets/UserHomePage/OnlineTransation.png')
+                            : require('../../../../assets/UserHomePage/DuelLanguage.png')
+                    }
+                    style={{ 
+                      width: feature.icon === 'map-pin' ? 125 : 100, 
+                      height: feature.icon === 'map-pin' ? 125 : 100, 
+                      position: 'absolute', 
+                      bottom: feature.icon === 'map-pin' ? -8 : 0, 
+                      right: feature.icon === 'credit-card' ? -10 : 4 
+                    }} 
+                    resizeMode="contain" 
+                  />
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* WhatsApp Community Section */}
+        <View style={styles.whatsappContainer}>
+          <Svg style={[StyleSheet.absoluteFill, { zIndex: -1, width: '100%', height: '100%' }]} width="100%" height="100%">
+            <Defs>
+              <SvgLinearGradient id="whatsappGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+                <Stop offset="0%" stopColor="#25D366" />
+                <Stop offset="100%" stopColor="#00A884" />
+              </SvgLinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#whatsappGrad)" />
+          </Svg>
+
+          <View style={styles.whatsappContent}>
+            <View style={styles.whatsappHeaderRow}>
+              <View style={styles.whatsappIconCircle}>
+                <WhatsappIcon size={26} color="#25D366" />
+              </View>
+              <Text style={styles.whatsappTitle}>
+                {t('Get Exclusive Offers and Market Updates')}
+              </Text>
+            </View>
+
+            <TouchableOpacity style={styles.whatsappButton} activeOpacity={0.9}>
+              <Text style={styles.whatsappButtonText}>
+                {t('Join Our WhatsApp Community')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Modern Value Section */}
         <View style={styles.featuresSection}>
-          <Text style={[styles.featuresSectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Why Choose Us?')}</Text>
+          <Text style={[styles.featuresSectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Built on Absolute Trust')}</Text>
+          <Text style={styles.featuresSectionSubtitle}>
+            {t('Since 1999, we have served our community with complete honesty, transparent auctions, and zero tolerance for deceptive practices.')}
+          </Text>
           <View style={styles.featuresContainer}>
-            {features.map((feature, index) => (
-              <View 
-                key={index} 
+            {[
+              {
+                title: 'Transparent Auction Process',
+                description: 'All bidding and dividend distributions are conducted openly with zero hidden charges.',
+                icon: 'gavel',
+              },
+              {
+                title: 'Trusted by 5,000+ Families',
+                description: 'Over two decades of secure, on-time disbursements and reliable community savings.',
+                icon: 'badge-check',
+              },
+            ].map((item, index, arr) => (
+              <View
+                key={index}
                 style={[
                   styles.featureItem,
-                  index !== features.length - 1 && styles.featureItemBorder
+                  index !== arr.length - 1 && styles.featureItemBorder
                 ]}
               >
                 <View style={styles.featureIconWrapper}>
-                  <MaterialCommunityIcons
-                    name={feature.icon}
-                    size={22}
-                    color="#6B46C1"
-                  />
+                  <Icon name={item.icon} size={22} color="#6B46C1" />
                 </View>
                 <View style={styles.featureTextContent}>
-                  <Text style={[styles.featureItemTitle, language === 'ta' && { fontSize: 14 }]}>{t(feature.title)}</Text>
+                  <Text style={[styles.featureItemTitle, language === 'ta' && { fontSize: 14 }]}>{t(item.title)}</Text>
                   <Text style={[styles.featureItemDescription, language === 'ta' && { fontSize: 12 }]}>
-                    {t(feature.description)}
+                    {t(item.description)}
                   </Text>
                 </View>
               </View>
@@ -475,17 +855,20 @@ const Home = () => {
 
         {/* Admin House Image Section */}
         <View style={styles.adminHouseSection}>
-          <Image
-            source={require('../../../../assets/AdminHouse/adminHouse.png')}
-            style={styles.adminHouseImage}
-            resizeMode="cover"
-          />
+          <View style={{ alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#1F2937', marginBottom: 6 }}>
+              {t('Trusted local support')}
+            </Text>
+            <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', lineHeight: 18 }}>
+              {t('Visit the branch for plan guidance, payments, and account help.')}
+            </Text>
+          </View>
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerCopyright}>
-            © 2025 ஸ்ரீ பெரியநாயகி அம்மன் ChitFunds. All rights reserved.
+        <View style={styles.blackFooter}>
+          <Text style={styles.blackFooterText}>
+            {t('© 2025 CHITFUNDS. All rights reserved.')}
           </Text>
         </View>
       </ScrollView>
@@ -513,20 +896,19 @@ const Home = () => {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
               <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>{t('Notifications')}</Text>
               <TouchableOpacity onPress={() => setShowNotifications(false)}>
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
+                <Icon name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView showsVerticalScrollIndicator={false}>
               {notifications.length > 0 ? (
                 notifications.map((notif, index) => (
                   <View key={index} style={{ marginBottom: 15, padding: 15, backgroundColor: notif.type === 'danger' ? '#FEF2F2' : '#FFFBEB', borderRadius: 12, borderWidth: 1, borderColor: notif.type === 'danger' ? '#FECACA' : '#FEF3C7' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                      <MaterialCommunityIcons 
-                        name={notif.type === 'danger' ? 'alert-circle' : 'clock-alert'} 
-                        size={20} 
-                        color={notif.type === 'danger' ? '#EF4444' : '#F59E0B'} 
-                        style={{ marginRight: 8 }} 
+                      <Icon
+                        name={notif.type === 'danger' ? 'alert-circle' : 'clock-alert'}
+                        size={20}
+                        color={notif.type === 'danger' ? '#EF4444' : '#F59E0B'}
                       />
                       <Text style={{ fontSize: 16, fontWeight: '600', color: notif.type === 'danger' ? '#991B1B' : '#B45309' }}>
                         {notif.title}
@@ -539,7 +921,7 @@ const Home = () => {
                 ))
               ) : (
                 <View style={{ padding: 30, alignItems: 'center' }}>
-                  <MaterialCommunityIcons name="bell-sleep" size={48} color="#D1D5DB" />
+                  <Icon name="bell-sleep" size={48} color="#D1D5DB" />
                   <Text style={{ marginTop: 15, color: '#6B7280', fontSize: 16 }}>{t('No new notifications')}</Text>
                 </View>
               )}
@@ -547,7 +929,7 @@ const Home = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 

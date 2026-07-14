@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import AccountD from "../../pages/User/Pages/Profile/Page/UserAccountDetails/AccountDetails";
 import LinkBA from "../../pages/User/Pages/Profile/Page/LinkBankAccount/LinkBankAccount";
@@ -39,9 +40,25 @@ const AdminDataExport = props => {
 
 const Routes = () => {
     const Stack = createNativeStackNavigator();
+    const [currentRouteName, setCurrentRouteName] = useState('AuthLoader');
+
+    const updateCurrentRoute = () => {
+        const routeName = navigationRef.getCurrentRoute()?.name || 'AuthLoader';
+        setCurrentRouteName(routeName);
+    };
+
+    const isHomeRoute = currentRouteName === 'Home';
     return (
-        <NavigationContainer ref={navigationRef}>
-            <StatusBar barStyle="dark-content" backgroundColor="#ffffffff" />
+        <NavigationContainer
+            ref={navigationRef}
+            onReady={updateCurrentRoute}
+            onStateChange={updateCurrentRoute}
+        >
+            <StatusBar
+                barStyle={isHomeRoute ? "light-content" : "dark-content"}
+                backgroundColor={isHomeRoute ? "#411E73" : "#ffffffff"}
+                translucent={false}
+            />
             <Stack.Navigator initialRouteName="AuthLoader" screenOptions={{ headerShown: false }}>
 
                 <Stack.Screen name="Welcome" component={Welcome} />
