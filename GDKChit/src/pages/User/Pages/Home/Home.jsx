@@ -45,6 +45,7 @@ const iconMap = {
   fingerprint: 'fingerprint',
   'credit-card': 'credit-card-outline',
   languages: 'translate',
+  'check-circle': 'check-circle',
 };
 
 const Icon = ({ name, size = 16, color = '#000' }) => {
@@ -201,19 +202,10 @@ const Home = () => {
   useFocusEffect(
     useCallback(() => {
       StatusBar.setBarStyle('light-content');
-      if (Platform.OS === 'android') {
-        StatusBar.setTranslucent(true);
-        StatusBar.setBackgroundColor('transparent');
-      }
-
       triggerRangoliAnimation();
 
       return () => {
         StatusBar.setBarStyle('dark-content');
-        if (Platform.OS === 'android') {
-          StatusBar.setTranslucent(false);
-          StatusBar.setBackgroundColor('#FFFFFF');
-        }
       };
     }, [triggerRangoliAnimation])
   );
@@ -812,57 +804,70 @@ const Home = () => {
           </View>
         </View>
 
-        {/* Modern Value Section */}
-        <View style={styles.featuresSection}>
-          <Text style={[styles.featuresSectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Built on Absolute Trust')}</Text>
-          <Text style={styles.featuresSectionSubtitle}>
-            {t('Since 1999, we have served our community with complete honesty, transparent auctions, and zero tolerance for deceptive practices.')}
+        {/* Instagram Banners Section */}
+        <View style={styles.instagramBannersContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.instagramBannersScroll}
+          >
+            <Image
+              source={require('../../../../assets/UserHomePage/gold_graph_banner.png')}
+              style={styles.instagramBannerImage}
+              resizeMode="cover"
+            />
+            <Image
+              source={require('../../../../assets/UserHomePage/gold_rupee_banner.png')}
+              style={styles.instagramBannerImage}
+              resizeMode="cover"
+            />
+            <Image
+              source={require('../../../../assets/UserHomePage/gold_ripped_banner.png')}
+              style={styles.instagramBannerImage}
+              resizeMode="cover"
+            />
+          </ScrollView>
+          <TouchableOpacity style={styles.instagramButton} activeOpacity={0.8}>
+            <Text style={styles.instagramButtonText}>
+              {t('Follow Us On Instagram')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Insured Savings Card */}
+        <View style={styles.insuranceContainer}>
+          <View style={styles.insuranceTextContent}>
+            <Text style={styles.insuranceTitle}>
+              {t('Your Savings.Insured and Protected.')}
+            </Text>
+            <Text style={styles.insuranceSubtitle}>
+              {t('Certified storage backed by global safety standards')}
+            </Text>
+            <TouchableOpacity style={styles.insuranceButton} activeOpacity={0.9}>
+              <Text style={styles.insuranceButtonText}>{t('Know More')}</Text>
+            </TouchableOpacity>
+          </View>
+          <Image
+            source={require('../../../../assets/UserHomePage/banklocker.png')}
+            style={styles.vaultImage}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Invest Like a Pro Section */}
+        <View style={styles.proContainer}>
+          <Text style={styles.proTitle}>
+            {t('Invest like\na pro!')}
           </Text>
-          <View style={styles.featuresContainer}>
-            {[
-              {
-                title: 'Transparent Auction Process',
-                description: 'All bidding and dividend distributions are conducted openly with zero hidden charges.',
-                icon: 'gavel',
-              },
-              {
-                title: 'Trusted by 5,000+ Families',
-                description: 'Over two decades of secure, on-time disbursements and reliable community savings.',
-                icon: 'badge-check',
-              },
-            ].map((item, index, arr) => (
-              <View
-                key={index}
-                style={[
-                  styles.featureItem,
-                  index !== arr.length - 1 && styles.featureItemBorder
-                ]}
-              >
-                <View style={styles.featureIconWrapper}>
-                  <Icon name={item.icon} size={22} color="#6B46C1" />
-                </View>
-                <View style={styles.featureTextContent}>
-                  <Text style={[styles.featureItemTitle, language === 'ta' && { fontSize: 14 }]}>{t(item.title)}</Text>
-                  <Text style={[styles.featureItemDescription, language === 'ta' && { fontSize: 12 }]}>
-                    {t(item.description)}
-                  </Text>
-                </View>
-              </View>
-            ))}
+          <View style={styles.proTrustRow}>
+            <Icon name="check-circle" size={18} color="#10B981" />
+            <Text style={styles.proTrustText}>
+              {t('Trusted by hundreds of families')}
+            </Text>
           </View>
         </View>
 
-        {/* Admin House Image Section */}
-        <View style={styles.adminHouseSection}>
-          <View style={{ alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#1F2937', marginBottom: 6 }}>
-              {t('Trusted local support')}
-            </Text>
-            <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', lineHeight: 18 }}>
-              {t('Visit the branch for plan guidance, payments, and account help.')}
-            </Text>
-          </View>
-        </View>
+
 
         {/* Footer */}
         <View style={styles.blackFooter}>

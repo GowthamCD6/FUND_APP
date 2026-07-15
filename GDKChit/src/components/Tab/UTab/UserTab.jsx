@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import styles from './UserTabsty';
 
 // Import actual page components
@@ -16,6 +17,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import MoreModal from '../../../pages/User/Modals/More';
 import AdminTab, { ADMIN_PHONE, ADMIN_PASSWORD } from '../ATab/AdminTab';
+
+const withSafe = (Component, bgColor = '#ffffff') => {
+  return (props) => (
+    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }} edges={['top', 'left', 'right']}>
+      <Component {...props} />
+    </SafeAreaView>
+  );
+};
+
+const PortfolioWithSafe = withSafe(Portfolio);
+const ChatListWithSafe = withSafe(ChatList);
+const ProfileWithSafe = withSafe(Profile);
 
 // ---- Screen Components ----
 const MoreScreen = () => null; // Placeholder, modal will be shown instead
@@ -80,7 +93,7 @@ const UserTabs = () => {
         {/* Portfolio Tab */}
         <Tab.Screen
           name="Portfolio"
-          component={Portfolio}
+          component={PortfolioWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
@@ -115,7 +128,7 @@ const UserTabs = () => {
         {/* Chat Tab */}
         <Tab.Screen
           name="Chat"
-          component={ChatList}
+          component={ChatListWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
@@ -136,7 +149,7 @@ const UserTabs = () => {
         {/* Profile Tab */}
         <Tab.Screen
           name="Profile"
-          component={Profile}
+          component={ProfileWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>

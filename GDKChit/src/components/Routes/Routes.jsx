@@ -21,7 +21,7 @@ import AdminEditProfile from "../../pages/Admin/pages/Settings/pages/AccountDeta
 import NewGroup from "../../pages/Admin/pages/Chat/NewGroup/NewGroup";
 import NewGroupDetails from "../../pages/Admin/pages/Chat/NewGroup/NewGroupDetails";
 import AdminNotification from "../../pages/Admin/pages/Notification/Notification";
-import { StatusBar } from "react-native";
+import { StatusBar, View } from "react-native";
 import TabRouter from "../Tab/TabRouter";
 import UserTabs from "../Tab/UTab/UserTab";
 import AdminTab from "../Tab/ATab/AdminTab";
@@ -37,6 +37,14 @@ import { navigationRef } from "../../utils/navigation";
 const AdminDataExport = props => {
     const DataExportScreen = require("../../pages/Admin/pages/Settings/pages/DataExport/DataExport").default;
     return <DataExportScreen {...props} />;
+};
+
+const withSafe = (Component, bgColor = '#ffffffff') => {
+    return (props) => (
+        <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }} edges={['top', 'left', 'right']}>
+            <Component {...props} />
+        </SafeAreaView>
+    );
 };
 
 const Routes = () => {
@@ -57,49 +65,49 @@ const Routes = () => {
         >
             <StatusBar
                 barStyle={isHomeRoute ? "light-content" : "dark-content"}
-                backgroundColor={isHomeRoute ? "#411E73" : "#ffffffff"}
-                translucent={false}
+                backgroundColor="transparent"
+                translucent={true}
             />
-            <SafeAreaView style={{ flex: 1, backgroundColor: isHomeRoute ? '#411E73' : '#ffffffff' }} edges={isHomeRoute ? [] : ['top', 'left', 'right']}>
+            <View style={{ flex: 1, backgroundColor: '#ffffffff' }}>
                 <Stack.Navigator initialRouteName="AuthLoader" screenOptions={{ headerShown: false }}>
 
-                <Stack.Screen name="Welcome" component={Welcome} />
+                    <Stack.Screen name="Welcome" component={withSafe(Welcome)} />
 
-                {/* Auth Tabs */}
-                <Stack.Screen name="AuthLoader" component={AuthLoader} />
-                <Stack.Screen name="Login" component={Login} />
-                <Stack.Screen name="TabRouter" component={TabRouter} />
+                    {/* Auth Tabs */}
+                    <Stack.Screen name="AuthLoader" component={AuthLoader} />
+                    <Stack.Screen name="Login" component={withSafe(Login)} />
+                    <Stack.Screen name="TabRouter" component={TabRouter} />
 
-                {/* User Tabs */}
-                <Stack.Screen name="UserTabs" component={UserTabs} />
-                <Stack.Screen name="LinkBA" component={LinkBA} />
+                    {/* User Tabs */}
+                    <Stack.Screen name="UserTabs" component={UserTabs} />
+                    <Stack.Screen name="LinkBA" component={withSafe(LinkBA)} />
 
-                {/* Admin Tabs */}
-                <Stack.Screen name="AdminTabs" component={AdminTab} />
+                    {/* Admin Tabs */}
+                    <Stack.Screen name="AdminTabs" component={withSafe(AdminTab)} />
 
-                <Stack.Screen name="AccountD" component={AccountD} />
-                <Stack.Screen name="Nominee" component={Nominee} />
-                <Stack.Screen name="IdentityV" component={IdentityV} />
-                <Stack.Screen name="SecurityPerm" component={SecurPermis} />
-                <Stack.Screen name="AdminSecurityPerm" component={AdminSecurPermis} />
-                <Stack.Screen name="AdminPasswordManagement" component={AdminPasswordManagement} />
-                <Stack.Screen name="AdminBlockUser" component={AdminBlockUserScreen} />
-                <Stack.Screen name="AdminUserLocation" component={AdminUserLocation} />
-                <Stack.Screen name="AdminNotification" component={AdminNotification} />
-                <Stack.Screen name="NewGroup" component={NewGroup} />
-                <Stack.Screen name="NewGroupDetails" component={NewGroupDetails} />
-                <Stack.Screen name="MembersDetails" component={MemberDetails} />
-                <Stack.Screen name="AuctionSettings" component={Auction} />
-                <Stack.Screen name="AuctionScreen" component={UserAuctionScreen} />
-                <Stack.Screen name="AdminEditProfile" component={AdminEditProfile} />
-                <Stack.Screen name="AdminDataExport" component={AdminDataExport} />
-                <Stack.Screen name="UserPrivacyPolicy" component={UserPrivacyPolicy} />
-                <Stack.Screen name="UserHelpSupport" component={UserHelpSupport} />
-                <Stack.Screen name="UserMyLocation" component={UserMyLocation} />
-                <Stack.Screen name="UserAdminLocation" component={UserAdminLocation} />
-                <Stack.Screen name="LanguageSettings" component={LanguageSettings} />
+                    <Stack.Screen name="AccountD" component={withSafe(AccountD)} />
+                    <Stack.Screen name="Nominee" component={withSafe(Nominee)} />
+                    <Stack.Screen name="IdentityV" component={withSafe(IdentityV)} />
+                    <Stack.Screen name="SecurityPerm" component={withSafe(SecurPermis)} />
+                    <Stack.Screen name="AdminSecurityPerm" component={withSafe(AdminSecurPermis)} />
+                    <Stack.Screen name="AdminPasswordManagement" component={withSafe(AdminPasswordManagement)} />
+                    <Stack.Screen name="AdminBlockUser" component={withSafe(AdminBlockUserScreen)} />
+                    <Stack.Screen name="AdminUserLocation" component={withSafe(AdminUserLocation)} />
+                    <Stack.Screen name="AdminNotification" component={withSafe(AdminNotification)} />
+                    <Stack.Screen name="NewGroup" component={withSafe(NewGroup)} />
+                    <Stack.Screen name="NewGroupDetails" component={withSafe(NewGroupDetails)} />
+                    <Stack.Screen name="MembersDetails" component={withSafe(MemberDetails)} />
+                    <Stack.Screen name="AuctionSettings" component={withSafe(Auction)} />
+                    <Stack.Screen name="AuctionScreen" component={withSafe(UserAuctionScreen)} />
+                    <Stack.Screen name="AdminEditProfile" component={withSafe(AdminEditProfile)} />
+                    <Stack.Screen name="AdminDataExport" component={withSafe(AdminDataExport)} />
+                    <Stack.Screen name="UserPrivacyPolicy" component={withSafe(UserPrivacyPolicy)} />
+                    <Stack.Screen name="UserHelpSupport" component={withSafe(UserHelpSupport)} />
+                    <Stack.Screen name="UserMyLocation" component={withSafe(UserMyLocation)} />
+                    <Stack.Screen name="UserAdminLocation" component={withSafe(UserAdminLocation)} />
+                    <Stack.Screen name="LanguageSettings" component={withSafe(LanguageSettings)} />
                 </Stack.Navigator>
-            </SafeAreaView>
+            </View>
         </NavigationContainer>
     )
 }
