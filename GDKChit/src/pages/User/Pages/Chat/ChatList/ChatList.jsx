@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Animated,
   Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -24,6 +25,11 @@ import ChatScreen from '../ChatScreen/ChatScreen';
 const { width } = Dimensions.get('window');
 
 const ChatList = ({ navigation }) => {
+  // ---- Refs (always first) ----
+  const searchAnim = useRef(new Animated.Value(0)).current;
+  const ws = useRef(null);
+
+  // ---- State ----
   const [chats, setChats] = useState([]);
   const [filteredChats, setFilteredChats] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,12 +39,19 @@ const ChatList = ({ navigation }) => {
   const [openChat, setOpenChat] = useState(null);
   const [searchActive, setSearchActive] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
-  
-  // We'll add new hooks at the end, but since this might cause a fast refresh error, 
-  // the user might need to reload the app.
-  const searchAnim = useRef(new Animated.Value(0)).current;
-  const [sortMode, setSortMode] = useState('newest'); // 'newest', 'unread', 'name'
-  const ws = useRef(null);
+  const [sortMode, setSortMode] = useState('newest'); // 'newest' | 'unread' | 'name'
+
+  // WhatsApp Pinned/Muted/Archived
+  const [pinnedChats, setPinnedChats] = useState([]);
+  const [mutedChats, setMutedChats] = useState([]);
+  const [archivedChats, setArchivedChats] = useState([]);
+
+  // Long-press options modal
+  const [selectedChatOptions, setSelectedChatOptions] = useState(null);
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
+
+  // Header three-dot menu
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
 
   // Load chats from API
   const loadChats = async () => {
@@ -48,7 +61,6 @@ const ChatList = ({ navigation }) => {
       const data = await response.json();
       if (data.success) {
         setChats(data.chats || []);
-        applyFiltersAndSort(data.chats || [], searchQuery, activeFilter, sortMode);
       }
     } catch (error) {
       console.error('Error fetching chats:', error);
@@ -57,6 +69,22 @@ const ChatList = ({ navigation }) => {
       setRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const pinned = await AsyncStorage.getItem('chat_pinned');
+        const muted = await AsyncStorage.getItem('chat_muted');
+        const archived = await AsyncStorage.getItem('chat_archived');
+        if (pinned) setPinnedChats(JSON.parse(pinned));
+        if (muted) setMutedChats(JSON.parse(muted));
+        if (archived) setArchivedChats(JSON.parse(archived));
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadSettings();
+  }, []);
 
   useEffect(() => {
     loadChats();
@@ -135,20 +163,31 @@ const ChatList = ({ navigation }) => {
 
   const handleSearch = (text) => {
     setSearchQuery(text);
-    applyFiltersAndSort(chats, text, activeFilter, sortMode);
   };
 
   // Combined filter + sort logic
   const applyFiltersAndSort = (chatList, query, filter, sort) => {
-    let filtered = [...chatList];
+    let processed = chatList.map(chat => ({
+      ...chat,
+      pinned: pinnedChats.includes(chat.id),
+      muted: mutedChats.includes(chat.id),
+      archived: archivedChats.includes(chat.id),
+    }));
+
+    // If showing archived tab, filter only archived. Otherwise filter out archived.
+    if (filter === 'archived') {
+      processed = processed.filter(chat => chat.archived);
+    } else {
+      processed = processed.filter(chat => !chat.archived);
+    }
+
+    let filtered = [...processed];
 
     // Apply filter type
     if (filter === 'unread') {
       filtered = filtered.filter(chat => chat.unread > 0);
     } else if (filter === 'groups') {
       filtered = filtered.filter(chat => chat.isGroup);
-    } else if (filter === 'archived') {
-      filtered = filtered.filter(chat => chat.archived);
     }
 
     // Apply search query
@@ -159,22 +198,29 @@ const ChatList = ({ navigation }) => {
       );
     }
 
-    // Apply sort
-    if (sort === 'unread') {
-      filtered.sort((a, b) => (b.unread || 0) - (a.unread || 0));
-    } else if (sort === 'name') {
-      filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    } else {
-      // 'newest'
-      filtered.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-    }
+    // Apply sort (pinned first)
+    filtered.sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+
+      if (sort === 'unread') {
+        return (b.unread || 0) - (a.unread || 0);
+      } else if (sort === 'name') {
+        return (a.name || '').localeCompare(b.name || '');
+      } else {
+        return new Date(b.timestamp || 0) - new Date(a.timestamp || 0);
+      }
+    });
 
     setFilteredChats(filtered);
   };
 
+  useEffect(() => {
+    applyFiltersAndSort(chats, searchQuery, activeFilter, sortMode);
+  }, [chats, searchQuery, activeFilter, sortMode, pinnedChats, mutedChats, archivedChats]);
+
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
-    applyFiltersAndSort(chats, searchQuery, filter, sortMode);
   };
 
   const toggleSearchActive = () => {
@@ -189,24 +235,112 @@ const ChatList = ({ navigation }) => {
     }
   };
 
-  // Tune button — cycle sort modes
-  const handleTunePress = () => {
-    const modes = ['newest', 'unread', 'name'];
-    const currentIndex = modes.indexOf(sortMode);
-    const nextMode = modes[(currentIndex + 1) % modes.length];
-    setSortMode(nextMode);
-    applyFiltersAndSort(chats, searchQuery, activeFilter, nextMode);
+  // Three-dot header menu
+  const toggleHeaderMenu = () => setShowHeaderMenu(prev => !prev);
+
+  const handleSortSelect = (mode) => {
+    setSortMode(mode);
+    setShowHeaderMenu(false);
+  };
+
+  const handleMarkAllRead = () => {
+    setShowHeaderMenu(false);
+    // Optimistically clear unread badges on the UI
+    setChats(prev => prev.map(c => ({ ...c, unread: 0 })));
+  };
+
+  const renderHeaderMenu = () => {
+    if (!showHeaderMenu) return null;
+    const sortLabels = { newest: 'Newest First', unread: 'Most Unread', name: 'Name (A–Z)' };
+    return (
+      <Modal
+        visible={showHeaderMenu}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowHeaderMenu(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          activeOpacity={1}
+          onPress={() => setShowHeaderMenu(false)}
+        >
+          {/* Dropdown card anchored top-right */}
+          <View style={{
+            position: 'absolute',
+            top: 60,
+            right: 16,
+            backgroundColor: '#FFFFFF',
+            borderRadius: 14,
+            paddingVertical: 6,
+            minWidth: 210,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 12,
+            elevation: 10,
+          }}>
+            {/* Sort section label */}
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, letterSpacing: 0.8 }}>SORT BY</Text>
+
+            {['newest', 'unread', 'name'].map((mode) => (
+              <TouchableOpacity
+                key={mode}
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 16 }}
+                onPress={() => handleSortSelect(mode)}
+              >
+                <MaterialCommunityIcons
+                  name={sortMode === mode ? 'radiobox-marked' : 'radiobox-blank'}
+                  size={18}
+                  color={sortMode === mode ? '#7C3AED' : '#9CA3AF'}
+                />
+                <Text style={{ fontSize: 14, fontWeight: sortMode === mode ? '700' : '500', color: sortMode === mode ? '#7C3AED' : '#374151', marginLeft: 10 }}>
+                  {sortLabels[mode]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 4 }} />
+
+            {/* Mark all read */}
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 16 }}
+              onPress={handleMarkAllRead}
+            >
+              <MaterialCommunityIcons name="check-all" size={18} color="#6B46C1" />
+              <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginLeft: 10 }}>Mark all as read</Text>
+            </TouchableOpacity>
+
+            {/* View archived (only if any) */}
+            {archivedChats.length > 0 && (
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 16 }}
+                onPress={() => { setShowHeaderMenu(false); handleFilterChange('archived'); }}
+              >
+                <MaterialCommunityIcons name="archive-outline" size={18} color="#6B46C1" />
+                <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginLeft: 10 }}>Archived ({archivedChats.length})</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
   };
 
   const formatTime = (dateInput) => {
     if (!dateInput) return '';
-    const date = new Date(dateInput);
+    // Normalize MySQL DATETIME "2025-07-16 04:27:36" → "2025-07-16T04:27:36Z"
+    const str = dateInput instanceof Date ? null : String(dateInput).trim().replace(' ', 'T');
+    const date = dateInput instanceof Date
+      ? dateInput
+      : new Date(str.endsWith('Z') ? str : str + 'Z');
+    if (isNaN(date.getTime())) return '';
+
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / 60000);
 
     if (diffInMinutes < 1) return 'now';
     if (diffInMinutes < 60) return `${diffInMinutes}m`;
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours}h`;
 
@@ -233,9 +367,165 @@ const ChatList = ({ navigation }) => {
     loadChats();
   };
 
+  const handlePinChat = async (chatId) => {
+    let nextPinned;
+    if (pinnedChats.includes(chatId)) {
+      nextPinned = pinnedChats.filter(id => id !== chatId);
+    } else {
+      nextPinned = [...pinnedChats, chatId];
+    }
+    setPinnedChats(nextPinned);
+    await AsyncStorage.setItem('chat_pinned', JSON.stringify(nextPinned));
+    setShowOptionsModal(false);
+  };
+
+  const handleMuteChat = async (chatId) => {
+    let nextMuted;
+    if (mutedChats.includes(chatId)) {
+      nextMuted = mutedChats.filter(id => id !== chatId);
+    } else {
+      nextMuted = [...mutedChats, chatId];
+    }
+    setMutedChats(nextMuted);
+    await AsyncStorage.setItem('chat_muted', JSON.stringify(nextMuted));
+    setShowOptionsModal(false);
+  };
+
+  const handleArchiveChat = async (chatId) => {
+    let nextArchived;
+    if (archivedChats.includes(chatId)) {
+      nextArchived = archivedChats.filter(id => id !== chatId);
+    } else {
+      nextArchived = [...archivedChats, chatId];
+      if (pinnedChats.includes(chatId)) {
+        const nextPinned = pinnedChats.filter(id => id !== chatId);
+        setPinnedChats(nextPinned);
+        await AsyncStorage.setItem('chat_pinned', JSON.stringify(nextPinned));
+      }
+    }
+    setArchivedChats(nextArchived);
+    await AsyncStorage.setItem('chat_archived', JSON.stringify(nextArchived));
+    setShowOptionsModal(false);
+  };
+
+
+  const handleDeleteChat = async (chatId) => {
+    setShowOptionsModal(false);
+    Alert.alert(
+      'Delete Chat',
+      'Are you sure you want to delete this conversation? This will delete the room and all messages.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const response = await ApiService.makeRequest('/chats/rooms/delete', {
+                method: 'POST',
+                body: JSON.stringify({ roomId: chatId }),
+              });
+              const data = await response.json();
+              if (data.success) {
+                const nextPinned = pinnedChats.filter(id => id !== chatId);
+                const nextMuted = mutedChats.filter(id => id !== chatId);
+                const nextArchived = archivedChats.filter(id => id !== chatId);
+                setPinnedChats(nextPinned);
+                setMutedChats(nextMuted);
+                setArchivedChats(nextArchived);
+                await AsyncStorage.setItem('chat_pinned', JSON.stringify(nextPinned));
+                await AsyncStorage.setItem('chat_muted', JSON.stringify(nextMuted));
+                await AsyncStorage.setItem('chat_archived', JSON.stringify(nextArchived));
+
+                Alert.alert('Success', 'Conversation deleted successfully');
+                loadChats();
+              } else {
+                Alert.alert('Error', data.message || 'Failed to delete conversation');
+              }
+            } catch (error) {
+              console.error(error);
+              Alert.alert('Error', 'Failed to delete conversation');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const renderOptionsModal = () => {
+    if (!selectedChatOptions) return null;
+    const isPinned = pinnedChats.includes(selectedChatOptions.id);
+    const isMuted = mutedChats.includes(selectedChatOptions.id);
+    const isArchived = archivedChats.includes(selectedChatOptions.id);
+
+    return (
+      <Modal
+        visible={showOptionsModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowOptionsModal(false)}
+      >
+        <TouchableOpacity 
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} 
+          activeOpacity={1} 
+          onPress={() => setShowOptionsModal(false)}
+        >
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingVertical: 20, paddingBottom: 35 }}>
+            {/* Handle bar */}
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' }} />
+            </View>
+
+            {/* Chat Title */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: '#1F2937' }}>{selectedChatOptions.name}</Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{selectedChatOptions.isGroup ? 'Group Chat' : 'Personal Chat'}</Text>
+            </View>
+
+            <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 8 }} />
+
+            {/* Action Items */}
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handlePinChat(selectedChatOptions.id)}>
+              <MaterialCommunityIcons name={isPinned ? "pin-off-outline" : "pin-outline"} size={22} color="#6B46C1" />
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginLeft: 14 }}>
+                {isPinned ? 'Unpin chat' : 'Pin chat'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleMuteChat(selectedChatOptions.id)}>
+              <MaterialCommunityIcons name={isMuted ? "bell-outline" : "bell-off-outline"} size={22} color="#6B46C1" />
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginLeft: 14 }}>
+                {isMuted ? 'Unmute notifications' : 'Mute notifications'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleArchiveChat(selectedChatOptions.id)}>
+              <MaterialCommunityIcons name={isArchived ? "archive-arrow-up-outline" : "archive-outline"} size={22} color="#6B46C1" />
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginLeft: 14 }}>
+                {isArchived ? 'Unarchive chat' : 'Archive chat'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleDeleteChat(selectedChatOptions.id)}>
+              <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#EF4444', marginLeft: 14 }}>
+                Delete Chat
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
+
   const renderChat = ({ item, index }) => {
     const isSelected = selectedChat === item.id;
     const isUnread = item.unread > 0;
+    const isPinned = pinnedChats.includes(item.id);
+    const isMuted = mutedChats.includes(item.id);
     const scaleAnim = new Animated.Value(1);
 
     const handlePressIn = () => {
@@ -266,6 +556,10 @@ const ChatList = ({ navigation }) => {
             isUnread && styles.chatItemUnread,
           ]}
           onPress={() => handleChatPress(item)}
+          onLongPress={() => {
+            setSelectedChatOptions(item);
+            setShowOptionsModal(true);
+          }}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           activeOpacity={0.9}
@@ -285,18 +579,24 @@ const ChatList = ({ navigation }) => {
           {/* Chat Info Section */}
           <View style={styles.chatContent}>
             <View style={styles.chatHeader}>
-              <Text 
-                style={[
-                  styles.chatName,
-                  isUnread && styles.chatNameUnread,
-                ]} 
-                numberOfLines={1}
-              >
-                {item.name}
-              </Text>
-              <Text style={[styles.timestamp, isUnread && styles.timestampUnread]}>
-                {formatTime(item.timestamp)}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                {isPinned && <MaterialCommunityIcons name="pin" size={16} color="#6B46C1" style={{ marginRight: 4 }} />}
+                <Text 
+                  style={[
+                    styles.chatName,
+                    isUnread && styles.chatNameUnread,
+                  ]} 
+                  numberOfLines={1}
+                >
+                  {item.name}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {isMuted && <MaterialCommunityIcons name="bell-off" size={14} color="#9CA3AF" style={{ marginRight: 4 }} />}
+                <Text style={[styles.timestamp, isUnread && styles.timestampUnread]}>
+                  {formatTime(item.timestamp)}
+                </Text>
+              </View>
             </View>
             <Text 
               style={[
@@ -375,9 +675,9 @@ const ChatList = ({ navigation }) => {
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.headerIconButton, styles.headerIconButtonPrimary]}
-              onPress={handleTunePress}
+              onPress={toggleHeaderMenu}
             >
-              <MaterialCommunityIcons name="tune" size={24} color="#FFFFFF" />
+              <MaterialCommunityIcons name="dots-vertical" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -408,7 +708,7 @@ const ChatList = ({ navigation }) => {
           style={styles.filterTabsContainer}
           contentContainerStyle={styles.filterTabsContent}
         >
-          {['all', 'unread', 'groups', 'archived'].map((filter) => (
+          {['all', 'unread', 'groups', ...(archivedChats.length > 0 ? ['archived'] : [])].map((filter) => (
             <TouchableOpacity
               key={filter}
               style={[
@@ -436,11 +736,13 @@ const ChatList = ({ navigation }) => {
           <ActivityIndicator size="large" color="#6B46C1" />
           <Text style={styles.loadingText}>Loading conversations...</Text>
         </View>
-      ) : filteredChats.length > 0 ? (
+      ) : filteredChats.length > 0 || archivedChats.length > 0 ? (
         <>
           <View style={styles.recentLabelContainer}>
             <View style={styles.recentLabelLine} />
-            <Text style={styles.recentLabel}>RECENT</Text>
+            <Text style={styles.recentLabel}>
+              {activeFilter === 'archived' ? 'ARCHIVED CHATS' : 'RECENT'}
+            </Text>
             <View style={styles.recentLabelLine} />
           </View>
           <FlatList
@@ -449,6 +751,28 @@ const ChatList = ({ navigation }) => {
             keyExtractor={(item) => item.id.toString()}
             scrollEnabled={true}
             contentContainerStyle={styles.listContainer}
+            ListHeaderComponent={
+              archivedChats.length > 0 && activeFilter !== 'archived' ? (
+                <TouchableOpacity 
+                  style={styles.archivedRow}
+                  onPress={() => handleFilterChange('archived')}
+                >
+                  <View style={styles.archivedRowLeft}>
+                    <MaterialCommunityIcons name="archive-arrow-down" size={22} color="#6B46C1" />
+                    <Text style={styles.archivedRowText}>Archived</Text>
+                  </View>
+                  <Text style={styles.archivedCount}>{archivedChats.length}</Text>
+                </TouchableOpacity>
+              ) : activeFilter === 'archived' ? (
+                <TouchableOpacity 
+                  style={styles.archivedBackRow}
+                  onPress={() => handleFilterChange('all')}
+                >
+                  <MaterialCommunityIcons name="arrow-left" size={20} color="#6B46C1" style={{ marginRight: 8 }} />
+                  <Text style={styles.archivedBackText}>Back to Chats</Text>
+                </TouchableOpacity>
+              ) : null
+            }
             refreshControl={
               <RefreshControl 
                 refreshing={refreshing} 
@@ -465,6 +789,12 @@ const ChatList = ({ navigation }) => {
           {renderEmptyState()}
         </View>
       )}
+
+      {/* Options sheet modal */}
+      {renderOptionsModal()}
+
+      {/* Header three-dot dropdown menu */}
+      {renderHeaderMenu()}
     </SafeAreaView>
   );
 };

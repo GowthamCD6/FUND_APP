@@ -7,11 +7,13 @@ const { authenticateToken } = require('../middleware/auth');
 router.use(authenticateToken);
 
 router.get('/', chatController.getChats);
+router.get('/contacts', chatController.getContacts);
 router.get('/messages/:roomId', chatController.getMessages);
 router.post('/send', chatController.sendMessage);
 router.post('/delete', chatController.deleteMessage);
 router.post('/privateRoom', chatController.getOrCreatePrivateRoom);
 router.post('/groups/updateAvatar', chatController.updateGroupAvatar);
+router.post('/upload', chatController.uploadChatFile);
 
 // WhatsApp Feature Routes
 router.post('/groups/create', chatController.createCustomGroup);

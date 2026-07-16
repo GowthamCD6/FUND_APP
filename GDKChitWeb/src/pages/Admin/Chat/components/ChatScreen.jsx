@@ -22,6 +22,12 @@ import {
 const ChatScreen = ({ chat, onBack }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
+  const messagesRef = useRef(messages);
+  
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+  
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -50,10 +56,11 @@ const ChatScreen = ({ chat, onBack }) => {
     }
   };
 
-  const loadMessages = async (showLoading = false) => {
+  const loadMessages = async (showLoading = false, after = null) => {
     try {
       if (showLoading) setLoading(true);
-      const response = await makeRequest(`/chats/messages/${chat.chatId}`);
+      const url = after ? `/chats/messages/${chat.chatId}?after=${after}` : `/chats/messages/${chat.chatId}`;
+      const response = await makeRequest(url);
       const data = await response.json();
       if (data.success && data.messages) {
         const formatted = data.messages.map(msg => ({
@@ -61,11 +68,17 @@ const ChatScreen = ({ chat, onBack }) => {
           sender: msg.sender_type === 'Admin' ? 'user' : 'other',
           text: msg.message,
           timestamp: new Date(msg.created_at),
-          isRead: msg.is_read === 1,
-          status: msg.is_read === 1 ? 'read' : 'delivered',
+          isRead: msg.read_at !== null,
+          status: msg.read_at !== null ? 'read' : 'delivered',
           senderName: msg.sender_name,
         }));
-        setMessages(formatted);
+        
+        setMessages(prev => {
+            if (!after) return formatted;
+            const existingIds = new Set(prev.map(m => m.id));
+            const newMsgs = formatted.filter(m => !existingIds.has(m.id));
+            return [...prev, ...newMsgs];
+        });
       }
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -83,7 +96,15 @@ const ChatScreen = ({ chat, onBack }) => {
     }
 
     const interval = setInterval(() => {
-      loadMessages(false);
+      const currentMessages = messagesRef.current;
+      const validIds = currentMessages.map(m => m.id).filter(id => typeof id === 'number');
+      const highestId = validIds.length > 0 ? Math.max(...validIds) : null;
+      
+      if (highestId && isFinite(highestId)) {
+        loadMessages(false, highestId);
+      } else {
+        loadMessages(false);
+      }
     }, 5000);
 
     return () => {

@@ -473,6 +473,71 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     marginVertical: 4,
   },
+
+  // Archived Row Styles
+  archivedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 6,
+    borderRadius: 14,
+    elevation: 2,
+    shadowColor: '#6B46C1',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+
+  archivedRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  archivedRowText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#374151',
+    marginLeft: 14,
+  },
+
+  archivedCount: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#6B46C1',
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+
+  archivedBackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 6,
+    borderRadius: 14,
+    elevation: 2,
+    shadowColor: '#6B46C1',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+
+  archivedBackText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#6B46C1',
+  },
 });
 
 export default styles;

@@ -15,9 +15,12 @@ import {
   UIManager,
   Modal,
   Image,
+  Keyboard,
+  Dimensions,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Clipboard from '@react-native-clipboard/clipboard';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import styles from './ChatScreenStyle';
 import ApiService from '../../../../../services/ApiService';
 
@@ -38,11 +41,185 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [searchActive, setSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
+  const [showMsgOptionsModal, setShowMsgOptionsModal] = useState(false);
+  const [selectedMsgOptions, setSelectedMsgOptions] = useState(null);
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwardChats, setForwardChats] = useState([]);
+  const [loadingForward, setLoadingForward] = useState(false);
   const flatListRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const onlineStatus = true;
   const [showStarredModal, setShowStarredModal] = useState(false);
   const [showGroupInfoModal, setShowGroupInfoModal] = useState(false);
+  const [showAttachmentModal, setShowAttachmentModal] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [activeEmojiTab, setActiveEmojiTab] = useState('smileys');
+
+  const toggleEmojiPicker = () => {
+    if (showEmojiPicker) {
+      setShowEmojiPicker(false);
+    } else {
+      Keyboard.dismiss();
+      setShowEmojiPicker(true);
+    }
+  };
+
+  const handleTextInputFocus = () => {
+    setShowEmojiPicker(false);
+  };
+
+  const handleEmojiSelect = (emoji) => {
+    setMessageText(prev => prev + emoji);
+  };
+
+  const sendDirectMessage = async (text) => {
+    if (!text.trim()) return;
+
+    const tempId = 'temp-' + Date.now();
+    const activeReply = replyingTo; // capture active reply
+    const newMessage = {
+      id: tempId,
+      sender: 'user',
+      text: text,
+      timestamp: new Date(),
+      isRead: false,
+      status: 'sent',
+      replyTo: activeReply ? {
+        id: activeReply.id,
+        text: activeReply.text
+      } : null
+    };
+
+    setMessages(prev => [...prev, newMessage]);
+    setReplyingTo(null);
+    setIsSending(true);
+
+    // Auto-scroll
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+
+    try {
+      if (ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({
+          type: 'send_message',
+          data: {
+            roomId: chatId,
+            text: newMessage.text,
+            replyTo: activeReply?.id || null
+          }
+        }));
+        
+        // Optimistically set to delivered
+        setTimeout(() => {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === tempId ? { ...msg, status: 'delivered' } : msg
+            )
+          );
+          setIsSending(false);
+        }, 300);
+      } else {
+        // Fallback to HTTP if WS is down
+        const response = await ApiService.makeRequest('/chats/send', {
+          method: 'POST',
+          body: JSON.stringify({
+            roomId: chatId,
+            message: newMessage.text,
+            replyTo: activeReply?.id || null
+          }),
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === tempId ? { 
+                ...msg, 
+                id: data.data.id,
+                status: 'read', 
+                isRead: true 
+              } : msg
+            )
+          );
+        }
+        setIsSending(false);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setIsSending(false);
+    }
+  };
+
+  const uploadAndSendImage = async (base64, type) => {
+    try {
+      setIsSending(true);
+      const res = await ApiService.makeRequest('/chats/upload', {
+        method: 'POST',
+        body: JSON.stringify({
+          fileBase64: `data:${type};base64,${base64}`
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.fileUrl) {
+        await sendDirectMessage(data.fileUrl);
+      } else {
+        Alert.alert('Error', 'Failed to upload image');
+      }
+    } catch (e) {
+      console.log('Error uploading image:', e);
+      Alert.alert('Error', 'Failed to send image');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleAttachmentOption = (type) => {
+    setShowAttachmentModal(false);
+    if (type === 'camera') {
+      const options = { mediaType: 'photo', quality: 0.8, saveToPhotos: true, includeBase64: true };
+      launchCamera(options, (response) => {
+        if (response.didCancel) return;
+        if (response.errorCode) {
+          Alert.alert('Error', 'Could not open camera');
+          return;
+        }
+        if (response.assets && response.assets.length > 0) {
+          const file = response.assets[0];
+          if (file.base64) {
+            uploadAndSendImage(file.base64, file.type || 'image/jpeg');
+          } else {
+            Alert.alert('Error', 'Failed to get image data');
+          }
+        }
+      });
+    } else if (type === 'gallery') {
+      const options = { mediaType: 'photo', quality: 0.8, includeBase64: true };
+      launchImageLibrary(options, (response) => {
+        if (response.didCancel) return;
+        if (response.errorCode) {
+          Alert.alert('Error', 'Could not open image library');
+          return;
+        }
+        if (response.assets && response.assets.length > 0) {
+          const file = response.assets[0];
+          if (file.base64) {
+            uploadAndSendImage(file.base64, file.type || 'image/jpeg');
+          } else {
+            Alert.alert('Error', 'Failed to get image data');
+          }
+        }
+      });
+    } else if (type === 'document') {
+      sendDirectMessage('📄 Document: invoice_2026.pdf');
+    } else if (type === 'audio') {
+      sendDirectMessage('🎵 Audio recording (0:30)');
+    } else if (type === 'location') {
+      sendDirectMessage('📍 Location: https://maps.google.com/?q=12.9716,77.5946');
+    } else if (type === 'contact') {
+      sendDirectMessage('👤 Contact: GDK Support (+91 98765 43210)');
+    }
+  };
 
   // Handle back navigation
   const handleGoBack = () => {
@@ -112,17 +289,29 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         const response = await ApiService.makeRequest(`/chats/messages/${chatId}`);
         const data = await response.json();
         if (data.success && data.messages) {
-          const formatted = data.messages.map(msg => ({
-            id: msg.id,
-            sender: msg.sender_type === 'User' ? 'user' : 'other', // User app perspective
-            text: msg.message,
-            timestamp: new Date(msg.created_at),
-            isRead: msg.is_read === 1,
-            status: 'read',
-            avatar: msg.sender_type === 'User' ? null : chatAvatar,
-            senderName: msg.sender_name,
-            isStarred: msg.isStarred > 0
-          }));
+          const formatted = data.messages.map(msg => {
+            const isMine = msg.sender_type === 'User'; // user app — 'User' = me
+            // Determine tick status for my sent messages
+            let status = 'sent';
+            if (isMine) {
+              status = msg.read_at ? 'read' : 'sent';
+            }
+            return {
+              id: msg.id,
+              sender: isMine ? 'user' : 'other',
+              text: msg.message,
+              timestamp: msg.created_at, // keep raw string, parse in formatTime
+              isRead: !!msg.read_at,
+              status,
+              avatar: isMine ? null : chatAvatar,
+              senderName: msg.sender_name,
+              isStarred: msg.isStarred > 0,
+              replyTo: msg.reply_to ? {
+                id: msg.reply_to,
+                text: msg.replied_to_message
+              } : null
+            };
+          });
           setMessages(formatted);
         }
       } catch (error) {
@@ -147,39 +336,55 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     
     if (ws.readyState === 1) {
       ws.send(JSON.stringify({ type: 'join_room', roomId: chatId }));
+      // Notify server that we've read all messages in this room
+      ws.send(JSON.stringify({ type: 'mark_read', roomId: chatId }));
     } else {
-      // If not yet open, send once it opens
       ws.addEventListener('open', () => {
         ws.send(JSON.stringify({ type: 'join_room', roomId: chatId }));
+        ws.send(JSON.stringify({ type: 'mark_read', roomId: chatId }));
       });
     }
     
     const handleWsMessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
+
+        // New incoming message
         if (payload.type === 'new_message' && (payload.data.roomId === chatId || payload.data.sourceRoomId === chatId)) {
           setMessages(prev => {
             if (prev.find(m => m.id === payload.data.id)) return prev;
-            
-            // Remove matching temp message if it exists
             const filtered = prev.filter(m => !(String(m.id).startsWith('temp-') && m.text === payload.data.message));
-            
+            const isMine = payload.data.senderType === 'User';
             const newMsg = {
               id: payload.data.id,
-              sender: payload.data.senderType === 'User' ? 'user' : 'other',
+              sender: isMine ? 'user' : 'other',
               text: payload.data.message,
-              timestamp: new Date(payload.data.created_at),
-              isRead: true,
-              status: 'read',
-              avatar: payload.data.senderType === 'User' ? null : chatAvatar,
+              timestamp: payload.data.created_at,
+              isRead: false,
+              status: isMine ? 'sent' : 'received',
+              avatar: isMine ? null : chatAvatar,
               senderName: payload.data.sender_name,
-              isStarred: false
+              isStarred: false,
+              replyTo: payload.data.reply_to ? {
+                id: payload.data.reply_to,
+                text: payload.data.replied_to_message
+              } : null
             };
             return [...filtered, newMsg];
           });
         }
+
+        // Read receipt — upgrade my sent messages to blue tick
+        if (payload.type === 'read_receipt' && payload.data.roomId === chatId) {
+          const readIds = new Set(payload.data.messageIds);
+          setMessages(prev =>
+            prev.map(msg =>
+              readIds.has(msg.id) ? { ...msg, status: 'read', isRead: true } : msg
+            )
+          );
+        }
       } catch (e) {
-        console.error("WS error parsing message", e);
+        console.error('WS error parsing message', e);
       }
     };
     
@@ -200,78 +405,10 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     }, 100);
   }, [messages]);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!messageText.trim()) return;
-
-    const tempId = 'temp-' + Date.now();
-    const newMessage = {
-      id: tempId,
-      sender: 'user',
-      text: messageText,
-      timestamp: new Date(),
-      isRead: false,
-      status: 'sent',
-      repliedTo: replyingTo,
-    };
-
-    setMessages([...messages, newMessage]);
+    sendDirectMessage(messageText);
     setMessageText('');
-    setReplyingTo(null);
-    setIsSending(true);
-
-    // Auto-scroll
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-
-    try {
-      if (ws && ws.readyState === 1) {
-        ws.send(JSON.stringify({
-          type: 'send_message',
-          data: {
-            roomId: chatId,
-            text: newMessage.text,
-          }
-        }));
-        
-        // Optimistically set to delivered
-        setTimeout(() => {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === tempId ? { ...msg, status: 'delivered' } : msg
-            )
-          );
-          setIsSending(false);
-        }, 300);
-      } else {
-        // Fallback to HTTP if WS is down
-        const response = await ApiService.makeRequest('/chats/send', {
-          method: 'POST',
-          body: JSON.stringify({
-            roomId: chatId,
-            message: newMessage.text,
-          }),
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === tempId ? { 
-                ...msg, 
-                id: data.data.id,
-                status: 'read', 
-                isRead: true 
-              } : msg
-            )
-          );
-        }
-        setIsSending(false);
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setIsSending(false);
-    }
   };
 
   const handleTyping = () => {
@@ -286,16 +423,38 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     }, 2000);
   };
 
-  const formatTime = (date) => {
-    return date.toLocaleTimeString('en-IN', { 
-      hour: '2-digit', 
+  const formatTime = (rawTimestamp) => {
+    if (!rawTimestamp) return '';
+    let date;
+    if (rawTimestamp instanceof Date) {
+      // Optimistic sends use new Date() — already correct local time
+      date = rawTimestamp;
+    } else {
+      // Normalize MySQL DATETIME: "2025-07-16 04:27:36" → "2025-07-16T04:27:36Z"
+      // Also handles ISO strings that already have T and Z
+      const str = String(rawTimestamp).trim().replace(' ', 'T');
+      date = new Date(str.endsWith('Z') ? str : str + 'Z');
+    }
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
     });
   };
 
   // Format date separator (Today, Yesterday, or Date)
-  const formatDateSeparator = (date) => {
+  const formatDateSeparator = (rawTimestamp) => {
+    if (!rawTimestamp) return '';
+    let date;
+    if (rawTimestamp instanceof Date) {
+      date = rawTimestamp;
+    } else {
+      const str = String(rawTimestamp).trim().replace(' ', 'T');
+      date = new Date(str.endsWith('Z') ? str : str + 'Z');
+    }
+    if (isNaN(date.getTime())) return '';
+
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -312,121 +471,319 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   // Check if we need to show date separator
   const shouldShowDateSeparator = (currentMsg, previousMsg) => {
     if (!previousMsg) return true;
-    const currentDate = new Date(currentMsg.timestamp).toDateString();
-    const previousDate = new Date(previousMsg.timestamp).toDateString();
-    return currentDate !== previousDate;
+    const parseTs = (ts) => {
+      if (ts instanceof Date) return ts;
+      const s = String(ts).trim().replace(' ', 'T');
+      return new Date(s.endsWith('Z') ? s : s + 'Z');
+    };
+    return parseTs(currentMsg.timestamp).toDateString() !== parseTs(previousMsg.timestamp).toDateString();
   };
 
-  // Check if messages from same sender should be grouped
+  // Check if messages from same sender should be grouped (within 1 minute)
   const shouldGroupWithPrevious = (currentMsg, previousMsg) => {
     if (!previousMsg || !currentMsg) return false;
+    const parseTs = (ts) => {
+      if (ts instanceof Date) return ts.getTime();
+      const s = String(ts).trim().replace(' ', 'T');
+      return new Date(s.endsWith('Z') ? s : s + 'Z').getTime();
+    };
     return (
       previousMsg.sender === currentMsg.sender &&
-      (new Date(currentMsg.timestamp) - new Date(previousMsg.timestamp)) < 60000 // Within 1 minute
+      (parseTs(currentMsg.timestamp) - parseTs(previousMsg.timestamp)) < 60000
     );
   };
 
   // Handle message long press for context menu
   const handleMessageLongPress = (message) => {
+    setSelectedMsgOptions(message);
+    setShowMsgOptionsModal(true);
+  };
+
+  const handleCopyMessage = (message) => {
+    Clipboard.setString(message.text);
+    setShowMsgOptionsModal(false);
+    Alert.alert('Copied', 'Message copied to clipboard');
+  };
+
+  const handleStarMessage = async (message) => {
+    setShowMsgOptionsModal(false);
+    try {
+      const res = await ApiService.makeRequest('/chats/messages/star', {
+        method: 'POST',
+        body: JSON.stringify({
+          messageId: message.id,
+          isStarred: !message.isStarred
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessages(prev => prev.map(m => m.id === message.id ? { ...m, isStarred: !m.isStarred } : m));
+      } else {
+        Alert.alert('Error', data.message || 'Failed to update star status');
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Network error');
+    }
+  };
+
+  const handleReplyMessage = (message) => {
+    setReplyingTo(message);
+    setShowMsgOptionsModal(false);
+  };
+
+  const handleForwardMessage = async (message) => {
+    setShowMsgOptionsModal(false);
+    setLoadingForward(true);
+    setShowForwardModal(true);
+    try {
+      const response = await ApiService.makeRequest('/chats');
+      const data = await response.json();
+      if (data.success) {
+        setForwardChats(data.chats || []);
+      } else {
+        Alert.alert('Error', 'Failed to load chats for forwarding');
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Network error');
+    } finally {
+      setLoadingForward(false);
+    }
+  };
+
+  const handleForwardToChat = async (targetChat) => {
+    if (!selectedMsgOptions) return;
     Alert.alert(
-      'Message Options',
-      '',
+      'Forward Message',
+      `Are you sure you want to forward this message to ${targetChat.name}?`,
       [
-        {
-          text: 'Copy',
-          onPress: () => {
-            Clipboard.setString(message.text);
-          },
-        },
-        {
-          text: message.isStarred ? 'Unstar Message' : 'Star Message',
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Forward',
           onPress: async () => {
             try {
-              const res = await ApiService.makeRequest('/chats/messages/star', {
+              setShowForwardModal(false);
+              const response = await ApiService.makeRequest('/chats/send', {
                 method: 'POST',
                 body: JSON.stringify({
-                  messageId: message.id,
-                  isStarred: !message.isStarred
-                })
+                  roomId: targetChat.id,
+                  message: selectedMsgOptions.text,
+                }),
               });
-              const data = await res.json();
+              const data = await response.json();
               if (data.success) {
-                setMessages(prev => prev.map(m => m.id === message.id ? { ...m, isStarred: !m.isStarred } : m));
+                Alert.alert('Success', 'Message forwarded successfully');
               } else {
-                Alert.alert('Error', data.message || 'Failed to update star status');
+                Alert.alert('Error', 'Failed to forward message');
               }
             } catch (err) {
               console.error(err);
               Alert.alert('Error', 'Network error');
             }
           }
-        },
-        {
-          text: 'Reply',
-          onPress: () => {
-            setReplyingTo(message);
-          },
-        },
-        {
-          text: 'Forward',
-          onPress: () => {
-            console.log('Forward:', message.text);
-          },
-        },
-        ...(message.sender === 'user'
-          ? [
-              {
-                text: 'Delete',
-                onPress: () => {
-                  // Call backend API to delete message
-                  ApiService.makeRequest('/chats/delete', {
-                    method: 'POST',
-                    body: JSON.stringify({ messageId: message.id }),
-                  })
-                    .then(response => response.json())
-                    .then(data => {
-                      if (data.success) {
-                        setMessages(messages.filter(msg => msg.id !== message.id));
-                      } else {
-                        Alert.alert('Error', data.message || 'Failed to delete message');
-                      }
-                    })
-                    .catch(err => {
-                      console.error('Delete message error:', err);
-                      Alert.alert('Error', 'Failed to connect to server');
-                    });
-                },
-                style: 'destructive',
-              },
-            ]
-          : []),
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        }
       ]
     );
   };
 
-  // Filter messages by search query
+  const handleDeleteMessage = (message) => {
+    setShowMsgOptionsModal(false);
+    Alert.alert(
+      'Delete Message',
+      'Are you sure you want to delete this message?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            ApiService.makeRequest('/chats/delete', {
+              method: 'POST',
+              body: JSON.stringify({ messageId: message.id }),
+            })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  setMessages(messages.filter(msg => msg.id !== message.id));
+                } else {
+                  Alert.alert('Error', data.message || 'Failed to delete message');
+                }
+              })
+              .catch(err => {
+                console.error('Delete message error:', err);
+                Alert.alert('Error', 'Failed to connect to server');
+              });
+          }
+        }
+      ]
+    );
+  };
+
+  // Filter messages by search query (forced rebuild)
   const filteredMessages = searchQuery.trim()
     ? messages.filter(msg =>
         msg.text.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : messages;
 
-  // Get status icon for message
+  // WhatsApp-style tick icons
   const getStatusIcon = (status) => {
     switch (status) {
       case 'sent':
-        return <MaterialCommunityIcons name="check" size={14} color="#E0C3FC" />;
+        // Single grey tick — sent but not delivered/read
+        return <MaterialCommunityIcons name="check" size={14} color="rgba(255,255,255,0.6)" />;
       case 'delivered':
-        return <MaterialCommunityIcons name="check-all" size={14} color="#E0C3FC" />;
+        // Double grey tick — delivered but not read
+        return <MaterialCommunityIcons name="check-all" size={14} color="rgba(255,255,255,0.6)" />;
       case 'read':
-        return <MaterialCommunityIcons name="check-all" size={14} color="#FFFFFF" />;
+        // Double BLUE tick — recipient has seen the message
+        return <MaterialCommunityIcons name="check-all" size={14} color="#60D0FE" />;
       default:
-        return null;
+        // Clock icon while sending
+        return <MaterialCommunityIcons name="clock-outline" size={12} color="rgba(255,255,255,0.5)" />;
     }
+  };
+
+  const renderMsgOptionsModal = () => {
+    if (!selectedMsgOptions) return null;
+    const isStarred = selectedMsgOptions.isStarred;
+    const isUser = selectedMsgOptions.sender === 'user';
+
+    return (
+      <Modal
+        visible={showMsgOptionsModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowMsgOptionsModal(false)}
+      >
+        <TouchableOpacity 
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} 
+          activeOpacity={1} 
+          onPress={() => setShowMsgOptionsModal(false)}
+        >
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingVertical: 20, paddingBottom: 35 }}>
+            {/* Handle bar */}
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' }} />
+            </View>
+
+            {/* Message Preview */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B46C1' }}>Selected Message</Text>
+              <Text style={{ fontSize: 15, color: '#1F2937', marginTop: 4 }} numberOfLines={2}>{selectedMsgOptions.text}</Text>
+            </View>
+
+            <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 8 }} />
+
+            {/* Action Items */}
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleReplyMessage(selectedMsgOptions)}>
+              <MaterialCommunityIcons name="reply" size={22} color="#6B46C1" />
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginLeft: 14 }}>
+                Reply
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleStarMessage(selectedMsgOptions)}>
+              <MaterialCommunityIcons name={isStarred ? "star-off" : "star"} size={22} color="#6B46C1" />
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginLeft: 14 }}>
+                {isStarred ? 'Unstar Message' : 'Star Message'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleCopyMessage(selectedMsgOptions)}>
+              <MaterialCommunityIcons name="content-copy" size={22} color="#6B46C1" />
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginLeft: 14 }}>
+                Copy Text
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleForwardMessage(selectedMsgOptions)}>
+              <MaterialCommunityIcons name="share" size={22} color="#6B46C1" />
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginLeft: 14 }}>
+                Forward Message
+              </Text>
+            </TouchableOpacity>
+
+            {isUser && (
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleDeleteMessage(selectedMsgOptions)}>
+                <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
+                <Text style={{ fontSize: 15, fontWeight: '600', color: '#EF4444', marginLeft: 14 }}>
+                  Delete Message
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
+
+  const renderForwardModal = () => {
+    return (
+      <Modal
+        visible={showForwardModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowForwardModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', paddingTop: 16, paddingBottom: 30 }}>
+            {/* Handle bar */}
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' }} />
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 16 }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#1F2937' }}>Forward to...</Text>
+              <TouchableOpacity onPress={() => setShowForwardModal(false)}>
+                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {loadingForward ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#6B46C1" />
+              </View>
+            ) : (
+              <FlatList
+                data={forwardChats}
+                keyExtractor={item => item.id.toString()}
+                contentContainerStyle={{ paddingHorizontal: 16 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: '#F9FAFB',
+                      padding: 14,
+                      marginVertical: 4,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: '#E9D5FF',
+                    }}
+                    onPress={() => handleForwardToChat(item)}
+                  >
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#E9D5FF', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+                      <Text style={{ fontSize: 16 }}>{item.isGroup ? '👥' : '👤'}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937' }}>{item.name}</Text>
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={22} color="#9CA3AF" />
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <View style={{ padding: 40, alignItems: 'center' }}>
+                    <Text style={{ color: '#9CA3AF' }}>No chats available.</Text>
+                  </View>
+                }
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+    );
   };
 
   const renderMessage = ({ item, index }) => {
@@ -467,7 +824,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             !isUserMessage && { alignItems: 'flex-end' },
           ]}>
             {/* Reply Preview */}
-            {item.repliedTo && (
+            {item.replyTo && (
               <View style={{
                 backgroundColor: isUserMessage ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
                 paddingHorizontal: 12,
@@ -481,7 +838,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                   Replying to
                 </Text>
                 <Text style={{ fontSize: 12, color: isUserMessage ? '#E9D5FF' : '#6B7280', marginTop: 2 }}>
-                  {item.repliedTo.text}
+                  {item.replyTo.text}
                 </Text>
               </View>
             )}
@@ -491,14 +848,28 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               styles.messageBubble,
               isUserMessage ? styles.userBubble : styles.otherBubble,
               isGrouped && (isUserMessage ? styles.groupedUserBubble : styles.groupedOtherBubble),
+              (item.text && (item.text.startsWith('http://') || item.text.startsWith('https://')) && (item.text.match(/\.(jpeg|jpg|gif|png|webp)/i) || item.text.includes('/uploads/'))) && { paddingHorizontal: 4, paddingVertical: 4, borderRadius: 16 }
             ]}>
-              <Text style={[
-                styles.messageText,
-                isUserMessage && styles.userMessageText,
-                { textAlign: isUserMessage ? 'left' : 'right' }
-              ]}>
-                {item.text}
-              </Text>
+              {(item.text && (item.text.startsWith('http://') || item.text.startsWith('https://')) && (item.text.match(/\.(jpeg|jpg|gif|png|webp)/i) || item.text.includes('/uploads/'))) ? (
+                <Image 
+                  source={{ uri: item.text.trim() }} 
+                  style={{ 
+                    width: 220, 
+                    height: 220, 
+                    borderRadius: 12,
+                    backgroundColor: '#F3F4F6'
+                  }} 
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={[
+                  styles.messageText,
+                  isUserMessage && styles.userMessageText,
+                  { textAlign: isUserMessage ? 'left' : 'right' }
+                ]}>
+                  {item.text}
+                </Text>
+              )}
 
               {(isLastInGroup || item.isStarred) && (
                 <View style={styles.messageFooter}>
@@ -522,6 +893,83 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   };
 
 
+
+  const renderAttachmentModal = () => {
+    return (
+      <Modal
+        visible={showAttachmentModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowAttachmentModal(false)}
+      >
+        <TouchableOpacity 
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }} 
+          activeOpacity={1} 
+          onPress={() => setShowAttachmentModal(false)}
+        >
+          <View style={{ 
+            backgroundColor: '#FFFFFF', 
+            borderTopLeftRadius: 24, 
+            borderTopRightRadius: 24, 
+            paddingVertical: 24, 
+            paddingHorizontal: 20,
+            paddingBottom: 40 
+          }}>
+            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' }} />
+            </View>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: '#1F2937', marginBottom: 20, textAlign: 'center' }}>
+              Share Attachment
+            </Text>
+            
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+              <TouchableOpacity style={{ alignItems: 'center', width: '30%', marginVertical: 12 }} onPress={() => handleAttachmentOption('document')}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#5F59F7', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
+                  <MaterialCommunityIcons name="file-document" size={26} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 13, color: '#4B5563', fontWeight: '500' }}>Document</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={{ alignItems: 'center', width: '30%', marginVertical: 12 }} onPress={() => handleAttachmentOption('camera')}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#F43F5E', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
+                  <MaterialCommunityIcons name="camera" size={26} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 13, color: '#4B5563', fontWeight: '500' }}>Camera</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={{ alignItems: 'center', width: '30%', marginVertical: 12 }} onPress={() => handleAttachmentOption('gallery')}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#EC4899', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
+                  <MaterialCommunityIcons name="image" size={26} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 13, color: '#4B5563', fontWeight: '500' }}>Gallery</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={{ alignItems: 'center', width: '30%', marginVertical: 12 }} onPress={() => handleAttachmentOption('audio')}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#F59E0B', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
+                  <MaterialCommunityIcons name="headphones" size={26} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 13, color: '#4B5563', fontWeight: '500' }}>Audio</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={{ alignItems: 'center', width: '30%', marginVertical: 12 }} onPress={() => handleAttachmentOption('location')}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
+                  <MaterialCommunityIcons name="map-marker" size={26} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 13, color: '#4B5563', fontWeight: '500' }}>Location</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={{ alignItems: 'center', width: '30%', marginVertical: 12 }} onPress={() => handleAttachmentOption('contact')}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#3B82F6', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
+                  <MaterialCommunityIcons name="account" size={26} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 13, color: '#4B5563', fontWeight: '500' }}>Contact</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -702,7 +1150,11 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           )}
 
           <View style={styles.inputWrapper}>
-            <TouchableOpacity style={styles.attachButton} disabled={isSending}>
+            <TouchableOpacity 
+              style={styles.attachButton} 
+              disabled={isSending}
+              onPress={() => setShowAttachmentModal(true)}
+            >
               <MaterialCommunityIcons name="plus" size={24} color="#7C3AED" />
             </TouchableOpacity>
 
@@ -711,6 +1163,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               placeholder="Type a message..."
               placeholderTextColor="#B4B4B4"
               value={messageText}
+              onFocus={handleTextInputFocus}
               onChangeText={(text) => {
                 setMessageText(text);
                 setIsTyping(text.length > 0);
@@ -721,8 +1174,16 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               editable={!isSending}
             />
 
-            <TouchableOpacity style={styles.emojiButton} disabled={isSending}>
-              <MaterialCommunityIcons name="emoticon-outline" size={22} color="#B4B4B4" />
+            <TouchableOpacity 
+              style={styles.emojiButton} 
+              disabled={isSending}
+              onPress={toggleEmojiPicker}
+            >
+              <MaterialCommunityIcons 
+                name={showEmojiPicker ? "keyboard-outline" : "emoticon-outline"} 
+                size={22} 
+                color="#B4B4B4" 
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -744,6 +1205,64 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               )}
             </TouchableOpacity>
           </View>
+
+          {/* Emoji Picker Panel */}
+          {showEmojiPicker && (
+            <View style={{
+              height: 220,
+              backgroundColor: '#FFFFFF',
+              marginTop: 8,
+              borderRadius: 16,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
+            }}>
+              {/* Category tabs */}
+              <View style={{
+                flexDirection: 'row',
+                borderBottomWidth: 1,
+                borderBottomColor: '#F3F4F6',
+                backgroundColor: '#F9FAFB',
+              }}>
+                <TouchableOpacity 
+                  style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'smileys' ? 2 : 0, borderBottomColor: '#7C3AED' }}
+                  onPress={() => setActiveEmojiTab('smileys')}
+                >
+                  <Text style={{ fontSize: 16 }}>😀</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'hands' ? 2 : 0, borderBottomColor: '#7C3AED' }}
+                  onPress={() => setActiveEmojiTab('hands')}
+                >
+                  <Text style={{ fontSize: 16 }}>👍</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'hearts' ? 2 : 0, borderBottomColor: '#7C3AED' }}
+                  onPress={() => setActiveEmojiTab('hearts')}
+                >
+                  <Text style={{ fontSize: 16 }}>❤️</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', padding: 8, justifyContent: 'space-between' }}>
+                {(activeEmojiTab === 'smileys' ? [
+                  '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😋', '😛', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🫣', '🤭', '🤫', '🫡'
+                ] : activeEmojiTab === 'hands' ? [
+                  '✍️', '👍', '👎', '👊', '✊', '🤛', '🤜', '🤞', '✌️', '🤟', '🤘', '👌', '🤌', '🤏', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐️', '🖖', '👋', '🤙', '💪', '🙏', '👏', '🤝', '🙌', '👐', '🤲', '💅', '🤳'
+                ] : [
+                  '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔'
+                ]).map((emoji, index) => (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={{ width: '12%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', margin: 2 }}
+                    onPress={() => handleEmojiSelect(emoji)}
+                  >
+                    <Text style={{ fontSize: 20 }}>{emoji}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
       {/* Group Info Full Modal */}
@@ -855,6 +1374,15 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Message options context sheet */}
+      {renderMsgOptionsModal()}
+
+      {/* Forward message chat selector modal */}
+      {renderForwardModal()}
+
+      {/* Attachment share options modal */}
+      {renderAttachmentModal()}
 
     </SafeAreaView>
   );

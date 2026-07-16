@@ -174,9 +174,42 @@ chatWss.on('connection', (ws, req) => {
             client.rooms.delete(payload.roomId);
           }
         }
+        else if (payload.type === 'mark_read') {
+          // Client opened a room — mark messages from others as read and notify senders
+          const { roomId } = payload;
+          if (!roomId) return;
+
+          // Find which message IDs were unread (so we know whose messages to notify)
+          const [unreadRows] = await db.promise().query(
+            `SELECT id, sender_id FROM chat_messages WHERE room_id = ? AND sender_id != ? AND read_at IS NULL`,
+            [roomId, Number(userId)]
+          );
+
+          if (unreadRows.length > 0) {
+            // Mark them all read
+            await db.promise().query(
+              `UPDATE chat_messages SET read_at = CURRENT_TIMESTAMP WHERE room_id = ? AND sender_id != ? AND read_at IS NULL`,
+              [roomId, Number(userId)]
+            );
+
+            // Gather unique sender IDs whose messages were just read
+            const senderIds = [...new Set(unreadRows.map(r => r.sender_id))];
+            const msgIds = unreadRows.map(r => r.id);
+
+            // Push read_receipt to those senders if they are connected
+            chatClients.forEach(client => {
+              if (client.ws.readyState === WebSocket.OPEN && senderIds.includes(client.userId)) {
+                client.ws.send(JSON.stringify({
+                  type: 'read_receipt',
+                  data: { roomId, messageIds: msgIds, readBy: Number(userId) }
+                }));
+              }
+            });
+          }
+        }
         else if (payload.type === 'send_message') {
           // Send via WebSocket (fallback for POST API)
-          const { roomId, text } = payload.data;
+          const { roomId, text, replyTo } = payload.data;
           
           // Verify room and routing logic similar to chatController
           const [roomArr] = await db.promise().query('SELECT * FROM chat_rooms WHERE id = ?', [roomId]);
@@ -187,20 +220,55 @@ chatWss.on('connection', (ws, req) => {
           let sourceRoomId = null;
 
           if (userType === 'User' && room.type === 'group_broadcast') {
-            const [privateRoom] = await db.promise().query('SELECT id FROM chat_rooms WHERE type = ? AND user_id = ? AND group_id IS NULL', ['private', userId]);
-            if (privateRoom.length > 0) {
-              targetRoomId = privateRoom[0].id;
+            // Find the admin who created/manages this group
+            let adminId = null;
+
+            if (room.group_id) {
+              const [groupRows] = await db.promise().query(
+                'SELECT created_by FROM `groups` WHERE id = ?',
+                [room.group_id]
+              );
+              if (groupRows.length > 0 && groupRows[0].created_by) {
+                adminId = groupRows[0].created_by;
+              }
+            }
+
+            // Fallback: first active admin if group has no creator
+            if (!adminId) {
+              const [adminUsers] = await db.promise().query(
+                "SELECT id FROM users WHERE role = 'Admin' AND is_active = 1 ORDER BY id ASC LIMIT 1"
+              );
+              adminId = adminUsers.length > 0 ? adminUsers[0].id : 1;
+            }
+
+            const u1 = Math.min(userId, adminId);
+            const u2 = Math.max(userId, adminId);
+            
+            const [existingConv] = await db.promise().query('SELECT room_id FROM private_conversations WHERE user1 = ? AND user2 = ?', [u1, u2]);
+            
+            if (existingConv.length > 0) {
+              targetRoomId = existingConv[0].room_id;
             } else {
-              const [insertRes] = await db.promise().query('INSERT INTO chat_rooms (type, group_id, user_id) VALUES (?, NULL, ?)', ['private', userId]);
+              const [insertRes] = await db.promise().query("INSERT INTO chat_rooms (type, group_id, user_id) VALUES ('private', NULL, ?)", [u2]);
               targetRoomId = insertRes.insertId;
+              await db.promise().query('INSERT INTO private_conversations (user1, user2, room_id) VALUES (?, ?, ?)', [u1, u2, targetRoomId]);
+              await db.promise().query("INSERT IGNORE INTO chat_room_members (room_id, user_id, role) VALUES (?, ?, 'Member'), (?, ?, 'Member')", [targetRoomId, u1, targetRoomId, u2]);
             }
             sourceRoomId = roomId;
           }
 
+          let replyToMessageText = null;
+          if (replyTo) {
+            const [replyRows] = await db.promise().query('SELECT message FROM chat_messages WHERE id = ?', [replyTo]);
+            if (replyRows.length > 0) {
+              replyToMessageText = replyRows[0].message;
+            }
+          }
+
           // Save message
           const [insertMsg] = await db.promise().query(
-            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id) VALUES (?, ?, ?, ?, ?)',
-            [targetRoomId, userId, userType, text, sourceRoomId]
+            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [targetRoomId, userId, userType, text, sourceRoomId, 'text', replyTo || null]
           );
 
           const msgData = {
@@ -211,7 +279,9 @@ chatWss.on('connection', (ws, req) => {
             senderType: userType,
             message: text,
             created_at: new Date(),
-            sender_name: decoded.name || 'User'
+            sender_name: decoded.name || 'User',
+            reply_to: replyTo || null,
+            replied_to_message: replyToMessageText
           };
 
           // Fetch members to notify for group, community, or broadcast room

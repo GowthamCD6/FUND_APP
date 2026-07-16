@@ -11,6 +11,7 @@ const connection = mysql.createPool({
   queueLimit: 20,
   enableKeepAlive: true,
   keepAliveInitialDelayMs: 0,
+  timezone: 'Z', // Set connection time_zone to UTC (+00:00) and parse DATETIME as UTC
   // IMPORTANT: Do NOT add any cleanup SQL here that would delete tables or database!
   // The database should persist between sessions
   ssl: process.env.DB_HOST && process.env.DB_HOST.includes('tidbcloud.com') ? {
