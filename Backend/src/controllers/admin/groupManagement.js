@@ -1,5 +1,6 @@
 const db = require('../../config/db')
 const { groupEncryptAES, groupDecryptAES } = require('../../utils/decryptAES');
+const { sendSMS } = require('../../services/smsService');
 const { logAuditEvent } = require('../../utils/auditLogger');
 
 exports.getAdminNotifications = async (req, res) => {
@@ -793,5 +794,90 @@ exports.renameGroup = async (req, res) => {
     } catch (error) {
         console.error('Error renaming group:', error);
         res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+exports.notifyAuctionMembers = async (req, res) => {
+    const { groupId, winnerName, amountTaken, auctionType } = req.body;
+
+    if (!groupId || !winnerName) {
+        return res.status(400).json({ success: false, message: 'groupId and winnerName are required' });
+    }
+
+    const groupIdNum = Number(groupId);
+    if (Number.isNaN(groupIdNum)) {
+        return res.status(400).json({ success: false, message: 'Invalid groupId' });
+    }
+
+    try {
+        // Fetch group name
+        const [[groupRow]] = await db.promise().query(
+            'SELECT group_name FROM `groups` WHERE id = ? AND deleted_at IS NULL',
+            [groupIdNum]
+        );
+        const groupName = groupRow ? groupRow.group_name : 'Unknown Group';
+
+        // Fetch all group members with their phone numbers
+        const [memberRows] = await db.promise().query(
+            `SELECT u.id AS userId, u.name, u.phone 
+             FROM user_grouping ug 
+             LEFT JOIN users u ON u.id = ug.user_id 
+             WHERE ug.group_id = ? AND u.deleted_at IS NULL`,
+            [groupIdNum]
+        );
+
+        if (!memberRows || memberRows.length === 0) {
+            return res.status(200).json({ 
+                success: true, 
+                message: 'No members found to notify',
+                notified: 0 
+            });
+        }
+
+        const formattedAmount = new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0,
+        }).format(Number(amountTaken) || 0);
+
+        const typeLabel = auctionType === 'random' ? 'Lucky Draw' : 'Betting Auction';
+
+        let successCount = 0;
+        let failCount = 0;
+
+        // Send SMS to each member
+        for (const member of memberRows) {
+            if (!member.phone) continue;
+
+            try {
+                const isWinner = member.name && member.name.toLowerCase() === winnerName.toLowerCase();
+
+                let message;
+                if (isWinner) {
+                    message = `Congratulations ${member.name}! You have won the ${typeLabel} for group "${groupName}". Amount: ${formattedAmount}. Contact your admin for details. - GDK Chit Fund`;
+                } else {
+                    message = `${typeLabel} completed for group "${groupName}". Winner: ${winnerName}. Your next installment details will be updated soon. - GDK Chit Fund`;
+                }
+
+                await sendSMS(member.phone, message);
+                successCount++;
+            } catch (smsError) {
+                console.error(`[SMS] Failed to notify ${member.name} (${member.phone}):`, smsError.message);
+                failCount++;
+            }
+        }
+
+        console.log(`[Auction Notify] Group ${groupName}: ${successCount} sent, ${failCount} failed out of ${memberRows.length} members`);
+
+        return res.status(200).json({
+            success: true,
+            message: `Notifications sent to ${successCount} members`,
+            notified: successCount,
+            failed: failCount,
+            total: memberRows.length,
+        });
+    } catch (error) {
+        console.error('Error notifying auction members:', error);
+        return res.status(500).json({ success: false, message: 'Failed to send notifications' });
     }
 };

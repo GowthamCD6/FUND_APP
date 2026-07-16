@@ -23,6 +23,7 @@ router.post('/groups/activate', authenticateToken, groupManagement.activateGroup
 router.post('/groups/delete', authenticateToken, groupManagement.deleteGroup);
 router.post('/groups/saveMonthlyDetails', authenticateToken, groupManagement.saveGroupMonthlyDetails);
 router.post('/groups/saveAuctionWinner', authenticateToken, groupManagement.saveAuctionWinner);
+router.post('/groups/notifyAuctionMembers', authenticateToken, groupManagement.notifyAuctionMembers);
 router.get('/groups/getMonthlySnapshot', authenticateToken, groupManagement.getGroupMonthSnapshot);
 router.get('/notifications', authenticateToken, groupManagement.getAdminNotifications);
 

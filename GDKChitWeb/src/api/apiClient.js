@@ -1,8 +1,11 @@
 let API_URL = import.meta.env.VITE_API_URL;
-// Fallback to explicit LAN IP if env is missing or still points to localhost
-if (!API_URL || API_URL.includes('localhost')) {
-  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
-  API_URL = isAndroid ? 'http://10.10.69.232:5000/api' : 'http://10.10.69.232:5000/api';
+if (!API_URL) {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    API_URL = `http://${hostname}:5000/api`;
+  } else {
+    API_URL = 'http://10.150.252.3:5000/api';
+  }
 }
 
 

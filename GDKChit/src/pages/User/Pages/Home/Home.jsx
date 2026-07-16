@@ -836,17 +836,32 @@ const Home = () => {
 
         {/* Insured Savings Card */}
         <View style={styles.insuranceContainer}>
+          {/* Gradient Background */}
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <Defs>
+              <SvgLinearGradient id="insuranceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#C4B0F5" />
+                <Stop offset="50%" stopColor="#D9CEFB" />
+                <Stop offset="100%" stopColor="#EDE6FF" />
+              </SvgLinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#insuranceGrad)" />
+          </Svg>
+
+          {/* Text content area */}
           <View style={styles.insuranceTextContent}>
             <Text style={styles.insuranceTitle}>
               {t('Your Savings.Insured and Protected.')}
             </Text>
             <Text style={styles.insuranceSubtitle}>
-              {t('Certified storage backed by global safety standards')}
+              {t('Certified storage backed by global\nsafety standards')}
             </Text>
             <TouchableOpacity style={styles.insuranceButton} activeOpacity={0.9}>
               <Text style={styles.insuranceButtonText}>{t('Know More')}</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Vault image - bottom right */}
           <Image
             source={require('../../../../assets/UserHomePage/banklocker.png')}
             style={styles.vaultImage}
@@ -860,9 +875,9 @@ const Home = () => {
             {t('Invest like\na pro!')}
           </Text>
           <View style={styles.proTrustRow}>
-            <Icon name="check-circle" size={18} color="#10B981" />
+            <Icon name="check-circle" size={20} color="#10B981" />
             <Text style={styles.proTrustText}>
-              {t('Trusted by hundreds of families')}
+              {t('Trusted by 15 Lakh Indians')}
             </Text>
           </View>
         </View>
@@ -876,6 +891,7 @@ const Home = () => {
           </Text>
         </View>
       </ScrollView>
+
       <Modal
         animationType="slide"
         transparent={false}

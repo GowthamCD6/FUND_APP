@@ -10,8 +10,31 @@ const checkAndInitializeDatabase = require('./src/utils/dbHealthCheck');
 const setupGracefulShutdown = require('./src/utils/gracefulShutdown');
 
 // Initialize WebSocket servers
-const wss = new WebSocket.Server({ server, path: '/api/auction' });
-const chatWss = new WebSocket.Server({ server, path: '/api/chat' });
+const wss = new WebSocket.Server({ noServer: true });
+const chatWss = new WebSocket.Server({ noServer: true });
+
+// Handle WebSocket upgrade routing manually to prevent multi-listener conflicts
+server.on('upgrade', (request, socket, head) => {
+  try {
+    const urlObj = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+    const pathname = urlObj.pathname;
+
+    if (pathname === '/api/auction') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    } else if (pathname === '/api/chat') {
+      chatWss.handleUpgrade(request, socket, head, (ws) => {
+        chatWss.emit('connection', ws, request);
+      });
+    } else {
+      socket.destroy();
+    }
+  } catch (err) {
+    console.error('Error during WebSocket upgrade routing:', err);
+    socket.destroy();
+  }
+});
 
 // Store active auction sessions
 const auctionSessions = new Map();
