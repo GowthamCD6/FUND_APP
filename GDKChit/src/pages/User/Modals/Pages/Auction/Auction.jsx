@@ -10,7 +10,12 @@ import {
   Alert,
   FlatList,
   ActivityIndicator,
+  Modal,
+  Dimensions,
 } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import GroupCard from '../../../../../components/GroupCard/GroupCard';
 import Header from '../../../../../components/HeaderComponent/Header';
@@ -27,6 +32,9 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [userGroups, setUserGroups] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(true);
+  const [auctionResult, setAuctionResult] = useState(null);
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [isAuctionActive, setIsAuctionActive] = useState(false);
 
   useEffect(() => {
     fetchUserGroups();
@@ -114,21 +122,70 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
 
   const handleAuctionComplete = result => {
     console.log('Auction completed:', result);
-    Alert.alert(
-      'Auction Complete!',
-      `Winner: ${
-        result.winner.name
-      }\nAmount: ₹${result.amount.toLocaleString()}`,
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            handleBackFromAuction();
-          },
-        },
-      ],
-    );
+    setAuctionResult(result);
+    setShowResultModal(true);
   };
+
+  const ResultModalContent = () => (
+    <View style={styles.resultModal}>
+      <View style={styles.resultHeader}>
+        <MaterialCommunityIcons 
+          name={auctionResult?.type === 'betting' ? "trophy" : "dice-6"} 
+          size={50} 
+          color="#FFD700" 
+        />
+        <Text style={styles.resultTitle}>
+          {auctionResult?.type === 'betting' ? 'Auction Result' : 'Lucky Winner!'}
+        </Text>
+      </View>
+      
+      {auctionResult?.type === 'betting' ? (
+        <View style={styles.winnerSection}>
+          <View style={styles.winnerAvatar}>
+            <Text style={styles.winnerAvatarText}>{auctionResult?.winner?.avatar}</Text>
+          </View>
+          <Text style={styles.winnerName}>{auctionResult?.winner?.name}</Text>
+          <Text style={styles.winnerBid}>Amount: ₹{auctionResult?.amount?.toLocaleString()}</Text>
+        </View>
+      ) : (
+        <View style={styles.winnerSection}>
+          <View style={styles.winnerAvatar}>
+            <Text style={styles.winnerAvatarText}>{auctionResult?.winner?.avatar}</Text>
+          </View>
+          <Text style={styles.winnerName}>{auctionResult?.winner?.name}</Text>
+          <Text style={styles.diceResult}>Dice Value: {auctionResult?.diceValue}</Text>
+        </View>
+      )}
+
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.cancelButton]}
+          onPress={() => {
+            setShowResultModal(false);
+            handleBackFromAuction();
+          }}
+        >
+          <Text style={styles.cancelButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderResultModal = () => (
+    <Modal
+      visible={showResultModal}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => {
+        setShowResultModal(false);
+        handleBackFromAuction();
+      }}
+    >
+      <View style={styles.modalOverlay}>
+        <ResultModalContent />
+      </View>
+    </Modal>
+  );
 
   const renderGroupSelectHeader = () => (
     <Header 
@@ -191,8 +248,11 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
   const renderAuctionTabs = () => (
     <View style={styles.tabContainer}>
       <TouchableOpacity
-        style={[styles.tab, activeTab === 'betting' && styles.activeTab]}
-        onPress={() => setActiveTab('betting')}
+        style={[styles.tab, activeTab === 'betting' && styles.activeTab, isAuctionActive && styles.disabledTab]}
+        onPress={() => {
+          if (!isAuctionActive) setActiveTab('betting');
+        }}
+        disabled={isAuctionActive}
       >
         <MaterialCommunityIcons
           name="gavel"
@@ -210,8 +270,11 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tab, activeTab === 'random' && styles.activeTab]}
-        onPress={() => setActiveTab('random')}
+        style={[styles.tab, activeTab === 'random' && styles.activeTab, isAuctionActive && styles.disabledTab]}
+        onPress={() => {
+          if (!isAuctionActive) setActiveTab('random');
+        }}
+        disabled={isAuctionActive}
       >
         <MaterialCommunityIcons
           name="dice-5"
@@ -272,15 +335,18 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
             selectedGroup={selectedGroup}
             selectedMembers={participants}
             onAuctionComplete={handleAuctionComplete}
+            onAuctionStatusChange={setIsAuctionActive}
           />
         ) : (
           <RandomAuction
             participants={participants}
             selectedGroup={selectedGroup}
             onAuctionComplete={handleAuctionComplete}
+            onAuctionStatusChange={setIsAuctionActive}
           />
         )}
       </View>
+      {renderResultModal()}
     </View>
   );
 };
@@ -356,9 +422,101 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#6B46C1',
   },
+  disabledTab: {
+    opacity: 0.5,
+  },
   contentContainer: {
     flex: 1,
     paddingTop: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  resultModal: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
+    width: width * 0.9,
+    maxHeight: height * 0.8,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  resultHeader: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  resultTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginTop: 10,
+  },
+  winnerSection: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  winnerAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#6B46C1",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  winnerAvatarText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  winnerName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 4,
+  },
+  winnerBid: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#10B981",
+  },
+  diceResult: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#6B46C1",
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 12,
+    width: "100%",
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  actionButton: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B7280",
   },
 });
 

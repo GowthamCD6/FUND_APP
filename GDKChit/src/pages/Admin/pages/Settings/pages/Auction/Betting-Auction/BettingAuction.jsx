@@ -68,23 +68,8 @@ const AdminAuctionMonitor = ({
     };
   }, []);
 
-  // Synchronized timer effect
-  useEffect(() => {
-    if (!isAuctionActive || !auctionStartTime) return;
-
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - auctionStartTime) / 1000);
-      const remaining = Math.max(0, auctionDuration - elapsed);
-      
-      setTimeRemaining(remaining);
-
-      if (remaining === 0) {
-        endAuction();
-      }
-    }, 100); // Update every 100ms for smooth timer
-
-    return () => clearInterval(interval);
-  }, [isAuctionActive, auctionStartTime, auctionDuration]);
+  // We rely entirely on the WebSocket time_update event from the server for time sync
+  // to prevent timer jitter and scattering.
 
   // WebSocket event handlers
   const handleAuctionStartedEvent = (data) => {
@@ -93,8 +78,47 @@ const AdminAuctionMonitor = ({
     setAuctionDuration(data.duration || 300);
     setIsAuctionActive(true);
     setAuctionStarted(true);
-    setAuctionHistory([]);
-    setActiveBidders([]);
+
+    if (Array.isArray(data.bids)) {
+      const history = data.bids.map(b => ({
+        userId: b.userId,
+        user: b.userName,
+        bid: b.amount,
+        time: new Date(b.timestamp).toLocaleTimeString(),
+      }));
+      setAuctionHistory(history);
+
+      // Update participants with their latest bids
+      setParticipants(prev => {
+        let updated = [...prev];
+        data.bids.forEach(b => {
+          const bidderIndex = updated.findIndex(p => p.id === b.userId);
+          if (bidderIndex >= 0) {
+            updated[bidderIndex] = {
+              ...updated[bidderIndex],
+              bid: b.amount,
+              bidTime: b.timestamp,
+            };
+          }
+        });
+        return updated;
+      });
+
+      // Update active bidders
+      const uniqueBidders = new Map();
+      data.bids.forEach(b => {
+        uniqueBidders.set(b.userId, {
+          userId: b.userId,
+          userName: b.userName,
+          amount: b.amount,
+          timestamp: b.timestamp,
+        });
+      });
+      setActiveBidders(Array.from(uniqueBidders.values()));
+    } else {
+      setAuctionHistory([]);
+      setActiveBidders([]);
+    }
   };
 
   const handleBidPlacedEvent = (data) => {

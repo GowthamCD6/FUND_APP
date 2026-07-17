@@ -14,7 +14,14 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuctionWebSocketService from '../../../../../../services/AuctionWebSocketService';
 
-const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = [], onAuctionComplete }) => {
+const BettingAuction = ({
+  participants,
+  setParticipants,
+  selectedGroup,
+  selectedMembers,
+  onAuctionComplete,
+  onAuctionStatusChange,
+}) => {
   // All useState hooks MUST come first, before any other code
   const [bidAmount, setBidAmount] = useState('');
   const [timeRemaining, setTimeRemaining] = useState(300);
@@ -99,6 +106,7 @@ const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = []
   // WebSocket event handlers
   const handleAuctionStartedEvent = (data) => {
     setAuctionStatus('active');
+    if (onAuctionStatusChange) onAuctionStatusChange(true);
     setTimeRemaining(data.remainingTime !== undefined ? data.remainingTime : (data.duration || 300));
     
     if (Array.isArray(data.bids)) {
@@ -147,6 +155,7 @@ const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = []
 
   const handleAuctionEndedEvent = (data) => {
     setAuctionStatus('ended');
+    if (onAuctionStatusChange) onAuctionStatusChange(false);
     const { winner: winnerData } = data;
     if (winnerData) {
       const winnerObj = {
@@ -357,7 +366,7 @@ const BettingAuction = ({ participants = [], selectedGroup, selectedMembers = []
               </View>
             </View>
           )}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => item.id ? item.id.toString() + '_' + index : index.toString()}
           scrollEnabled={false}
           nestedScrollEnabled={true}
         />

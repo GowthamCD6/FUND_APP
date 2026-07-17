@@ -28,8 +28,10 @@ export const AuthProvider = ({ children }) => {
         // Try to get user profile
         const response = await ApiService.getProfile();
         if (response.success) {
-          setUser(response.data.user);
+          const user = response.data.user;
+          setUser(user);
           setIsAuthenticated(true);
+          await AsyncStorage.setItem('userId', user.id ? String(user.id) : '');
         } else {
           // Token might be invalid, clear it
           await ApiService.clearTokens();
@@ -58,14 +60,16 @@ export const AuthProvider = ({ children }) => {
       
       if (response.success) {
         const user = response.data.user;
-        setUser(user);
-        setIsAuthenticated(true);
 
         // Save user details to AsyncStorage
         await AsyncStorage.setItem('userName', user.username ? String(user.username) : '');
         await AsyncStorage.setItem('userPhone', user.phone ? String(user.phone) : '');
         await AsyncStorage.setItem('userRole', user.role ? String(user.role) : 'User');
+        await AsyncStorage.setItem('userId', user.id ? String(user.id) : '');
         await AsyncStorage.setItem('userLoginMethod', 'jwt');
+
+        setUser(user);
+        setIsAuthenticated(true);
 
         return response;
       } else {

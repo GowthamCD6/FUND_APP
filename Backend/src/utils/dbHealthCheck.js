@@ -64,6 +64,8 @@ async function checkAndInitializeDatabase() {
       'group_settings',
       'payment_transactions',
       'audit_logs',
+      'group_auctions',
+      'group_auction_participants',
     ];
 
     const existingTables = new Set(tables.map(t => t.TABLE_NAME));

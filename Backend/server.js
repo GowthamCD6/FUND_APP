@@ -75,31 +75,60 @@ wss.on('connection', (ws, req) => {
       data: { clientId, userType }
     }));
 
-    // Send active auction if one exists for the user's groups
+    // Check for active or setup auctions for this user in the database on connection
     db.promise().query(
-      'SELECT group_id FROM user_grouping WHERE user_id = ?',
+      `SELECT ga.id as auction_id, ga.group_id, ga.auction_type, ga.initial_amount, ga.duration, ga.status, g.group_name, gap.joined_status
+       FROM group_auctions ga
+       JOIN \`groups\` g ON ga.group_id = g.id
+       JOIN group_auction_participants gap ON ga.id = gap.auction_id
+       WHERE gap.user_id = ? AND ga.status IN ('setup', 'active')`,
       [userId]
-    ).then(([rows]) => {
-      rows.forEach(row => {
-        const auctionId = `auction-${row.group_id}`;
-        const activeAuction = auctionSessions.get(auctionId);
-        if (activeAuction && ws.readyState === WebSocket.OPEN) {
-          const elapsed = Math.floor((Date.now() - activeAuction.startTime) / 1000);
-          const remainingTime = Math.max(0, activeAuction.duration - elapsed);
-          ws.send(JSON.stringify({
-            type: 'auction_started',
-            data: {
-              groupId: activeAuction.groupId,
-              initialAmount: activeAuction.initialAmount,
-              duration: activeAuction.duration,
-              startTime: activeAuction.startTime,
-              remainingTime,
-              bids: activeAuction.bids,
+    ).then(async ([rows]) => {
+      for (const row of rows) {
+        if (row.status === 'setup' && row.joined_status === 'pending') {
+          // User has a pending auction invitation, fetch participant IDs and alert them
+          try {
+            const [parts] = await db.promise().query(
+              'SELECT user_id FROM group_auction_participants WHERE auction_id = ?',
+              [row.auction_id]
+            );
+            const participantIds = parts.map(p => p.user_id);
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'auction_created_alert',
+                data: {
+                  groupId: row.group_id,
+                  groupName: row.group_name,
+                  auctionType: row.auction_type,
+                  participantIds
+                }
+              }));
             }
-          }));
+          } catch (err) {
+            console.error('Error fetching participant IDs for connect alert:', err);
+          }
+        } else if (row.status === 'active') {
+          // Active auction: check if we have it in-memory
+          const auctionId = `auction-${row.group_id}`;
+          const activeAuction = auctionSessions.get(auctionId);
+          if (activeAuction && ws.readyState === WebSocket.OPEN) {
+            const elapsed = Math.floor((Date.now() - activeAuction.startTime) / 1000);
+            const remainingTime = Math.max(0, activeAuction.duration - elapsed);
+            ws.send(JSON.stringify({
+              type: 'auction_started',
+              data: {
+                groupId: activeAuction.groupId,
+                initialAmount: activeAuction.initialAmount,
+                duration: activeAuction.duration,
+                startTime: activeAuction.startTime,
+                remainingTime,
+                bids: activeAuction.bids,
+              }
+            }));
+          }
         }
-      });
-    }).catch(err => console.error('Error fetching user groups on connection:', err));
+      }
+    }).catch(err => console.error('Error fetching active/setup auctions on connection:', err));
 
     // Handle incoming messages
     ws.on('message', (message) => {
@@ -359,7 +388,7 @@ chatWss.on('connection', (ws, req) => {
 });
 
 // Handle auction messages
-function handleAuctionMessage(type, data, clientId, userType) {
+async function handleAuctionMessage(type, data, clientId, userType) {
   console.log(`📨 [${userType}] ${type}:`, data);
 
   switch (type) {
@@ -400,12 +429,39 @@ function handleAuctionMessage(type, data, clientId, userType) {
     case 'setup_auction':
       if (userType === 'admin') {
         const { groupId, type: auctionType, participantIds } = data;
-        // Broadcast setup alert to selected participants
-        db.promise().query(
-          'SELECT group_name FROM `groups` WHERE id = ?',
-          [groupId]
-        ).then(([rows]) => {
+        try {
+          // A. Mark any previous setup/active auctions for this group as ended
+          await db.promise().query(
+            "UPDATE group_auctions SET status = 'ended' WHERE group_id = ? AND status IN ('setup', 'active')",
+            [groupId]
+          );
+
+          // B. Create a new auction entry with status 'setup'
+          const [result] = await db.promise().query(
+            "INSERT INTO group_auctions (group_id, auction_type, initial_amount, duration, status) VALUES (?, ?, ?, ?, ?)",
+            [groupId, auctionType, 0.00, 300, 'setup']
+          );
+          const auctionId = result.insertId;
+
+          // C. Add the participants to the auction
+          if (participantIds && participantIds.length > 0) {
+            const insertPromises = participantIds.map(pid => {
+              return db.promise().query(
+                "INSERT INTO group_auction_participants (auction_id, user_id, joined_status) VALUES (?, ?, 'pending')",
+                [auctionId, pid]
+              );
+            });
+            await Promise.all(insertPromises);
+          }
+
+          // D. Fetch group name for the broadcast notification
+          const [rows] = await db.promise().query(
+            'SELECT group_name FROM `groups` WHERE id = ?',
+            [groupId]
+          );
           const groupName = rows[0]?.group_name || 'Group';
+
+          // E. Broadcast setup alert to selected participants
           clientSessions.forEach((session, cid) => {
             const match = participantIds && participantIds.map(pid => pid.toString()).includes(session.userId?.toString());
             if (match && session.ws.readyState === WebSocket.OPEN) {
@@ -420,13 +476,24 @@ function handleAuctionMessage(type, data, clientId, userType) {
               }));
             }
           });
-        }).catch(err => console.error('Error fetching group name for alert:', err));
+        } catch (err) {
+          console.error('Error setting up auction in DB:', err);
+        }
       }
       break;
     
     case 'roll_dice':
       if (userType === 'admin') {
         const { groupId, duration, finalValue, winner } = data;
+        try {
+          // Update state in database
+          db.promise().query(
+            "UPDATE group_auctions SET status = 'active', duration = ? WHERE group_id = ? AND status = 'setup'",
+            [Math.floor(duration / 1000), groupId]
+          );
+        } catch (err) {
+          console.error('Error updating auction status to active (roll_dice) in DB:', err);
+        }
         // Broadcast dice rolling to all users
         clientSessions.forEach((session, cid) => {
           if (session.ws.readyState === WebSocket.OPEN) {
@@ -447,18 +514,37 @@ function handleAuctionMessage(type, data, clientId, userType) {
     case 'user_joined_auction':
       if (userType === 'user' || userType === 'User') {
         const { groupId, userId } = data;
-        // Broadcast to admins that a user has joined
-        clientSessions.forEach((session, cid) => {
-          if ((session.userType === 'admin' || session.userType === 'Admin') && session.ws.readyState === WebSocket.OPEN) {
-            session.ws.send(JSON.stringify({
-              type: 'user_joined_auction',
-              data: {
-                groupId,
-                userId
-              }
-            }));
+        try {
+          // A. Find the active/setup auction for this group
+          const [auctions] = await db.promise().query(
+            "SELECT id FROM group_auctions WHERE group_id = ? AND status IN ('setup', 'active') LIMIT 1",
+            [groupId]
+          );
+
+          if (auctions.length > 0) {
+            const auctionId = auctions[0].id;
+            // B. Update participant status to 'joined'
+            await db.promise().query(
+              "UPDATE group_auction_participants SET joined_status = 'joined', joined_at = NOW() WHERE auction_id = ? AND user_id = ?",
+              [auctionId, userId]
+            );
           }
-        });
+
+          // C. Broadcast to admins that a user has joined
+          clientSessions.forEach((session, cid) => {
+            if ((session.userType === 'admin' || session.userType === 'Admin') && session.ws.readyState === WebSocket.OPEN) {
+              session.ws.send(JSON.stringify({
+                type: 'user_joined_auction',
+                data: {
+                  groupId,
+                  userId
+                }
+              }));
+            }
+          });
+        } catch (err) {
+          console.error('Error updating user join status in DB:', err);
+        }
       }
       break;
 
@@ -484,6 +570,12 @@ function startAuction(data, adminClientId) {
   };
 
   auctionSessions.set(auctionId, auction);
+
+  // Update state in database
+  db.promise().query(
+    "UPDATE group_auctions SET status = 'active', initial_amount = ?, duration = ? WHERE group_id = ? AND status = 'setup'",
+    [initialAmount, duration, groupId]
+  ).catch(err => console.error('Error updating auction status to active in DB:', err));
 
   // Broadcast to all clients
   broadcastToGroup(groupId, {
@@ -590,6 +682,11 @@ function pauseAuction(groupId, adminClientId) {
     clearInterval(auction.timerInterval);
     auction.status = 'paused';
     
+    db.promise().query(
+      "UPDATE group_auctions SET status = 'paused' WHERE group_id = ? AND status = 'active'",
+      [groupId]
+    ).catch(err => console.error('Error pausing auction in DB:', err));
+
     broadcastToGroup(groupId, {
       type: 'auction_paused',
       data: { groupId }
@@ -604,6 +701,11 @@ function resumeAuction(groupId, adminClientId) {
   if (auction && auction.status === 'paused') {
     auction.status = 'active';
     auction.startTime = Date.now() - (auction.duration - auction.remainingTime) * 1000;
+
+    db.promise().query(
+      "UPDATE group_auctions SET status = 'active' WHERE group_id = ? AND status = 'paused'",
+      [groupId]
+    ).catch(err => console.error('Error resuming auction in DB:', err));
 
     const timerInterval = setInterval(() => {
       const auction = auctionSessions.get(auctionId);
@@ -647,6 +749,11 @@ function endAuction(groupId, adminClientId) {
 
   auction.status = 'ended';
 
+  db.promise().query(
+    "UPDATE group_auctions SET status = 'ended' WHERE group_id = ? AND status IN ('active', 'paused')",
+    [groupId]
+  ).catch(err => console.error('Error ending auction in DB:', err));
+
   // Find winner (lowest bid)
   let winner = null;
   if (auction.bids.length > 0) {
@@ -687,6 +794,11 @@ function resetAuction(groupId, adminClientId) {
     clearInterval(auction.timerInterval);
   }
 
+  db.promise().query(
+    "UPDATE group_auctions SET status = 'ended' WHERE group_id = ? AND status IN ('setup', 'active', 'paused')",
+    [groupId]
+  ).catch(err => console.error('Error resetting auction in DB:', err));
+
   auctionSessions.delete(auctionId);
 
   broadcastToGroup(groupId, {
@@ -709,20 +821,42 @@ function broadcastToGroup(groupId, message) {
 // Save auction winner to database
 async function saveAuctionWinnerToDb(groupId, winner) {
   try {
+    // 1. Fetch phone number from the database for the winner
+    const [userRows] = await db.promise().query(
+      'SELECT phone FROM users WHERE id = ?',
+      [winner.userId]
+    );
+    const winnerPhone = userRows[0]?.phone || null;
+
+    // 2. Determine the current collection period (e.g. YYYY-MM-01)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const collectionPeriod = `${year}-${month}-01`;
+    const auctionDate = now.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    // 3. Insert or update the winner details
     const query = `
       INSERT INTO group_auction_winners 
-      (group_id, winner_user_id, winner_name, amount, month, year, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, NOW())
+      (group_id, collection_period, winner_user_id, winner_name, winner_member_phone, amount_taken, auction_date, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      ON DUPLICATE KEY UPDATE 
+        winner_user_id = VALUES(winner_user_id),
+        winner_name = VALUES(winner_name),
+        winner_member_phone = VALUES(winner_member_phone),
+        amount_taken = VALUES(amount_taken),
+        auction_date = VALUES(auction_date),
+        updated_at = NOW()
     `;
     
-    const date = new Date();
     await db.promise().query(query, [
       groupId,
+      collectionPeriod,
       winner.userId,
       winner.userName,
+      winnerPhone,
       winner.amount,
-      date.getMonth() + 1,
-      date.getFullYear(),
+      auctionDate,
     ]);
 
     console.log(`💾 Auction winner saved to database: ${winner.userName}`);

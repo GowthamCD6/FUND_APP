@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext';
 const AuctionContext = createContext(null);
 
 export const AuctionProvider = ({ children }) => {
-  const { userToken } = useAuth(); // Assume userToken indicates login status
+  const { isAuthenticated } = useAuth(); // Assume isAuthenticated indicates login status
   const [activeAuctionAlert, setActiveAuctionAlert] = useState(null);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export const AuctionProvider = ({ children }) => {
       }
     };
 
-    if (userToken) {
+    if (isAuthenticated) {
       initWS();
     }
 
@@ -41,7 +41,7 @@ export const AuctionProvider = ({ children }) => {
       if (unsubscribeAlert) unsubscribeAlert();
       // Notice: we might not want to disconnect globally on unmount since this is App level
     };
-  }, [userToken]);
+  }, [isAuthenticated]);
 
   const clearAuctionAlert = () => {
     setActiveAuctionAlert(null);

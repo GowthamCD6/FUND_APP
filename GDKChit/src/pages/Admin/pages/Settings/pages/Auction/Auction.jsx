@@ -20,6 +20,7 @@ import GroupCard from '../../../../../../components/GroupCard/GroupCard';
 import ApiService from '../../../../../../services/ApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuctionWebSocketService from '../../../../../../services/AuctionWebSocketService';
+import { useAuth } from '../../../../../../utils/AuthContext';
 import BettingAuction from './Betting-Auction/BettingAuction';
 import RandomAuction from './Random-Auction/RandomAuction';
 import MemberSelectingModal from './MemberSelecting/MemberSelectingModal';
@@ -27,6 +28,7 @@ import MemberSelectingModal from './MemberSelecting/MemberSelectingModal';
 const { width, height } = Dimensions.get('window');
 
 const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
+  const { isAuthenticated } = useAuth();
   const stackNavigation = useNavigation();
   const navigation = propNavigation || stackNavigation;
   
@@ -64,12 +66,15 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
         console.error('Failed to connect WebSocket on admin Auction:', error);
       }
     };
-    initWebSocket();
+
+    if (isAuthenticated) {
+      initWebSocket();
+    }
 
     return () => {
       // Don't disconnect here because child components might still use it
     };
-  }, []);
+  }, [isAuthenticated]);
 
   // Fetch groups from backend
   const fetchGroups = async () => {
@@ -152,7 +157,9 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
         year: new Date().getFullYear(),
         chitWinnerName: winner.name,
         chitWinnerMemberId: winner.phone || '',
-        amountTaken: (winner.bid !== undefined && winner.bid > 0) ? winner.bid : selectedGroup.groupAmount,
+        amountTaken: (winner.bid !== undefined && winner.bid > 0)
+          ? winner.bid
+          : (auctionResult?.amount !== undefined ? auctionResult.amount : selectedGroup.groupAmount),
         datePicked: new Date().toISOString(),
         winnerUserId: winner.id,
       };
@@ -399,7 +406,6 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
 
   const renderAuctionScreen = () => (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {renderAuctionInfo()}
       {activeTab === 'betting' ? (
         <BettingAuction
           participants={participants}

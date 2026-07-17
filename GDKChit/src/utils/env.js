@@ -1,5 +1,5 @@
 const Config = {
-  // We are using adb reverse tcp:5000 tcp:5000 so localhost works directly on the physical device via USB!
-  API_URL: 'http://10.10.68.255:5000/api',
+  // We are using the mobile hotspot host gateway IP so all connected devices can route to the backend!
+  API_URL: 'http://192.168.137.1:5000/api',
 };
 export const API_URL = Config.API_URL;

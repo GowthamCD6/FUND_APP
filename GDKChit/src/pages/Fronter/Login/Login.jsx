@@ -103,6 +103,7 @@ const Login = () => {
                 await AsyncStorage.setItem("userPhone", String(user.phone));
                 await AsyncStorage.setItem("userName", String(user.username));
                 await AsyncStorage.setItem("userRole", String(user.role));
+                await AsyncStorage.setItem("userId", String(user.id));
                 
                 // Navigate to home page based on role
                 navigation.reset({

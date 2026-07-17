@@ -8,7 +8,7 @@ const token = jwt.sign(
   { expiresIn: '1d' }
 );
 
-const url = `ws://10.150.252.3:5000/api/auction?token=${token}&userId=1&userType=admin`;
+const url = `ws://192.168.137.1:5000/api/auction?token=${token}&userId=1&userType=admin`;
 console.log('Connecting to LAN IP:', url);
 
 const ws = new WebSocket(url);
