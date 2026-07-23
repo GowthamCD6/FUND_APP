@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const { passwordEncryptAES } = require('../../utils/decryptAES');
 const db = require('../../config/db');
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../../middleware/auth');
+const fs = require('fs');
+const path = require('path');
 
 // User Registration
 exports.register = async (req, res) => {
@@ -393,8 +395,56 @@ exports.updateProfile = async (req, res) => {
     }
 
     if (typeof userImage === 'string') {
+      const trimmedImage = userImage.trim();
+      let imagePathToSave = null;
+      if (trimmedImage) {
+        if (trimmedImage.startsWith('data:image/')) {
+          try {
+            // Process Base64 string
+            const matches = trimmedImage.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+            if (matches && matches.length === 3) {
+              const extension = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+              const base64Data = matches[2];
+              const buffer = Buffer.from(base64Data, 'base64');
+              const fileName = `user_${userId}_${Date.now()}.${extension}`;
+              const uploadDir = path.join(__dirname, '../../../uploads/profiles');
+              
+              if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+              }
+              
+              const filePath = path.join(uploadDir, fileName);
+              fs.writeFileSync(filePath, buffer);
+              
+              imagePathToSave = `/uploads/profiles/${fileName}`;
+
+              // Attempt to delete old image file to save space
+              try {
+                const [oldProfile] = await db.promise().query(
+                  'SELECT user_image FROM user_profiles WHERE user_id = ? AND deleted_at IS NULL LIMIT 1',
+                  [userId]
+                );
+                if (oldProfile.length > 0 && oldProfile[0].user_image) {
+                  const oldImagePath = path.join(__dirname, '../../..', oldProfile[0].user_image);
+                  if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                  }
+                }
+              } catch (delErr) {
+                console.error('Failed to delete old image:', delErr);
+              }
+
+            }
+          } catch (e) {
+            console.error('Failed to parse or save base64 image:', e);
+          }
+        } else {
+          imagePathToSave = trimmedImage;
+        }
+      }
+      
       profileUpdates.push('user_image = ?');
-      profileValues.push(userImage.trim() || null);
+      profileValues.push(imagePathToSave);
     }
 
     if (userUpdates.length === 0 && profileUpdates.length === 0) {

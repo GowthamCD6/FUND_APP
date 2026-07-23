@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInput, Alert, Modal, FlatList, BackHandler, Image, RefreshControl } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { launchImageLibrary } from 'react-native-image-picker';
+import ImagePicker from 'react-native-image-crop-picker';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
 import { useLanguage } from '../../../../../../utils/LanguageContext';
+import { API_URL } from '../../../../../../utils/env';
 
 const SOUTH_INDIAN_STATES = [
   'Tamil Nadu',
@@ -132,23 +133,25 @@ const AccountD = ({ onBack }) => {
 
 	const handlePickProfileImage = async () => {
 		try {
-			const result = await launchImageLibrary({
+			const image = await ImagePicker.openPicker({
+				width: 400,
+				height: 400,
+				cropping: true,
+				cropperCircleOverlay: true,
 				mediaType: 'photo',
-				selectionLimit: 1,
-				quality: 0.8,
+				includeBase64: true,
+				compressImageQuality: 0.8,
 			});
 
-			if (result.didCancel || !result.assets || result.assets.length === 0) {
-				return;
-			}
-
-			const selectedImage = result.assets[0]?.uri || '';
-			if (selectedImage) {
-				handleInputChange('userImage', selectedImage);
+			if (image && image.data) {
+				const base64Image = `data:${image.mime};base64,${image.data}`;
+				handleInputChange('userImage', base64Image);
 			}
 		} catch (error) {
-			console.error('Image picker error:', error);
-			Alert.alert('Error', 'Unable to pick image from gallery.', [{ text: 'OK' }]);
+			if (error.message !== 'User cancelled image selection') {
+				console.error('Image picker error:', error);
+				Alert.alert('Error', 'Unable to pick and crop image from gallery.', [{ text: 'OK' }]);
+			}
 		}
 	};
 
@@ -360,7 +363,14 @@ const AccountD = ({ onBack }) => {
 
 					<View style={styles.imagePreviewContainer}>
 						{formData.userImage ? (
-							<Image source={{ uri: formData.userImage }} style={styles.imagePreview} />
+							<Image 
+								source={{ 
+									uri: formData.userImage.startsWith('http') || formData.userImage.startsWith('data:') 
+										? formData.userImage 
+										: `${API_URL.replace(/\/api$/, '')}${formData.userImage}` 
+								}} 
+								style={styles.imagePreview} 
+							/>
 						) : (
 							<View style={styles.imagePlaceholder}>
 								<MaterialCommunityIcons name="account" size={34} color="#FFFFFF" />
