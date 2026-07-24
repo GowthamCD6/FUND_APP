@@ -5,10 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
-  SafeAreaView,
   Modal,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import GroupCardInfo from './GroupCardInfo/GroupCardInfo';
 import GroupCard from '../../../../components/GroupCard/GroupCard';

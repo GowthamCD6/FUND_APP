@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from './UserTabsty';
 
 // Import actual page components
@@ -18,11 +18,25 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import MoreModal from '../../../pages/User/Modals/More';
 import AdminTab, { ADMIN_PHONE, ADMIN_PASSWORD } from '../ATab/AdminTab';
 
-const withSafe = (Component, bgColor = '#ffffff') => {
-  return (props) => (
-    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }} edges={['top', 'left', 'right']}>
-      <Component {...props} />
-    </SafeAreaView>
+const withSafe = (Component) => {
+  return (props) => {
+    const insets = useSafeAreaInsets();
+    const bottomTabHeight = Platform.OS === 'ios' ? 70 + insets.bottom : 60 + Math.max(insets.bottom, 10);
+    return (
+      <View style={{ flex: 1, paddingBottom: bottomTabHeight }}>
+        <Component {...props} />
+      </View>
+    );
+  };
+};
+
+const HomeWithSafe = (props) => {
+  const insets = useSafeAreaInsets();
+  const bottomTabHeight = Platform.OS === 'ios' ? 70 + insets.bottom : 60 + Math.max(insets.bottom, 10);
+  return (
+    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingBottom: bottomTabHeight }}>
+      <Home {...props} />
+    </View>
   );
 };
 
@@ -51,6 +65,7 @@ const CustomTabBarButton = ({ children, onPress }) => (
 
 
 const UserTabs = () => {
+  const insets = useSafeAreaInsets();
   const [showMoreModal, setShowMoreModal] = useState(false);
   const [preselectedGroup, setPreselectedGroup] = useState(null);
 
@@ -65,14 +80,20 @@ const UserTabs = () => {
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
-          tabBarStyle: styles.tabBar,
+          tabBarStyle: [
+            styles.tabBar,
+            {
+              height: Platform.OS === 'ios' ? 70 + insets.bottom : 60 + Math.max(insets.bottom, 10),
+              paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 15) : Math.max(insets.bottom, 6),
+            },
+          ],
           tabBarHideOnKeyboard: true,
         }}
       >
         {/* Home Tab */}
         <Tab.Screen
           name="Home"
-          component={Home}
+          component={HomeWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>

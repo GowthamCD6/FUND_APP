@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   Platform,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   StatusBar,
   Alert,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../components/HeaderComponent/Header';
 import AccountD from './Page/UserAccountDetails/AccountDetails';
