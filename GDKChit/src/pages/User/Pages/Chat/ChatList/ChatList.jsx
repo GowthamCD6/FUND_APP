@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { launchCamera } from 'react-native-image-picker';
 import styles from './ChatListStyles';
 import ApiService from '../../../../../services/ApiService';
 import ChatScreen from '../ChatScreen/ChatScreen';
@@ -188,6 +189,8 @@ const ChatList = ({ navigation }) => {
       filtered = filtered.filter(chat => chat.unread > 0);
     } else if (filter === 'groups') {
       filtered = filtered.filter(chat => chat.isGroup);
+    } else if (filter === 'personal') {
+      filtered = filtered.filter(chat => !chat.isGroup);
     }
 
     // Apply search query
@@ -632,6 +635,37 @@ const ChatList = ({ navigation }) => {
     </View>
   );
 
+  const renderSkeletonList = () => (
+    <View style={{ paddingVertical: 8 }}>
+      {[1, 2, 3, 4, 5, 6].map((key) => (
+        <View 
+          key={key} 
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            backgroundColor: '#FFFFFF',
+            marginHorizontal: 12,
+            marginVertical: 4,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: '#F3F4F6',
+          }}
+        >
+          <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: '#E5E7EB', marginRight: 12 }} />
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ width: 140, height: 14, borderRadius: 7, backgroundColor: '#E5E7EB' }} />
+              <View style={{ width: 45, height: 10, borderRadius: 5, backgroundColor: '#F3F4F6' }} />
+            </View>
+            <View style={{ width: '75%', height: 12, borderRadius: 6, backgroundColor: '#F3F4F6' }} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+
   // If a chat is open, show ChatScreen instead of chat list
   if (openChat) {
     return (
@@ -671,13 +705,27 @@ const ChatList = ({ navigation }) => {
               style={styles.headerIconButton}
               onPress={toggleSearchActive}
             >
-              <MaterialCommunityIcons name="magnify" size={24} color="#6B46C1" />
+              <MaterialCommunityIcons name="magnify" size={24} color="#1F2937" />
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.headerIconButton, styles.headerIconButtonPrimary]}
+              style={styles.headerIconButton}
+              onPress={() => {
+                const options = { mediaType: 'photo', quality: 0.8, saveToPhotos: true };
+                launchCamera(options, (response) => {
+                  if (response.didCancel) return;
+                  if (response.errorCode) {
+                    Alert.alert('Camera', 'Could not open camera');
+                  }
+                });
+              }}
+            >
+              <MaterialCommunityIcons name="camera-outline" size={24} color="#1F2937" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerIconButton}
               onPress={toggleHeaderMenu}
             >
-              <MaterialCommunityIcons name="dots-vertical" size={24} color="#FFFFFF" />
+              <MaterialCommunityIcons name="dots-vertical" size={24} color="#1F2937" />
             </TouchableOpacity>
           </View>
         </View>
@@ -708,7 +756,7 @@ const ChatList = ({ navigation }) => {
           style={styles.filterTabsContainer}
           contentContainerStyle={styles.filterTabsContent}
         >
-          {['all', 'unread', 'groups', ...(archivedChats.length > 0 ? ['archived'] : [])].map((filter) => (
+          {['all', 'personal', 'groups', 'unread', ...(archivedChats.length > 0 ? ['archived'] : [])].map((filter) => (
             <TouchableOpacity
               key={filter}
               style={[
@@ -732,19 +780,8 @@ const ChatList = ({ navigation }) => {
 
       {/* Chats List */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6B46C1" />
-          <Text style={styles.loadingText}>Loading conversations...</Text>
-        </View>
+        renderSkeletonList()
       ) : filteredChats.length > 0 || archivedChats.length > 0 ? (
-        <>
-          <View style={styles.recentLabelContainer}>
-            <View style={styles.recentLabelLine} />
-            <Text style={styles.recentLabel}>
-              {activeFilter === 'archived' ? 'ARCHIVED CHATS' : 'RECENT'}
-            </Text>
-            <View style={styles.recentLabelLine} />
-          </View>
           <FlatList
             data={filteredChats}
             renderItem={renderChat}
@@ -783,7 +820,6 @@ const ChatList = ({ navigation }) => {
             }
             scrollIndicatorInsets={{ right: 1 }}
           />
-        </>
       ) : (
         <View style={{ flex: 1 }}>
           {renderEmptyState()}

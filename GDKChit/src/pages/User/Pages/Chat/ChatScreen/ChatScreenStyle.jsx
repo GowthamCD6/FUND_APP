@@ -140,69 +140,81 @@ const styles = StyleSheet.create({
   messageContainer: {
     flexDirection: 'row',
     marginVertical: 6,
-    alignItems: 'flex-end',
+    width: '100%',
   },
   userMessageContainer: {
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-end',
   },
   otherMessageContainer: {
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
 
   // Avatar Styles
   avatarContainer: {
-    marginRight: 12,
+    marginRight: 10,
     marginBottom: 4,
   },
   avatarPlaceholder: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#DCC9F0',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#E9D5FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarEmoji: {
-    fontSize: 18,
+    fontSize: 16,
   },
   spacer: {
-    width: 38,
+    width: 34,
   },
 
-  // Message Bubble Styles - 100% Pixel Perfect
+  // Message Bubble Styles
   messageBubble: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   userBubble: {
     backgroundColor: '#7C3AED',
-    borderBottomLeftRadius: 4,
-    borderBottomRightRadius: 20,
-  },
-  otherBubble: {
-    backgroundColor: '#E8D5C4',
-    borderBottomLeftRadius: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 16,
     borderBottomRightRadius: 4,
   },
+  otherBubble: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 16,
+  },
   groupedUserBubble: {
-    borderTopRightRadius: 4,
+    borderTopRightRadius: 16,
     borderBottomRightRadius: 4,
   },
   groupedOtherBubble: {
-    borderTopLeftRadius: 4,
+    borderTopLeftRadius: 16,
     borderBottomLeftRadius: 4,
   },
   messageText: {
-    fontSize: 16,
-    color: '#6B5344',
+    fontSize: 15,
+    color: '#1F2937',
     lineHeight: 22,
     fontWeight: '400',
-    textAlign: 'right',
+    textAlign: 'left',
   },
   userMessageText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 22,
     textAlign: 'left',
   },
   messageFooter: {
@@ -210,17 +222,140 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     marginTop: 4,
-    gap: 3,
+    gap: 4,
   },
   timestamp: {
-    fontSize: 12,
-    color: '#9B8B7E',
-    marginTop: 2,
-    fontWeight: '400',
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
   userTimestamp: {
-    color: '#D8BFD8',
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+
+  // Image & Rich Attachment Styles
+  imageCardContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    marginVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  imageMessage: {
+    width: 275,
+    height: 275,
+    borderRadius: 16,
+  },
+  imageGlassOverlay: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  imageTimestampText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  attachmentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 12,
+    minWidth: 250,
+    maxWidth: 310,
+  },
+  attachmentUserCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  attachmentOtherCard: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  attachmentIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  attachmentTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  attachmentSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  
+  // WhatsApp-Style Contact Card
+  contactCard: {
+    borderRadius: 14,
+    minWidth: 250,
+    maxWidth: 310,
+    overflow: 'hidden',
+    marginVertical: 2,
+  },
+  contactUserCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  contactOtherCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  contactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  contactAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  contactNameText: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  contactSubText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  contactDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+  },
+  contactActionBtn: {
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactActionText: {
     fontSize: 12,
+    fontWeight: '700',
   },
 
   // Typing Indicator
@@ -246,12 +381,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
   },
 
-  // Input Container - Pixel Perfect
+  // Input Container - Dynamic Safe Area Adjusted
   inputContainer: {
     backgroundColor: '#f5f5f5',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 24,
+    paddingHorizontal: 12,
+    paddingTop: 6,
+    paddingBottom: 4,
     borderTopWidth: 0,
   },
   inputWrapper: {

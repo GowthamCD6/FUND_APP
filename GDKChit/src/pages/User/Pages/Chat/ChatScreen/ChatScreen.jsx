@@ -17,7 +17,7 @@ import {
   Keyboard,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
@@ -30,6 +30,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const ChatScreen = ({ route, navigation, onBack, ws }) => {
+  const insets = useSafeAreaInsets();
   const { chatId, chatName, chatAvatar, isGroup } = route.params || {};
   const [showDropdown, setShowDropdown] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
@@ -54,6 +55,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [showAttachmentModal, setShowAttachmentModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeEmojiTab, setActiveEmojiTab] = useState('smileys');
+  const [viewerImageUri, setViewerImageUri] = useState(null);
 
   const toggleEmojiPicker = () => {
     if (showEmojiPicker) {
@@ -211,13 +213,13 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         }
       });
     } else if (type === 'document') {
-      sendDirectMessage('📄 Document: invoice_2026.pdf');
+      sendDirectMessage('Document: invoice_2026.pdf');
     } else if (type === 'audio') {
-      sendDirectMessage('🎵 Audio recording (0:30)');
+      sendDirectMessage('Audio recording (0:30)');
     } else if (type === 'location') {
-      sendDirectMessage('📍 Location: https://maps.google.com/?q=12.9716,77.5946');
+      sendDirectMessage('Location: https://maps.google.com/?q=12.9716,77.5946');
     } else if (type === 'contact') {
-      sendDirectMessage('👤 Contact: GDK Support (+91 98765 43210)');
+      sendDirectMessage('Contact: GDK Support (+91 98765 43210)');
     }
   };
 
@@ -765,7 +767,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                     onPress={() => handleForwardToChat(item)}
                   >
                     <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#E9D5FF', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
-                      <Text style={{ fontSize: 16 }}>{item.isGroup ? '👥' : '👤'}</Text>
+                      <MaterialCommunityIcons name={item.isGroup ? "account-group" : "account"} size={22} color="#7C3AED" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937' }}>{item.name}</Text>
@@ -786,20 +788,109 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     );
   };
 
+  const isImageContent = (text) => {
+    if (!text || typeof text !== 'string') return false;
+    const trimmed = text.trim();
+    return (
+      (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image')) &&
+      (trimmed.match(/\.(jpeg|jpg|gif|png|webp)/i) || trimmed.includes('/uploads/'))
+    );
+  };
+
+  const renderSkeletonMessages = () => (
+    <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
+      {[
+        { isUser: false, width: 210, height: 48 },
+        { isUser: true, width: 160, height: 42 },
+        { isUser: false, width: 240, height: 54 },
+        { isUser: true, width: 190, height: 46 },
+        { isUser: false, width: 170, height: 42 },
+        { isUser: true, width: 220, height: 52 },
+      ].map((item, index) => (
+        <View
+          key={index}
+          style={{
+            flexDirection: 'row',
+            justifyContent: item.isUser ? 'flex-end' : 'flex-start',
+            marginVertical: 6,
+          }}
+        >
+          <View
+            style={{
+              width: item.width,
+              height: item.height,
+              backgroundColor: item.isUser ? '#E9D5FF' : '#FFFFFF',
+              borderRadius: 16,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              borderBottomLeftRadius: item.isUser ? 16 : 4,
+              borderBottomRightRadius: item.isUser ? 4 : 16,
+              borderWidth: item.isUser ? 0 : 1,
+              borderColor: '#E5E7EB',
+              padding: 10,
+              justifyContent: 'space-around',
+            }}
+          >
+            <View style={{ width: '80%', height: 10, borderRadius: 5, backgroundColor: item.isUser ? '#D8BFD8' : '#E5E7EB' }} />
+            <View style={{ width: '45%', height: 8, borderRadius: 4, backgroundColor: item.isUser ? '#D8BFD8' : '#F3F4F6', alignSelf: 'flex-end' }} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+
+  const renderImageViewerModal = () => {
+    if (!viewerImageUri) return null;
+
+    return (
+      <Modal
+        visible={!!viewerImageUri}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setViewerImageUri(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' }}>
+          <SafeAreaView style={{ position: 'absolute', top: 10, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, zIndex: 10 }}>
+            <TouchableOpacity 
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => setViewerImageUri(null)}
+            >
+              <MaterialCommunityIcons name="close" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Photo Preview</Text>
+            <TouchableOpacity 
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => Alert.alert('Saved', 'Image saved to gallery')}
+            >
+              <MaterialCommunityIcons name="download" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+          </SafeAreaView>
+
+          <Image
+            source={{ uri: viewerImageUri }}
+            style={{ width: Dimensions.get('window').width, height: Dimensions.get('window').height * 0.75 }}
+            resizeMode="contain"
+          />
+        </View>
+      </Modal>
+    );
+  };
+
   const renderMessage = ({ item, index }) => {
     const isUserMessage = item.sender === 'user';
     const showDateSeparator = shouldShowDateSeparator(item, messages[index - 1]);
     const isGrouped = shouldGroupWithPrevious(item, messages[index - 1]);
     const nextMsg = messages[index + 1];
     const isLastInGroup = !shouldGroupWithPrevious(nextMsg, item);
+    const isImg = isImageContent(item.text);
 
     return (
       <View>
         {/* Date Separator */}
         {showDateSeparator && (
-          <View style={{ alignItems: 'center', marginVertical: 8, marginTop: 2 }}>
-            <View style={{ backgroundColor: '#E5E7EB', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-              <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '500' }}>
+          <View style={{ alignItems: 'center', marginVertical: 10, marginTop: 4 }}>
+            <View style={{ backgroundColor: '#E5E7EB', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 16 }}>
+              <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: '600', letterSpacing: 0.2 }}>
                 {formatDateSeparator(item.timestamp)}
               </Text>
             </View>
@@ -809,83 +900,178 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         {/* Message */}
         <TouchableOpacity
           onLongPress={() => handleMessageLongPress(item)}
-          delayLongPress={500}
-          activeOpacity={0.7}
+          delayLongPress={400}
+          activeOpacity={0.8}
           style={[
             styles.messageContainer,
             isUserMessage ? styles.userMessageContainer : styles.otherMessageContainer,
-            !isLastInGroup && { marginBottom: -2 },
-            isGrouped && { marginTop: -2 },
           ]}
         >
           <View style={[
-            { maxWidth: '85%' },
-            isUserMessage && { alignItems: 'flex-start' },
-            !isUserMessage && { alignItems: 'flex-end' },
+            { maxWidth: '88%' },
+            isUserMessage ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' },
           ]}>
             {/* Reply Preview */}
             {item.replyTo && (
               <View style={{
-                backgroundColor: isUserMessage ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+                backgroundColor: isUserMessage ? 'rgba(255,255,255,0.2)' : '#F3F4F6',
                 paddingHorizontal: 12,
-                paddingVertical: 8,
-                marginBottom: 8,
+                paddingVertical: 6,
+                marginBottom: 4,
                 borderLeftWidth: 3,
                 borderLeftColor: '#7C3AED',
-                borderRadius: 4,
+                borderRadius: 6,
               }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: isUserMessage ? '#DDD6FE' : '#7C3AED' }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: isUserMessage ? '#DDD6FE' : '#7C3AED' }}>
                   Replying to
                 </Text>
-                <Text style={{ fontSize: 12, color: isUserMessage ? '#E9D5FF' : '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: isUserMessage ? '#FFFFFF' : '#4B5563', marginTop: 1 }} numberOfLines={1}>
                   {item.replyTo.text}
                 </Text>
               </View>
             )}
 
-            {/* Message Bubble */}
-            <View style={[
-              styles.messageBubble,
-              isUserMessage ? styles.userBubble : styles.otherBubble,
-              isGrouped && (isUserMessage ? styles.groupedUserBubble : styles.groupedOtherBubble),
-              (item.text && (item.text.startsWith('http://') || item.text.startsWith('https://')) && (item.text.match(/\.(jpeg|jpg|gif|png|webp)/i) || item.text.includes('/uploads/'))) && { paddingHorizontal: 4, paddingVertical: 4, borderRadius: 16 }
-            ]}>
-              {(item.text && (item.text.startsWith('http://') || item.text.startsWith('https://')) && (item.text.match(/\.(jpeg|jpg|gif|png|webp)/i) || item.text.includes('/uploads/'))) ? (
-                <Image 
-                  source={{ uri: item.text.trim() }} 
-                  style={{ 
-                    width: 220, 
-                    height: 220, 
-                    borderRadius: 12,
-                    backgroundColor: '#F3F4F6'
-                  }} 
+            {/* Message Content */}
+            {isImg ? (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => setViewerImageUri(item.text.trim())}
+                style={styles.imageCardContainer}
+              >
+                <Image
+                  source={{ uri: item.text.trim() }}
+                  style={styles.imageMessage}
                   resizeMode="cover"
                 />
-              ) : (
-                <Text style={[
-                  styles.messageText,
-                  isUserMessage && styles.userMessageText,
-                  { textAlign: isUserMessage ? 'left' : 'right' }
-                ]}>
-                  {item.text}
-                </Text>
-              )}
-
-              {(isLastInGroup || item.isStarred) && (
+                <View style={styles.imageGlassOverlay}>
+                  {item.isStarred && (
+                    <MaterialCommunityIcons name="star" size={12} color="#F59E0B" />
+                  )}
+                  <Text style={styles.imageTimestampText}>{formatTime(item.timestamp)}</Text>
+                  {isUserMessage && getStatusIcon(item.status)}
+                </View>
+              </TouchableOpacity>
+            ) : item.text && (item.text.startsWith('Document:') || item.text.startsWith('📄 Document:')) ? (
+              <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                <View style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard]}>
+                  <View style={[styles.attachmentIconContainer, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#EEF2FF' }]}>
+                    <MaterialCommunityIcons name="file-pdf-box" size={26} color={isUserMessage ? "#FFFFFF" : "#7C3AED"} />
+                  </View>
+                  <View style={{ flex: 1, paddingRight: 6 }}>
+                    <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]} numberOfLines={1}>
+                      {item.text.replace(/^(📄\s*)?Document:/i, '').trim()}
+                    </Text>
+                    <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>PDF Document • 250 KB</Text>
+                  </View>
+                  <MaterialCommunityIcons name="download" size={20} color={isUserMessage ? "#FFFFFF" : "#7C3AED"} />
+                </View>
                 <View style={styles.messageFooter}>
                   {item.isStarred && (
-                    <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 4 }} />
+                    <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
                   )}
-                  <Text style={[
-                    styles.timestamp,
-                    isUserMessage && styles.userTimestamp
-                  ]}>
+                  <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
                     {formatTime(item.timestamp)}
                   </Text>
                   {isUserMessage && getStatusIcon(item.status)}
                 </View>
-              )}
-            </View>
+              </View>
+            ) : item.text && (item.text.startsWith('Audio') || item.text.startsWith('🎵 Audio')) ? (
+              <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                <View style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard]}>
+                  <View style={[styles.attachmentIconContainer, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#FEF3C7' }]}>
+                    <MaterialCommunityIcons name="play" size={24} color={isUserMessage ? "#FFFFFF" : "#D97706"} />
+                  </View>
+                  <View style={{ flex: 1, paddingRight: 6 }}>
+                    <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]}>Voice Note</Text>
+                    <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>0:30 • Audio</Text>
+                  </View>
+                </View>
+                <View style={styles.messageFooter}>
+                  {item.isStarred && (
+                    <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
+                  )}
+                  <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
+                    {formatTime(item.timestamp)}
+                  </Text>
+                  {isUserMessage && getStatusIcon(item.status)}
+                </View>
+              </View>
+            ) : item.text && (item.text.startsWith('Location:') || item.text.startsWith('📍 Location:')) ? (
+              <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                <View style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard]}>
+                  <View style={[styles.attachmentIconContainer, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#D1FAE5' }]}>
+                    <MaterialCommunityIcons name="map-marker" size={24} color={isUserMessage ? "#FFFFFF" : "#059669"} />
+                  </View>
+                  <View style={{ flex: 1, paddingRight: 6 }}>
+                    <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]}>Shared Location</Text>
+                    <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]} numberOfLines={1}>Tap to open map</Text>
+                  </View>
+                </View>
+                <View style={styles.messageFooter}>
+                  {item.isStarred && (
+                    <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
+                  )}
+                  <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
+                    {formatTime(item.timestamp)}
+                  </Text>
+                  {isUserMessage && getStatusIcon(item.status)}
+                </View>
+              </View>
+            ) : item.text && (item.text.startsWith('Contact:') || item.text.startsWith('👤 Contact:')) ? (
+              <View style={[styles.contactCard, isUserMessage ? styles.contactUserCard : styles.contactOtherCard]}>
+                <View style={styles.contactHeader}>
+                  <View style={[styles.contactAvatar, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#E9D5FF' }]}>
+                    <MaterialCommunityIcons name="account" size={24} color={isUserMessage ? "#FFFFFF" : "#7C3AED"} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.contactNameText, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]} numberOfLines={1}>
+                      {item.text.replace(/^(👤\s*)?Contact:/i, '').trim()}
+                    </Text>
+                    <Text style={[styles.contactSubText, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>Shared Contact</Text>
+                  </View>
+                </View>
+                <View style={[styles.contactDivider, isUserMessage && { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+                <TouchableOpacity 
+                  style={styles.contactActionBtn} 
+                  onPress={() => Alert.alert('Contact', `Messaging ${item.text.replace(/^(👤\s*)?Contact:/i, '').trim()}`)}
+                >
+                  <Text style={[styles.contactActionText, { color: isUserMessage ? '#FFFFFF' : '#7C3AED' }]}>Message Contact</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={[
+                styles.messageBubble,
+                isUserMessage ? styles.userBubble : styles.otherBubble,
+                isGrouped && (isUserMessage ? styles.groupedUserBubble : styles.groupedOtherBubble),
+              ]}>
+                {isGroup && !isUserMessage && item.senderName && !isGrouped && (
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#7C3AED', marginBottom: 3 }}>
+                    {item.senderName}
+                  </Text>
+                )}
+                <Text style={[
+                  styles.messageText,
+                  isUserMessage && styles.userMessageText,
+                ]}>
+                  {item.text}
+                </Text>
+
+                {(isLastInGroup || item.isStarred) && (
+                  <View style={styles.messageFooter}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={[
+                      styles.timestamp,
+                      isUserMessage && styles.userTimestamp
+                    ]}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                    {isUserMessage && getStatusIcon(item.status)}
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         </TouchableOpacity>
       </View>
@@ -972,7 +1158,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       {/* Enhanced Header with Profile Info - Exact Match */}
@@ -1051,11 +1237,11 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         
         {/* Search Bar - Conditional */}
         {searchActive && (
-          <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 20, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' }}>
-              <MaterialCommunityIcons name="magnify" size={20} color="#9CA3AF" />
+          <View style={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10, backgroundColor: '#FFFFFF' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 22, paddingHorizontal: 14, paddingVertical: 4, borderWidth: 1, borderColor: '#E5E7EB' }}>
+              <MaterialCommunityIcons name="magnify" size={20} color="#7C3AED" />
               <TextInput
-                style={{ flex: 1, paddingVertical: 8, paddingHorizontal: 8, color: '#1F2937', fontSize: 14 }}
+                style={{ flex: 1, paddingVertical: 6, paddingHorizontal: 8, color: '#1F2937', fontSize: 14, fontWeight: '500' }}
                 placeholder="Search in chat..."
                 placeholderTextColor="#9CA3AF"
                 value={searchQuery}
@@ -1063,26 +1249,26 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 autoFocus
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 2, marginRight: 4 }}>
                   <MaterialCommunityIcons name="close-circle" size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               )}
+              <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchActive(false); }} style={{ padding: 2 }}>
+                <MaterialCommunityIcons name="close" size={20} color="#6B7280" />
+              </TouchableOpacity>
             </View>
           </View>
         )}
       </View>
 
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
         style={styles.keyboardAvoidingView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {/* Messages List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6B46C1" />
-            <Text style={styles.loadingText}>Loading messages...</Text>
-          </View>
+          renderSkeletonMessages()
         ) : filteredMessages.length > 0 ? (
           <FlatList
             ref={flatListRef}
@@ -1120,7 +1306,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         )}
 
         {/* Message Input */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { paddingBottom: insets.bottom > 0 ? Math.min(insets.bottom, 8) : 6 }]}>
           {/* Reply Preview */}
           {replyingTo && (
             <View style={{
@@ -1228,19 +1414,19 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                   style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'smileys' ? 2 : 0, borderBottomColor: '#7C3AED' }}
                   onPress={() => setActiveEmojiTab('smileys')}
                 >
-                  <Text style={{ fontSize: 16 }}>😀</Text>
+                  <MaterialCommunityIcons name="emoticon-outline" size={20} color={activeEmojiTab === 'smileys' ? '#7C3AED' : '#9CA3AF'} />
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'hands' ? 2 : 0, borderBottomColor: '#7C3AED' }}
                   onPress={() => setActiveEmojiTab('hands')}
                 >
-                  <Text style={{ fontSize: 16 }}>👍</Text>
+                  <MaterialCommunityIcons name="thumb-up-outline" size={20} color={activeEmojiTab === 'hands' ? '#7C3AED' : '#9CA3AF'} />
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'hearts' ? 2 : 0, borderBottomColor: '#7C3AED' }}
                   onPress={() => setActiveEmojiTab('hearts')}
                 >
-                  <Text style={{ fontSize: 16 }}>❤️</Text>
+                  <MaterialCommunityIcons name="heart-outline" size={20} color={activeEmojiTab === 'hearts' ? '#7C3AED' : '#9CA3AF'} />
                 </TouchableOpacity>
               </View>
 
@@ -1383,6 +1569,9 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
       {/* Attachment share options modal */}
       {renderAttachmentModal()}
+
+      {/* Fullscreen Photo Lightbox Modal */}
+      {renderImageViewerModal()}
 
     </SafeAreaView>
   );

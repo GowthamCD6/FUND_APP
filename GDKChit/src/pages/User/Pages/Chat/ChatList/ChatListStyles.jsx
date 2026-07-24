@@ -11,7 +11,7 @@ const styles = StyleSheet.create({
   // Modern Header with Gradient Effect
   headerContainer: {
     backgroundColor: '#f5f5f5',
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingTop: 0,
     paddingBottom: 8,
     borderBottomWidth: 0,
@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
 
   headerLeft: {
@@ -50,31 +50,24 @@ const styles = StyleSheet.create({
 
   headerRight: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    gap: 6,
   },
 
   headerIconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F0E6FF',
+    padding: 6,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#6B46C1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
   },
 
   headerIconButtonPrimary: {
-    backgroundColor: '#6B46C1',
+    backgroundColor: 'transparent',
   },
 
   // Animated Search Bar
   animatedSearchBar: {
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 4,
+    marginBottom: 6,
     marginHorizontal: 0,
   },
 
@@ -105,9 +98,9 @@ const styles = StyleSheet.create({
 
   // Filter Tabs
   filterTabsContainer: {
-    marginTop: 12,
-    marginBottom: 12,
-    paddingHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 2,
+    paddingHorizontal: 12,
   },
 
   filterTabsContent: {
@@ -120,20 +113,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#E9D5FF',
-    borderWidth: 0,
-    borderColor: 'transparent',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
 
   filterTabActive: {
-    backgroundColor: '#6B46C1',
-    borderColor: '#6B46C1',
+    backgroundColor: '#7C3AED',
+    borderColor: '#7C3AED',
   },
 
   filterTabText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#9CA3AF',
+    fontWeight: '600',
+    color: '#4B5563',
   },
 
   filterTabTextActive: {
@@ -184,8 +177,7 @@ const styles = StyleSheet.create({
 
   // List Styles - Card Based
   listContainer: {
-    paddingVertical: 8,
-    paddingHorizontal: 0,
+    paddingTop: 2,
     paddingBottom: 100,
     backgroundColor: '#f5f5f5',
   },
@@ -196,8 +188,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginVertical: 6,
+    marginHorizontal: 8,
+    marginVertical: 5,
     borderRadius: 14,
     elevation: 2,
     shadowColor: '#6B46C1',
