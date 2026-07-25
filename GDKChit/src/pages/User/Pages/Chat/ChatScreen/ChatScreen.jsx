@@ -31,7 +31,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const insets = useSafeAreaInsets();
-  const { chatId, chatName, chatAvatar, isGroup } = route.params || {};
+  const { chatId, chatName, chatAvatar, isGroup, groupId } = route.params || {};
   const [showDropdown, setShowDropdown] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -56,6 +56,22 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeEmojiTab, setActiveEmojiTab] = useState('smileys');
   const [viewerImageUri, setViewerImageUri] = useState(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const toggleEmojiPicker = () => {
     if (showEmojiPicker) {
@@ -232,12 +248,6 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     }
   };
 
-  const handleOpenGroupInfo = () => {
-    setShowDropdown(false);
-    fetchGroupMembers();
-    setShowGroupInfoModal(true);
-  };
-
   const handleDeleteChat = async () => {
     try {
       const res = await ApiService.makeRequest('/chats/rooms/delete', {
@@ -275,13 +285,20 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   // Fetch group members if isGroup on load
   const fetchGroupMembers = React.useCallback(async () => {
     try {
-      const res = await ApiService.makeRequest(`/chats/rooms/${chatId}/members`);
+      const query = groupId ? `?groupId=${groupId}` : '';
+      const res = await ApiService.makeRequest(`/chats/rooms/${chatId}/members${query}`);
       const data = await res.json();
       if (data.success) setGroupMembers(data.members || []);
     } catch (e) {
       console.log('Error fetching members', e);
     }
-  }, [chatId]);
+  }, [chatId, groupId]);
+
+  const handleOpenGroupInfo = () => {
+    setShowDropdown(false);
+    fetchGroupMembers();
+    setShowGroupInfoModal(true);
+  };
 
   // Load messages on component mount
   useEffect(() => {
@@ -888,7 +905,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       <View>
         {/* Date Separator */}
         {showDateSeparator && (
-          <View style={{ alignItems: 'center', marginVertical: 10, marginTop: 4 }}>
+          <View style={{ alignItems: 'center', marginTop: 16, marginBottom: 4 }}>
             <View style={{ backgroundColor: '#E5E7EB', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 16 }}>
               <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: '600', letterSpacing: 0.2 }}>
                 {formatDateSeparator(item.timestamp)}
@@ -1037,6 +1054,15 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 >
                   <Text style={[styles.contactActionText, { color: isUserMessage ? '#FFFFFF' : '#7C3AED' }]}>Message Contact</Text>
                 </TouchableOpacity>
+                <View style={styles.messageFooter}>
+                  {item.isStarred && (
+                    <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
+                  )}
+                  <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
+                    {formatTime(item.timestamp)}
+                  </Text>
+                  {isUserMessage && getStatusIcon(item.status)}
+                </View>
               </View>
             ) : (
               <View style={[
@@ -1044,19 +1070,19 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 isUserMessage ? styles.userBubble : styles.otherBubble,
                 isGrouped && (isUserMessage ? styles.groupedUserBubble : styles.groupedOtherBubble),
               ]}>
-                {isGroup && !isUserMessage && item.senderName && !isGrouped && (
+                {isGroup && !isUserMessage && (
                   <Text style={{ fontSize: 12, fontWeight: '700', color: '#7C3AED', marginBottom: 3 }}>
-                    {item.senderName}
+                    {item.senderName || 'Member'}
                   </Text>
                 )}
-                <Text style={[
-                  styles.messageText,
-                  isUserMessage && styles.userMessageText,
-                ]}>
-                  {item.text}
-                </Text>
+                <View style={styles.messageContentRow}>
+                  <Text style={[
+                    styles.messageText,
+                    isUserMessage && styles.userMessageText,
+                  ]}>
+                    {item.text}
+                  </Text>
 
-                {(isLastInGroup || item.isStarred) && (
                   <View style={styles.messageFooter}>
                     {item.isStarred && (
                       <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
@@ -1069,7 +1095,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                     </Text>
                     {isUserMessage && getStatusIcon(item.status)}
                   </View>
-                )}
+                </View>
               </View>
             )}
           </View>
@@ -1237,7 +1263,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         
         {/* Search Bar - Conditional */}
         {searchActive && (
-          <View style={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10, backgroundColor: '#FFFFFF' }}>
+          <View style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: 2 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 22, paddingHorizontal: 14, paddingVertical: 4, borderWidth: 1, borderColor: '#E5E7EB' }}>
               <MaterialCommunityIcons name="magnify" size={20} color="#7C3AED" />
               <TextInput
@@ -1262,7 +1288,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       </View>
 
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
@@ -1306,7 +1332,10 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         )}
 
         {/* Message Input */}
-        <View style={[styles.inputContainer, { paddingBottom: insets.bottom > 0 ? Math.min(insets.bottom, 8) : 6 }]}>
+        <View style={[
+          styles.inputContainer,
+          { paddingBottom: keyboardVisible ? 6 : (insets.bottom > 0 ? insets.bottom + 4 : 8) }
+        ]}>
           {/* Reply Preview */}
           {replyingTo && (
             <View style={{
@@ -1484,23 +1513,25 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             <View style={styles.groupInfoMembersSection}>
               <Text style={styles.groupInfoMembersHeader}>{groupMembers.length} Members</Text>
 
-              {groupMembers.map((item) => (
-                <View key={item.userId || item.id} style={styles.groupInfoMemberItem}>
-                  <View style={styles.groupInfoMemberAvatar}>
-                    {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('data:image')) ? (
-                      <Image source={{ uri: item.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                    ) : (
-                      <Text style={styles.userListAvatarText}>
-                        {(item.name || 'U').substring(0, 2).toUpperCase()}
-                      </Text>
-                    )}
+              {groupMembers.map((item, idx) => {
+                const memberName = item.name || item.user_name || 'Group Member';
+                return (
+                  <View key={item.userId || item.id || idx} style={styles.groupInfoMemberItem}>
+                    <View style={styles.groupInfoMemberAvatar}>
+                      {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('data:image')) ? (
+                        <Image source={{ uri: item.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                      ) : (
+                        <Text style={styles.userListAvatarText}>
+                          {memberName.substring(0, 2).toUpperCase()}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.groupInfoMemberInfo}>
+                      <Text style={styles.groupInfoMemberName}>{memberName}</Text>
+                    </View>
                   </View>
-                  <View style={styles.groupInfoMemberInfo}>
-                    <Text style={styles.groupInfoMemberName}>{item.name}</Text>
-                    <Text style={styles.groupInfoMemberPhone}>{item.phone}</Text>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </ScrollView>
         </SafeAreaView>

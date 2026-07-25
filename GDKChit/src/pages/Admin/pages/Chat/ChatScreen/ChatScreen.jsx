@@ -7,7 +7,6 @@ import {
   TextInput,
   FlatList,
   Dimensions,
-  SafeAreaView,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +17,7 @@ import {
   Image,
   Keyboard,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
@@ -33,6 +33,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const ChatScreen = ({ route, navigation, onBack, ws }) => {
+  const insets = useSafeAreaInsets();
   const { chatId, chatName, chatAvatar, isGroup, groupId } = route.params || {};
   const [localChatName, setLocalChatName] = useState(chatName);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -64,6 +65,22 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [showAttachmentModal, setShowAttachmentModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeEmojiTab, setActiveEmojiTab] = useState('smileys');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const toggleEmojiPicker = () => {
     if (showEmojiPicker) {
@@ -781,9 +798,9 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       <View>
         {/* Date Separator */}
         {showDateSeparator && (
-          <View style={{ alignItems: 'center', marginVertical: 8, marginTop: 2 }}>
-            <View style={{ backgroundColor: '#E5E7EB', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-              <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '500' }}>
+          <View style={{ alignItems: 'center', marginTop: 16, marginBottom: 4 }}>
+            <View style={{ backgroundColor: '#E5E7EB', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 16 }}>
+              <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600' }}>
                 {formatDateSeparator(item.timestamp)}
               </Text>
             </View>
@@ -846,27 +863,31 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                   resizeMode="cover"
                 />
               ) : (
-                <Text style={[
-                  styles.messageText,
-                  isUserMessage && styles.userMessageText,
-                  { textAlign: isUserMessage ? 'left' : 'right' }
-                ]}>
-                  {item.text}
-                </Text>
-              )}
-
-              {(isLastInGroup || item.isStarred) && (
-                <View style={styles.messageFooter}>
-                  {item.isStarred && (
-                    <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 4 }} />
+                <View style={styles.messageContentRow}>
+                  {isGroup && !isUserMessage && (
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#7C3AED', width: '100%', marginBottom: 3 }}>
+                      {item.senderName || 'Member'}
+                    </Text>
                   )}
                   <Text style={[
-                    styles.timestamp,
-                    isUserMessage && styles.userTimestamp
+                    styles.messageText,
+                    isUserMessage && styles.userMessageText,
                   ]}>
-                    {formatTime(item.timestamp)}
+                    {item.text}
                   </Text>
-                  {isUserMessage && getStatusIcon(item.status)}
+
+                  <View style={styles.messageFooter}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 4 }} />
+                    )}
+                    <Text style={[
+                      styles.timestamp,
+                      isUserMessage && styles.userTimestamp
+                    ]}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                    {isUserMessage && getStatusIcon(item.status)}
+                  </View>
                 </View>
               )}
             </View>
@@ -1152,7 +1173,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         
         {/* Search Bar - Conditional */}
         {searchActive && (
-          <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+          <View style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: 2 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 20, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' }}>
               <MaterialCommunityIcons name="magnify" size={20} color="#9CA3AF" />
               <TextInput
@@ -1221,7 +1242,10 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         )}
 
         {/* Message Input */}
-        <View style={styles.inputContainer}>
+        <View style={[
+          styles.inputContainer,
+          { paddingBottom: keyboardVisible ? 6 : (insets.bottom > 0 ? insets.bottom + 4 : 8) }
+        ]}>
           {/* Reply Preview */}
           {replyingTo && (
             <View style={{

@@ -11,7 +11,7 @@ const styles = StyleSheet.create({
   // Modern Header with Gradient Effect
   headerContainer: {
     backgroundColor: '#f5f5f5',
-    paddingHorizontal: 12,
+    paddingHorizontal: 6,
     paddingTop: 0,
     paddingBottom: 8,
     borderBottomWidth: 0,
@@ -27,6 +27,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 4,
+    paddingHorizontal: 6,
   },
 
   headerLeft: {
@@ -66,9 +67,10 @@ const styles = StyleSheet.create({
 
   // Animated Search Bar
   animatedSearchBar: {
-    marginTop: 4,
-    marginBottom: 6,
+    marginTop: 8,
+    marginBottom: 2,
     marginHorizontal: 0,
+    width: '100%',
   },
 
   searchBar: {
@@ -85,6 +87,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 3,
+    width: '100%',
   },
 
   searchInput: {

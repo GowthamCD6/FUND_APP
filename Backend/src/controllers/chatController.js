@@ -573,40 +573,67 @@ exports.getStarredMessages = async (req, res) => {
     }
 };
 
-// Get Room Members list
+// Get Room Members list (Includes all group members including current user)
 exports.getRoomMembers = async (req, res) => {
     try {
         const { roomId } = req.params;
+        const queryGroupId = req.query.groupId;
         
-        // Find room details
-        const [roomRows] = await db.promise().query('SELECT * FROM chat_rooms WHERE id = ?', [roomId]);
-        if (roomRows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Room not found' });
-        }
-        const room = roomRows[0];
+        // Find room details by room id or group_id
+        const [roomRows] = await db.promise().query(
+            'SELECT * FROM chat_rooms WHERE id = ? OR group_id = ?', 
+            [roomId, queryGroupId || roomId]
+        );
 
-        let members = [];
-        if (room.type === 'group_broadcast') {
-            const sql = `
-                SELECT u.id AS userId, u.name, u.phone, u.avatar, 'Member' as role
+        let targetRoomId = roomId;
+        let targetGroupId = queryGroupId || null;
+
+        if (roomRows.length > 0) {
+            targetRoomId = roomRows[0].id;
+            targetGroupId = roomRows[0].group_id || targetGroupId;
+        }
+
+        // Query all members from user_grouping, chat_room_members, or chat_messages senders
+        const sql = `
+            SELECT DISTINCT 
+                u.id AS userId, 
+                COALESCE(NULLIF(u.name, ''), u.phone, 'Group Member') AS name, 
+                u.phone, 
+                u.avatar, 
+                COALESCE(crm.role, 'Member') AS role
+            FROM users u
+            LEFT JOIN chat_room_members crm ON u.id = crm.user_id AND crm.room_id = ?
+            LEFT JOIN user_grouping ug ON u.id = ug.user_id AND ug.group_id = ?
+            WHERE (crm.room_id = ? OR (ug.group_id = ? AND ug.group_id IS NOT NULL))
+              AND u.deleted_at IS NULL
+            ORDER BY name ASC
+        `;
+
+        let [rows] = await db.promise().query(sql, [targetRoomId, targetGroupId, targetRoomId, targetGroupId]);
+        
+        // Fallback 1: If no members matched, query user_grouping by targetGroupId directly
+        if (rows.length === 0 && targetGroupId) {
+            const [gRows] = await db.promise().query(`
+                SELECT DISTINCT u.id AS userId, COALESCE(NULLIF(u.name, ''), u.phone, 'Group Member') AS name, u.phone, u.avatar, 'Member' AS role
                 FROM user_grouping ug
                 JOIN users u ON ug.user_id = u.id
                 WHERE ug.group_id = ? AND u.deleted_at IS NULL
-            `;
-            const [rows] = await db.promise().query(sql, [room.group_id]);
-            members = rows;
-        } else {
-            const sql = `
-                SELECT u.id AS userId, u.name, u.phone, u.avatar, crm.role
-                FROM chat_room_members crm
-                JOIN users u ON crm.user_id = u.id
-                WHERE crm.room_id = ? AND u.deleted_at IS NULL
-            `;
-            const [rows] = await db.promise().query(sql, [roomId]);
-            members = rows;
+            `, [targetGroupId]);
+            rows = gRows;
+        }
+
+        // Fallback 2: If still no members found, query all users who sent messages in this room
+        if (rows.length === 0) {
+            const [mRows] = await db.promise().query(`
+                SELECT DISTINCT u.id AS userId, COALESCE(NULLIF(u.name, ''), u.phone, 'Group Member') AS name, u.phone, u.avatar, 'Member' AS role
+                FROM chat_messages cm
+                JOIN users u ON cm.sender_id = u.id
+                WHERE (cm.room_id = ? OR cm.source_room_id = ?) AND u.deleted_at IS NULL
+            `, [targetRoomId, targetRoomId]);
+            rows = mRows;
         }
         
-        return res.json({ success: true, members });
+        return res.json({ success: true, members: rows });
     } catch (error) {
         console.error('Error in getRoomMembers:', error);
         return res.status(500).json({ success: false, message: 'Failed to load room members' });
