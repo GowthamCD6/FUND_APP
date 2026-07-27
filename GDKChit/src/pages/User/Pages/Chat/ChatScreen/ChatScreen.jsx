@@ -24,6 +24,7 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import styles from './ChatScreenStyle';
 import ApiService from '../../../../../services/ApiService';
 import Header from '../../../../../components/HeaderComponent/Header';
+import Join from '../../../Modals/Pages/JoinGroup/JoinGroup';
 
 // Enable long press context menu on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -59,6 +60,13 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [activeEmojiTab, setActiveEmojiTab] = useState('smileys');
   const [viewerImageUri, setViewerImageUri] = useState(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinModalCode, setJoinModalCode] = useState('');
+
+  const handleOpenJoinModal = (code) => {
+    setJoinModalCode(code);
+    setShowJoinModal(true);
+  };
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -315,48 +323,49 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     setShowGroupInfoModal(true);
   };
 
+  // Load messages from API
+  const loadMessages = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await ApiService.makeRequest(`/chats/messages/${chatId}`);
+      const data = await response.json();
+      if (data.success && data.messages) {
+        const formatted = data.messages.map(msg => {
+          const isMine = msg.sender_type === 'User'; // user app — 'User' = me
+          // Determine tick status for my sent messages
+          let status = 'sent';
+          if (isMine) {
+            status = msg.read_at ? 'read' : 'sent';
+          }
+          return {
+            id: msg.id,
+            sender: isMine ? 'user' : 'other',
+            text: msg.message,
+            timestamp: msg.created_at, // keep raw string, parse in formatTime
+            isRead: !!msg.read_at,
+            status,
+            avatar: isMine ? null : chatAvatar,
+            senderName: msg.sender_name,
+            isStarred: msg.isStarred > 0,
+            replyTo: msg.reply_to ? {
+              id: msg.reply_to,
+              text: msg.replied_to_message
+            } : null
+          };
+        });
+        setMessages(formatted);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [chatId, chatAvatar]);
+
   // Load messages on component mount
   useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        setLoading(true);
-        const response = await ApiService.makeRequest(`/chats/messages/${chatId}`);
-        const data = await response.json();
-        if (data.success && data.messages) {
-          const formatted = data.messages.map(msg => {
-            const isMine = msg.sender_type === 'User'; // user app — 'User' = me
-            // Determine tick status for my sent messages
-            let status = 'sent';
-            if (isMine) {
-              status = msg.read_at ? 'read' : 'sent';
-            }
-            return {
-              id: msg.id,
-              sender: isMine ? 'user' : 'other',
-              text: msg.message,
-              timestamp: msg.created_at, // keep raw string, parse in formatTime
-              isRead: !!msg.read_at,
-              status,
-              avatar: isMine ? null : chatAvatar,
-              senderName: msg.sender_name,
-              isStarred: msg.isStarred > 0,
-              replyTo: msg.reply_to ? {
-                id: msg.reply_to,
-                text: msg.replied_to_message
-              } : null
-            };
-          });
-          setMessages(formatted);
-        }
-      } catch (error) {
-        console.error('Error loading messages:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadMessages();
-  }, [chatId, chatAvatar]);
+  }, [loadMessages]);
 
   useEffect(() => {
     if (isGroup) {
@@ -1079,7 +1088,132 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                   {isUserMessage && getStatusIcon(item.status)}
                 </View>
               </View>
-            ) : (
+            ) : item.text && item.text.startsWith('[GROUP_INVITE]') ? (() => {
+              let inviteData = null;
+              try {
+                const jsonStr = item.text.replace('[GROUP_INVITE]', '');
+                inviteData = JSON.parse(jsonStr);
+              } catch (e) {
+                inviteData = null;
+              }
+
+              if (!inviteData) {
+                return (
+                  <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                    <Text style={[styles.messageText, isUserMessage && styles.userMessageText]}>
+                      📢 Group Invitation
+                    </Text>
+                  </View>
+                );
+              }
+
+              return (
+                <View style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: 16,
+                  padding: 14,
+                  width: 260,
+                  borderWidth: 1.5,
+                  borderColor: '#DDD6FE',
+                  shadowColor: '#6B46C1',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 6,
+                  elevation: 3,
+                }}>
+                  {/* Invite Header */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                    <View style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: '#F3F0FF',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginRight: 10,
+                    }}>
+                      <MaterialCommunityIcons name="account-group" size={20} color="#7C3AED" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Group Invitation
+                      </Text>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937' }} numberOfLines={1}>
+                        {inviteData.groupName}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Group Details */}
+                  <View style={{ backgroundColor: '#F9FAFB', borderRadius: 10, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: '#F3F4F6' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Group Amount:</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#1F2937' }}>
+                        ₹{Number(inviteData.groupAmount || 0).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Duration:</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: '#1F2937' }}>
+                        {inviteData.duration} months
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Members:</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: '#1F2937' }}>
+                        {inviteData.currentMembers || 0}/{inviteData.totalMembers || 20}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Code Box */}
+                  <View style={{
+                    backgroundColor: '#F3F0FF',
+                    borderRadius: 8,
+                    paddingVertical: 6,
+                    paddingHorizontal: 12,
+                    alignItems: 'center',
+                    marginBottom: 12,
+                    borderWidth: 1,
+                    borderColor: '#E9D5FF'
+                  }}>
+                    <Text style={{ fontSize: 10, color: '#7C3AED', fontWeight: '600', textTransform: 'uppercase' }}>Group Code</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#5B21B6', letterSpacing: 1.5 }}>
+                      {inviteData.groupCode}
+                    </Text>
+                  </View>
+
+                  {/* Action Button */}
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#6B46C1',
+                      height: 40,
+                      borderRadius: 10,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                    }}
+                    onPress={() => handleOpenJoinModal(inviteData.groupCode)}
+                  >
+                    <MaterialCommunityIcons name="account-plus" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+                      Join Group
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Footer Timestamp */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 8 }}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color="#7C3AED" style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={{ fontSize: 10, color: '#9CA3AF' }}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                    {isUserMessage && getStatusIcon(item.status)}
+                  </View>
+                </View>
+              );
+            })() : (
               <View style={[
                 styles.messageBubble,
                 isUserMessage ? styles.userBubble : styles.otherBubble,
@@ -1694,6 +1828,25 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
       {/* Fullscreen Photo Lightbox Modal */}
       {renderImageViewerModal()}
+
+      {/* Join Group Modal from Community Code */}
+      <Modal
+        visible={showJoinModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => {
+          setShowJoinModal(false);
+          loadMessages();
+        }}
+      >
+        <Join 
+          onBack={() => {
+            setShowJoinModal(false);
+            loadMessages();
+          }} 
+          initialGroupCode={joinModalCode} 
+        />
+      </Modal>
 
     </SafeAreaView>
   );

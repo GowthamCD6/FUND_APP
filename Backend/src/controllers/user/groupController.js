@@ -1,10 +1,142 @@
 const db = require('../../config/db');
+const { groupDecryptAES } = require('../../utils/decryptAES');
+const { logAuditEvent } = require('../../utils/auditLogger');
 
 const formatDateLocal = (dateStr) => {
   if (!dateStr) return null;
   const d = new Date(dateStr);
   const offset = d.getTimezoneOffset() * 60000;
   return new Date(d.getTime() - offset).toISOString().split('T')[0];
+};
+
+// Join Group by Group Code
+exports.joinGroup = async (req, res) => {
+  const userId = req.user.userId || req.user.id;
+  const { groupCode } = req.body;
+
+  if (!groupCode || !groupCode.trim()) {
+    return res.status(400).json({ success: false, message: 'Group code is required' });
+  }
+
+  const inputCode = groupCode.trim().toUpperCase();
+
+  const connection = await db.promise().getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Find the group by decrypting stored codes and matching
+    const [allGroups] = await connection.query(
+      "SELECT id, group_code, group_name, total_members, current_members, group_amount, duration, status FROM `groups` WHERE deleted_at IS NULL"
+    );
+
+    let matchedGroup = null;
+    for (const group of allGroups) {
+      try {
+        const decryptedCode = groupDecryptAES(group.group_code);
+        if (decryptedCode.toUpperCase() === inputCode) {
+          matchedGroup = group;
+          break;
+        }
+      } catch (decErr) {
+        // Skip groups with corrupted codes
+        continue;
+      }
+    }
+
+    if (!matchedGroup) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        errorType: 'INVALID_CODE',
+        message: 'No group found with this code. Please check and try again.'
+      });
+    }
+
+    // 2. Check if group is completed or inactive
+    if (matchedGroup.status === 'Completed') {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        errorType: 'GROUP_COMPLETED',
+        message: 'This group has been completed and is no longer accepting members.'
+      });
+    }
+
+    // 3. Check if user is already a member
+    const [existingMember] = await connection.query(
+      'SELECT id FROM user_grouping WHERE group_id = ? AND user_id = ?',
+      [matchedGroup.id, userId]
+    );
+
+    if (existingMember.length > 0) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        errorType: 'ALREADY_MEMBER',
+        message: `You are already a member of "${matchedGroup.group_name}".`
+      });
+    }
+
+    // 4. Check if group is full using live count from user_grouping
+    const [liveMemberRows] = await connection.query(
+      'SELECT COUNT(*) as live_cnt FROM user_grouping WHERE group_id = ?',
+      [matchedGroup.id]
+    );
+    const currentCount = Number(liveMemberRows[0].live_cnt) || 0;
+    const maxMembers = matchedGroup.total_members || 0;
+
+    if (maxMembers > 0 && currentCount >= maxMembers) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        errorType: 'GROUP_FULL',
+        message: `This group has reached its member limit (${currentCount}/${maxMembers}). Contact the group administrator.`
+      });
+    }
+
+    // 5. All checks passed — add user to group
+    await connection.query(
+      'INSERT INTO user_grouping (group_id, user_id) VALUES (?, ?)',
+      [matchedGroup.id, userId]
+    );
+
+    // 6. Increment current_members count
+    await connection.query(
+      'UPDATE `groups` SET current_members = current_members + 1, version = version + 1 WHERE id = ?',
+      [matchedGroup.id]
+    );
+
+    // 7. Audit log
+    await logAuditEvent(req, {
+      actionType: 'JOIN_GROUP',
+      tableName: 'user_grouping',
+      recordId: matchedGroup.id,
+      newValues: { userId, groupName: matchedGroup.group_name }
+    });
+
+    await connection.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: `You have successfully joined "${matchedGroup.group_name}"!`,
+      data: {
+        groupId: matchedGroup.id,
+        groupName: matchedGroup.group_name,
+        groupAmount: matchedGroup.group_amount,
+        totalMembers: matchedGroup.total_members,
+        currentMembers: (currentCount + 1),
+        duration: matchedGroup.duration,
+        status: matchedGroup.status
+      }
+    });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error joining group:', error);
+    return res.status(500).json({ success: false, message: 'Failed to join group. Please try again.' });
+  } finally {
+    connection.release();
+  }
 };
 
 exports.getGroupMonthlyInfo = async (req, res) => {

@@ -220,7 +220,13 @@ class ApiService {
         body: JSON.stringify({ phone, password }),
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Server error (${response.status}): ${responseText.substring(0, 150)}`);
+      }
 
       if (data.success) {
         await this.saveTokens(data.data.accessToken, data.data.refreshToken);

@@ -4,6 +4,7 @@ const db = require('../../config/db');
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../../middleware/auth');
 const fs = require('fs');
 const path = require('path');
+const { addUserToGlobalCommunity } = require('../../utils/communityHelper');
 
 // User Registration
 exports.register = async (req, res) => {
@@ -34,6 +35,9 @@ exports.register = async (req, res) => {
     
     const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
     await db.promise().query(storeTokenSql, [userId, refreshToken]);
+
+    // Auto-add new user to Global Community chat room
+    await addUserToGlobalCommunity(userId, 'Member');
 
     return res.status(201).json({
       success: true,

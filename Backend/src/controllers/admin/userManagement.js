@@ -2,6 +2,7 @@ const db = require('../../config/db');
 const bcrypt = require('bcryptjs');
 const { passwordEncryptAES } = require('../../utils/decryptAES');
 const { logAuditEvent } = require('../../utils/auditLogger');
+const { addUserToGlobalCommunity } = require('../../utils/communityHelper');
 
 exports.addUser = async (req, res) => {
     const { name, phoneNumber, yearOfBirth, role } = req.body;
@@ -47,6 +48,9 @@ exports.addUser = async (req, res) => {
             recordId: userId,
             newValues: { name, phone, role }
         });
+
+        // Auto-add new user to Global Community chat room
+        await addUserToGlobalCommunity(userId, role === 'Admin' ? 'Admin' : 'Member');
 
         return res.status(200).json({ success: true, message: 'User added to group' });
     } catch (error) {

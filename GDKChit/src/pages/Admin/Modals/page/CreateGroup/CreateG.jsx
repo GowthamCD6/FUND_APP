@@ -7,6 +7,9 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Modal,
+  ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -26,6 +29,9 @@ const CreateGroup = ({ onBack, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pickerDate, setPickerDate] = useState(new Date());
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [createdGroupData, setCreatedGroupData] = useState(null);
+  const [sharingToComm, setSharingToComm] = useState(false);
 
   useEffect(() => {
     generateGroupId();
@@ -149,9 +155,13 @@ const CreateGroup = ({ onBack, navigation }) => {
         throw new Error(result?.message || 'Failed to create group');
       }
       
-      const successMsg = `Group "${result.data.group_name}" created successfully!\nGroup ID: ${result.data.group_code}`;
-      Alert.alert('Success!', successMsg);
-      onBack();
+      // Store created group data and show share modal
+      setCreatedGroupData({
+        id: result.data.id,
+        groupCode: result.data.group_code,
+        groupName: result.data.group_name,
+      });
+      setShowShareModal(true);
 
     } catch (error) {
       Alert.alert('Error', 'Failed to create group. Please try again.');
@@ -160,6 +170,97 @@ const CreateGroup = ({ onBack, navigation }) => {
       setLoading(false);
     }
   };
+
+  const handleShareToCommunity = async () => {
+    if (!createdGroupData?.id) return;
+    
+    setSharingToComm(true);
+    try {
+      const response = await ApiService.makeRequest('/chats/community/share-group', {
+        method: 'POST',
+        body: JSON.stringify({ groupId: createdGroupData.id }),
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        Alert.alert('Shared! 🎉', `Group code shared to GDK Community successfully!`);
+      } else {
+        Alert.alert('Error', result.message || 'Failed to share to community');
+      }
+    } catch (error) {
+      console.error('Error sharing to community:', error);
+      Alert.alert('Error', 'Failed to share to community. You can share it later.');
+    } finally {
+      setSharingToComm(false);
+      setShowShareModal(false);
+      onBack();
+    }
+  };
+
+  const handleSkipShare = () => {
+    setShowShareModal(false);
+    Alert.alert('Success!', `Group "${createdGroupData?.groupName}" created successfully!\nGroup ID: ${createdGroupData?.groupCode}`);
+    onBack();
+  };
+
+  const renderShareModal = () => (
+    <Modal
+      visible={showShareModal}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={handleSkipShare}
+    >
+      <View style={shareStyles.overlay}>
+        <View style={shareStyles.container}>
+          {/* Success Icon */}
+          <View style={shareStyles.iconCircle}>
+            <MaterialCommunityIcons name="check-circle" size={48} color="#10B981" />
+          </View>
+
+          <Text style={shareStyles.title}>Group Created! 🎉</Text>
+          
+          <Text style={shareStyles.subtitle}>
+            "{createdGroupData?.groupName}" has been created successfully.
+          </Text>
+
+          {/* Group Code Display */}
+          <View style={shareStyles.codeBox}>
+            <Text style={shareStyles.codeLabel}>Group Code</Text>
+            <Text style={shareStyles.codeValue}>{createdGroupData?.groupCode}</Text>
+          </View>
+
+          <Text style={shareStyles.shareQuestion}>
+            Share this group to GDK Community so users can join?
+          </Text>
+
+          {/* Share Button */}
+          <TouchableOpacity
+            style={shareStyles.shareButton}
+            onPress={handleShareToCommunity}
+            disabled={sharingToComm}
+          >
+            {sharingToComm ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="share-variant" size={20} color="#FFFFFF" />
+                <Text style={shareStyles.shareButtonText}>Share to Community</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* Skip Button */}
+          <TouchableOpacity
+            style={shareStyles.skipButton}
+            onPress={handleSkipShare}
+            disabled={sharingToComm}
+          >
+            <Text style={shareStyles.skipButtonText}>Not Now</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
 
   return (
     <View style={styles.container}>
@@ -315,6 +416,8 @@ const CreateGroup = ({ onBack, navigation }) => {
           )}
         </TouchableOpacity>
       </View>
+
+      {renderShareModal()}
     </View>
   );
 };
@@ -371,5 +474,122 @@ const DateField = ({ label, value, onOpenPicker, icon, required = false }) => (
 );
 
 
+
+const shareStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  container: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#ECFDF5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
+  },
+  codeBox: {
+    backgroundColor: '#F3F0FF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    width: '100%',
+  },
+  codeLabel: {
+    fontSize: 11,
+    color: '#7C3AED',
+    fontWeight: '600',
+    marginBottom: 4,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+  },
+  codeValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#5B21B6',
+    letterSpacing: 2,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+  },
+  shareQuestion: {
+    fontSize: 14,
+    color: '#374151',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
+  },
+  shareButton: {
+    backgroundColor: '#6B46C1',
+    height: 50,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+    shadowColor: '#6B46C1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  shareButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+  },
+  skipButton: {
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  skipButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
+  },
+});
 
 export default CreateGroup;

@@ -16,5 +16,6 @@ router.post('/save-location', authenticateToken, locationController.saveLocation
 router.get('/location', authenticateToken, locationController.getMyLocation);
 router.get('/locations', authenticateToken, locationController.getMyLocation);
 router.get('/admins/locations', authenticateToken, locationController.getAdminLocations);
+router.post('/groups/join', authenticateToken, groupController.joinGroup);
 
 module.exports = router;

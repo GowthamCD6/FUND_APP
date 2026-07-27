@@ -6,11 +6,12 @@ import GroupCards from './Pages/ChitGroupCard/GroupCards';
 import Auction from './Pages/Auction/Auction';
 import Finance from './Pages/Finance/Finance';
 
-const MoreModal = ({ visible, onClose, selectedGroup }) => {
+const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) => {
   const [showJoinPage, setShowJoinPage] = useState(false);
   const [showGroupCard, setShowGroupCard] = useState(false);
   const [showAuction, setShowAuction] = useState(false);
   const [showFinance, setShowFinance] = useState(false);
+  const [joinGroupCode, setJoinGroupCode] = useState('');
 
   useEffect(() => {
     if (selectedGroup) {
@@ -18,7 +19,15 @@ const MoreModal = ({ visible, onClose, selectedGroup }) => {
     }
   }, [selectedGroup]);
 
+  useEffect(() => {
+    if (initialGroupCode) {
+      setJoinGroupCode(initialGroupCode);
+      setShowJoinPage(true);
+    }
+  }, [initialGroupCode]);
+
   const handleJoinPress = () => {
+    setJoinGroupCode('');
     setShowJoinPage(true);
   };
 
@@ -32,6 +41,7 @@ const MoreModal = ({ visible, onClose, selectedGroup }) => {
 
   const handleJoinBack = () => {
     setShowJoinPage(false);
+    setJoinGroupCode('');
   };
 
   const handleGroupCardBack = () => {
@@ -55,6 +65,7 @@ const MoreModal = ({ visible, onClose, selectedGroup }) => {
     setShowGroupCard(false);
     setShowAuction(false);
     setShowFinance(false);
+    setJoinGroupCode('');
     onClose();
   };
 
@@ -66,7 +77,7 @@ const MoreModal = ({ visible, onClose, selectedGroup }) => {
         visible={visible}
         onRequestClose={handleModalClose}
       >
-        <Join onBack={handleJoinBack} />
+        <Join onBack={handleJoinBack} initialGroupCode={joinGroupCode} />
       </Modal>
     );
   }

@@ -1,6 +1,8 @@
 const db = require('../config/db');
 const fs = require('fs');
 const path = require('path');
+const { groupDecryptAES } = require('../utils/decryptAES');
+const { getOrCreateGlobalCommunity } = require('../utils/communityHelper');
 
 // Get all chats for the logged-in user (Admin or User)
 exports.getChats = async (req, res) => {
@@ -16,6 +18,14 @@ exports.getChats = async (req, res) => {
             } else {
                 role = 'User';
             }
+        }
+
+        // Ensure user is in global community room
+        try {
+            const { addUserToGlobalCommunity } = require('../utils/communityHelper');
+            await addUserToGlobalCommunity(userId, role === 'Admin' ? 'Admin' : 'Member');
+        } catch (commErr) {
+            console.error('Error ensuring community room in getChats:', commErr);
         }
 
         console.log('[chatController.getChats] userId:', userId, 'role:', role);
@@ -68,10 +78,21 @@ exports.getChats = async (req, res) => {
                     avatar = r.room_avatar || (r.type === 'community' ? '📢' : '👥');
                 }
 
+                let lastMsg = r.lastMessage || 'No messages yet';
+                if (typeof lastMsg === 'string' && lastMsg.startsWith('[GROUP_INVITE]')) {
+                    try {
+                        const jsonStr = lastMsg.replace('[GROUP_INVITE]', '');
+                        const inviteObj = JSON.parse(jsonStr);
+                        lastMsg = `📢 Invite: ${inviteObj.groupName || 'Fund Group'}`;
+                    } catch {
+                        lastMsg = '📢 Group Invite';
+                    }
+                }
+
                 return {
                     id: r.id,
                     name: name || 'Unnamed Room',
-                    lastMessage: r.lastMessage || 'No messages yet',
+                    lastMessage: lastMsg,
                     timestamp: r.timestamp || new Date(),
                     avatar: avatar,
                     unread: r.unread || 0,
@@ -132,10 +153,21 @@ exports.getChats = async (req, res) => {
                     avatar = r.room_avatar || (r.type === 'community' ? '📢' : '👥');
                 }
 
+                let lastMsg = r.lastMessage || 'No messages yet';
+                if (typeof lastMsg === 'string' && lastMsg.startsWith('[GROUP_INVITE]')) {
+                    try {
+                        const jsonStr = lastMsg.replace('[GROUP_INVITE]', '');
+                        const inviteObj = JSON.parse(jsonStr);
+                        lastMsg = `📢 Invite: ${inviteObj.groupName || 'Fund Group'}`;
+                    } catch {
+                        lastMsg = '📢 Group Invite';
+                    }
+                }
+
                 return {
                     id: r.id,
                     name: name || 'Unnamed Room',
-                    lastMessage: r.lastMessage || 'No messages yet',
+                    lastMessage: lastMsg,
                     timestamp: r.timestamp || new Date(),
                     avatar: avatar,
                     unread: r.unread || 0,
@@ -185,6 +217,58 @@ exports.getMessages = async (req, res) => {
         sql += ` ORDER BY cm.created_at ASC`;
         
         const [messages] = await db.promise().query(sql, params);
+
+        // Dynamically update group invite message payloads with live member counts from DB
+        const [allGroups] = await db.promise().query(
+            "SELECT id, group_code, total_members, current_members, (SELECT COUNT(*) FROM user_grouping WHERE group_id = `groups`.id) AS live_members FROM `groups` WHERE deleted_at IS NULL"
+        );
+
+        const groupMapById = {};
+        const groupMapByCode = {};
+
+        allGroups.forEach(g => {
+            const liveCount = Number(g.live_members) || 0;
+            const totalCount = Number(g.total_members) || 20;
+
+            groupMapById[g.id] = { liveMembers: liveCount, totalMembers: totalCount };
+
+            try {
+                const plainCode = groupDecryptAES(g.group_code);
+                if (plainCode) {
+                    groupMapByCode[plainCode.toUpperCase()] = { liveMembers: liveCount, totalMembers: totalCount };
+                }
+            } catch (e) {
+                // ignore decrypt error for unencrypted fallback codes
+            }
+            if (g.group_code) {
+                groupMapByCode[String(g.group_code).toUpperCase()] = { liveMembers: liveCount, totalMembers: totalCount };
+            }
+        });
+
+        for (let i = 0; i < messages.length; i++) {
+            const msg = messages[i];
+            if (msg.message && typeof msg.message === 'string' && msg.message.startsWith('[GROUP_INVITE]')) {
+                try {
+                    const jsonStr = msg.message.replace('[GROUP_INVITE]', '');
+                    const inviteObj = JSON.parse(jsonStr);
+
+                    let groupInfo = null;
+                    if (inviteObj.groupId && groupMapById[inviteObj.groupId]) {
+                        groupInfo = groupMapById[inviteObj.groupId];
+                    } else if (inviteObj.groupCode && groupMapByCode[String(inviteObj.groupCode).toUpperCase()]) {
+                        groupInfo = groupMapByCode[String(inviteObj.groupCode).toUpperCase()];
+                    }
+
+                    if (groupInfo) {
+                        inviteObj.currentMembers = groupInfo.liveMembers;
+                        inviteObj.totalMembers = groupInfo.totalMembers;
+                        messages[i].message = `[GROUP_INVITE]${JSON.stringify(inviteObj)}`;
+                    }
+                } catch (e) {
+                    console.error('Error updating live member count in getMessages:', e);
+                }
+            }
+        }
 
         // Mark as read — set read_at for messages sent by others
         await db.promise().query(`UPDATE chat_messages SET read_at = CURRENT_TIMESTAMP WHERE room_id = ? AND sender_id != ? AND read_at IS NULL`, [roomId, userId]);
@@ -922,5 +1006,81 @@ exports.uploadChatFile = async (req, res) => {
     } catch (error) {
         console.error('Error uploading chat file:', error);
         return res.status(500).json({ success: false, message: 'Failed to upload chat file' });
+    }
+};
+
+// Share Group Code to Global Community
+exports.shareGroupToCommunity = async (req, res) => {
+    try {
+        const { groupId } = req.body;
+        const senderId = req.user.id || req.user.userId;
+
+        if (!groupId) {
+            return res.status(400).json({ success: false, message: 'groupId is required' });
+        }
+
+        // 1. Fetch group details
+        const [groups] = await db.promise().query(
+            'SELECT id, group_code, group_name, group_amount, total_members, current_members, duration, start_date FROM `groups` WHERE id = ? AND deleted_at IS NULL',
+            [groupId]
+        );
+
+        if (groups.length === 0) {
+            return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+
+        const group = groups[0];
+
+        // 2. Decrypt the group code
+        let plainGroupCode = '';
+        try {
+            plainGroupCode = groupDecryptAES(group.group_code);
+        } catch (decErr) {
+            return res.status(500).json({ success: false, message: 'Failed to process group code' });
+        }
+
+        // 3. Find or create the global community room
+        const communityRoomId = await getOrCreateGlobalCommunity();
+
+        // Query real-time count of members currently in this group
+        const [liveCountRow] = await db.promise().query(
+            'SELECT COUNT(*) as live_count FROM user_grouping WHERE group_id = ?',
+            [group.id]
+        );
+        const liveMembersCount = liveCountRow[0]?.live_count || 0;
+
+        // 4. Build the invite message payload with groupId and live count
+        const invitePayload = JSON.stringify({
+            type: 'group_invite',
+            groupId: group.id,
+            groupCode: plainGroupCode,
+            groupName: group.group_name,
+            groupAmount: group.group_amount,
+            totalMembers: group.total_members,
+            currentMembers: liveMembersCount,
+            duration: group.duration
+        });
+
+        const messageText = `[GROUP_INVITE]${invitePayload}`;
+
+        // 5. Insert the message into community chat
+        const [insertResult] = await db.promise().query(
+            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message, message_type) VALUES (?, ?, ?, ?, ?)',
+            [communityRoomId, senderId, 'Admin', messageText, 'group_invite']
+        );
+
+        return res.json({
+            success: true,
+            message: 'Group code shared to community successfully!',
+            data: {
+                messageId: insertResult.insertId,
+                roomId: communityRoomId,
+                groupCode: plainGroupCode,
+                groupName: group.group_name
+            }
+        });
+    } catch (error) {
+        console.error('Error sharing group to community:', error);
+        return res.status(500).json({ success: false, message: 'Failed to share group to community' });
     }
 };
