@@ -112,7 +112,13 @@ class ApiService {
         if (response.status === 403) {
           try {
             const clone = response.clone();
-            const data = await clone.json();
+            const text = await clone.text();
+            let data;
+            try {
+              data = JSON.parse(text);
+            } catch (e) {
+              data = null;
+            }
             if (data && data.message && data.message.toLowerCase().includes('blocked')) {
               await this.clearTokens();
               await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
@@ -264,9 +270,14 @@ class ApiService {
   async getProfile() {
     try {
       const response = await this.makeRequest('/auth/profile');
-      return await response.json();
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
     } catch (error) {
-      throw error;
+      return { success: false, message: error.message };
     }
   }
 
@@ -307,9 +318,14 @@ class ApiService {
   async getUserPreferences() {
     try {
       const response = await this.makeRequest('/user/preferences');
-      return await response.json();
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
     } catch (error) {
-      throw error;
+      return { success: false, message: error.message };
     }
   }
 
@@ -319,9 +335,46 @@ class ApiService {
         method: 'PUT',
         body: JSON.stringify(preferences),
       });
-      return await response.json();
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
     } catch (error) {
-      throw error;
+      return { success: false, message: error.message };
+    }
+  }
+
+  // App Rating methods
+  async submitAppRating(ratingData) {
+    try {
+      const response = await this.makeRequest('/user/rate-app', {
+        method: 'POST',
+        body: JSON.stringify(ratingData),
+      });
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getUserRating() {
+    try {
+      const response = await this.makeRequest('/user/my-rating');
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
     }
   }
 

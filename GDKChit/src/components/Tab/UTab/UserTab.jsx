@@ -20,10 +20,8 @@ import AdminTab, { ADMIN_PHONE, ADMIN_PASSWORD } from '../ATab/AdminTab';
 
 const withSafe = (Component) => {
   return (props) => {
-    const insets = useSafeAreaInsets();
-    const bottomTabHeight = Platform.OS === 'ios' ? 70 + insets.bottom : 60 + Math.max(insets.bottom, 10);
     return (
-      <View style={{ flex: 1, paddingBottom: bottomTabHeight }}>
+      <View style={{ flex: 1 }}>
         <Component {...props} />
       </View>
     );
@@ -31,10 +29,8 @@ const withSafe = (Component) => {
 };
 
 const HomeWithSafe = (props) => {
-  const insets = useSafeAreaInsets();
-  const bottomTabHeight = Platform.OS === 'ios' ? 70 + insets.bottom : 60 + Math.max(insets.bottom, 10);
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingBottom: bottomTabHeight }}>
+    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <Home {...props} />
     </View>
   );

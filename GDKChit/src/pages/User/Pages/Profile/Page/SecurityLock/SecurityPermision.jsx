@@ -19,6 +19,7 @@ import BiometricService from '../../../../../../services/BiometricService';
 import LockInfo from './Lock-Info-Modal/LockInfo';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import { useLanguage } from '../../../../../../utils/LanguageContext';
+import ApiService from '../../../../../../services/ApiService';
 
 const SecurPermis = ({ onBack }) => {
   const navigation = useNavigation();
@@ -27,7 +28,7 @@ const SecurPermis = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
 
-  // Load security setting on component mount
+  // Load security setting on component mount (Local + Backend sync)
   useEffect(() => {
     loadSecuritySetting();
   }, []);
@@ -52,8 +53,24 @@ const SecurPermis = ({ onBack }) => {
     try {
       console.log('Loading security setting...');
       const state = BiometricService.getState();
-      console.log('Security enabled:', state.isSecurityEnabled);
       setSecurityEnabled(state.isSecurityEnabled);
+
+      // Sync from backend DB if logged in
+      const token = await ApiService.getAccessToken();
+      if (token) {
+        const res = await ApiService.getUserPreferences();
+        if (res?.success && res.data?.securityEnabled !== undefined) {
+          const dbSecurity = Boolean(res.data.securityEnabled);
+          if (dbSecurity !== state.isSecurityEnabled) {
+            if (dbSecurity) {
+              await BiometricService.enableSecurity();
+            } else {
+              await BiometricService.disableSecurity();
+            }
+            setSecurityEnabled(dbSecurity);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error loading security setting:', error);
     } finally {
@@ -100,6 +117,11 @@ const SecurPermis = ({ onBack }) => {
 
       if (result.success) {
         setSecurityEnabled(true);
+        // Sync to backend DB
+        ApiService.updateUserPreferences({ securityEnabled: true }).catch(err => {
+          console.error('Error syncing security setting to backend:', err);
+        });
+
         Alert.alert(
           'Security Enabled',
           'App security has been successfully enabled. The app will now lock automatically when you switch to other apps or when the device is locked.',
@@ -123,6 +145,11 @@ const SecurPermis = ({ onBack }) => {
               
               if (result.success) {
                 setSecurityEnabled(false);
+                // Sync to backend DB
+                ApiService.updateUserPreferences({ securityEnabled: false }).catch(err => {
+                  console.error('Error syncing security setting to backend:', err);
+                });
+
                 Alert.alert(
                   'Security Disabled',
                   'App security has been disabled. The app will no longer require authentication.',

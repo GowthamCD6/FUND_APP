@@ -47,6 +47,32 @@ async function checkAndInitializeDatabase() {
     // Select the database
     await connection.query(`USE ${DB_CONFIG.database}`);
 
+    // Ensure user_preferences table exists
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS user_preferences (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL UNIQUE,
+        language VARCHAR(10) DEFAULT 'en',
+        security_enabled TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_user_pref_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Ensure app_ratings table exists
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS app_ratings (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        rating INT NOT NULL,
+        feedback TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_app_ratings_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     // Check for required tables
     const [tables] = await connection.query(
       `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ?`,
@@ -66,6 +92,8 @@ async function checkAndInitializeDatabase() {
       'audit_logs',
       'group_auctions',
       'group_auction_participants',
+      'user_preferences',
+      'app_ratings',
     ];
 
     const existingTables = new Set(tables.map(t => t.TABLE_NAME));

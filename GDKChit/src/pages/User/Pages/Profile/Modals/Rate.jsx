@@ -13,10 +13,13 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
+import ApiService from '../../../../../services/ApiService';
+
 const { width, height } = Dimensions.get('window');
 
 const RateModal = ({ visible, onClose }) => {
   const [selectedRating, setSelectedRating] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [animatedValue] = useState(new Animated.Value(0));
 
   React.useEffect(() => {
@@ -27,6 +30,14 @@ const RateModal = ({ visible, onClose }) => {
         tension: 50,
         friction: 8,
       }).start();
+
+      // Fetch user's existing rating from backend
+      ApiService.getUserRating().then(res => {
+        if (res?.success && res.data?.rating) {
+          setSelectedRating(res.data.rating);
+        }
+      }).catch(err => console.log('Error fetching rating:', err));
+
     } else {
       animatedValue.setValue(0);
     }
@@ -34,31 +45,51 @@ const RateModal = ({ visible, onClose }) => {
 
   const handleRateNow = async () => {
     if (selectedRating === 0) {
-      Alert.alert('Please Rate', 'Please select a rating before proceeding');
+      Alert.alert('Please Rate', 'Please select a star rating before proceeding.');
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      // For Android - Google Play Store
-      const playStoreUrl = 'market://details?id=com.gdkchitfund.app';
-      const webPlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.gdkchitfund.app';
-      
-      // For iOS - App Store (if needed later)
-      // const appStoreUrl = 'itms-apps://itunes.apple.com/app/id123456789';
-      // const webAppStoreUrl = 'https://apps.apple.com/app/id123456789';
+      // 1. Submit rating to Backend Database
+      const res = await ApiService.submitAppRating({ rating: selectedRating });
 
-      const canOpen = await Linking.canOpenURL(playStoreUrl);
-      
-      if (canOpen) {
-        await Linking.openURL(playStoreUrl);
+      if (res?.success) {
+        Alert.alert(
+          'Thank You! 🎉',
+          'Your rating has been saved successfully. Thank you for your feedback!',
+          [
+            {
+              text: 'OK',
+              onPress: async () => {
+                // If 4 or 5 stars, offer opening Play Store
+                if (selectedRating >= 4) {
+                  try {
+                    const playStoreUrl = 'market://details?id=com.gdkchitfund.app';
+                    const webPlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.gdkchitfund.app';
+                    const canOpen = await Linking.canOpenURL(playStoreUrl);
+                    if (canOpen) {
+                      await Linking.openURL(playStoreUrl);
+                    } else {
+                      await Linking.openURL(webPlayStoreUrl);
+                    }
+                  } catch (e) {
+                    console.log('Error opening play store', e);
+                  }
+                }
+                onClose();
+              }
+            }
+          ]
+        );
       } else {
-        // Fallback to web version
-        await Linking.openURL(webPlayStoreUrl);
+        Alert.alert('Error', res?.message || 'Failed to submit rating. Please try again.');
       }
-      
-      onClose();
     } catch (error) {
-      Alert.alert('Error', 'Unable to open app store. Please try again later.');
+      console.error('Error submitting rating:', error);
+      Alert.alert('Error', 'Unable to submit rating. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
