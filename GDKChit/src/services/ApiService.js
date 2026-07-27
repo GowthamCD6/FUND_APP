@@ -399,6 +399,20 @@ class ApiService {
     }
   }
 
+  async getNotifications() {
+    try {
+      const response = await this.makeRequest('/user/notifications');
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
   // Check if user is authenticated
   async isAuthenticated() {
     const accessToken = await this.getAccessToken();

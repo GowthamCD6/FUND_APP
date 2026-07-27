@@ -12,13 +12,17 @@ import {
   Platform,
   Animated,
   Easing,
+  Linking,
+  Alert,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import LottieView from 'lottie-react-native';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, RadialGradient as SvgRadialGradient, Stop, Rect, Path } from 'react-native-svg';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ChitPlans from '../Home/Chit Plans/ChitPlans';
+import ApiService from '../../../../services/ApiService';
 import styles from './Homesty';
 
 const t = (value) => value;
@@ -131,9 +135,8 @@ const infiniteData = [...plans, ...plans, ...plans];
 const initialIndex = plans.length; // Start from middle set
 
 const Home = () => {
-  // eslint-disable-next-line no-unused-vars
+  const navigation = useNavigation();
   const [userName, setUserName] = useState('User Name');
-  // eslint-disable-next-line no-unused-vars
   const [totalInvested, setTotalInvested] = useState('');
   const [showAllPlans, setShowAllPlans] = useState(false);
   const [activePlanSlide, setActivePlanSlide] = useState(0);
@@ -144,6 +147,60 @@ const Home = () => {
   const scrollX = useRef(new Animated.Value(plans.length * SNAP_INTERVAL)).current;
   const autoScrollVal = useRef(new Animated.Value(0)).current;
   const currentScrollX = useRef(plans.length * SNAP_INTERVAL);
+
+  const [notifications, setNotifications] = useState([
+    {
+      title: 'Welcome to GDK Chit Funds',
+      message: 'Your latest plan updates will appear here.',
+      type: 'info',
+    },
+  ]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const fetchHomeData = useCallback(async () => {
+    try {
+      const storedName = await AsyncStorage.getItem('userName');
+      if (storedName) {
+        setUserName(storedName);
+      }
+
+      // Fetch portfolio data for total investment sum
+      const portRes = await ApiService.getPortfolio();
+      if (portRes?.success && Array.isArray(portRes.data)) {
+        const totalPaid = portRes.data.reduce((sum, g) => sum + (Number(g.totalPaid) || 0), 0);
+        const totalInvestVal = portRes.data.reduce((sum, g) => sum + (Number(g.investmentAmount) || 0), 0);
+        const finalInvested = totalPaid > 0 ? totalPaid : totalInvestVal;
+        setTotalInvested(finalInvested > 0 ? finalInvested.toLocaleString('en-IN') : '0');
+      }
+
+      // Fetch user notifications
+      const notifRes = await ApiService.getNotifications();
+      if (notifRes?.success && Array.isArray(notifRes.data) && notifRes.data.length > 0) {
+        setNotifications(notifRes.data);
+      }
+    } catch (e) {
+      console.log('Error fetching home data:', e);
+    }
+  }, []);
+
+  const handleExplorePress = (id) => {
+    switch (id) {
+      case 'location':
+        navigation.navigate('UserAdminLocation');
+        break;
+      case 'biometric':
+        navigation.navigate('SecurityPerm');
+        break;
+      case 'online':
+        navigation.navigate('Portfolio');
+        break;
+      case 'language':
+        navigation.navigate('LanguageSettings');
+        break;
+      default:
+        break;
+    }
+  };
 
   useEffect(() => {
     const xListener = scrollX.addListener(({ value }) => {
@@ -167,16 +224,6 @@ const Home = () => {
   const plansLayoutY = useRef(0);
 
   const goldenFade = useRef(new Animated.Value(0)).current;
-
-  // Notifications State
-  const [notifications] = useState([
-    {
-      title: 'Welcome to ChitFunds',
-      message: 'Your latest plan updates will appear here.',
-      type: 'info',
-    },
-  ]);
-  const [showNotifications, setShowNotifications] = useState(false);
 
   const handleOpenNotifications = async () => {
     setShowNotifications(true);
@@ -204,11 +251,12 @@ const Home = () => {
     useCallback(() => {
       StatusBar.setBarStyle('light-content');
       triggerRangoliAnimation();
+      fetchHomeData();
 
       return () => {
         StatusBar.setBarStyle('dark-content');
       };
-    }, [triggerRangoliAnimation])
+    }, [triggerRangoliAnimation, fetchHomeData])
   );
 
   // Scroll to Popular Plans section
@@ -579,9 +627,13 @@ const Home = () => {
               <Text style={styles.greetingTitle}>{t('Hello, ') + userName}</Text>
             </View>
             <View style={styles.headerRightActions}>
-              <TouchableOpacity style={styles.investmentButton} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.investmentButton}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Portfolio')}
+              >
                 <Icon name="currency-inr" size={14} color="#FDE68A" />
-                <Text style={styles.investmentAmount}>{totalInvested ? `₹${totalInvested}` : '₹ --'}</Text>
+                <Text style={styles.investmentAmount}>{totalInvested ? totalInvested : '0'}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.notificationButton} onPress={handleOpenNotifications}>
                 <Icon name="bell-outline" size={20} color="#FFFFFF" />
@@ -745,7 +797,12 @@ const Home = () => {
                 : (isFirstInRow ? '44%' : '52%');
 
               return (
-                <View key={feature.id} style={[styles.exploreCard, { width: cardWidth, overflow: 'hidden' }]}>
+                <TouchableOpacity
+                  key={feature.id}
+                  activeOpacity={0.85}
+                  onPress={() => handleExplorePress(feature.id)}
+                  style={[styles.exploreCard, { width: cardWidth, overflow: 'hidden' }]}
+                >
                   <View style={styles.cardHeader}>
                     <Text style={styles.exploreTitle}>{t(feature.title)}</Text>
                     <Text style={styles.exploreSubtitle}>{t(feature.subtitle)}</Text>
@@ -769,7 +826,7 @@ const Home = () => {
                     }}
                     resizeMode="contain"
                   />
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>
@@ -797,7 +854,15 @@ const Home = () => {
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.whatsappButton} activeOpacity={0.9}>
+            <TouchableOpacity
+              style={styles.whatsappButton}
+              activeOpacity={0.9}
+              onPress={() => {
+                Linking.openURL('https://chat.whatsapp.com').catch(() => {
+                  Alert.alert('Notice', 'Unable to open WhatsApp link.');
+                });
+              }}
+            >
               <Text style={styles.whatsappButtonText}>
                 {t('Join Our WhatsApp Community')}
               </Text>
@@ -828,7 +893,15 @@ const Home = () => {
               resizeMode="cover"
             />
           </ScrollView>
-          <TouchableOpacity style={styles.instagramButton} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.instagramButton}
+            activeOpacity={0.8}
+            onPress={() => {
+              Linking.openURL('https://instagram.com').catch(() => {
+                Alert.alert('Notice', 'Unable to open Instagram.');
+              });
+            }}
+          >
             <Text style={styles.instagramButtonText}>
               {t('Follow Us On Instagram')}
             </Text>
