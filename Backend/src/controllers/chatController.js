@@ -43,13 +43,16 @@ exports.getChats = async (req, res) => {
                 LEFT JOIN private_conversations pc ON cr.id = pc.room_id
                 LEFT JOIN users u ON u.id = CASE WHEN pc.user1 = ? THEN pc.user2 ELSE pc.user1 END
                 LEFT JOIN chat_room_members crm ON cr.id = crm.room_id
-                WHERE cr.type = 'group_broadcast'
+                WHERE (
+                   cr.type = 'group_broadcast'
                    OR (cr.type = 'private' AND (pc.user1 = ? OR pc.user2 = ?))
                    OR (cr.type IN ('group', 'community') AND crm.user_id = ?)
+                )
+                AND cr.id NOT IN (SELECT room_id FROM user_deleted_chats WHERE user_id = ?)
                 GROUP BY cr.id
                 ORDER BY timestamp DESC
             `;
-            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId]);
+            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId, userId]);
 
             const chats = rows.map(r => {
                 let name = '';
@@ -104,13 +107,16 @@ exports.getChats = async (req, res) => {
                 LEFT JOIN user_grouping ug ON g.id = ug.group_id
                 LEFT JOIN private_conversations pc ON cr.id = pc.room_id
                 LEFT JOIN chat_room_members crm ON cr.id = crm.room_id
-                WHERE (cr.type = 'group_broadcast' AND ug.user_id = ?) 
+                WHERE (
+                   (cr.type = 'group_broadcast' AND ug.user_id = ?) 
                    OR (cr.type = 'private' AND (pc.user1 = ? OR pc.user2 = ?))
                    OR (cr.type IN ('group', 'community') AND crm.user_id = ?)
+                )
+                AND cr.id NOT IN (SELECT room_id FROM user_deleted_chats WHERE user_id = ?)
                 GROUP BY cr.id
                 ORDER BY timestamp DESC
             `;
-            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId, userId, userId]);
+            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId, userId, userId, userId]);
 
             const chats = rows.map(r => {
                 let name = '';
@@ -573,67 +579,156 @@ exports.getStarredMessages = async (req, res) => {
     }
 };
 
-// Get Room Members list (Includes all group members including current user)
+// Get Room Members list & Group Metadata (Includes start date, permissions, member list without phone numbers)
 exports.getRoomMembers = async (req, res) => {
     try {
         const { roomId } = req.params;
         const queryGroupId = req.query.groupId;
         
-        // Find room details by room id or group_id
+        // 1. Find room details by room id or group_id
         const [roomRows] = await db.promise().query(
-            'SELECT * FROM chat_rooms WHERE id = ? OR group_id = ?', 
-            [roomId, queryGroupId || roomId]
+            'SELECT * FROM chat_rooms WHERE id = ? OR group_id = ? OR id = (SELECT id FROM chat_rooms WHERE group_id = ? LIMIT 1)', 
+            [roomId, queryGroupId || roomId, queryGroupId || roomId]
         );
 
         let targetRoomId = roomId;
         let targetGroupId = queryGroupId || null;
+        let roomRecord = null;
 
         if (roomRows.length > 0) {
+            roomRecord = roomRows[0];
             targetRoomId = roomRows[0].id;
             targetGroupId = roomRows[0].group_id || targetGroupId;
         }
 
-        // Query all members from user_grouping, chat_room_members, or chat_messages senders
-        const sql = `
+        // 2. Fetch associated group details from `groups` table if available
+        let groupRecord = null;
+        if (targetGroupId) {
+            const [gRows] = await db.promise().query(
+                'SELECT id, group_code, group_name, total_members, group_amount, duration, start_date, created_at FROM `groups` WHERE id = ? AND deleted_at IS NULL',
+                [targetGroupId]
+            );
+            if (gRows.length > 0) {
+                groupRecord = gRows[0];
+            }
+        }
+
+        // 3. Query members from chat_room_members or user_grouping with real-time profile images
+        const memberSql = `
             SELECT DISTINCT 
                 u.id AS userId, 
-                COALESCE(NULLIF(u.name, ''), u.phone, 'Group Member') AS name, 
-                u.phone, 
-                u.avatar, 
-                COALESCE(crm.role, 'Member') AS role
+                CASE 
+                    WHEN u.name IS NOT NULL AND u.name != '' AND u.name NOT REGEXP '^[0-9+ -]+$' THEN u.name
+                    WHEN u.nick_name IS NOT NULL AND u.nick_name != '' AND u.nick_name NOT REGEXP '^[0-9+ -]+$' THEN u.nick_name
+                    ELSE CONCAT('Member ', u.id)
+                END AS name, 
+                up.user_image AS avatar, 
+                COALESCE(crm.role, CASE WHEN u.role = 'Admin' THEN 'Admin' ELSE 'Member' END) AS role
             FROM users u
+            LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
             LEFT JOIN chat_room_members crm ON u.id = crm.user_id AND crm.room_id = ?
             LEFT JOIN user_grouping ug ON u.id = ug.user_id AND ug.group_id = ?
             WHERE (crm.room_id = ? OR (ug.group_id = ? AND ug.group_id IS NOT NULL))
               AND u.deleted_at IS NULL
-            ORDER BY name ASC
+            ORDER BY role ASC, name ASC
         `;
 
-        let [rows] = await db.promise().query(sql, [targetRoomId, targetGroupId, targetRoomId, targetGroupId]);
+        let [members] = await db.promise().query(memberSql, [targetRoomId, targetGroupId, targetRoomId, targetGroupId]);
         
         // Fallback 1: If no members matched, query user_grouping by targetGroupId directly
-        if (rows.length === 0 && targetGroupId) {
+        if (members.length === 0 && targetGroupId) {
             const [gRows] = await db.promise().query(`
-                SELECT DISTINCT u.id AS userId, COALESCE(NULLIF(u.name, ''), u.phone, 'Group Member') AS name, u.phone, u.avatar, 'Member' AS role
+                SELECT DISTINCT 
+                    u.id AS userId, 
+                    CASE 
+                        WHEN u.name IS NOT NULL AND u.name != '' AND u.name NOT REGEXP '^[0-9+ -]+$' THEN u.name
+                        WHEN u.nick_name IS NOT NULL AND u.nick_name != '' AND u.nick_name NOT REGEXP '^[0-9+ -]+$' THEN u.nick_name
+                        ELSE CONCAT('Member ', u.id)
+                    END AS name, 
+                    up.user_image AS avatar, 
+                    CASE WHEN u.role = 'Admin' THEN 'Admin' ELSE 'Member' END AS role
                 FROM user_grouping ug
                 JOIN users u ON ug.user_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
                 WHERE ug.group_id = ? AND u.deleted_at IS NULL
+                ORDER BY role ASC, name ASC
             `, [targetGroupId]);
-            rows = gRows;
+            members = gRows;
         }
 
-        // Fallback 2: If still no members found, query all users who sent messages in this room
-        if (rows.length === 0) {
+        // Fallback 2: Query chat_messages senders
+        if (members.length === 0) {
             const [mRows] = await db.promise().query(`
-                SELECT DISTINCT u.id AS userId, COALESCE(NULLIF(u.name, ''), u.phone, 'Group Member') AS name, u.phone, u.avatar, 'Member' AS role
+                SELECT DISTINCT 
+                    u.id AS userId, 
+                    CASE 
+                        WHEN u.name IS NOT NULL AND u.name != '' AND u.name NOT REGEXP '^[0-9+ -]+$' THEN u.name
+                        WHEN u.nick_name IS NOT NULL AND u.nick_name != '' AND u.nick_name NOT REGEXP '^[0-9+ -]+$' THEN u.name
+                        ELSE CONCAT('Member ', u.id)
+                    END AS name, 
+                    up.user_image AS avatar, 
+                    CASE WHEN u.role = 'Admin' THEN 'Admin' ELSE 'Member' END AS role
                 FROM chat_messages cm
                 JOIN users u ON cm.sender_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
                 WHERE (cm.room_id = ? OR cm.source_room_id = ?) AND u.deleted_at IS NULL
+                ORDER BY role ASC, name ASC
             `, [targetRoomId, targetRoomId]);
-            rows = mRows;
+            members = mRows;
         }
+
+        // Fallback 3: If still empty, return active users as general fallback
+        if (members.length === 0) {
+            const [allUsers] = await db.promise().query(`
+                SELECT 
+                    u.id AS userId, 
+                    CASE 
+                        WHEN u.name IS NOT NULL AND u.name != '' AND u.name NOT REGEXP '^[0-9+ -]+$' THEN u.name
+                        WHEN u.nick_name IS NOT NULL AND u.nick_name != '' AND u.nick_name NOT REGEXP '^[0-9+ -]+$' THEN u.nick_name
+                        ELSE CONCAT('Member ', u.id)
+                    END AS name, 
+                    up.user_image AS avatar, 
+                    CASE WHEN u.role = 'Admin' THEN 'Admin' ELSE 'Member' END AS role
+                FROM users u
+                LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
+                WHERE u.deleted_at IS NULL
+                ORDER BY u.id ASC
+                LIMIT 20
+            `);
+            members = allUsers;
+        }
+
+        // 4. Construct metadata
+        const roomType = roomRecord?.type || (targetGroupId ? 'group_broadcast' : 'group');
+        const startDate = groupRecord?.start_date || groupRecord?.created_at || roomRecord?.created_at || new Date();
+        const createdAt = roomRecord?.created_at || groupRecord?.created_at || startDate;
+
+        const isBroadcast = roomType === 'group_broadcast' || roomType === 'community';
+
+        const groupInfo = {
+            id: targetRoomId,
+            groupId: targetGroupId,
+            name: groupRecord?.group_name || roomRecord?.name || 'Group Chat',
+            avatar: groupRecord?.avatar || roomRecord?.avatar || null,
+            startDate: startDate,
+            createdAt: createdAt,
+            totalMembers: members.length,
+            groupType: isBroadcast ? 'Chit Group Broadcast' : 'Group Chat',
+            permissions: {
+                sendMessages: isBroadcast ? 'Only Admins' : 'All Members',
+                editGroupInfo: 'Only Admins',
+                addMembers: 'Only Admins',
+                pinMessages: 'Only Admins'
+            },
+            groupAmount: groupRecord?.group_amount || null,
+            duration: groupRecord?.duration || null
+        };
         
-        return res.json({ success: true, members: rows });
+        return res.json({ 
+            success: true, 
+            members: members,
+            groupInfo: groupInfo 
+        });
     } catch (error) {
         console.error('Error in getRoomMembers:', error);
         return res.status(500).json({ success: false, message: 'Failed to load room members' });
@@ -687,57 +782,38 @@ exports.removeRoomMembers = async (req, res) => {
     }
 };
 
-// Delete a chat room (only Admin or the authorized members/creator)
+// Delete a chat room (Hides room ONLY for the requesting user; keeps room & messages intact in DB)
 exports.deleteRoom = async (req, res) => {
     try {
         const { roomId } = req.body;
         const userId = req.user.id || req.user.userId;
-        const role = req.user.role;
 
         if (!roomId) {
             return res.status(400).json({ success: false, message: 'roomId is required' });
         }
 
-        // Verify room exists
-        const [roomRows] = await db.promise().query('SELECT * FROM chat_rooms WHERE id = ?', [roomId]);
-        if (roomRows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Room not found' });
-        }
-        const room = roomRows[0];
+        // Create table user_deleted_chats if not exists
+        await db.promise().query(`
+            CREATE TABLE IF NOT EXISTS user_deleted_chats (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              user_id INT NOT NULL,
+              room_id VARCHAR(255) NOT NULL,
+              deleted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              UNIQUE KEY user_room_unique (user_id, room_id)
+            )
+        `);
 
-        // Authorization check: Admin can delete any room.
-        // For standard Users, they can only delete if it's a private chat that belongs to them, or if they are admin of custom group.
-        if (role !== 'Admin') {
-            if (room.type === 'private') {
-                const [pcRows] = await db.promise().query(
-                    'SELECT id FROM private_conversations WHERE room_id = ? AND (user1 = ? OR user2 = ?)',
-                    [roomId, userId, userId]
-                );
-                if (pcRows.length === 0) {
-                    return res.status(403).json({ success: false, message: 'You are not authorized to delete this room' });
-                }
-            }
-            if (room.type === 'group' || room.type === 'community') {
-                const [memberRows] = await db.promise().query(
-                    'SELECT role FROM chat_room_members WHERE room_id = ? AND user_id = ?',
-                    [roomId, userId]
-                );
-                if (memberRows.length === 0 || memberRows[0].role !== 'Admin') {
-                    return res.status(403).json({ success: false, message: 'Only group admins can delete group chats' });
-                }
-            }
-            if (room.type === 'group_broadcast') {
-                return res.status(403).json({ success: false, message: 'Only Admins can delete group broadcast rooms' });
-            }
-        }
+        // Record per-user soft deletion (chat remains 100% intact for all other users in DB)
+        await db.promise().query(`
+            INSERT INTO user_deleted_chats (user_id, room_id, deleted_at)
+            VALUES (?, ?, NOW())
+            ON DUPLICATE KEY UPDATE deleted_at = NOW()
+        `, [userId, String(roomId)]);
 
-        // Delete the room
-        await db.promise().query('DELETE FROM chat_rooms WHERE id = ?', [roomId]);
-
-        return res.json({ success: true, message: 'Chat room deleted successfully' });
+        return res.json({ success: true, message: 'Chat deleted for you' });
     } catch (error) {
         console.error('Error in deleteRoom:', error);
-        return res.status(500).json({ success: false, message: 'Failed to delete chat room' });
+        return res.status(500).json({ success: false, message: 'Failed to delete chat' });
     }
 };
 

@@ -23,6 +23,7 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import styles from './ChatScreenStyle';
 import ApiService from '../../../../../services/ApiService';
+import Header from '../../../../../components/HeaderComponent/Header';
 
 // Enable long press context menu on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -34,6 +35,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const { chatId, chatName, chatAvatar, isGroup, groupId } = route.params || {};
   const [showDropdown, setShowDropdown] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
+  const [groupDetails, setGroupDetails] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -239,6 +241,14 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     }
   };
 
+  const getAvatarUrl = (avatarPath) => {
+    if (!avatarPath) return null;
+    if (avatarPath.startsWith('http') || avatarPath.startsWith('data:image')) return avatarPath;
+    const base = (ApiService.baseURL || 'http://localhost:5000').replace(/\/+$/, '').replace(/\/api\/?$/, '');
+    const path = avatarPath.startsWith('/') ? avatarPath : `/${avatarPath}`;
+    return `${base}${path}`;
+  };
+
   // Handle back navigation
   const handleGoBack = () => {
     if (onBack) {
@@ -288,7 +298,12 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       const query = groupId ? `?groupId=${groupId}` : '';
       const res = await ApiService.makeRequest(`/chats/rooms/${chatId}/members${query}`);
       const data = await res.json();
-      if (data.success) setGroupMembers(data.members || []);
+      if (data.success) {
+        setGroupMembers(data.members || []);
+        if (data.groupInfo) {
+          setGroupDetails(data.groupInfo);
+        }
+      }
     } catch (e) {
       console.log('Error fetching members', e);
     }
@@ -1209,7 +1224,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             <View style={styles.profileInfo}>
               <Text style={styles.profileName} numberOfLines={1}>{chatName}</Text>
               <Text style={styles.profileStatus}>
-                {isGroup ? `${groupMembers.length > 0 ? groupMembers.length : ''} Members` : (onlineStatus ? 'Online' : 'Offline')}
+                {isGroup ? `${groupMembers.length || groupDetails?.totalMembers || 0} Members` : (onlineStatus ? 'Online' : 'Offline')}
               </Text>
             </View>
           </TouchableOpacity>
@@ -1483,52 +1498,128 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       {/* Group Info Full Modal */}
       <Modal visible={showGroupInfoModal} animationType="slide" onRequestClose={() => setShowGroupInfoModal(false)}>
         <SafeAreaView style={styles.groupInfoModalOverlay}>
-          {/* Header */}
-          <View style={styles.groupInfoModalHeader}>
-            <TouchableOpacity onPress={() => setShowGroupInfoModal(false)}>
-              <MaterialCommunityIcons name="arrow-left" size={28} color="#111827" />
-            </TouchableOpacity>
-            <Text style={styles.groupInfoModalTitle}>Group Info</Text>
-          </View>
+          {/* Header Component */}
+          <Header
+            title="Group Info"
+            onBack={() => setShowGroupInfoModal(false)}
+            showBackButton={true}
+            showDivider={true}
+          />
 
-          <ScrollView style={styles.groupInfoContent}>
-            {/* Top Section (Avatar & Name) */}
+          <ScrollView style={styles.groupInfoContent} showsVerticalScrollIndicator={false}>
+            {/* Top Section (Hero Header) */}
             <View style={styles.groupInfoHeaderSection}>
               <View style={styles.groupInfoAvatarContainer}>
                 {chatAvatar && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
-                  <Image source={{ uri: chatAvatar }} style={{ width: 120, height: 120, borderRadius: 60 }} />
+                  <Image source={{ uri: chatAvatar }} style={{ width: 110, height: 110, borderRadius: 55 }} />
                 ) : (
-                  <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
-                    <MaterialCommunityIcons name="account-group" size={60} color="#9CA3AF" />
+                  <View style={{ width: 110, height: 110, borderRadius: 55, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center' }}>
+                    <MaterialCommunityIcons name="account-group" size={56} color="#7C3AED" />
                   </View>
                 )}
               </View>
               
               <View style={styles.groupInfoNameContainer}>
-                <Text style={styles.groupInfoNameText}>{chatName}</Text>
+                <Text style={styles.groupInfoNameText}>{groupDetails?.name || chatName}</Text>
+              </View>
+
+              {/* Group Started Date */}
+              <View style={styles.groupInfoStartDateRow}>
+                <MaterialCommunityIcons name="calendar-clock" size={16} color="#7C3AED" />
+                <Text style={styles.groupInfoStartDateText}>
+                  Started on: {groupDetails?.startDate ? new Date(groupDetails.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                </Text>
               </View>
             </View>
 
-            {/* Members Section */}
-            <View style={styles.groupInfoMembersSection}>
-              <Text style={styles.groupInfoMembersHeader}>{groupMembers.length} Members</Text>
+            {/* WhatsApp Native Grey Section Divider */}
+            <View style={{ height: 10, backgroundColor: '#F3F4F6', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#E5E7EB' }} />
+
+            {/* WhatsApp Native Group Permissions List */}
+            <View style={{ backgroundColor: '#FFFFFF', paddingVertical: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 6 }}>
+                <MaterialCommunityIcons name="shield-outline" size={20} color="#7C3AED" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: 0.6 }}>Group permissions</Text>
+              </View>
+
+              {/* Send Messages Row */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center', marginRight: 14 }}>
+                  <MaterialCommunityIcons name="message-text-outline" size={20} color="#7C3AED" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#1F2937' }}>Send group messages</Text>
+                  <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{groupDetails?.permissions?.sendMessages || 'Only Admins'}</Text>
+                </View>
+              </View>
+
+              <View style={{ height: 1, backgroundColor: '#F3F4F6', marginLeft: 66 }} />
+
+              {/* Edit Group Info Row */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center', marginRight: 14 }}>
+                  <MaterialCommunityIcons name="pencil-outline" size={20} color="#7C3AED" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#1F2937' }}>Edit group info</Text>
+                  <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{groupDetails?.permissions?.editGroupInfo || 'Only Admins'}</Text>
+                </View>
+              </View>
+
+              <View style={{ height: 1, backgroundColor: '#F3F4F6', marginLeft: 66 }} />
+
+              {/* Add Members Row */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center', marginRight: 14 }}>
+                  <MaterialCommunityIcons name="account-plus-outline" size={20} color="#7C3AED" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#1F2937' }}>Add other members</Text>
+                  <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{groupDetails?.permissions?.addMembers || 'Only Admins'}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* WhatsApp Native Grey Section Divider */}
+            <View style={{ height: 10, backgroundColor: '#F3F4F6', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#E5E7EB' }} />
+
+            {/* Members Section (Flat Native List with Real-Time User Profile Photos) */}
+            <View style={{ backgroundColor: '#FFFFFF', paddingBottom: 24 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.6 }}>{groupMembers.length} Members</Text>
+              </View>
 
               {groupMembers.map((item, idx) => {
-                const memberName = item.name || item.user_name || 'Group Member';
+                const rawName = item.name || item.user_name || 'Group Member';
+                const memberName = String(rawName).match(/^[0-9+ -]+$/) ? `Member ${item.userId || idx + 1}` : rawName;
+                const isAdmin = item.role === 'Admin';
+                const avatarUrl = getAvatarUrl(item.avatar);
+
                 return (
-                  <View key={item.userId || item.id || idx} style={styles.groupInfoMemberItem}>
-                    <View style={styles.groupInfoMemberAvatar}>
-                      {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('data:image')) ? (
-                        <Image source={{ uri: item.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                      ) : (
-                        <Text style={styles.userListAvatarText}>
-                          {memberName.substring(0, 2).toUpperCase()}
-                        </Text>
-                      )}
+                  <View key={item.userId || item.id || idx}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }}>
+                      <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center', marginRight: 14, overflow: 'hidden' }}>
+                        {avatarUrl ? (
+                          <Image source={{ uri: avatarUrl }} style={{ width: 46, height: 46, borderRadius: 23 }} />
+                        ) : (
+                          <Text style={{ fontSize: 16, fontWeight: '700', color: '#7C3AED' }}>
+                            {memberName.substring(0, 2).toUpperCase()}
+                          </Text>
+                        )}
+                      </View>
+
+                      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#1F2937' }}>{memberName}</Text>
+                        {isAdmin && (
+                          <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                            <Text style={{ color: '#7C3AED', fontSize: 11, fontWeight: '700' }}>Group Admin</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                    <View style={styles.groupInfoMemberInfo}>
-                      <Text style={styles.groupInfoMemberName}>{memberName}</Text>
-                    </View>
+                    {idx < groupMembers.length - 1 && (
+                      <View style={{ height: 1, backgroundColor: '#F3F4F6', marginLeft: 76 }} />
+                    )}
                   </View>
                 );
               })}

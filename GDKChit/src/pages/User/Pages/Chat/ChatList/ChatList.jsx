@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
@@ -32,7 +32,6 @@ const ChatList = ({ navigation }) => {
 
   // ---- State ----
   const [chats, setChats] = useState([]);
-  const [filteredChats, setFilteredChats] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -166,9 +165,9 @@ const ChatList = ({ navigation }) => {
     setSearchQuery(text);
   };
 
-  // Combined filter + sort logic
-  const applyFiltersAndSort = (chatList, query, filter, sort) => {
-    let processed = chatList.map(chat => ({
+  // Combined filter + sort logic (derived synchronously with useMemo)
+  const filteredChats = useMemo(() => {
+    let processed = chats.map(chat => ({
       ...chat,
       pinned: pinnedChats.includes(chat.id),
       muted: mutedChats.includes(chat.id),
@@ -176,7 +175,7 @@ const ChatList = ({ navigation }) => {
     }));
 
     // If showing archived tab, filter only archived. Otherwise filter out archived.
-    if (filter === 'archived') {
+    if (activeFilter === 'archived') {
       processed = processed.filter(chat => chat.archived);
     } else {
       processed = processed.filter(chat => !chat.archived);
@@ -185,19 +184,19 @@ const ChatList = ({ navigation }) => {
     let filtered = [...processed];
 
     // Apply filter type
-    if (filter === 'unread') {
+    if (activeFilter === 'unread') {
       filtered = filtered.filter(chat => chat.unread > 0);
-    } else if (filter === 'groups') {
+    } else if (activeFilter === 'groups') {
       filtered = filtered.filter(chat => chat.isGroup);
-    } else if (filter === 'personal') {
+    } else if (activeFilter === 'personal') {
       filtered = filtered.filter(chat => !chat.isGroup);
     }
 
     // Apply search query
-    if (query.trim() !== '') {
+    if (searchQuery.trim() !== '') {
       filtered = filtered.filter(chat =>
-        (chat.name || '').toLowerCase().includes(query.toLowerCase()) ||
-        (chat.lastMessage || '').toLowerCase().includes(query.toLowerCase())
+        (chat.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (chat.lastMessage || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -206,20 +205,16 @@ const ChatList = ({ navigation }) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
 
-      if (sort === 'unread') {
+      if (sortMode === 'unread') {
         return (b.unread || 0) - (a.unread || 0);
-      } else if (sort === 'name') {
+      } else if (sortMode === 'name') {
         return (a.name || '').localeCompare(b.name || '');
       } else {
         return new Date(b.timestamp || 0) - new Date(a.timestamp || 0);
       }
     });
 
-    setFilteredChats(filtered);
-  };
-
-  useEffect(() => {
-    applyFiltersAndSort(chats, searchQuery, activeFilter, sortMode);
+    return filtered;
   }, [chats, searchQuery, activeFilter, sortMode, pinnedChats, mutedChats, archivedChats]);
 
   const handleFilterChange = (filter) => {
