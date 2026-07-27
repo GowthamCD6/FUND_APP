@@ -41,7 +41,7 @@ const SecurPermis = ({ onBack }) => {
         return true;
       }
       navigation.goBack();
-      return true; 
+      return true;
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
@@ -89,7 +89,7 @@ const SecurPermis = ({ onBack }) => {
   const handleSecurityToggle = async (value) => {
     // Check if authentication is available
     const authCheck = await checkAuthenticationAvailability();
-    
+
     if (!authCheck.available) {
       Alert.alert(
         'Authentication Not Available',
@@ -101,7 +101,7 @@ const SecurPermis = ({ onBack }) => {
             style: 'default',
             onPress: () => {
               Alert.alert(
-                'Setup Instructions', 
+                'Setup Instructions',
                 'Go to your device Settings > Security & Privacy > Screen Lock to set up PIN, password, pattern, fingerprint, or face unlock.'
               );
             }
@@ -142,7 +142,7 @@ const SecurPermis = ({ onBack }) => {
             style: 'destructive',
             onPress: async () => {
               const result = await BiometricService.disableSecurity();
-              
+
               if (result.success) {
                 setSecurityEnabled(false);
                 // Sync to backend DB
@@ -167,7 +167,7 @@ const SecurPermis = ({ onBack }) => {
 
   return (
     <View style={styles.container}>
-      <Header 
+      <Header
         title="Security Settings"
         onBack={() => navigation.goBack()}
         showBackButton={true}
@@ -176,7 +176,7 @@ const SecurPermis = ({ onBack }) => {
       {/* Form Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.formContainer}>
-          
+
           {/* Lottie Animation */}
           <View style={styles.animationContainer}>
             <LottieView
@@ -188,7 +188,7 @@ const SecurPermis = ({ onBack }) => {
               style={styles.lottieAnimation}
             />
           </View>
-          
+
           {/* Security Enable Card */}
           <View style={styles.inputContainer}>
             <View style={styles.labelContainer}>
@@ -226,7 +226,7 @@ const SecurPermis = ({ onBack }) => {
           </View>
 
           {/* Help Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.helpButton}
             onPress={() => setHelpModalVisible(true)}
           >
@@ -238,7 +238,7 @@ const SecurPermis = ({ onBack }) => {
       </ScrollView>
 
       {/* Help Modal - LockInfo Component */}
-      <LockInfo 
+      <LockInfo
         visible={helpModalVisible}
         onClose={() => setHelpModalVisible(false)}
       />

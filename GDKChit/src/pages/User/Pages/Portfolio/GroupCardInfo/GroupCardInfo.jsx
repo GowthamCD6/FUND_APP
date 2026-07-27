@@ -52,10 +52,8 @@ const GroupCardInfo = ({ onClose, group }) => {
     const fetchMonthlyInfo = async () => {
       try {
         setLoading(true);
-        const endpoint = `/user/portfolio/${groupInfo.groupId}/months`;
-        const response = await ApiService.makeRequest(endpoint);
-        const result = await response.json();
-        if (result.success && result.data) {
+        const result = await ApiService.getGroupMonthlyInfo(group.id || groupInfo.groupId);
+        if (result?.success && result?.data) {
           setMonthlyData(result.data);
         }
       } catch (error) {

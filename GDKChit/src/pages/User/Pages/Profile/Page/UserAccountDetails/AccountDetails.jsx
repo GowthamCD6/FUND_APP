@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInput, Alert, Modal, FlatList, BackHandler, Image, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -63,6 +64,7 @@ const parseStoredDate = (value) => {
 
 const AccountD = ({ onBack }) => {
 	const navigation = useNavigation();
+	const insets = useSafeAreaInsets();
 	const { t, language } = useLanguage();
 	const [formData, setFormData] = useState({
 		name: '',
@@ -356,7 +358,7 @@ const AccountD = ({ onBack }) => {
 					/>
 				}
 			>
-				<View style={styles.formContainer}>
+				<View style={[styles.formContainer, { paddingBottom: Math.max(insets.bottom + 20, 32) }]}>
 					{loading && (
 						<Text style={{ marginBottom: 16, color: '#6B7280' }}>{t('Loading profile details...')}</Text>
 					)}

@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Platform,
   StatusBar,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import BiometricService from '../../../../../../services/BiometricService';
 
@@ -115,7 +115,7 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" translucent />
       
       {/* Time and Date Header */}
@@ -186,7 +186,7 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
 
       {/* Home Indicator */}
       <View style={styles.homeIndicator} />
-    </SafeAreaView>
+    </View>
   );
 };
 

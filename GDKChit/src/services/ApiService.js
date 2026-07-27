@@ -424,18 +424,28 @@ class ApiService {
   async getPortfolio() {
     try {
       const response = await this.makeRequest('/user/portfolio');
-      return await response.json();
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
     } catch (error) {
-      throw error;
+      return { success: false, message: error.message };
     }
   }
 
   async getGroupMonthlyInfo(groupId) {
     try {
       const response = await this.makeRequest(`/user/portfolio/${groupId}/months`);
-      return await response.json();
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
     } catch (error) {
-      throw error;
+      return { success: false, message: error.message };
     }
   }
 }

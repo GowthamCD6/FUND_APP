@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Switch,
   Alert,
   Platform,
@@ -13,6 +12,7 @@ import {
   Share,
   BackHandler,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 import ShareLocationInfo from './Share_info_modal/ShareLocationInfo';
@@ -542,7 +542,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header 
         title="My Location"
         onBack={() => {
@@ -725,7 +725,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
         visible={showShareLocationInfo}
         onClose={() => setShowShareLocationInfo(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

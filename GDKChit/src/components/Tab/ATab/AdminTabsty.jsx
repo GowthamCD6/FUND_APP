@@ -60,10 +60,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: 60,
-    height: 56,
+    height: 50,
     paddingTop: 0,
     paddingBottom: 0,
-    marginTop: 20,
+    marginTop: 6,
   },
   iconStyle: {
     marginBottom: 0,
@@ -79,28 +79,28 @@ const styles = StyleSheet.create({
   },
 
   customTabButton: {
-    top: -10, // Added slight negative top to lift it above the shorter tab bar
+    top: -18,
     justifyContent: 'flex-start',
     alignItems: 'center',
     flex: 1,
     height: '100%',
-    paddingTop: 10,
+    paddingTop: 0,
   },
   customTabButtonInner: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#6B46C1',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
+    elevation: 6,
     shadowColor: '#6B46C1',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 3,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
 });
 

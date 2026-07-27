@@ -18,8 +18,8 @@ const LinkBA = ({ onBack, pageName = "This Page" }) => {
   // Handle hardware back button to navigate back to profile page
   useEffect(() => {
     const backAction = () => {
-      navigation.goBack(); 
-      return true; 
+      navigation.goBack();
+      return true;
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
@@ -37,7 +37,7 @@ const LinkBA = ({ onBack, pageName = "This Page" }) => {
             loop
             style={{ width: 460, height: 260, marginRight: 90 }}
           />
-        </View>   
+        </View>
 
         <Text style={[styles.title, language === 'ta' && { fontSize: 24 }]}>{t('Under Construction')}</Text>
 
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     textAlign: 'center',
     marginBottom: 12,
-    lineHeight: 24, 
+    lineHeight: 24,
   },
   subMessage: {
     fontSize: 14,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     borderRadius: 50,
     elevation: 2,
-    shadowColor: '#000', 
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,

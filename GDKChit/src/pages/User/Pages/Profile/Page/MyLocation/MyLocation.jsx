@@ -65,7 +65,7 @@ const MyLocation = ({ navigation }) => {
   useEffect(() => {
     console.log('MyLocation component mounted');
     initializeComponent();
-    
+
     // Handle Android hardware back button
     const backAction = () => {
       console.log('Hardware back button pressed');
@@ -146,7 +146,7 @@ const MyLocation = ({ navigation }) => {
           console.log('Backend location load failed, falling back to local storage:', backendError);
         }
       }
-      
+
       // Try to load saved location with address first
       console.log('Loading stored location data...');
       const savedLocationData = await getStoredLocationWithAddress();
@@ -182,11 +182,11 @@ const MyLocation = ({ navigation }) => {
   const shareHouseAddress = async () => {
     try {
       setLoading(true);
-      
+
       // Step 1: Check and request permission if needed
       console.log('Requesting location permission...');
       const hasPermission = await checkLocationPermission();
-      
+
       if (!hasPermission) {
         console.log('No permission, requesting...');
         const granted = await requestLocationPermission();
@@ -204,52 +204,52 @@ const MyLocation = ({ navigation }) => {
           return;
         }
       }
-      
+
       // Step 2: Get current location with fallback strategies
       console.log('Getting current location for address sharing...');
       const location = await getUserCurrentLocationWithFallback();
-      
+
       const newLocation = {
         latitude: location.latitude,
         longitude: location.longitude,
         accuracy: location.accuracy,
         timestamp: location.timestamp || Date.now(),
       };
-      
+
       // Step 3: Update UI with location
       setCurrentLocation(newLocation);
       setLastUpdated(new Date());
       setLocationEnabled(true);
-      
+
       // Step 4: Store location locally
       console.log('Storing location locally...');
       await storeLocationLocally(newLocation);
-      
+
       // Step 5: Get address from coordinates
       console.log('Getting address from coordinates...');
       await getAddressFromCoordinatesLocal(newLocation.latitude, newLocation.longitude);
-      
+
       // Step 6: Auto-save to database for admin navigation
       console.log('Auto-saving to database...');
       setTimeout(async () => {
         await saveLocationToDatabase();
         setHasSharedAddress(true);
         setLoading(false);
-        
+
         Alert.alert(
           '🏠 House Address Shared!',
           'Your house address has been captured and saved successfully. Admins can now navigate to your location.',
           [{ text: 'Great!' }]
         );
       }, 2000);
-      
+
     } catch (error) {
       console.log('Share address error:', error);
       setLoading(false);
-      
+
       if (error.message === 'Location permission denied' || error.code === 1) {
         Alert.alert(
-          'Permission Denied', 
+          'Permission Denied',
           'Location permission was denied. Please enable location permission in device settings to share your address.',
           [
             { text: 'Cancel', style: 'cancel' },
@@ -260,7 +260,7 @@ const MyLocation = ({ navigation }) => {
         Alert.alert('Location Unavailable', 'Unable to get your current location. Please make sure location services are enabled and try again.');
       } else if (error.code === 3) {
         Alert.alert(
-          'Location Timeout', 
+          'Location Timeout',
           'Location request timed out. This often happens indoors or in areas with poor GPS signal.\n\nTips:\n• Try going outside for better GPS signal\n• Make sure location services are enabled\n• Wait a moment and try again',
           [{ text: 'OK' }]
         );
@@ -274,23 +274,23 @@ const MyLocation = ({ navigation }) => {
   const requestLocationPermissionHandler = async () => {
     try {
       console.log('Requesting location permission...');
-      
+
       if (Platform.OS === 'android') {
         // First check if permission is already granted
         const alreadyGranted = await checkLocationPermission();
         console.log('Already granted check result:', alreadyGranted);
-        
+
         if (alreadyGranted) {
           setLocationEnabled(true);
           getCurrentLocation();
           return;
         }
-        
+
         // Request permission
         console.log('Requesting permission from user...');
         const granted = await requestLocationPermission();
         console.log('Permission request result:', granted);
-        
+
         if (granted) {
           setLocationEnabled(true);
           getCurrentLocation();
@@ -301,13 +301,13 @@ const MyLocation = ({ navigation }) => {
             'Location permission is required to capture your GPS location and address. Please grant permission when prompted or enable it manually in device settings.',
             [
               { text: 'Cancel', style: 'cancel' },
-              { 
-                text: 'Try Again', 
-                onPress: () => requestLocationPermissionHandler() 
+              {
+                text: 'Try Again',
+                onPress: () => requestLocationPermissionHandler()
               },
-              { 
-                text: 'Open Settings', 
-                onPress: () => Linking.openSettings() 
+              {
+                text: 'Open Settings',
+                onPress: () => Linking.openSettings()
               }
             ]
           );
@@ -334,39 +334,39 @@ const MyLocation = ({ navigation }) => {
   const getCurrentLocation = async () => {
     console.log('Getting current location...');
     setLoading(true);
-    
+
     try {
       console.log('Calling getUserCurrentLocationWithFallback service...');
       const location = await getUserCurrentLocationWithFallback();
       console.log('Location service returned:', location);
-      
+
       const newLocation = {
         latitude: location.latitude,
         longitude: location.longitude,
         accuracy: location.accuracy,
         timestamp: location.timestamp || Date.now(),
       };
-      
+
       console.log('Setting new location state:', newLocation);
       setCurrentLocation(newLocation);
       setLastUpdated(new Date());
       setLocationEnabled(true);
       setLoading(false);
-      
+
       // Store location locally for offline access
       console.log('Storing location locally...');
       await storeLocationLocally(newLocation);
-      
+
       // Get address from coordinates
       console.log('Getting address from coordinates...');
       getAddressFromCoordinatesLocal(newLocation.latitude, newLocation.longitude);
     } catch (error) {
       console.log('Location error:', error);
       setLoading(false);
-      
+
       if (error.message === 'Location permission denied' || error.code === 1) {
         Alert.alert(
-          'Permission Denied', 
+          'Permission Denied',
           'Location permission was denied. Please enable location permission in device settings to use this feature.',
           [
             { text: 'Cancel', style: 'cancel' },
@@ -377,7 +377,7 @@ const MyLocation = ({ navigation }) => {
         Alert.alert('Position Unavailable', 'Unable to get your current location. Please make sure location services are enabled and try again.');
       } else if (error.code === 3) {
         Alert.alert(
-          'Location Timeout', 
+          'Location Timeout',
           'Location request timed out. This often happens indoors or in areas with poor GPS signal.\n\nTips:\n• Try going outside for better GPS signal\n• Make sure location services are enabled\n• Wait a moment and try again',
           [{ text: 'OK' }]
         );
@@ -395,8 +395,8 @@ const MyLocation = ({ navigation }) => {
       if (isGeocodingAvailable()) {
         console.log('Geocoding is available, using Google Maps API...');
         const address = await getAddressFromCoordinates(
-          latitude, 
-          longitude, 
+          latitude,
+          longitude,
           LOCATION_CONFIG.GOOGLE_MAPS_API_KEY
         );
         console.log('Received address:', address);
@@ -440,10 +440,10 @@ const MyLocation = ({ navigation }) => {
 
   const shareLocation = () => {
     if (!currentLocation) return;
-    
+
     const { latitude, longitude } = currentLocation;
     const message = `My current location: ${formatCoordinates(latitude, longitude)}\n\nView on Maps: https://maps.google.com/maps?q=${latitude},${longitude}`;
-    
+
     Share.share({
       message,
       title: 'My Location',
@@ -452,10 +452,10 @@ const MyLocation = ({ navigation }) => {
 
   const openInMaps = () => {
     if (!currentLocation) return;
-    
+
     const { latitude, longitude } = currentLocation;
     const url = generateMapDeepLink(latitude, longitude, Platform);
-    
+
     Linking.openURL(url).catch(() => {
       Alert.alert('Error', 'Unable to open maps application.');
     });
@@ -480,7 +480,7 @@ const MyLocation = ({ navigation }) => {
     }
 
     setSavingLocation(true);
-    
+
     try {
       // Create comprehensive location data
       const locationData = createLocationDataObject(
@@ -536,7 +536,7 @@ const MyLocation = ({ navigation }) => {
     try {
       // First get current location
       await getCurrentLocation();
-      
+
       // Wait a moment for address to be fetched
       setTimeout(() => {
         // Auto-save to database after location is captured
@@ -549,7 +549,7 @@ const MyLocation = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header 
+      <Header
         title="My Location"
         onBack={() => {
           console.log('Back button pressed in MyLocation');
@@ -558,7 +558,7 @@ const MyLocation = ({ navigation }) => {
         showBackButton={true}
       />
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -593,7 +593,7 @@ const MyLocation = ({ navigation }) => {
               </View>
               <View style={styles.shareAddressCard}>
                 <Text style={[styles.shareAddressCardTitle, language === 'ta' && { fontSize: 12 }]}>{t('Help us locate your house for better service delivery')}</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.shareAddressButton}
                   onPress={shareHouseAddress}
                   disabled={loading}
@@ -609,7 +609,7 @@ const MyLocation = ({ navigation }) => {
 
           {/* How This Function Works Button */}
           {!hasSharedAddress && !loading && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.helpButton}
               onPress={() => setShowShareLocationInfo(true)}
             >
@@ -634,49 +634,49 @@ const MyLocation = ({ navigation }) => {
         {hasSharedAddress && currentLocation && (
           <View style={styles.successContent}>
             <View style={styles.cardHeader}>
-              <MaterialCommunityIcons 
-                name="check-circle" 
-                size={24} 
-                color="#4CAF50" 
+              <MaterialCommunityIcons
+                name="check-circle"
+                size={24}
+                color="#4CAF50"
               />
               <Text style={[styles.cardTitle, language === 'ta' && { fontSize: 16 }]}>{t('Address Shared Successfully!')}</Text>
             </View>
-            
+
             <View style={styles.successSection}>
               <View style={styles.addressDisplay}>
                 {fullAddress ? (
                   <View style={styles.addressRow}>
-                    <MaterialCommunityIcons 
-                      name="map-marker" 
-                      size={18} 
-                      color="#4CAF50" 
+                    <MaterialCommunityIcons
+                      name="map-marker"
+                      size={18}
+                      color="#4CAF50"
                     />
                     <Text style={styles.fullAddressText}>{fullAddress}</Text>
                   </View>
                 ) : (
                   <View style={styles.coordinatesRow}>
-                    <MaterialCommunityIcons 
-                      name="crosshairs-gps" 
-                      size={16} 
-                      color="#666" 
+                    <MaterialCommunityIcons
+                      name="crosshairs-gps"
+                      size={16}
+                      color="#666"
                     />
                     <Text style={styles.coordinatesText}>
                       {formatCoordinates(currentLocation.latitude, currentLocation.longitude)}
                     </Text>
                   </View>
                 )}
-                
+
                 <View style={styles.timeRow}>
-                  <MaterialCommunityIcons 
-                    name="clock-outline" 
-                    size={16} 
-                    color="#666" 
+                  <MaterialCommunityIcons
+                    name="clock-outline"
+                    size={16}
+                    color="#666"
                   />
                   <Text style={styles.timeText}>
                     Shared: {formatDate(lastUpdated)}
                   </Text>
                 </View>
-                
+
                 {savedToDatabase && (
                   <View style={styles.databaseStatus}>
                     <MaterialCommunityIcons name="database-check" size={16} color="#4CAF50" />
@@ -684,10 +684,10 @@ const MyLocation = ({ navigation }) => {
                   </View>
                 )}
               </View>
-              
+
               {/* Action Buttons */}
               <View style={styles.actionButtonsRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.updateAddressButton}
                   onPress={shareHouseAddress}
                   disabled={loading}
@@ -695,16 +695,16 @@ const MyLocation = ({ navigation }) => {
                   <MaterialCommunityIcons name="refresh" size={18} color="#4CAF50" />
                   <Text style={[styles.updateAddressButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Update Address')}</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.shareLocationButton}
                   onPress={shareLocation}
                 >
                   <MaterialCommunityIcons name="share" size={18} color="#2196F3" />
                   <Text style={[styles.shareLocationButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Share')}</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.openMapsButton}
                   onPress={openInMaps}
                 >
@@ -718,13 +718,13 @@ const MyLocation = ({ navigation }) => {
 
         {/* Information Card */}
         <View style={styles.infoContent}>
-          <MaterialCommunityIcons 
-            name="information-outline" 
-            size={20} 
-            color="#2196F3" 
+          <MaterialCommunityIcons
+            name="information-outline"
+            size={20}
+            color="#2196F3"
           />
           <Text style={styles.infoText}>
-            {hasSharedAddress 
+            {hasSharedAddress
               ? t('Your house address has been shared successfully. Admins can now navigate to your location when needed.')
               : t('Share your house address to help our team locate your house for better service delivery. Your location data is kept secure and private.')
             }
@@ -733,7 +733,7 @@ const MyLocation = ({ navigation }) => {
       </ScrollView>
 
       {/* Share Location Info Modal */}
-      <ShareLocationInfo 
+      <ShareLocationInfo
         visible={showShareLocationInfo}
         onClose={() => setShowShareLocationInfo(false)}
       />

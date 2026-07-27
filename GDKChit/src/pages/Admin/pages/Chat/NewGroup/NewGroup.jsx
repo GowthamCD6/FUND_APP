@@ -64,7 +64,7 @@ const NewGroup = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['right', 'bottom', 'left']}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
       {/* Shared Header Component */}

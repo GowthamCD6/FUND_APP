@@ -22,7 +22,7 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
 
   useEffect(() => {
     checkBiometricAvailability();
-    
+
     // Update time every second for accurate time display
     const timeInterval = setInterval(() => {
       setCurrentTime(new Date());
@@ -47,13 +47,13 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
 
   const handleAuthenticate = async () => {
     if (isAuthenticating) return;
-    
+
     setIsAuthenticating(true);
     try {
       console.log('Attempting authentication...');
       const result = await BiometricService.authenticate('Unlock GDK Chit Fund');
       console.log('Authentication result:', result);
-      
+
       if (result.success) {
         console.log('Authentication successful, calling success callback');
         if (onAuthenticationSuccess) {
@@ -69,10 +69,10 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
 
   const handlePinAuth = async () => {
     setIsAuthenticating(true);
-    
+
     try {
       const result = await BiometricService.authenticateWithDeviceCredentials('Unlock GDK Chit Fund with device credentials');
-      
+
       if (result.success) {
         if (onAuthenticationSuccess) {
           onAuthenticationSuccess();
@@ -99,15 +99,15 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
   };
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
       hour12: false
     });
   };
 
   const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       day: 'numeric',
       month: 'long'
@@ -117,7 +117,7 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" translucent />
-      
+
       {/* Time and Date Header */}
       <View style={styles.timeContainer}>
         <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
@@ -128,10 +128,10 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
       <View style={styles.content}>
         {/* Biometric Icon */}
         <View style={styles.biometricContainer}>
-          <MaterialCommunityIcons 
-            name={getBiometricIcon()} 
-            size={140} 
-            color="#FFFFFF" 
+          <MaterialCommunityIcons
+            name={getBiometricIcon()}
+            size={140}
+            color="#FFFFFF"
             style={styles.biometricIcon}
           />
         </View>

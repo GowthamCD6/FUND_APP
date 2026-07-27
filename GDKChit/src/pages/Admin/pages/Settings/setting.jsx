@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
-  SafeAreaView,
   StatusBar,
   Alert,
   Animated,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -230,7 +230,7 @@ const Settings = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       {/* Main Settings Content */}
@@ -369,7 +369,7 @@ const Settings = () => {
       {showRate && (
         <Rate visible={showRate} onClose={() => setShowRate(false)} />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

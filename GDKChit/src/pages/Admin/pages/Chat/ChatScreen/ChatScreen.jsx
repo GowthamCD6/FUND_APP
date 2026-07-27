@@ -1116,7 +1116,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#F5F1F7" />
       
       {/* Enhanced Header with Profile Info - Exact Match */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { launchCamera } from 'react-native-image-picker';
 import styles from './ChatListStyles';
 import ApiService from '../../../../../services/ApiService';
 import ChatScreen from '../ChatScreen/ChatScreen';
@@ -26,7 +27,6 @@ const { width } = Dimensions.get('window');
 
 const ChatList = ({ navigation }) => {
   const [chats, setChats] = useState([]);
-  const [filteredChats, setFilteredChats] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -195,9 +195,9 @@ const ChatList = ({ navigation }) => {
     setSearchQuery(text);
   };
 
-  // Combined filter + sort logic
-  const applyFiltersAndSort = (chatList, query, filter, sort) => {
-    let processed = chatList.map(chat => ({
+  // Combined filter + sort logic (derived synchronously with useMemo)
+  const filteredChats = useMemo(() => {
+    let processed = chats.map(chat => ({
       ...chat,
       pinned: pinnedChats.includes(chat.id),
       muted: mutedChats.includes(chat.id),
@@ -205,7 +205,7 @@ const ChatList = ({ navigation }) => {
     }));
 
     // If showing archived tab, filter only archived. Otherwise filter out archived.
-    if (filter === 'archived') {
+    if (activeFilter === 'archived') {
       processed = processed.filter(chat => chat.archived);
     } else {
       processed = processed.filter(chat => !chat.archived);
@@ -214,19 +214,19 @@ const ChatList = ({ navigation }) => {
     let filtered = [...processed];
 
     // Apply filter type
-    if (filter === 'unread') {
+    if (activeFilter === 'unread') {
       filtered = filtered.filter(chat => chat.unread > 0);
-    } else if (filter === 'groups') {
+    } else if (activeFilter === 'groups') {
       filtered = filtered.filter(chat => chat.isGroup);
-    } else if (filter === 'personal') {
+    } else if (activeFilter === 'personal') {
       filtered = filtered.filter(chat => !chat.isGroup);
     }
 
     // Apply search query
-    if (query.trim() !== '') {
+    if (searchQuery.trim() !== '') {
       filtered = filtered.filter(chat =>
-        (chat.name || '').toLowerCase().includes(query.toLowerCase()) ||
-        (chat.lastMessage || '').toLowerCase().includes(query.toLowerCase())
+        (chat.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (chat.lastMessage || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -235,20 +235,16 @@ const ChatList = ({ navigation }) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
 
-      if (sort === 'unread') {
+      if (sortMode === 'unread') {
         return (b.unread || 0) - (a.unread || 0);
-      } else if (sort === 'name') {
+      } else if (sortMode === 'name') {
         return (a.name || '').localeCompare(b.name || '');
       } else {
         return new Date(b.timestamp || 0) - new Date(a.timestamp || 0);
       }
     });
 
-    setFilteredChats(filtered);
-  };
-
-  useEffect(() => {
-    applyFiltersAndSort(chats, searchQuery, activeFilter, sortMode);
+    return filtered;
   }, [chats, searchQuery, activeFilter, sortMode, pinnedChats, mutedChats, archivedChats]);
 
   const handleFilterChange = (filter) => {
@@ -685,19 +681,48 @@ const ChatList = ({ navigation }) => {
     );
   };
 
+  const renderSkeletonList = () => (
+    <View style={{ paddingVertical: 8 }}>
+      {[1, 2, 3, 4, 5, 6].map((key) => (
+        <View 
+          key={key} 
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            backgroundColor: '#FFFFFF',
+            marginHorizontal: 12,
+            marginVertical: 4,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: '#F3F4F6',
+          }}
+        >
+          <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: '#E5E7EB', marginRight: 12 }} />
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ width: 140, height: 14, borderRadius: 7, backgroundColor: '#E5E7EB' }} />
+              <View style={{ width: 45, height: 10, borderRadius: 5, backgroundColor: '#F3F4F6' }} />
+            </View>
+            <View style={{ width: '75%', height: 12, borderRadius: 6, backgroundColor: '#F3F4F6' }} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <View style={{ alignItems: 'center', marginBottom: 10 }}>
-        <MaterialCommunityIcons name="chat-outline" size={100} color="#E9D5FF" />
+      <View style={{ alignItems: 'center', marginTop: -100 }}>
+        <View style={{ alignItems: 'center', marginBottom: 10 }}>
+          <MaterialCommunityIcons name="chat-outline" size={100} color="#E9D5FF" />
+        </View>
+        <Text style={styles.emptyStateText}>Start Conversations</Text>
+        <Text style={styles.emptyStateSubtext}>
+          Connect with your group members and start meaningful conversations today
+        </Text>
       </View>
-      <Text style={styles.emptyStateText}>Start Conversations</Text>
-      <Text style={styles.emptyStateSubtext}>
-        Connect with your group members and start meaningful conversations today
-      </Text>
-      <TouchableOpacity style={styles.emptyStateButton} onPress={openNewChatModal}>
-        <MaterialCommunityIcons name="pencil-plus" size={22} color="#FFFFFF" />
-        <Text style={styles.emptyStateButtonText}>Compose Message</Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -1031,8 +1056,31 @@ const ChatList = ({ navigation }) => {
     </Modal>
   );
 
+  // If a chat is open, show ChatScreen instead of chat list
+  if (openChat) {
+    return (
+      <Modal
+        visible={true}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={handleBackFromChat}
+        statusBarTranslucent={true}
+      >
+        <ChatScreen 
+          route={{ params: openChat }}
+          navigation={{ 
+            ...navigation,
+            goBack: handleBackFromChat 
+          }}
+          onBack={handleBackFromChat}
+          ws={ws.current}
+        />
+      </Modal>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container} edges={['right', 'bottom', 'left']}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Modern Header */}
@@ -1047,13 +1095,27 @@ const ChatList = ({ navigation }) => {
               style={styles.headerIconButton}
               onPress={toggleSearchActive}
             >
-              <MaterialCommunityIcons name="magnify" size={24} color="#6B46C1" />
+              <MaterialCommunityIcons name="magnify" size={24} color="#1F2937" />
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.headerIconButton, styles.headerIconButtonPrimary]}
+              style={styles.headerIconButton}
+              onPress={() => {
+                const options = { mediaType: 'photo', quality: 0.8, saveToPhotos: true };
+                launchCamera(options, (response) => {
+                  if (response.didCancel) return;
+                  if (response.errorCode) {
+                    Alert.alert('Camera', 'Could not open camera');
+                  }
+                });
+              }}
+            >
+              <MaterialCommunityIcons name="camera-outline" size={24} color="#1F2937" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerIconButton}
               onPress={() => setShowDropdown(true)}
             >
-              <MaterialCommunityIcons name="dots-vertical" size={24} color="#FFFFFF" />
+              <MaterialCommunityIcons name="dots-vertical" size={24} color="#1F2937" />
             </TouchableOpacity>
           </View>
         </View>
@@ -1087,26 +1149,8 @@ const ChatList = ({ navigation }) => {
           </TouchableOpacity>
         </Modal>
 
-        {/* Search Bar */}
-        <Animated.View style={[
-          styles.animatedSearchBar, 
-          { 
-            opacity: searchAnim,
-            height: searchAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 50]
-            }),
-            marginTop: searchAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 12]
-            }),
-            marginBottom: searchAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 8]
-            }),
-            overflow: 'hidden'
-          }
-        ]}>
+        {/* Search Bar - Always Visible */}
+        <Animated.View style={[styles.animatedSearchBar, { opacity: 1 }]}>
           <View style={styles.searchBar}>
             <MaterialCommunityIcons name="magnify" size={22} color="#6B46C1" />
             <TextInput
@@ -1155,19 +1199,9 @@ const ChatList = ({ navigation }) => {
 
       {/* Chats List */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6B46C1" />
-          <Text style={styles.loadingText}>Loading conversations...</Text>
-        </View>
+        renderSkeletonList()
       ) : filteredChats.length > 0 || archivedChats.length > 0 ? (
         <>
-          <View style={styles.recentLabelContainer}>
-            <View style={styles.recentLabelLine} />
-            <Text style={styles.recentLabel}>
-              {activeFilter === 'archived' ? 'ARCHIVED CHATS' : 'RECENT'}
-            </Text>
-            <View style={styles.recentLabelLine} />
-          </View>
           <FlatList
             data={filteredChats}
             renderItem={renderChat}
@@ -1231,7 +1265,7 @@ const ChatList = ({ navigation }) => {
 
       {/* Options sheet modal */}
       {renderOptionsModal()}
-    </SafeAreaView>
+    </View>
   );
 };
 

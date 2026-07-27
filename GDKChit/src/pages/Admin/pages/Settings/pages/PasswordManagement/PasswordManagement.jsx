@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   BackHandler,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -306,11 +307,12 @@ const PasswordManagement = ({ onClose }) => {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       <Header
         title="Password Management"
@@ -563,6 +565,7 @@ const PasswordManagement = ({ onClose }) => {
         </KeyboardAvoidingView>
       </Modal>
     </KeyboardAvoidingView>
+    </View>
   );
 };
 

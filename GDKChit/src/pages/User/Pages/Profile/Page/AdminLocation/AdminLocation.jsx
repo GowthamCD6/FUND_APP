@@ -178,14 +178,14 @@ const AdminLocation = ({ navigation }) => {
         adminLocations.map(admin =>
           admin.id === selectedAdmin.id
             ? {
-                ...admin,
-                name: newAdminName,
-                location: newAdminLocation,
-                address: newAdminLocation,
-                latitude: parseFloat(newAdminLatitude),
-                longitude: parseFloat(newAdminLongitude),
-                lastUpdated: new Date().toISOString(),
-              }
+              ...admin,
+              name: newAdminName,
+              location: newAdminLocation,
+              address: newAdminLocation,
+              latitude: parseFloat(newAdminLatitude),
+              longitude: parseFloat(newAdminLongitude),
+              lastUpdated: new Date().toISOString(),
+            }
             : admin
         )
       );
@@ -285,83 +285,83 @@ const AdminLocation = ({ navigation }) => {
 
           {/* Admin Locations List */}
           {adminLocations.length === 0 ? (
-              <View style={styles.emptyState}>
-                <MaterialCommunityIcons
-                  name="map-marker-off"
-                  size={48}
-                  color="#CCCCCC"
-                />
-                <Text style={[styles.emptyStateText, language === 'ta' && { fontSize: 16 }]}>
-                  {t('No admin locations added yet')}
-                </Text>
-                <Text style={[styles.emptyStateSubtext, language === 'ta' && { fontSize: 13 }]}>
-                  {t('Add an admin location to get started')}
-                </Text>
-              </View>
-            ) : (
-              adminLocations.map((admin) => (
-                <View key={admin.id} style={styles.adminCard}>
-                  <View style={styles.adminCardHeader}>
-                    <View style={styles.adminCardTitle}>
-                      <MaterialCommunityIcons
-                        name="account-circle"
-                        size={32}
-                        color="#6B46C1"
-                      />
-                      <View style={styles.adminInfo}>
-                        <Text style={styles.adminName}>{admin.name}</Text>
-                        <Text style={styles.adminPhone}>{admin.phone}</Text>
-                      </View>
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons
+                name="map-marker-off"
+                size={48}
+                color="#CCCCCC"
+              />
+              <Text style={[styles.emptyStateText, language === 'ta' && { fontSize: 16 }]}>
+                {t('No admin locations added yet')}
+              </Text>
+              <Text style={[styles.emptyStateSubtext, language === 'ta' && { fontSize: 13 }]}>
+                {t('Add an admin location to get started')}
+              </Text>
+            </View>
+          ) : (
+            adminLocations.map((admin) => (
+              <View key={admin.id} style={styles.adminCard}>
+                <View style={styles.adminCardHeader}>
+                  <View style={styles.adminCardTitle}>
+                    <MaterialCommunityIcons
+                      name="account-circle"
+                      size={32}
+                      color="#6B46C1"
+                    />
+                    <View style={styles.adminInfo}>
+                      <Text style={styles.adminName}>{admin.name}</Text>
+                      <Text style={styles.adminPhone}>{admin.phone}</Text>
                     </View>
-                  </View>
-
-                  <View style={styles.adminCardContent}>
-                    <View style={styles.adminLocationRow}>
-                      <MaterialCommunityIcons
-                        name="map-marker"
-                        size={18}
-                        color="#6B46C1"
-                      />
-                      <Text style={styles.adminLocation}>{admin.location}</Text>
-                    </View>
-
-                    <View style={styles.adminAddressRow}>
-                      <MaterialCommunityIcons
-                        name="home-outline"
-                        size={16}
-                        color="#999999"
-                      />
-                      <Text style={styles.adminAddress}>{admin.address}</Text>
-                    </View>
-
-                    <View style={styles.adminCoordinatesRow}>
-                      <MaterialCommunityIcons
-                        name="crosshairs-gps"
-                        size={16}
-                        color="#999999"
-                      />
-                      <Text style={styles.adminCoordinates}>
-                        {admin.latitude}° N, {admin.longitude}° E
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.adminCardActions}>
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.navigateButton]}
-                      onPress={() => handleNavigateToAdmin(admin)}
-                    >
-                      <MaterialCommunityIcons
-                        name="navigation"
-                        size={16}
-                        color="#2196F3"
-                      />
-                      <Text style={[styles.actionButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Navigate')}</Text>
-                    </TouchableOpacity>
                   </View>
                 </View>
-              ))
-            )}
+
+                <View style={styles.adminCardContent}>
+                  <View style={styles.adminLocationRow}>
+                    <MaterialCommunityIcons
+                      name="map-marker"
+                      size={18}
+                      color="#6B46C1"
+                    />
+                    <Text style={styles.adminLocation}>{admin.location}</Text>
+                  </View>
+
+                  <View style={styles.adminAddressRow}>
+                    <MaterialCommunityIcons
+                      name="home-outline"
+                      size={16}
+                      color="#999999"
+                    />
+                    <Text style={styles.adminAddress}>{admin.address}</Text>
+                  </View>
+
+                  <View style={styles.adminCoordinatesRow}>
+                    <MaterialCommunityIcons
+                      name="crosshairs-gps"
+                      size={16}
+                      color="#999999"
+                    />
+                    <Text style={styles.adminCoordinates}>
+                      {admin.latitude}° N, {admin.longitude}° E
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.adminCardActions}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.navigateButton]}
+                    onPress={() => handleNavigateToAdmin(admin)}
+                  >
+                    <MaterialCommunityIcons
+                      name="navigation"
+                      size={16}
+                      color="#2196F3"
+                    />
+                    <Text style={[styles.actionButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Navigate')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -377,7 +377,7 @@ const AdminLocation = ({ navigation }) => {
             {selectedAdmin && (
               <View style={styles.cleanModalCard}>
                 {/* Close Button */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.closeButtonTop}
                   onPress={handleCloseNavigationModal}
                 >
@@ -391,7 +391,7 @@ const AdminLocation = ({ navigation }) => {
                       {selectedAdmin.name.charAt(0)}
                     </Text>
                   </View>
-                  
+
                   <Text style={styles.modalAdminNameText}>{selectedAdmin.name}</Text>
                   <Text style={styles.modalAdminPhoneText}>{selectedAdmin.phone}</Text>
                   <Text style={styles.modalAdminAddressText}>{selectedAdmin.address}</Text>

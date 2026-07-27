@@ -99,7 +99,7 @@ const HelpSupport = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#6B46C1" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -113,7 +113,7 @@ const HelpSupport = ({ navigation }) => {
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        
+
         {/* Hero Section with Gradient Background */}
         <View style={styles.heroSection}>
           <View style={styles.heroContent}>
@@ -143,10 +143,10 @@ const HelpSupport = ({ navigation }) => {
         <View style={styles.faqSection}>
           <View style={styles.faqHeader}>
             <View style={styles.faqHeaderContent}>
-              <MaterialCommunityIcons 
-                name="help-circle-outline" 
-                size={32} 
-                color="#1F2937" 
+              <MaterialCommunityIcons
+                name="help-circle-outline"
+                size={32}
+                color="#1F2937"
                 style={styles.faqHeaderIcon}
               />
               <Text style={styles.faqHeaderTitle}>FAQ</Text>
@@ -156,21 +156,21 @@ const HelpSupport = ({ navigation }) => {
           <View style={styles.faqList}>
             {faqData.map((faq, index) => (
               <View key={faq.id} style={styles.faqItem}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.faqQuestion}
                   onPress={() => toggleFAQ(faq.id)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.faqQuestionWrapper}>
                     <Text style={styles.faqQuestionTitle}>{faq.question}</Text>
-                    <MaterialCommunityIcons 
-                      name={expandedFAQ === faq.id ? "chevron-up" : "chevron-down"} 
-                      size={24} 
-                      color="#666666" 
+                    <MaterialCommunityIcons
+                      name={expandedFAQ === faq.id ? "chevron-up" : "chevron-down"}
+                      size={24}
+                      color="#666666"
                     />
                   </View>
                 </TouchableOpacity>
-                
+
                 {expandedFAQ === faq.id && (
                   <View style={styles.faqAnswer}>
                     <Text style={styles.faqAnswerText}>{faq.answer}</Text>
@@ -191,7 +191,7 @@ const HelpSupport = ({ navigation }) => {
             <Text style={styles.operatingTitle}>Operating Hours</Text>
             <Text style={styles.operatingTitleTamil}>செயல்பாட்டு நேரம்</Text>
           </View>
-          
+
           <View style={styles.timelineContainer}>
             <View style={styles.timelineItem}>
               <View style={styles.timelineDot} />
@@ -203,9 +203,9 @@ const HelpSupport = ({ navigation }) => {
                 <Text style={styles.dayTextTamil}>திங்கள் - வெள்ளி • காலை 9:00 - மாலை 6:00</Text>
               </View>
             </View>
-            
+
             <View style={styles.timelineLine} />
-            
+
             <View style={styles.timelineItem}>
               <View style={styles.timelineDot} />
               <View style={styles.timelineContent}>
@@ -216,9 +216,9 @@ const HelpSupport = ({ navigation }) => {
                 <Text style={styles.dayTextTamil}>சனிக்கிழமை • காலை 9:00 - மதியம் 1:00</Text>
               </View>
             </View>
-            
+
             <View style={styles.timelineLine} />
-            
+
             <View style={styles.timelineItem}>
               <View style={[styles.timelineDot, styles.timelineDotClosed]} />
               <View style={styles.timelineContent}>
@@ -257,7 +257,7 @@ const HelpSupport = ({ navigation }) => {
           {/* Contact Methods */}
           <View style={styles.contactMethodsContainer}>
             {/* Phone */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.uniqueContactCard}
               onPress={() => Linking.openURL('tel:+914433445566')}
               activeOpacity={0.8}
@@ -274,7 +274,7 @@ const HelpSupport = ({ navigation }) => {
             </TouchableOpacity>
 
             {/* WhatsApp */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.uniqueContactCard}
               onPress={() => Linking.openURL('whatsapp://send?phone=919876543210&text=Hello, I need help with GDK Chit Fund')}
               activeOpacity={0.8}
@@ -291,7 +291,7 @@ const HelpSupport = ({ navigation }) => {
             </TouchableOpacity>
 
             {/* Map Location */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.uniqueContactCard}
               activeOpacity={0.8}
             >
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  
+
   // Hero Section Styles
   heroSection: {
     backgroundColor: '#6B46C1',

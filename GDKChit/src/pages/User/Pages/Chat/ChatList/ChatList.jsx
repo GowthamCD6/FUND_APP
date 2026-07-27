@@ -94,11 +94,11 @@ const ChatList = ({ navigation }) => {
       try {
         // Read accessToken (the key ApiService stores the JWT under)
         const token = await AsyncStorage.getItem('accessToken') || await AsyncStorage.getItem('userToken');
-        
+
         // Read user info from individual AsyncStorage keys
         const userName = await AsyncStorage.getItem('userName') || '';
         const userRole = await AsyncStorage.getItem('userRole') || 'User';
-        
+
         if (!token) return;
 
         // Decode JWT for userId
@@ -112,41 +112,41 @@ const ChatList = ({ navigation }) => {
         }
 
         const userType = userRole || 'User';
-        
+
         // Convert http:// API_URL to ws:// and use correct /api/chat path
         let wsUrl = ApiService.baseURL ? ApiService.baseURL.replace('http', 'ws') : 'ws://localhost:5000';
         wsUrl = wsUrl.replace(/\/api\/admin\/?$/, '').replace(/\/api\/?$/, '');
         wsUrl = `${wsUrl}/api/chat?token=${token}&userId=${userId}&userType=${userType}`;
-        
+
         ws.current = new WebSocket(wsUrl);
-        
+
         ws.current.onopen = () => {
           console.log('Chat WebSocket Connected (User)');
         };
-        
+
         const handleWsMessage = (event) => {
           try {
             const payload = JSON.parse(event.data);
             if (payload.type === 'new_message_notification' || payload.type === 'new_message') {
               loadChats();
             }
-          } catch(e) {}
+          } catch (e) { }
         };
-        
+
         ws.current.addEventListener('message', handleWsMessage);
-        
+
         ws.current.onerror = (e) => {
           console.log('Chat WS Error:', e.message);
         };
-        
+
         ws.current.onclose = () => {
           console.log('Chat WS Closed');
         };
-      } catch(e) {
+      } catch (e) {
         console.error('Error setting up WS:', e);
       }
     };
-    
+
     setupWebSocket();
 
     return () => {
@@ -414,8 +414,8 @@ const ChatList = ({ navigation }) => {
       'Are you sure you want to delete this conversation? This will delete the room and all messages.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -466,9 +466,9 @@ const ChatList = ({ navigation }) => {
         animationType="slide"
         onRequestClose={() => setShowOptionsModal(false)}
       >
-        <TouchableOpacity 
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
           onPress={() => setShowOptionsModal(false)}
         >
           <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingVertical: 20, paddingBottom: 35 }}>
@@ -541,8 +541,8 @@ const ChatList = ({ navigation }) => {
     };
 
     return (
-      <Animated.View 
-        style={{ 
+      <Animated.View
+        style={{
           opacity: 1,
           transform: [{ scale: scaleAnim }],
         }}
@@ -579,11 +579,11 @@ const ChatList = ({ navigation }) => {
             <View style={styles.chatHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 {isPinned && <MaterialCommunityIcons name="pin" size={16} color="#6B46C1" style={{ marginRight: 4 }} />}
-                <Text 
+                <Text
                   style={[
                     styles.chatName,
                     isUnread && styles.chatNameUnread,
-                  ]} 
+                  ]}
                   numberOfLines={1}
                 >
                   {item.name}
@@ -596,11 +596,11 @@ const ChatList = ({ navigation }) => {
                 </Text>
               </View>
             </View>
-            <Text 
+            <Text
               style={[
                 styles.lastMessage,
                 isUnread && styles.lastMessageUnread,
-              ]} 
+              ]}
               numberOfLines={1}
             >
               {item.lastMessage}
@@ -620,21 +620,23 @@ const ChatList = ({ navigation }) => {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <View style={{ alignItems: 'center', marginBottom: 10 }}>
-        <MaterialCommunityIcons name="chat-outline" size={100} color="#E9D5FF" />
+      <View style={{ alignItems: 'center', marginTop: -100 }}>
+        <View style={{ alignItems: 'center', marginBottom: 10 }}>
+          <MaterialCommunityIcons name="chat-outline" size={100} color="#E9D5FF" />
+        </View>
+        <Text style={styles.emptyStateText}>Start Conversations</Text>
+        <Text style={styles.emptyStateSubtext}>
+          Connect with your group members and start meaningful conversations today
+        </Text>
       </View>
-      <Text style={styles.emptyStateText}>Start Conversations</Text>
-      <Text style={styles.emptyStateSubtext}>
-        Connect with your group members and start meaningful conversations today
-      </Text>
     </View>
   );
 
   const renderSkeletonList = () => (
     <View style={{ paddingVertical: 8 }}>
       {[1, 2, 3, 4, 5, 6].map((key) => (
-        <View 
-          key={key} 
+        <View
+          key={key}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -671,11 +673,11 @@ const ChatList = ({ navigation }) => {
         onRequestClose={handleBackFromChat}
         statusBarTranslucent={true}
       >
-        <ChatScreen 
+        <ChatScreen
           route={{ params: openChat }}
-          navigation={{ 
+          navigation={{
             ...navigation,
-            goBack: handleBackFromChat 
+            goBack: handleBackFromChat
           }}
           onBack={handleBackFromChat}
           ws={ws.current}
@@ -696,13 +698,13 @@ const ChatList = ({ navigation }) => {
             <Text style={styles.headerSubtitle}>{filteredChats.length} CONVERSATIONS</Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.headerIconButton}
               onPress={toggleSearchActive}
             >
               <MaterialCommunityIcons name="magnify" size={24} color="#1F2937" />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.headerIconButton}
               onPress={() => {
                 const options = { mediaType: 'photo', quality: 0.8, saveToPhotos: true };
@@ -716,7 +718,7 @@ const ChatList = ({ navigation }) => {
             >
               <MaterialCommunityIcons name="camera-outline" size={24} color="#1F2937" />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.headerIconButton}
               onPress={toggleHeaderMenu}
             >
@@ -737,16 +739,16 @@ const ChatList = ({ navigation }) => {
               onChangeText={handleSearch}
             />
             {searchQuery.trim() !== '' && (
-                <TouchableOpacity onPress={() => handleSearch('')}>
-                  <MaterialCommunityIcons name="close-circle" size={22} color="#9CA3AF" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </Animated.View>
+              <TouchableOpacity onPress={() => handleSearch('')}>
+                <MaterialCommunityIcons name="close-circle" size={22} color="#9CA3AF" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </Animated.View>
 
         {/* Filter Tabs */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterTabsContainer}
           contentContainerStyle={styles.filterTabsContent}
@@ -777,44 +779,44 @@ const ChatList = ({ navigation }) => {
       {loading ? (
         renderSkeletonList()
       ) : filteredChats.length > 0 || archivedChats.length > 0 ? (
-          <FlatList
-            data={filteredChats}
-            renderItem={renderChat}
-            keyExtractor={(item) => item.id.toString()}
-            scrollEnabled={true}
-            contentContainerStyle={styles.listContainer}
-            ListHeaderComponent={
-              archivedChats.length > 0 && activeFilter !== 'archived' ? (
-                <TouchableOpacity 
-                  style={styles.archivedRow}
-                  onPress={() => handleFilterChange('archived')}
-                >
-                  <View style={styles.archivedRowLeft}>
-                    <MaterialCommunityIcons name="archive-arrow-down" size={22} color="#6B46C1" />
-                    <Text style={styles.archivedRowText}>Archived</Text>
-                  </View>
-                  <Text style={styles.archivedCount}>{archivedChats.length}</Text>
-                </TouchableOpacity>
-              ) : activeFilter === 'archived' ? (
-                <TouchableOpacity 
-                  style={styles.archivedBackRow}
-                  onPress={() => handleFilterChange('all')}
-                >
-                  <MaterialCommunityIcons name="arrow-left" size={20} color="#6B46C1" style={{ marginRight: 8 }} />
-                  <Text style={styles.archivedBackText}>Back to Chats</Text>
-                </TouchableOpacity>
-              ) : null
-            }
-            refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
-                onRefresh={handleRefresh}
-                colors={['#6B46C1']}
-                tintColor="#6B46C1"
-              />
-            }
-            scrollIndicatorInsets={{ right: 1 }}
-          />
+        <FlatList
+          data={filteredChats}
+          renderItem={renderChat}
+          keyExtractor={(item) => item.id.toString()}
+          scrollEnabled={true}
+          contentContainerStyle={styles.listContainer}
+          ListHeaderComponent={
+            archivedChats.length > 0 && activeFilter !== 'archived' ? (
+              <TouchableOpacity
+                style={styles.archivedRow}
+                onPress={() => handleFilterChange('archived')}
+              >
+                <View style={styles.archivedRowLeft}>
+                  <MaterialCommunityIcons name="archive-arrow-down" size={22} color="#6B46C1" />
+                  <Text style={styles.archivedRowText}>Archived</Text>
+                </View>
+                <Text style={styles.archivedCount}>{archivedChats.length}</Text>
+              </TouchableOpacity>
+            ) : activeFilter === 'archived' ? (
+              <TouchableOpacity
+                style={styles.archivedBackRow}
+                onPress={() => handleFilterChange('all')}
+              >
+                <MaterialCommunityIcons name="arrow-left" size={20} color="#6B46C1" style={{ marginRight: 8 }} />
+                <Text style={styles.archivedBackText}>Back to Chats</Text>
+              </TouchableOpacity>
+            ) : null
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#6B46C1']}
+              tintColor="#6B46C1"
+            />
+          }
+          scrollIndicatorInsets={{ right: 1 }}
+        />
       ) : (
         <View style={{ flex: 1 }}>
           {renderEmptyState()}
