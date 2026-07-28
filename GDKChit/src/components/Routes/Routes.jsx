@@ -10,6 +10,7 @@ import AdminPasswordManagement from "../../pages/Admin/pages/Settings/pages/Pass
 import AdminBlockUserScreen from "../../pages/Admin/pages/Settings/pages/BlockUser/BlockUser";
 import AdminUserLocation from "../../pages/Admin/pages/Settings/pages/UserLocation/UserL";
 import AuthLoader from "../../utils/authLoader";
+import SplashScreen from "../../pages/Fronter/Splash/Splash";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Welcome from "../../pages/Fronter/Welcome/Welcome";
@@ -68,9 +69,10 @@ const Routes = () => {
                 backgroundColor="transparent"
                 translucent={true}
             />
-            <View style={{ flex: 1, backgroundColor: '#ffffffff' }}>
-                <Stack.Navigator initialRouteName="AuthLoader" screenOptions={{ headerShown: false }}>
+            <View style={{ flex: 1, backgroundColor: '#1A0C38' }}>
+                <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false, animation: 'fade', animationDuration: 400 }}>
 
+                    <Stack.Screen name="Splash" component={SplashScreen} />
                     <Stack.Screen name="Welcome" component={withSafe(Welcome)} />
 
                     {/* Auth Tabs */}
