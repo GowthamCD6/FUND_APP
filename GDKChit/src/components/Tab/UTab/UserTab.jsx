@@ -1,34 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from './UserTabsty';
 
 // Import actual page components
 import Home from '../../../pages/User/Pages/Home/Home';
 import Portfolio from '../../../pages/User/Pages/Portfolio/Portfolio';
 import Profile from '../../../pages/User/Pages/Profile/Profile';
+import ChatList from '../../../pages/User/Pages/Chat/ChatList/ChatList';
 
 // Import MaterialCommunityIcons for consistent iconography
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import MoreModal from '../../../pages/User/Modals/More';
 import AdminTab, { ADMIN_PHONE, ADMIN_PASSWORD } from '../ATab/AdminTab';
 
+const withSafe = (Component) => {
+  return (props) => {
+    return (
+      <View style={{ flex: 1 }}>
+        <Component {...props} />
+      </View>
+    );
+  };
+};
+
+const HomeWithSafe = (props) => {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <Home {...props} />
+    </View>
+  );
+};
+
+const PortfolioWithSafe = withSafe(Portfolio);
+const ChatListWithSafe = withSafe(ChatList);
+const ProfileWithSafe = withSafe(Profile);
+
 // ---- Screen Components ----
 const MoreScreen = () => null; // Placeholder, modal will be shown instead
-
-const ChatScreen = () => (
-  <View style={styles.screenContainer}>
-    <View style={styles.gradientHeader}>
-      <Text style={styles.headerTitle}>Chat</Text>
-    </View>
-    <View style={styles.screenContent}>
-      <Text style={styles.screenText}>Chat Screen</Text>
-    </View>
-  </View>
-);
 
 const Tab = createBottomTabNavigator();
 
@@ -48,7 +61,14 @@ const CustomTabBarButton = ({ children, onPress }) => (
 
 
 const UserTabs = () => {
+  const insets = useSafeAreaInsets();
   const [showMoreModal, setShowMoreModal] = useState(false);
+  const [preselectedGroup, setPreselectedGroup] = useState(null);
+
+  const handleCloseMoreModal = () => {
+    setShowMoreModal(false);
+    setPreselectedGroup(null);
+  };
 
   return (
     <>
@@ -56,14 +76,20 @@ const UserTabs = () => {
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
-          tabBarStyle: styles.tabBar,
+          tabBarStyle: [
+            styles.tabBar,
+            {
+              height: Platform.OS === 'ios' ? 70 + insets.bottom : 60 + Math.max(insets.bottom, 10),
+              paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 15) : Math.max(insets.bottom, 6),
+            },
+          ],
           tabBarHideOnKeyboard: true,
         }}
       >
         {/* Home Tab */}
         <Tab.Screen
           name="Home"
-          component={Home}
+          component={HomeWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
@@ -84,7 +110,7 @@ const UserTabs = () => {
         {/* Portfolio Tab */}
         <Tab.Screen
           name="Portfolio"
-          component={Portfolio}
+          component={PortfolioWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
@@ -119,7 +145,7 @@ const UserTabs = () => {
         {/* Chat Tab */}
         <Tab.Screen
           name="Chat"
-          component={ChatScreen}
+          component={ChatListWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
@@ -140,7 +166,7 @@ const UserTabs = () => {
         {/* Profile Tab */}
         <Tab.Screen
           name="Profile"
-          component={Profile}
+          component={ProfileWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
@@ -158,9 +184,8 @@ const UserTabs = () => {
           }}
         />
       </Tab.Navigator>
-      <MoreModal visible={showMoreModal} onClose={() => setShowMoreModal(false)}>
-        {/* You can place your modal content here later */}
-      </MoreModal>
+
+      <MoreModal visible={showMoreModal} onClose={handleCloseMoreModal} selectedGroup={preselectedGroup} />
     </>
   );
 };

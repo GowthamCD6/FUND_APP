@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Join from './Pages/Join';
-import GroupCard from './Pages/GroupCard';
+import Join from './Pages/JoinGroup/JoinGroup';
+import GroupCards from './Pages/ChitGroupCard/GroupCards';
+import Auction from './Pages/Auction/Auction';
+import Finance from './Pages/Finance/Finance';
 
-const MoreModal = ({ visible, onClose }) => {
+const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) => {
   const [showJoinPage, setShowJoinPage] = useState(false);
   const [showGroupCard, setShowGroupCard] = useState(false);
+  const [showAuction, setShowAuction] = useState(false);
+  const [showFinance, setShowFinance] = useState(false);
+  const [joinGroupCode, setJoinGroupCode] = useState('');
+
+  useEffect(() => {
+    if (selectedGroup) {
+      setShowAuction(true);
+    }
+  }, [selectedGroup]);
+
+  useEffect(() => {
+    if (initialGroupCode) {
+      setJoinGroupCode(initialGroupCode);
+      setShowJoinPage(true);
+    }
+  }, [initialGroupCode]);
 
   const handleJoinPress = () => {
+    setJoinGroupCode('');
     setShowJoinPage(true);
   };
 
@@ -16,17 +35,37 @@ const MoreModal = ({ visible, onClose }) => {
     setShowGroupCard(true);
   };
 
+  const handleAuctionPress = () => {
+    setShowAuction(true);
+  };
+
   const handleJoinBack = () => {
     setShowJoinPage(false);
+    setJoinGroupCode('');
   };
 
   const handleGroupCardBack = () => {
     setShowGroupCard(false);
   };
 
+  const handleAuctionBack = () => {
+    setShowAuction(false);
+  };
+
+  const handleFinancePress = () => {
+    setShowFinance(true);
+  };
+
+  const handleFinanceBack = () => {
+    setShowFinance(false);
+  };
+
   const handleModalClose = () => {
     setShowJoinPage(false);
     setShowGroupCard(false);
+    setShowAuction(false);
+    setShowFinance(false);
+    setJoinGroupCode('');
     onClose();
   };
 
@@ -38,7 +77,7 @@ const MoreModal = ({ visible, onClose }) => {
         visible={visible}
         onRequestClose={handleModalClose}
       >
-        <Join onBack={handleJoinBack} />
+        <Join onBack={handleJoinBack} initialGroupCode={joinGroupCode} />
       </Modal>
     );
   }
@@ -51,53 +90,81 @@ const MoreModal = ({ visible, onClose }) => {
         visible={visible}
         onRequestClose={handleModalClose}
       >
-        <GroupCard onBack={handleGroupCardBack} />
+        <GroupCards onBack={handleGroupCardBack} />
+      </Modal>
+    );
+  }
+
+  if (showAuction) {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={visible}
+        onRequestClose={handleModalClose}
+      >
+        <Auction onClose={handleAuctionBack} selectedGroupId={selectedGroup?.id} selectedGroupType={selectedGroup?.type} />
+      </Modal>
+    );
+  }
+
+  if (showFinance) {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={visible}
+        onRequestClose={handleModalClose}
+      >
+        <Finance selectedGroup={selectedGroup} onBack={handleFinanceBack} />
       </Modal>
     );
   }
 
   return (
-  <Modal
-    animationType="slide"
-    transparent={true}
-    visible={visible}
-    onRequestClose={onClose}
-  >
-    <View style={styles.overlay}>
-      <View style={styles.container}>
-        {/* Modal Content */}
-        <View style={styles.menuList}>
-          <MenuItem
-            icon={<MaterialCommunityIcons name="account-group" size={26} color="#6B46C1" />}
-            title="Join the Group"
-            description="Enter the group code to join the group"
-            onPress={handleJoinPress}
-          />
-          <MenuItem
-            icon={<MaterialCommunityIcons name="credit-card" size={26} color="#6B46C1" />}
-            title="Group card"
-            description="View and confirm the pay details"
-            onPress={handleGroupCardPress}
-          />
-          <MenuItem
-            icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#6B46C1" />}
-            title="Pay"
-            description="Click to pay for your group amount"
-          />
-          <MenuItem
-            icon={<MaterialCommunityIcons name="wallet-outline" size={26} color="#6B46C1" />}
-            title="Sell"
-            description="Liquidate your gold to cash"
-          />
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.overlay}>
+        <View style={styles.container}>
+          {/* Modal Content */}
+          <View style={styles.menuList}>
+            <MenuItem
+              icon={<MaterialCommunityIcons name="account-group" size={26} color="#6B46C1" />}
+              title="Join the Group"
+              description="Enter the group code to join the group"
+              onPress={handleJoinPress}
+            />
+            <MenuItem
+              icon={<MaterialCommunityIcons name="credit-card" size={26} color="#6B46C1" />}
+              title="Group card"
+              description="View and confirm the pay details"
+              onPress={handleGroupCardPress}
+            />
+            <MenuItem
+              icon={<MaterialCommunityIcons name="gavel" size={26} color="#6B46C1" />}
+              title="Auction"
+              description="Participate in chit auction bidding"
+              onPress={handleAuctionPress}
+            />
+            <MenuItem
+              icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#6B46C1" />}
+              title="Finance"
+              description="Contribute and earn extra interest"
+              onPress={handleFinancePress}
+            />
+          </View>
+          {/* X Button */}
+          <TouchableOpacity style={styles.xButton} onPress={handleModalClose}>
+            <Text style={styles.xButtonText}>×</Text>
+          </TouchableOpacity>
         </View>
-        {/* X Button */}
-        <TouchableOpacity style={styles.xButton} onPress={handleModalClose}>
-          <Text style={styles.xButtonText}>×</Text>
-        </TouchableOpacity>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
 };
 
 const MenuItem = ({ icon, title, description, onPress }) => (

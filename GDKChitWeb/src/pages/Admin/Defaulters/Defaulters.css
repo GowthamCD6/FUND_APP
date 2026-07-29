@@ -1,0 +1,86 @@
+/* Defaulters.css */
+
+/* We rely on global .rn-page, .reports-header-container, .mu-table, etc. for layout */
+
+.def-row {
+  transition: background 0.2s;
+}
+
+.def-row:hover {
+  background: #f8fafc;
+}
+
+/* Group & Month */
+.def-group-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.def-month-lbl {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Status & Due */
+.def-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+}
+
+.def-badge.pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.def-badge.overdue {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.def-due-date {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.def-days-late {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* Amount */
+.def-amount {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Actions */
+.def-whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.def-whatsapp-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+}

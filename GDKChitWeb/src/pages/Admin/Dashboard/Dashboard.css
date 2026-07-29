@@ -1,0 +1,353 @@
+/* ════════════════════════════════════════════════════════════════
+   DASHBOARD PAGE - PREMIUM FLAT AESTHETIC
+   ════════════════════════════════════════════════════════════════ */
+
+.dash-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.dash-stat-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: none;
+  transition: all 0.15s ease;
+}
+
+.dash-stat-card:hover {
+  border-color: #cbd5e1;
+  background: #fafafb;
+}
+
+.dash-stat-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-stat-val {
+  font-size: 20px;
+  font-weight: 700;
+  color: #030712;
+}
+
+.dash-stat-lbl {
+  font-size: 11px;
+  color: #334155;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Pool Banner Card */
+.dash-pool-banner {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px 28px;
+  color: #030712;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dash-pool-lbl {
+  margin: 0;
+  font-size: 11px;
+  color: #334155;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-pool-val {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #030712;
+  letter-spacing: -0.02em;
+}
+
+.dash-pool-stats {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+  margin-top: 4px;
+}
+
+.dash-pool-stat-lbl {
+  margin: 0;
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dash-pool-stat-val {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #030712;
+}
+
+/* Quick Actions */
+.dash-qa-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+@media(max-width: 1024px) {
+  .dash-qa-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media(max-width: 640px) {
+  .dash-qa-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dash-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.dash-qa-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.dash-qa-btn:hover {
+  border-color: #cbd5e1;
+  background: #fafafb;
+}
+
+.dash-qa-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-qa-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.3;
+}
+
+/* Group rows */
+.dash-group-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.15s ease;
+  background: #ffffff;
+}
+
+.dash-group-row:hover {
+  background: #f8fafc;
+}
+
+.dash-group-row:last-child {
+  border-bottom: none;
+}
+
+.dash-group-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-group-name {
+  margin: 0 0 4px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #030712;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-group-pct-bar {
+  flex: 1;
+  height: 5px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dash-group-pct-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.dash-group-pct-txt {
+  font-size: 11px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.dash-group-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: #030712;
+}
+
+.dash-group-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+
+/* User pill */
+.dash-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+  transition: background 0.15s ease;
+}
+
+.dash-user-pill:hover {
+  background: #f8fafc;
+}
+
+.dash-user-pill:last-child {
+  border-bottom: none;
+}
+
+.dash-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.dash-user-name {
+  margin: 0 0 2px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #030712;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-user-meta {
+  margin: 0;
+  font-size: 12px;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.dash-user-badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Section titles and spacing */
+section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.dash-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dash-section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #030712;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.dash-section-link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  transition: opacity 0.15s ease;
+}
+
+.dash-section-link:hover {
+  opacity: 0.8;
+}
+
+/* Skeleton layouts */
+.skeleton-box {
+  background: #e2e8f0;
+  border-radius: 4px;
+}

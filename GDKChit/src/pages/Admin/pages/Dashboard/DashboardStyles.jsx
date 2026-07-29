@@ -11,7 +11,7 @@ const styles = StyleSheet.create({
   // Header
   header: {
     backgroundColor: '#FFFFFF',
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingTop: Platform.OS === 'ios' ? 20 : 10,
     paddingBottom: 20,
     paddingHorizontal: 20,
     flexDirection: 'row',
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   collectionCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    marginTop: 20,
+    marginTop: 0,
     padding: 20,
     borderRadius: 12,
     borderWidth: 1,

@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../utils/env';
+import { Alert } from 'react-native';
+import { reset as resetNavigation } from '../utils/navigation';
 
 class ApiService {
   constructor() {
@@ -86,6 +88,7 @@ class ApiService {
 
     const makeCall = async (token) => {
       const headers = {
+        Accept: 'application/json',
         'Content-Type': 'application/json',
         ...options.headers,
       };
@@ -106,12 +109,80 @@ class ApiService {
 
       // If token expired, try to refresh and retry
       if (response.status === 401 || response.status === 403) {
+        if (response.status === 403) {
+          try {
+            const clone = response.clone();
+            const text = await clone.text();
+            let data;
+            try {
+              data = JSON.parse(text);
+            } catch (e) {
+              data = null;
+            }
+            if (data && data.message && data.message.toLowerCase().includes('blocked')) {
+              await this.clearTokens();
+              await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+              
+              Alert.alert(
+                'Account Blocked',
+                data.message || 'Your account has been blocked by an administrator. Please contact the admin.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      resetNavigation({
+                        index: 0,
+                        routes: [{ name: 'Welcome' }],
+                      });
+                    }
+                  }
+                ],
+                { cancelable: false }
+              );
+              
+              throw new Error(data.message || 'Your account has been blocked by an administrator. Please contact the admin.');
+            }
+          } catch (e) {
+            if (e.message && e.message.toLowerCase().includes('blocked')) {
+              throw e;
+            }
+            console.error('Error checking blocked status on 403:', e);
+          }
+        }
+
+        const refreshToken = await this.getRefreshToken();
+        if (!refreshToken) {
+          await this.clearTokens();
+          throw new Error('Session invalid: no refresh token available. Please login again.');
+        }
+
         try {
           accessToken = await this.refreshAccessToken();
           response = await makeCall(accessToken);
         } catch (refreshError) {
           // Refresh failed, redirect to login
-          throw new Error('Authentication failed');
+          console.error('Refresh failed while requesting', url, refreshError);
+          if (refreshError.message && refreshError.message.toLowerCase().includes('blocked')) {
+            await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+            
+            Alert.alert(
+              'Account Blocked',
+              refreshError.message || 'Your account has been blocked by an administrator. Please contact the admin.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    resetNavigation({
+                      index: 0,
+                      routes: [{ name: 'Welcome' }],
+                    });
+                  }
+                }
+              ],
+              { cancelable: false }
+            );
+          }
+          throw new Error(refreshError.message || 'Authentication failed');
         }
       }
 
@@ -155,7 +226,13 @@ class ApiService {
         body: JSON.stringify({ phone, password }),
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Server error (${response.status}): ${responseText.substring(0, 150)}`);
+      }
 
       if (data.success) {
         await this.saveTokens(data.data.accessToken, data.data.refreshToken);
@@ -193,6 +270,44 @@ class ApiService {
   async getProfile() {
     try {
       const response = await this.makeRequest('/auth/profile');
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async updateProfile(profileData) {
+    try {
+      const response = await this.makeRequest('/auth/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(profileData),
+      });
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getNomineeDetails() {
+    try {
+      const response = await this.makeRequest('/auth/nominee');
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateNomineeDetails(nomineeData) {
+    try {
+      const response = await this.makeRequest('/auth/nominee', {
+        method: 'PATCH',
+        body: JSON.stringify(nomineeData),
+      });
       return await response.json();
     } catch (error) {
       throw error;
@@ -203,9 +318,14 @@ class ApiService {
   async getUserPreferences() {
     try {
       const response = await this.makeRequest('/user/preferences');
-      return await response.json();
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
     } catch (error) {
-      throw error;
+      return { success: false, message: error.message };
     }
   }
 
@@ -215,16 +335,118 @@ class ApiService {
         method: 'PUT',
         body: JSON.stringify(preferences),
       });
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  // App Rating methods
+  async submitAppRating(ratingData) {
+    try {
+      const response = await this.makeRequest('/user/rate-app', {
+        method: 'POST',
+        body: JSON.stringify(ratingData),
+      });
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getUserRating() {
+    try {
+      const response = await this.makeRequest('/user/my-rating');
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async saveMyLocation(locationData) {
+    try {
+      const response = await this.makeRequest('/user/save-location', {
+        method: 'POST',
+        body: JSON.stringify(locationData),
+      });
       return await response.json();
     } catch (error) {
       throw error;
     }
   }
 
+  async getMyLocation() {
+    try {
+      const response = await this.makeRequest('/user/location');
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getNotifications() {
+    try {
+      const response = await this.makeRequest('/user/notifications');
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
   // Check if user is authenticated
   async isAuthenticated() {
     const accessToken = await this.getAccessToken();
-    return !!accessToken;
+    const refreshToken = await this.getRefreshToken();
+    return !!accessToken && !!refreshToken;
+  }
+
+  // Portfolio methods
+  async getPortfolio() {
+    try {
+      const response = await this.makeRequest('/user/portfolio');
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getGroupMonthlyInfo(groupId) {
+    try {
+      const response = await this.makeRequest(`/user/portfolio/${groupId}/months`);
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
   }
 }
 

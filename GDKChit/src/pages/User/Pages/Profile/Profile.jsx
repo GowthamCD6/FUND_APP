@@ -1,179 +1,81 @@
-import React, {useRef, useEffect, useState} from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Platform,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   StatusBar,
   Alert,
+  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import AccountD from './Page/AccountD';
-import Nominee from './Page/Nominee';
-import LinkBA from './Page/LinkBA';
-import IdentityV from './Page/IdentityV';
-import SecurPermis from './Page/SecurPermis';
-import PrivacyPolicy from './Page/PrivacyPolicy';
-import HelpSupport from './Page/HelpSup';
+import Header from '../../../../components/HeaderComponent/Header';
+import AccountD from './Page/UserAccountDetails/AccountDetails';
+import Nominee from './Page/UserNominee/Nominee';
+import LinkBA from './Page/LinkBankAccount/LinkBankAccount';
+import IdentityV from './Page/Verification/IdentityVerification';
 import ShareModal from './Modals/Share';
 import RateModal from './Modals/Rate';
-import {Animated, Dimensions} from 'react-native';
+import { Animated, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import ApiService from '../../../../services/ApiService';
+import { useAuth } from '../../../../utils/AuthContext';
+import { useLanguage } from '../../../../utils/LanguageContext';
+import { API_URL } from '../../../../utils/env';
 
 const Profile = () => {
-  const [showAccountD, setShowAccountD] = useState(false);
-  const [showNominee, setShowNominee] = useState(false);
-  const [showLinkBA, setShowLinkBA] = useState(false);
-  const [showIdentityV, setShowIdentityV] = useState(false);
-  const [showSecurPermis, setShowSecurPermis] = useState(false);
-  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
-  const [showHelpSupport, setShowHelpSupport] = useState(false);
+  const { user: authUser } = useAuth();
+  const { t, language } = useLanguage();
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
-  const navigation = useNavigation()
+  const [profileUser, setProfileUser] = useState(authUser);
+  const [profileImage, setProfileImage] = useState('');
+  const [imageError, setImageError] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const navigation = useNavigation();
 
-  // Animation values for slide-in effects
-  const slideAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const nomineeAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const linkBAAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const identityVAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const securPermisAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const privacyPolicyAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-  const helpSupportAnim = useRef(
-    new Animated.Value(Dimensions.get('window').width),
-  ).current;
-
-  // Animation effects for each page
-  useEffect(() => {
-    if (showAccountD) {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showAccountD, slideAnim]);
+  const getProfileImageUrl = (img) => {
+    if (!img) return null;
+    if (img.startsWith('http') || img.startsWith('data:')) return img;
+    const cleanPath = img.startsWith('/') ? img : `/${img}`;
+    const baseUrl = (API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+    return `${baseUrl}${cleanPath}`;
+  };
 
   useEffect(() => {
-    if (showNominee) {
-      Animated.timing(nomineeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(nomineeAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showNominee, nomineeAnim]);
+    const loadProfile = async () => {
+      try {
+        if (authUser) {
+          setProfileUser(authUser);
+        }
 
-  useEffect(() => {
-    if (showLinkBA) {
-      Animated.timing(linkBAAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(linkBAAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showLinkBA, linkBAAnim]);
+        const response = await ApiService.getProfile();
+        if (response.success) {
+          setProfileUser(response.data.user);
+          setProfileImage(response.data.profile?.userImage || '');
+          setImageError(false);
+        }
+      } catch (error) {
+        console.error('Failed to load profile data:', error);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
 
-  useEffect(() => {
-    if (showIdentityV) {
-      Animated.timing(identityVAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(identityVAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showIdentityV, identityVAnim]);
+    loadProfile();
+  }, [authUser]);
 
-  useEffect(() => {
-    if (showSecurPermis) {
-      Animated.timing(securPermisAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(securPermisAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showSecurPermis, securPermisAnim]);
-
-  useEffect(() => {
-    console.log('Privacy Policy state changed:', showPrivacyPolicy);
-    if (showPrivacyPolicy) {
-      console.log('Showing Privacy Policy');
-      Animated.timing(privacyPolicyAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      console.log('Hiding Privacy Policy');
-      Animated.timing(privacyPolicyAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showPrivacyPolicy, privacyPolicyAnim]);
-
-  useEffect(() => {
-    if (showHelpSupport) {
-      Animated.timing(helpSupportAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(helpSupportAnim, {
-        toValue: Dimensions.get('window').width,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showHelpSupport, helpSupportAnim]);
+  const displayName = profileUser?.username || profileUser?.name || 'User';
+  const displayPhone = profileUser?.phone || 'No phone number';
+  const profileInitial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
+  const imageUrl = getProfileImageUrl(profileImage);
+  const profileStatus = profileUser?.role
+    ? `${profileUser.role} account`
+    : 'Chit Fund account';
 
   const handleLogout = async () => {
     try {
@@ -192,463 +94,316 @@ const Profile = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {/* Main Profile Content */}
-      <View style={{flex: 1}}>
-        {/* Profile Content - Only show when no sub-page is open */}
-        {!showAccountD &&
-          !showNominee &&
-          !showLinkBA &&
-          !showIdentityV &&
-          !showSecurPermis &&
-          !showPrivacyPolicy &&
-          !showHelpSupport && (
-            <>
-              {/* Header - Portfolio style */}
-              <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton}>
-                  <MaterialCommunityIcons
-                    name="arrow-left"
-                    size={24}
-                    color="#1F2937"
+      <View style={{ flex: 1 }}>
+        {/* Profile Content */}
+        <Header
+          title="My Profile"
+          onBack={() => navigation.navigate('Home')}
+        />
+
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+          {/* ...existing profile, settings, general, follow, and nav sections... */}
+          {/* Profile Info Section */}
+          <View style={styles.profileSection}>
+            <View style={styles.profileImageContainer}>
+              <View style={styles.profileImage}>
+                {imageUrl && !imageError ? (
+                  <Image
+                    source={{ uri: imageUrl }}
+                    style={styles.profileAvatarImage}
+                    onError={() => setImageError(true)}
                   />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Profile</Text>
+                ) : (
+                  <Text style={styles.profileInitial}>{profileInitial}</Text>
+                )}
               </View>
-              <View style={styles.separator} />
-              <ScrollView
-                style={styles.content}
-                showsVerticalScrollIndicator={false}>
-                {/* ...existing profile, settings, general, follow, and nav sections... */}
-                {/* Profile Info Section */}
-                <View style={styles.profileSection}>
-                  <View style={styles.profileImageContainer}>
-                    <View style={styles.profileImage}>
-                      <Text style={styles.profileInitial}>G</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.userName}>GOWTHAM</Text>
-                  <Text style={styles.userPhone}>+91 8610696889</Text>
-                  <Text style={styles.userStatus}>
-                    increasing Periyanayagi amman ChitFund
+            </View>
+            <Text style={[styles.userName, language === 'ta' && { fontSize: 20 }]}>{displayName}</Text>
+            <Text style={styles.userPhone}>{displayPhone}</Text>
+            <Text style={[styles.userStatus, language === 'ta' && { fontSize: 12 }]}>
+              {t('increasing Periyanayagi amman ChitFund')}
+            </Text>
+          </View>
+          {/* Profile Settings Section */}
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Profile Settings')}</Text>
+            <View style={styles.menuSection}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('AccountD')}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="card-account-details-outline"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Account Details')}</Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.menuItem, styles.menuItemBorder]}
+                onPress={() => navigation.navigate('LinkBA')}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="credit-card-outline"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>
+                    {t('Linked Bank Account')}
                   </Text>
                 </View>
-                {/* Profile Settings Section */}
-                <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>Profile Settings</Text>
-                  <View style={styles.menuSection}>
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => setShowAccountD(true)}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="card-account-details-outline"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={styles.menuItemText}>Account Details</Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={22}
-                        color="#CCCCCC"
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.menuItem, styles.menuItemBorder]}
-                      onPress={() => setShowLinkBA(true)}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="credit-card-outline"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={styles.menuItemText}>
-                          Linked Bank Account
-                        </Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={22}
-                        color="#CCCCCC"
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.menuItem, styles.menuItemBorder]}
-                      onPress={() => setShowIdentityV(true)}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="shield-check-outline"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={styles.menuItemText}>
-                          Identity Verification
-                        </Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={22}
-                        color="#CCCCCC"
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.menuItem, styles.menuItemBorder]}
-                      onPress={() => setShowNominee(true)}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="account-outline"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={styles.menuItemText}>Nominee Details</Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={22}
-                        color="#CCCCCC"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                {/* General Section */}
-                <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>General</Text>
-                  <View style={styles.menuSection}>
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => setShowSecurPermis(true)}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="shield-lock-outline"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={styles.menuItemText}>
-                          Security & Permission
-                        </Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={22}
-                        color="#CCCCCC"
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.customDivider} />
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => {
-                        console.log('Privacy Policy clicked!');
-                        Alert.alert('Debug', 'Privacy Policy clicked!');
-                        setShowPrivacyPolicy(true);
-                      }}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="file-document-outline"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={styles.menuItemText}>Privacy Policy</Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={22}
-                        color="#CCCCCC"
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.customDivider} />
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => setShowHelpSupport(true)}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="help-circle-outline"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={styles.menuItemText}>Help & Support</Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={22}
-                        color="#CCCCCC"
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.customDivider} />
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => setShowShareModal(true)}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="share-variant-outline"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={styles.menuItemText}>
-                          Share GDK Chit Fund
-                        </Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={22}
-                        color="#CCCCCC"
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.customDivider} />
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => setShowRateModal(true)}>
-                      <View style={styles.menuItemLeft}>
-                        <MaterialCommunityIcons
-                          name="star-outline"
-                          size={22}
-                          color="#666666"
-                        />
-                        <Text style={styles.menuItemText}>
-                          Rate GDK Chit Fund
-                        </Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={22}
-                        color="#CCCCCC"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                {/* Follow Us & Logout Section */}
-                <View style={styles.followSection}>
-                  <Text style={styles.followText}>
-                    Follow us, to stay updated
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.menuItem, styles.menuItemBorder]}
+                onPress={() => navigation.navigate('IdentityV')}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="shield-check-outline"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>
+                    {t('Identity Verification')}
                   </Text>
-                  <View style={styles.socialIcons}>
-                    <TouchableOpacity style={styles.socialIcon}>
-                      <MaterialCommunityIcons
-                        name="instagram"
-                        size={24}
-                        color="#333333"
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.socialIcon}>
-                      <MaterialCommunityIcons
-                        name="youtube"
-                        size={24}
-                        color="#333333"
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.socialIcon}>
-                      <MaterialCommunityIcons
-                        name="whatsapp"
-                        size={24}
-                        color="#333333"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity style={styles.logoutButton} onPress={async () => handleLogout()}>
-                    <Text style={styles.logoutText}>Logout</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.versionText}>Version 3.1.4</Text>
                 </View>
-              </ScrollView>
-              {/* Bottom Navigation */}
-              <View style={styles.bottomNav}>
-                <TouchableOpacity style={styles.navItem}>
-                  <MaterialCommunityIcons
-                    name="home-outline"
-                    size={24}
-                    color="#999999"
-                  />
-                  <Text style={styles.navText}>Home</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                  <MaterialCommunityIcons
-                    name="chart-line"
-                    size={24}
-                    color="#999999"
-                  />
-                  <Text style={styles.navText}>Portfolio</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.navItem, styles.navItemCenter]}>
-                  <View style={styles.centerNavButton}>
-                    <MaterialCommunityIcons
-                      name="star-four-points"
-                      size={24}
-                      color="#FFFFFF"
-                    />
-                  </View>
-                  <Text style={styles.navTextCenter}>More</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                  <MaterialCommunityIcons
-                    name="format-list-bulleted"
-                    size={24}
-                    color="#999999"
-                  />
-                  <Text style={styles.navText}>Orders</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.menuItem, styles.menuItemBorder]}
+                onPress={() => navigation.navigate('Nominee')}>
+                <View style={styles.menuItemLeft}>
                   <MaterialCommunityIcons
                     name="account-outline"
-                    size={24}
-                    color="#6B46C1"
+                    size={22}
+                    color="#666666"
                   />
-                  <Text style={[styles.navText, styles.navTextActive]}>
-                    Profile
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Nominee Details')}</Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* Advanced Features Section */}
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Advanced Features')}</Text>
+            <View style={styles.menuSection}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('SecurityPerm')}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="shield-lock-outline"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>
+                    {t('Security & Permission')}
                   </Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-
-        {/* Account Details Page - Full Screen Overlay */}
-        {showAccountD && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: slideAnim}]},
-            ]}>
-            <AccountD
-              onBack={() => {
-                Animated.timing(slideAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowAccountD(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Nominee Details Page - Full Screen Overlay */}
-        {showNominee && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: nomineeAnim}]},
-            ]}>
-            <Nominee
-              onBack={() => {
-                Animated.timing(nomineeAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowNominee(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Linked Bank Account Page - Full Screen Overlay */}
-        {showLinkBA && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: linkBAAnim}]},
-            ]}>
-            <LinkBA
-              onBack={() => {
-                Animated.timing(linkBAAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowLinkBA(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Identity Verification Page - Full Screen Overlay */}
-        {showIdentityV && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: identityVAnim}]},
-            ]}>
-            <IdentityV
-              onBack={() => {
-                Animated.timing(identityVAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowIdentityV(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Security & Permissions Page - Full Screen Overlay */}
-        {showSecurPermis && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: securPermisAnim}]},
-            ]}>
-            <SecurPermis
-              onBack={() => {
-                Animated.timing(securPermisAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowSecurPermis(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Privacy Policy Overlay */}
-        {showPrivacyPolicy && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {
-                transform: [{translateX: privacyPolicyAnim}],
-              },
-            ]}>
-            <PrivacyPolicy
-              onBack={() => {
-                Animated.timing(privacyPolicyAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowPrivacyPolicy(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Help & Support Overlay */}
-        {showHelpSupport && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {
-                transform: [{translateX: helpSupportAnim}],
-              },
-            ]}>
-            <HelpSupport
-              onBack={() => {
-                Animated.timing(helpSupportAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowHelpSupport(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+              <View style={styles.customDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('UserMyLocation')}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="map-marker"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('My Location')}</Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+              <View style={styles.customDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('UserAdminLocation')}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="map-check"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Admin Location')}</Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+              <View style={styles.customDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('LanguageSettings')}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="translate"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Language')}</Text>
+                </View>
+                <View style={styles.languageBadgeRow}>
+                  <Text style={styles.languageBadgeText}>
+                    {language === 'en' ? 'EN' : 'தமிழ்'}
+                  </Text>
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={22}
+                    color="#CCCCCC"
+                  />
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* General Section */}
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('General')}</Text>
+            <View style={styles.menuSection}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('UserPrivacyPolicy')}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="file-document-outline"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Privacy Policy')}</Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+              <View style={styles.customDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('UserHelpSupport')}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="help-circle-outline"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('Help & Support')}</Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+              <View style={styles.customDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => setShowShareModal(true)}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="share-variant-outline"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>
+                    {t('Share GDK Chit Fund')}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+              <View style={styles.customDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => setShowRateModal(true)}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="star-outline"
+                    size={22}
+                    color="#666666"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>
+                    {t('Rate GDK Chit Fund')}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* Follow Us & Logout Section */}
+          <View style={styles.followSection}>
+            <Text style={[styles.followText, language === 'ta' && { fontSize: 12 }]}>
+              {t('Follow us, to stay updated')}
+            </Text>
+            <View style={styles.socialIcons}>
+              <TouchableOpacity style={styles.socialIcon}>
+                <MaterialCommunityIcons
+                  name="instagram"
+                  size={24}
+                  color="#333333"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialIcon}>
+                <MaterialCommunityIcons
+                  name="youtube"
+                  size={24}
+                  color="#333333"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialIcon}>
+                <MaterialCommunityIcons
+                  name="whatsapp"
+                  size={24}
+                  color="#333333"
+                />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.logoutButton} onPress={async () => handleLogout()}>
+              <Text style={[styles.logoutText, language === 'ta' && { fontSize: 14 }]}>{t('Logout')}</Text>
+            </TouchableOpacity>
+            <Text style={styles.versionText}>Version 3.1.4</Text>
+          </View>
+        </ScrollView>
       </View>
 
       {/* Share Modal */}
@@ -670,41 +425,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-    marginTop: 30,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    paddingBottom: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    padding: 4,
-    marginTop: -10,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
-    marginTop: -10,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#d7dce4ff',
+    marginTop: 0,
   },
   content: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: Platform.OS === 'ios' ? 75 : 60,
+  },
   profileSection: {
     backgroundColor: '#FFFFFF',
-    paddingVertical: 32,
+    paddingVertical: 28,
     paddingHorizontal: 24,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   profileImageContainer: {
     marginBottom: 16,
@@ -723,6 +457,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+  },
+  profileAvatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 36,
   },
   userName: {
     fontSize: 22,
@@ -773,7 +512,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F0F0F0',
     alignSelf: 'center',
-    width: '80%',
+    width: '100%',
     marginVertical: 0,
   },
   menuItemLeft: {
@@ -789,15 +528,17 @@ const styles = StyleSheet.create({
   },
   followSection: {
     alignItems: 'center',
-    marginVertical: 16,
+    marginTop: 8,
+    marginBottom: 16,
     paddingHorizontal: 16,
   },
   followText: {
     fontSize: 14,
     color: '#666666',
     marginBottom: 12,
-    marginTop: -15,
+    marginTop: 0,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
+    textAlign: 'center',
   },
   socialIcons: {
     flexDirection: 'row',
@@ -822,7 +563,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   logoutButton: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   logoutText: {
     fontSize: 16,
@@ -834,7 +575,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999999',
     backgroundColor: '#E5E5E5',
-    marginBottom: 10,
+    marginBottom: 16,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -886,7 +627,23 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#FFFFFF',
-    zIndex: 1000, // Ensure it covers everything including bottom navigation
+    zIndex: 1000,
+  },
+  languageBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  languageBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B46C1',
+    backgroundColor: '#F3EEFF',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
   },
 });
 

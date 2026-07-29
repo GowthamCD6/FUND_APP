@@ -5,29 +5,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF', 
-    marginTop: 30,
+    marginTop: 0,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  fixedHeader: {
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    paddingBottom: 12,
+    paddingBottom: 10,
   },
-  backButton: {
-    padding: 4, 
+  stickyContent: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
-    marginLeft: 16,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
-    marginTop: -10,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#d7dce4ff', // Darker gray color for better visibility
+  scrollableContent: {
+    flex: 1,
+    paddingHorizontal: 16,
+    marginBottom: 90,
+    paddingTop: 0,
   },
   scrollView: {
     paddingHorizontal: 16,
@@ -40,7 +34,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     color: '#757575',
-    marginBottom: 12,
+    marginBottom: 15,
+    marginTop: -5,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
+  },
+    sectionTitle1: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#757575',
+    marginBottom: 20,
+    marginTop: -23,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
   },
   summaryContainer: {
@@ -182,6 +185,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
 
+  // Group selector divider (better styling for below group amount values)
+  groupSelectorDivider: {
+    height: 1,
+    backgroundColor: '#D1D5DB',
+    marginTop: 16,
+    marginBottom: 12,
+    marginHorizontal: 0,
+  },
+
   // The main updated card container
   updatedCard: {
     backgroundColor: '#FFFFFF',
@@ -291,6 +303,204 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2D3748',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'System',
+  },
+
+  // Tab styles
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 5,
+    marginTop: -10,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeTab: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'System',
+  },
+  activeTabText: {
+    color: '#1F2937',
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
+  },
+
+  // Empty state styles
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+    paddingHorizontal: 20,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4B5563',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 20,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'System',
+  },
+
+  // Loading state styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 20,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
+  },
+  loadingSubtext: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 18,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'System',
+  },
+
+  // Error state styles
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  errorContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginTop: 20,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'System',
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 12,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'System',
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6B46C1',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginTop: 24,
+    shadowColor: '#6B46C1',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 8,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
+  },
+
+  // Empty portfolio state styles
+  emptyPortfolioContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  emptyPortfolioContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  emptyPortfolioTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginTop: 24,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'System',
+  },
+  emptyPortfolioMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 12,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'System',
+    marginBottom: 24,
+  },
+  exploreButton: {
+    backgroundColor: '#6B46C1',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    shadowColor: '#6B46C1',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  exploreButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
   },
 });
 

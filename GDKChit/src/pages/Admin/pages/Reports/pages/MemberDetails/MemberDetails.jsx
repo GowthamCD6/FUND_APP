@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { Component } from 'react';
 import {
   View,
   Text,
@@ -7,369 +7,630 @@ import {
   FlatList,
   Modal,
   Alert,
-  Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Header from '../../../../../../components/HeaderComponent/Header';
+import MemberChitCard from '../MemberChitCard/MemberChitCard';
+import PaymentEditor from '../PaymentEditiorModal/PaymentStatusEditior';
+import ApiService from '../../../../../../services/ApiService';
 import styles from './MemberDetailsStyles';
 
-const { width } = Dimensions.get('window');
+class MemberDetails extends Component {
+  constructor(props) {
+    super(props);
 
-const MemberDetails = ({ route, navigation }) => {
-  const { group } = route.params || {};
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [isCurrentMonth, setIsCurrentMonth] = useState(true);
-  
-  // Extended sample data with payment history
-  const [groupData, setGroupData] = useState({
-    ...group,
-    members: group?.members?.map(member => ({
-      ...member,
-      paymentHistory: generatePaymentHistory(member.id)
-    })) || []
-  });
+    const group = props?.route?.params?.group || {};
+    const initialDate = new Date();
 
-  // Generate payment history for each member
-  function generatePaymentHistory(memberId) {
-    const history = [];
-    const startDate = new Date(group.startDate);
-    const currentDate = new Date();
-    
-    let date = new Date(startDate);
-    while (date <= currentDate) {
-      const month = date.getMonth();
-      const year = date.getFullYear();
-      const monthName = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      
-      // Simulate payment data
-      const statuses = ['paid', 'pending', 'overdue'];
-      const randomStatus = Math.random() > 0.2 ? 'paid' : (Math.random() > 0.5 ? 'pending' : 'overdue');
-      
-      history.push({
-        month: month,
-        year: year,
-        monthName: monthName,
-        status: randomStatus,
-        amount: group.monthlyAmount,
-        paidDate: randomStatus === 'paid' ? new Date(year, month, Math.floor(Math.random() * 28) + 1).toISOString() : null,
-        dueDate: new Date(year, month, 15).toISOString(),
-        receiptNumber: randomStatus === 'paid' ? `RCP${memberId}${year}${month}${Math.floor(Math.random() * 1000)}` : null
-      });
-      
-      date.setMonth(date.getMonth() + 1);
-    }
-    
-    return history.reverse(); // Latest first
+    this.state = {
+      group,
+      selectedMember: null,
+      selectedMonth: initialDate.getMonth(),
+      selectedYear: initialDate.getFullYear(),
+      showMonthPicker: false,
+      showMemberChitCard: false,
+      selectedMemberForChitCard: null,
+      isLoading: true,
+      groupData: {
+        ...group,
+        members: [],
+      },
+    };
+
+    this.months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
   }
 
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+  componentDidMount() {
+    this.loadMemberPayments();
+  }
 
-  const getStatusColor = (status) => {
+  componentDidUpdate(prevProps, prevState) {
+    const prevGroupId = prevState.group?.id;
+    const currentGroupId = this.state.group?.id;
+
+    if (
+      prevState.selectedMonth !== this.state.selectedMonth ||
+      prevState.selectedYear !== this.state.selectedYear ||
+      prevGroupId !== currentGroupId
+    ) {
+      this.loadMemberPayments();
+    }
+  }
+
+
+
+  getStatusColor = (status) => {
     switch (status) {
-      case 'paid': return '#10B981';      // Light green
-      case 'pending': return '#F59E0B';   // Light orange
-      case 'overdue': return '#EF4444';   // Light red
-      default: return '#6B7280';          // Light gray
+      case 'paid':
+        return '#10B981';
+      case 'pending':
+        return '#F59E0B';
+      case 'overdue':
+        return '#EF4444';
+      default:
+        return '#6B7280';
     }
   };
 
-  const getStatusIcon = (status) => {
+  getStatusIcon = (status) => {
     switch (status) {
-      case 'paid': return 'check-circle';
-      case 'pending': return 'clock-outline';
-      case 'overdue': return 'alert-circle';
-      default: return 'help-circle';
+      case 'paid':
+        return 'check-circle';
+      case 'pending':
+        return 'clock-outline';
+      case 'overdue':
+        return 'alert-circle';
+      default:
+        return 'help-circle';
     }
   };
 
-  const formatCurrency = (amount) => {
+  formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       minimumFractionDigits: 0,
-    }).format(amount);
+    }).format(Number(amount || 0));
   };
 
-  const formatDate = (dateString) => {
+  formatDate = (dateString) => {
     if (!dateString) return 'N/A';
+
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return 'N/A';
+
     return date.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
-  const getCurrentMonthPayments = () => {
-    return groupData.members.map(member => {
-      const currentMonthPayment = member.paymentHistory.find(
-        payment => payment.month === selectedMonth && payment.year === selectedYear
+  parseDateValue = (value) => {
+    if (!value) return null;
+
+    const normalizedValue = typeof value === 'string' ? value.replace(' ', 'T') : value;
+    const parsedDate = new Date(normalizedValue);
+
+    if (Number.isNaN(parsedDate.getTime())) return null;
+    return parsedDate;
+  };
+
+  isSelectedPeriodPast = () => {
+    const { selectedMonth, selectedYear } = this.state;
+    const now = new Date();
+
+    if (selectedYear < now.getFullYear()) return true;
+    if (selectedYear > now.getFullYear()) return false;
+    return selectedMonth < now.getMonth();
+  };
+
+  isCurrentSelectedMonth = () => {
+    const { selectedMonth, selectedYear } = this.state;
+    const now = new Date();
+
+    return selectedMonth === now.getMonth() && selectedYear === now.getFullYear();
+  };
+
+  getComparableHistoryDate = (entry) => {
+    const historyDate = this.parseDateValue(entry?.collection_period || entry?.dueDate || entry?.due_date);
+    if (historyDate) return historyDate;
+
+    const month = Number(entry?.month);
+    const year = Number(entry?.year);
+    if (Number.isInteger(month) && Number.isInteger(year)) {
+      return new Date(year, month, 1);
+    }
+
+    return new Date(0);
+  };
+
+  isPaymentOverdue = (paymentHistory, targetMonth, targetYear) => {
+    if (!Array.isArray(paymentHistory) || paymentHistory.length === 0) return false;
+
+    const targetPayment = paymentHistory.find(
+      (entry) => Number(entry?.month) === Number(targetMonth) && Number(entry?.year) === Number(targetYear),
+    );
+
+    if (!targetPayment || String(targetPayment.status).toLowerCase() === 'paid') {
+      return false;
+    }
+
+    const sortedHistory = [...paymentHistory].sort(
+      (a, b) => this.getComparableHistoryDate(b).getTime() - this.getComparableHistoryDate(a).getTime(),
+    );
+
+    let unpaidCount = 0;
+
+    for (let i = 0; i < sortedHistory.length; i += 1) {
+      const status = String(sortedHistory[i]?.status || '').toLowerCase();
+
+      if (status === 'pending' || status === 'overdue') {
+        unpaidCount += 1;
+        if (unpaidCount >= 2) {
+          return true;
+        }
+      } else if (status === 'paid') {
+        unpaidCount = 0;
+      }
+    }
+
+    return false;
+  };
+
+  getComputedPaymentStatus = (member) => {
+    const rawStatus = String(member?.currentPayment?.status || 'pending').toLowerCase();
+
+    if (rawStatus === 'paid' || rawStatus === 'closed') {
+      return rawStatus;
+    }
+
+    if (rawStatus === 'overdue') {
+      return 'overdue';
+    }
+
+    const paymentHistory = Array.isArray(member?.paymentHistory) ? member.paymentHistory : [];
+    const targetMonth = Number(member?.currentPayment?.month ?? this.state.selectedMonth);
+    const targetYear = Number(member?.currentPayment?.year ?? this.state.selectedYear);
+
+    if (this.isCurrentSelectedMonth()) {
+      const previousMonth = targetMonth === 0 ? 11 : targetMonth - 1;
+      const previousYear = targetMonth === 0 ? targetYear - 1 : targetYear;
+      const previousMonthPayment = paymentHistory.find(
+        (entry) => Number(entry?.month) === previousMonth && Number(entry?.year) === previousYear,
       );
-      return {
-        ...member,
-        currentPayment: currentMonthPayment || {
-          status: 'pending',
-          amount: group.monthlyAmount,
-          monthName: `${months[selectedMonth]} ${selectedYear}`
-        }
+      const previousMonthStatus = String(previousMonthPayment?.status || '').toLowerCase();
+
+      if (previousMonthPayment && previousMonthStatus !== 'paid') {
+        return 'overdue';
+      }
+    }
+
+    if (this.isPaymentOverdue(paymentHistory, targetMonth, targetYear)) {
+      return 'overdue';
+    }
+
+    const dueDate = this.parseDateValue(
+      member?.currentPayment?.dueDate ||
+        member?.currentPayment?.due_date ||
+        member?.paymentHistory?.[0]?.dueDate ||
+        member?.paymentHistory?.[0]?.due_date,
+    );
+
+    if (dueDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const normalizedDueDate = new Date(dueDate);
+      normalizedDueDate.setHours(0, 0, 0, 0);
+
+      if (normalizedDueDate < today) {
+        return 'overdue';
+      }
+    }
+
+    if (this.isSelectedPeriodPast()) {
+      return 'overdue';
+    }
+
+    return rawStatus || 'pending';
+  };
+
+  loadMemberPayments = async () => {
+    const { group, selectedMonth, selectedYear } = this.state;
+
+    if (!group?.id) {
+      this.setState({ isLoading: false });
+      return;
+    }
+
+    try {
+      this.setState({ isLoading: true });
+      const response = await ApiService.makeRequest(
+        `/admin/reports/group-members?groupId=${group.id}&month=${selectedMonth}&year=${selectedYear}`,
+        { method: 'GET' },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to fetch member report details');
+      }
+
+      this.setState({
+        groupData: {
+          ...group,
+          ...result.data.group,
+          members: result.data.members || [],
+        },
+      });
+    } catch (error) {
+      console.error('Failed to fetch report member details:', error);
+      Alert.alert('Error', error.message || 'Unable to load member details');
+      this.setState((prev) => ({
+        groupData: {
+          ...prev.groupData,
+          members: [],
+        },
+      }));
+    } finally {
+      this.setState({ isLoading: false });
+    }
+  };
+
+  getMonthlyStats = () => {
+    const members = this.state.groupData.members || [];
+    const paid = members.filter((m) => this.getComputedPaymentStatus(m) === 'paid').length;
+    const pending = members.filter((m) => this.getComputedPaymentStatus(m) === 'pending').length;
+    const overdue = members.filter((m) => this.getComputedPaymentStatus(m) === 'overdue').length;
+
+    const totalAmount = members.reduce((sum, m) => {
+      const payment = Number(m?.currentPayment?.amount || 0);
+      return this.getComputedPaymentStatus(m) === 'paid' ? sum + payment : sum;
+    }, 0);
+
+    return { paid, pending, overdue, totalAmount, total: members.length };
+  };
+
+
+
+  updatePaymentStatus = async (memberId, newStatus) => {
+    const { groupData, selectedMonth, selectedYear } = this.state;
+
+    try {
+      const member = (groupData.members || []).find((m) => m.id === memberId);
+      if (!member) return;
+
+      const payload = {
+        groupId: groupData.id,
+        userId: memberId,
+        month: selectedMonth,
+        year: selectedYear,
+        status: newStatus,
+        amount: Number(member?.currentPayment?.amount || groupData.monthlyAmount || 0),
       };
+
+      const response = await ApiService.makeRequest('/admin/reports/payment-status', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to update payment status');
+      }
+
+      const updated = result.data;
+
+      this.setState((prev) => ({
+        groupData: {
+          ...prev.groupData,
+          members: (prev.groupData.members || []).map((m) => {
+            if (m.id !== memberId) return m;
+
+            const currentPayment = {
+              ...m.currentPayment,
+              ...updated,
+            };
+
+            const historyWithoutCurrent = (m.paymentHistory || []).filter(
+              (p) => !(p.month === selectedMonth && p.year === selectedYear),
+            );
+
+            return {
+              ...m,
+              currentPayment,
+              paymentHistory: [currentPayment, ...historyWithoutCurrent],
+            };
+          }),
+        },
+      }));
+    } catch (error) {
+      console.error('Failed to update payment status:', error);
+      Alert.alert('Error', error.message || 'Unable to update payment status');
+      throw error;
+    }
+  };
+
+  openChitCard = (item) => {
+    this.setState({
+      selectedMemberForChitCard: item,
+      showMemberChitCard: true,
     });
   };
 
-  const getMonthlyStats = () => {
-    const currentMonthData = getCurrentMonthPayments();
-    const paid = currentMonthData.filter(m => m.currentPayment.status === 'paid').length;
-    const pending = currentMonthData.filter(m => m.currentPayment.status === 'pending').length;
-    const overdue = currentMonthData.filter(m => m.currentPayment.status === 'overdue').length;
-    const totalAmount = paid * group.monthlyAmount;
-    
-    return { paid, pending, overdue, totalAmount, total: currentMonthData.length };
+  handlePaymentMarkedPaid = () => {
+    // Refresh member data immediately after successful payment verification
+    console.log('Payment marked as paid, refreshing data...');
+    this.loadMemberPayments();
   };
 
-  const updatePaymentStatus = (memberId, newStatus) => {
-    setGroupData(prev => ({
-      ...prev,
-      members: prev.members.map(member => {
-        if (member.id === memberId) {
-          const updatedHistory = member.paymentHistory.map(payment => {
-            if (payment.month === selectedMonth && payment.year === selectedYear) {
-              return {
-                ...payment,
-                status: newStatus,
-                paidDate: newStatus === 'paid' ? new Date().toISOString() : null,
-                receiptNumber: newStatus === 'paid' ? `RCP${memberId}${selectedYear}${selectedMonth}${Date.now()}` : null
-              };
-            }
-            return payment;
-          });
-          return { ...member, paymentHistory: updatedHistory };
-        }
-        return member;
-      })
-    }));
+  openPaymentEditor = (item) => {
+    this.setState({
+      selectedMember: {
+        ...item,
+        currentPayment: {
+          ...item.currentPayment,
+          status: this.getComputedPaymentStatus(item),
+        },
+      },
+    });
   };
 
-  const renderMemberCard = ({ item }) => {
-    const stats = getMonthlyStats();
+  renderMemberCard = ({ item }) => {
+    const { groupData } = this.state;
+    const paymentStatus = this.getComputedPaymentStatus(item);
+
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.memberCard}
-        onPress={() => setSelectedMember(item)}
-        activeOpacity={0.7}
+        onLongPress={() => this.openPaymentEditor(item)}
+        activeOpacity={1}
+        delayLongPress={400}
       >
-        {/* Member Info Section */}
         <View style={styles.memberHeader}>
           <View style={styles.memberAvatarContainer}>
             <View style={styles.memberAvatar}>
               <Text style={styles.memberAvatarText}>
-                {item.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                {item.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .substring(0, 2)}
               </Text>
             </View>
           </View>
           <View style={styles.memberInfo}>
             <Text style={styles.memberName}>{item.name}</Text>
-            <Text style={styles.memberPhone}>{item.phone}</Text>
-            <Text style={styles.memberAmount}>{formatCurrency(item.currentPayment.amount)}</Text>
+            <View style={styles.memberPhoneAmountRow}>
+              <Text style={styles.memberPhone}>{item.phone}</Text>
+              <View style={styles.phoneAmountDivider} />
+              <Text style={styles.memberAmount}>
+                {this.formatCurrency(item.currentPayment?.amount || groupData.monthlyAmount || 0)}
+              </Text>
+            </View>
           </View>
           <View style={styles.statusAndArrowContainer}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.currentPayment.status) }]}>
-              <MaterialCommunityIcons 
-                name={getStatusIcon(item.currentPayment.status)} 
-                size={10} 
-                color="#FFFFFF" 
-              />
-              <Text style={styles.statusText}>{item.currentPayment.status}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: this.getStatusColor(paymentStatus) }]}>
+              <MaterialCommunityIcons name={this.getStatusIcon(paymentStatus)} size={10} color="#FFFFFF" />
+              <Text style={styles.statusText}>{paymentStatus}</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#9CA3AF" style={styles.arrowIcon} />
+            <TouchableOpacity onPress={() => this.openChitCard(item)} style={styles.arrowButton}>
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#9CA3AF" style={styles.arrowIcon} />
+            </TouchableOpacity>
           </View>
         </View>
       </TouchableOpacity>
     );
   };
 
-  const renderPaymentHistoryItem = ({ item }) => (
-    <View style={styles.historyItem}>
-      <View style={styles.historyHeader}>
-        <Text style={styles.historyMonth}>{item.monthName}</Text>
-        <View style={[styles.historyStatusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <MaterialCommunityIcons name={getStatusIcon(item.status)} size={10} color="#FFFFFF" />
-          <Text style={styles.historyStatusText}>{item.status.toUpperCase()}</Text>
+  getAvailableMonths = () => {
+    const { groupData } = this.state;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    
+    let startYear = currentYear;
+    let startMonth = 0;
+
+    const groupStart = groupData?.startDate || groupData?.start_date;
+    if (groupStart) {
+      const parsedDate = typeof groupStart === 'string' ? groupStart.replace(' ', 'T') : groupStart;
+      const startDate = new Date(parsedDate);
+      if (!Number.isNaN(startDate.getTime())) {
+        startYear = startDate.getFullYear();
+        startMonth = startDate.getMonth();
+      }
+    }
+
+    const availableMonths = [];
+    const endYear = Math.max(currentYear, startYear);
+
+    for (let y = startYear; y <= endYear; y++) {
+      const sMonth = y === startYear ? startMonth : 0;
+      let eMonth = 11;
+      
+      if (y === endYear) {
+        if (endYear === currentYear) {
+          eMonth = Math.max(currentMonth, y === startYear ? startMonth : 0);
+        } else {
+          eMonth = startMonth;
+        }
+      } else if (y === currentYear) {
+        eMonth = currentMonth;
+      }
+      
+      for (let m = sMonth; m <= eMonth; m++) {
+        availableMonths.push({
+          index: m,
+          year: y,
+          name: this.months[m],
+          id: `${y}-${m}`
+        });
+      }
+    }
+
+    // Sort descending (newest first)
+    return availableMonths.reverse();
+  };
+
+  render() {
+    const {
+      group,
+      selectedMember,
+      selectedMonth,
+      selectedYear,
+      showMonthPicker,
+      showMemberChitCard,
+      selectedMemberForChitCard,
+      isLoading,
+      groupData,
+    } = this.state;
+
+    const stats = this.getMonthlyStats();
+    const now = new Date();
+    const isCurrentMonth = selectedMonth === now.getMonth() && selectedYear === now.getFullYear();
+
+    return (
+      <View style={styles.container}>
+        <View style={styles.headerWrapper}>
+          <Header title={groupData?.name || group?.name || 'Member Details'} onBack={() => this.props.navigation.goBack()} />
         </View>
-      </View>
-      <View style={styles.historyDetails}>
-        <Text style={styles.historyAmount}>{formatCurrency(item.amount)}</Text>
-        <Text style={styles.historyDate}>
-          {item.status === 'paid' ? `Paid: ${formatDate(item.paidDate)}` : `Due: ${formatDate(item.dueDate)}`}
-        </Text>
-        {item.receiptNumber && (
-          <Text style={styles.receiptNumber}>Receipt: {item.receiptNumber}</Text>
-        )}
-      </View>
-    </View>
-  );
 
-  const stats = getMonthlyStats();
-  const currentMonthPayments = getCurrentMonthPayments();
-
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
+        <View style={styles.monthSelector}>
+          <View style={styles.monthHeader}>
+            <Text style={styles.monthLabel}>Payment Details for:</Text>
+            {isCurrentMonth ? <Text style={styles.currentMonthBadge}>Current Month</Text> : null}
+          </View>
+          <TouchableOpacity style={styles.monthButton} onPress={() => this.setState({ showMonthPicker: true })}>
+            <MaterialCommunityIcons name="calendar" size={20} color="#64748B" />
+            <Text style={styles.monthText}>
+              {this.months[selectedMonth]} {selectedYear}
+            </Text>
+            <MaterialCommunityIcons name="chevron-down" size={16} color="#64748B" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{group?.name}</Text>
         </View>
-      </View>
 
-      {/* Month Selector */}
-      <View style={styles.monthSelector}>
-        <View style={styles.monthHeader}>
-          <Text style={styles.monthLabel}>Payment Details for:</Text>
-          {isCurrentMonth && <Text style={styles.currentMonthBadge}>Current Month</Text>}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <MaterialCommunityIcons name="alert-circle" size={24} color="#EF4444" />
+            <Text style={styles.statValue}>{stats.overdue}</Text>
+            <Text style={styles.statLabel}>Overdue</Text>
+          </View>
+          <View style={styles.statCard}>
+            <MaterialCommunityIcons name="check-circle" size={24} color="#10B981" />
+            <Text style={styles.statValue}>{stats.paid}</Text>
+            <Text style={styles.statLabel}>Paid</Text>
+          </View>
+          <View style={styles.statCard}>
+            <MaterialCommunityIcons name="clock-outline" size={24} color="#F59E0B" />
+            <Text style={styles.statValue}>{stats.pending}</Text>
+            <Text style={styles.statLabel}>Pending</Text>
+          </View>
         </View>
-        <TouchableOpacity 
-          style={styles.monthButton}
-          onPress={() => setShowMonthPicker(true)}
-        >
-          <MaterialCommunityIcons name="calendar" size={20} color="#64748B" />
-          <Text style={styles.monthText}>{months[selectedMonth]} {selectedYear}</Text>
-          <MaterialCommunityIcons name="chevron-down" size={16} color="#64748B" />
-        </TouchableOpacity>
-      </View>
 
-      {/* Monthly Stats */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <MaterialCommunityIcons name="check-circle" size={24} color="#10B981" />
-          <Text style={styles.statValue}>{stats.paid}</Text>
-          <Text style={styles.statLabel}>Paid</Text>
-        </View>
-        <View style={styles.statCard}>
-          <MaterialCommunityIcons name="clock-outline" size={24} color="#F59E0B" />
-          <Text style={styles.statValue}>{stats.pending}</Text>
-          <Text style={styles.statLabel}>Pending</Text>
-        </View>
-        <View style={styles.statCard}>
-          <MaterialCommunityIcons name="alert-circle" size={24} color="#EF4444" />
-          <Text style={styles.statValue}>{stats.overdue}</Text>
-          <Text style={styles.statLabel}>Overdue</Text>
-        </View>
-      </View>
-
-      {/* Members List */}
-      <FlatList
-        data={currentMonthPayments}
-        renderItem={renderMemberCard}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
-
-      {/* Member Details Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={selectedMember !== null}
-        onRequestClose={() => setSelectedMember(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>{selectedMember?.name}</Text>
-                <Text style={styles.modalSubtitle}>{selectedMember?.phone}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setSelectedMember(null)}
-              >
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.historyTitle}>Payment History</Text>
-            
-            <FlatList
-              data={selectedMember?.paymentHistory || []}
-              renderItem={renderPaymentHistoryItem}
-              keyExtractor={(item, index) => `${item.year}-${item.month}-${index}`}
-              style={styles.historyList}
-              showsVerticalScrollIndicator={false}
-            />
-
-            {/* Quick Actions */}
-            <View style={styles.quickActions}>
-              <TouchableOpacity 
-                style={[styles.modalActionButton, styles.markPaidButton]}
-                onPress={() => {
-                  updatePaymentStatus(selectedMember.id, 'paid');
-                  Alert.alert('Success', 'Payment marked as paid');
-                }}
-                disabled={selectedMember?.currentPayment?.status === 'paid'}
-              >
-                <MaterialCommunityIcons name="check-circle" size={18} color="#FFFFFF" />
-                <Text style={styles.modalActionButtonText}>
-                  {selectedMember?.currentPayment?.status === 'paid' ? 'Already Paid' : 'Mark as Paid'}
+        {isLoading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#6B46C1" />
+          </View>
+        ) : (
+          <FlatList
+            data={groupData.members || []}
+            renderItem={this.renderMemberCard}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.listContainer}
+            ListEmptyComponent={
+              <View style={{ paddingTop: 24, alignItems: 'center' }}>
+                <Text style={{ color: '#6B7280' }}>
+                  No members found for this group.
                 </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+              </View>
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
-      {/* Month Picker Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showMonthPicker}
-        onRequestClose={() => setShowMonthPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>Select Month</Text>
-              <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.monthList}>
-              {months.map((month, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.monthItem,
-                    selectedMonth === index && styles.selectedMonthItem
-                  ]}
-                  onPress={() => {
-                    setSelectedMonth(index);
-                    setIsCurrentMonth(index === new Date().getMonth() && selectedYear === new Date().getFullYear());
-                    setShowMonthPicker(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.monthItemText,
-                    selectedMonth === index && styles.selectedMonthItemText
-                  ]}>
-                    {month} {selectedYear}
-                  </Text>
+        <PaymentEditor
+          visible={selectedMember !== null}
+          selectedMember={selectedMember}
+          onClose={() => this.setState({ selectedMember: null })}
+          onUpdatePaymentStatus={this.updatePaymentStatus}
+          formatCurrency={this.formatCurrency}
+          getStatusColor={this.getStatusColor}
+          getStatusIcon={this.getStatusIcon}
+          formatDate={this.formatDate}
+        />
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showMonthPicker}
+          onRequestClose={() => this.setState({ showMonthPicker: false })}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.pickerContainer}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select Month</Text>
+                <TouchableOpacity onPress={() => this.setState({ showMonthPicker: false })}>
+                  <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              </View>
+              <ScrollView style={styles.monthList}>
+                {this.getAvailableMonths().map(({ index, year, name, id }) => (
+                  <TouchableOpacity
+                    key={id}
+                    style={[styles.monthItem, selectedMonth === index && selectedYear === year && styles.selectedMonthItem]}
+                    onPress={() => this.setState({ selectedMonth: index, selectedYear: year, showMonthPicker: false })}
+                  >
+                    <Text style={[styles.monthItemText, selectedMonth === index && selectedYear === year && styles.selectedMonthItemText]}>
+                      {name} {year}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
-  );
-};
+        </Modal>
+
+        <Modal
+          animationType="slide"
+          transparent={false}
+          visible={showMemberChitCard}
+          onRequestClose={() => {
+            this.setState({ showMemberChitCard: false });
+            // Refresh member data when closing chit card
+            setTimeout(() => this.loadMemberPayments(), 500);
+          }}
+        >
+          <MemberChitCard
+            selectedGroup={groupData}
+            selectedMember={selectedMemberForChitCard}
+            onBack={() => {
+              this.setState({ showMemberChitCard: false });
+              // Refresh member data when going back from chit card
+              setTimeout(() => this.loadMemberPayments(), 500);
+            }}
+            onPaymentMarkedPaid={this.handlePaymentMarkedPaid}
+          />
+        </Modal>
+      </View>
+    );
+  }
+}
 
 export default MemberDetails;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,16 @@ import {
   StyleSheet,
   Alert,
   Modal,
+  ScrollView,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import pageStyles from '../ManageGsty';
 import MemberRegistration from './Page/MemberRegistration'; 
 import EditModal from './Modal/EditModal'; 
 import PaymentD from './Modal/PaymentD';
-import AuctionW from './Modal/AuctionW'; 
+import AuctionW from './Modal/AuctionW';
+import ApiService from '../../../../../../services/ApiService'; 
+import Header from '../../../../../../components/HeaderComponent/Header';
 
 const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [currentMonth, setCurrentMonth] = useState(0); // 0 = current, -1 = previous
@@ -22,27 +25,19 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     winner: true,
     history: false
   });
+  console.log(group.id);
+  
 
   // Month-wise data storage
-  const [monthlyData] = useState([
-    {
-      month: -1,
-      date: '2024-09-15',
-      amount: 10000,
-      discount: 500,
-      commission: 200,
-      winner: { name: 'முருகன் குமார்', memberId: '9876543210', amountTaken: 9300, date: '2024-09-15' },
-      mappedMembers: [
-        { memberId: '9876543210', name: 'முருகன் குமார்', status: 'paid', amount: 10000, paidDate: '2024-09-15' },
-        { memberId: '9876543211', name: 'லட்சுமி செல்வி', status: 'paid', amount: 10000, paidDate: '2024-09-14' },
-        { memberId: '9876543212', name: 'ராஜேஷ் பாபு', status: 'pending', amount: 10000 },
-      ]
-    }
-  ]);
+  const [monthlyData, setMonthlyData] = useState([]);
 
   const [formData, setFormData] = useState({
     groupName: group.name || '',
+    groupId: group.id || '',
     monthlyAmount: group.monthlyAmount?.toString() || '',
+    groupAmount: group.groupAmount?.toString() || '',
+    totalMembers: group.totalMembers?.toString() || '',
+    currentMembers: group.currentMembers || 0,
     createdDate: group.createdDate || new Date().toISOString().split('T')[0],
     currentMonthAmount: group.currentMonthAmount?.toString() || group.monthlyAmount?.toString() || '',
     elathThalupadi: group.elathThalupadi?.toString() || '',
@@ -62,6 +57,102 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false); // State for PaymentD modal
   const [showAuctionModal, setShowAuctionModal] = useState(false); // State for AuctionW modal
 
+  const getPeriodFromOffset = useCallback((offset) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() + offset);
+    return {
+      month: date.getMonth(),
+      year: date.getFullYear(),
+      date,
+    };
+  }, []);
+
+  const loadMonthSnapshot = useCallback(async () => {
+    const groupId = Number(formData.groupId || group.id);
+    if (!Number.isInteger(groupId)) return;
+
+    try {
+      const period = getPeriodFromOffset(currentMonth);
+      const response = await ApiService.makeRequest(
+        `/admin/groups/getMonthlySnapshot?groupId=${groupId}&month=${period.month}&year=${period.year}`,
+        { method: 'GET' },
+      );
+
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to fetch monthly snapshot');
+      }
+
+      const payment = result?.data?.payment;
+      const winner = result?.data?.winner;
+
+      if (payment) {
+        setFormData((prev) => ({
+          ...prev,
+          currentMonthAmount: payment.currentMonthAmount?.toString() || prev.currentMonthAmount,
+          elathThalupadi: payment.elathThalupadi?.toString() || '',
+          commission: payment.commission?.toString() || '',
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          currentMonthAmount: '',
+          elathThalupadi: '',
+          commission: '',
+        }));
+      }
+
+      if (winner) {
+        setFormData((prev) => ({
+          ...prev,
+          chitWinnerName: winner.chitWinnerName || '',
+          chitWinnerMemberId: winner.chitWinnerMemberId || '',
+          amountTaken: winner.amountTaken?.toString() || '',
+          datePicked: winner.datePicked || '',
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          chitWinnerName: '',
+          chitWinnerMemberId: '',
+          amountTaken: '',
+          datePicked: '',
+        }));
+      }
+
+      setMonthlyData((prev) => {
+        const withoutCurrent = prev.filter((item) => item.month !== currentMonth);
+        return [
+          {
+            month: currentMonth,
+            date: payment?.date || winner?.datePicked || new Date().toISOString().split('T')[0],
+            amount: Number(payment?.currentMonthAmount || 0),
+            discount: Number(payment?.elathThalupadi || 0),
+            commission: Number(payment?.commission || 0),
+            hasPayment: Boolean(payment),
+            winner: winner
+              ? {
+                  name: winner.chitWinnerName,
+                  memberId: winner.chitWinnerMemberId,
+                  amountTaken: Number(winner.amountTaken || 0),
+                  date: winner.datePicked,
+                }
+              : null,
+            hasWinner: Boolean(winner),
+            mappedMembers: [],
+          },
+          ...withoutCurrent,
+        ];
+      });
+    } catch (error) {
+      console.error('Error loading month snapshot:', error);
+    }
+  }, [currentMonth, formData.groupId, group.id, getPeriodFromOffset]);
+
+  useEffect(() => {
+    loadMonthSnapshot();
+  }, [loadMonthSnapshot]);
+
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -73,14 +164,53 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     setShowEditGroupModal(true);
   };
 
-  const handleEditSave = (updatedData) => {
-    // Update the main formData
-    setFormData(prev => ({
-      ...prev,
-      groupName: updatedData.groupName,
-      monthlyAmount: updatedData.monthlyAmount,
-      createdDate: updatedData.createdDate
-    }));
+  const handleEditSave = async (updatedData) => {
+    try {
+      const payload = {
+        groupId: formData.groupId || group.id,
+        groupName: updatedData.groupName,
+        totalAmount: updatedData.totalAmount,
+        numberOfUsers: updatedData.numberOfUsers,
+        createdDate: updatedData.createdDate,
+      };
+
+      const response = await ApiService.makeRequest('/admin/groups/updateGroup', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      let result;
+      if (contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Unexpected response: ${text.substring(0, 200)}`);
+      }
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to update group');
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        groupName: updatedData.groupName,
+        groupAmount: updatedData.totalAmount,
+        monthlyAmount: Math.round(Number(updatedData.totalAmount) / (Number(updatedData.numberOfUsers) || 1)).toString(),
+        totalMembers: updatedData.numberOfUsers,
+        createdDate: updatedData.createdDate,
+      }));
+      
+      // Update the group object so the EditModal can access the updated numberOfUsers
+      if (group.totalMembers !== updatedData.numberOfUsers) {
+        group.totalMembers = updatedData.numberOfUsers;
+      }
+      
+      Alert.alert('Success', 'Group information updated successfully');
+    } catch (error) {
+      console.error('Error updating group:', error);
+      Alert.alert('Error', 'Failed to update group. Please try again.');
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -129,14 +259,67 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   };
 
   // Function to handle saving payment details from the modal
-  const handlePaymentSave = (paymentData) => {
+  const handlePaymentSave = async (paymentData) => {
+    const groupId = Number(formData.groupId || group.id);
+    const period = getPeriodFromOffset(currentMonth);
+
+    try {
+      const response = await ApiService.makeRequest('/admin/groups/saveMonthlyDetails', {
+        method: 'POST',
+        body: JSON.stringify({
+          groupId,
+          month: period.month,
+          year: period.year,
+          currentMonthAmount: Number(paymentData.currentMonthAmount) || 0,
+          elathThalupadi: Number(paymentData.elathThalupadi) || 0,
+          commission: Number(paymentData.commission) || 0,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to save payment details');
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        currentMonthAmount: paymentData.currentMonthAmount,
+        elathThalupadi: paymentData.elathThalupadi,
+        commission: paymentData.commission,
+      }));
+
+      setMonthlyData((prev) => {
+        const currentEntry = prev.find((item) => item.month === currentMonth);
+        const withoutCurrent = prev.filter((item) => item.month !== currentMonth);
+        return [
+          {
+            month: currentMonth,
+            date: new Date().toISOString().split('T')[0],
+            amount: Number(paymentData.currentMonthAmount) || 0,
+            discount: Number(paymentData.elathThalupadi) || 0,
+            commission: Number(paymentData.commission) || 0,
+            hasPayment: true,
+            winner: currentEntry?.winner || null,
+            hasWinner: Boolean(currentEntry?.winner),
+            mappedMembers: [],
+          },
+          ...withoutCurrent,
+        ];
+      });
+
+      setShowPaymentModal(false);
+      Alert.alert('Success', 'Payment details saved');
+    } catch (error) {
+      console.error('Error saving payment details:', error);
+      Alert.alert('Error', error.message || 'Failed to save payment details');
+    }
+  };
+
+  const handleMembersUpdate = (newMemberCount) => {
     setFormData(prev => ({
       ...prev,
-      currentMonthAmount: paymentData.currentMonthAmount,
-      elathThalupadi: paymentData.elathThalupadi,
-      commission: paymentData.commission,
+      currentMembers: newMemberCount,
     }));
-    setShowPaymentModal(false);
   };
 
   const handleSave = () => {
@@ -219,15 +402,68 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   };
 
   // Function to handle saving auction winner details from the modal
-  const handleAuctionWinnerSave = (winnerData) => {
-    setFormData(prev => ({
-      ...prev,
-      chitWinnerName: winnerData.chitWinnerName,
-      chitWinnerMemberId: winnerData.chitWinnerMemberId,
-      amountTaken: winnerData.amountTaken,
-      datePicked: winnerData.datePicked,
-    }));
-    setShowAuctionModal(false);
+  const handleAuctionWinnerSave = async (winnerData) => {
+    const groupId = Number(formData.groupId || group.id);
+    const period = getPeriodFromOffset(currentMonth);
+
+    try {
+      const response = await ApiService.makeRequest('/admin/groups/saveAuctionWinner', {
+        method: 'POST',
+        body: JSON.stringify({
+          groupId,
+          month: period.month,
+          year: period.year,
+          chitWinnerName: winnerData.chitWinnerName,
+          chitWinnerMemberId: winnerData.chitWinnerMemberId,
+          amountTaken: Number(winnerData.amountTaken) || 0,
+          datePicked: winnerData.datePicked,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to save auction winner');
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        chitWinnerName: winnerData.chitWinnerName,
+        chitWinnerMemberId: winnerData.chitWinnerMemberId,
+        amountTaken: winnerData.amountTaken,
+        datePicked: winnerData.datePicked,
+      }));
+
+      setMonthlyData((prev) => {
+        const currentEntry = prev.find((item) => item.month === currentMonth);
+        const withoutCurrent = prev.filter((item) => item.month !== currentMonth);
+
+        return [
+          {
+            month: currentMonth,
+            date: winnerData.datePicked,
+            amount: Number(currentEntry?.amount || formData.currentMonthAmount || 0),
+            discount: Number(currentEntry?.discount || formData.elathThalupadi || 0),
+            commission: Number(currentEntry?.commission || formData.commission || 0),
+            hasPayment: Boolean(currentEntry?.hasPayment || formData.currentMonthAmount),
+            winner: {
+              name: winnerData.chitWinnerName,
+              memberId: winnerData.chitWinnerMemberId,
+              amountTaken: Number(winnerData.amountTaken || 0),
+              date: winnerData.datePicked,
+            },
+            hasWinner: true,
+            mappedMembers: currentEntry?.mappedMembers || [],
+          },
+          ...withoutCurrent,
+        ];
+      });
+
+      setShowAuctionModal(false);
+      Alert.alert('Success', 'Auction winner saved');
+    } catch (error) {
+      console.error('Error saving auction winner:', error);
+      Alert.alert('Error', error.message || 'Failed to save auction winner');
+    }
   };
 
   const getMonthLabel = (offset) => {
@@ -240,6 +476,8 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     return monthlyData.find(m => m.month === currentMonth) || null;
   };
 
+  const currentMonthData = getCurrentMonthData();
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return '#10B981';
@@ -248,28 +486,64 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     }
   };
 
-  const currentMonthData = getCurrentMonthData();
+  const isStartMonth = () => {
+    const period = getPeriodFromOffset(currentMonth);
+    const startDt = new Date(formData.createdDate || group.createdDate || group.start_date || group.startDate);
+    if (!Number.isNaN(startDt.getTime())) {
+      const periodYearMonth = period.year * 12 + period.month;
+      const startYearMonth = startDt.getFullYear() * 12 + startDt.getMonth();
+      return periodYearMonth <= startYearMonth;
+    }
+    return false; // Safest default is to allow previous if no creation date
+  };
+
+  const calculateDaysToNextChit = () => {
+    const dateStr = formData.createdDate || group.createdDate;
+    if (!dateStr) return 0;
+    const startDate = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let nextChitDate = new Date(today.getFullYear(), today.getMonth(), startDate.getDate());
+    
+    if (today > nextChitDate) {
+      nextChitDate.setMonth(nextChitDate.getMonth() + 1);
+    }
+    
+    const diffTime = nextChitDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays;
+  };
 
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={pageStyles.header}>
-        <View style={pageStyles.headerContent}>
-          <TouchableOpacity onPress={onBack} style={pageStyles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#212121" />
-          </TouchableOpacity>
-          <View>
-            <Text style={pageStyles.headerTitle}>Group Management</Text>
+      <Header 
+        title="Group Details"
+        onBack={onBack}
+        rightComponent={
+          <View style={{ 
+            backgroundColor: '#ECFDF5', 
+            paddingHorizontal: 12, 
+            paddingVertical: 4, 
+            borderRadius: 8, 
+            borderWidth: 1, 
+            borderColor: '#D1FAE5',
+            alignItems: 'center',
+            marginTop: -10,
+          }}>
+            <Text style={{ fontSize: 9, color: '#047857', marginBottom: 2, textTransform: 'uppercase', fontWeight: '700' }}>Next Chit In</Text>
+            <Text style={{ color: '#059669', fontWeight: '900', fontSize: 13 }}>{calculateDaysToNextChit()} Days</Text>
           </View>
-        </View>
+        }
+      />
+
+      {/* Page intro below header (non-scrollable) */}
+      <View style={styles.pageHeader}>
+        <Text style={styles.pageHeaderSubtext}>Manage your group details and settings</Text>
       </View>
 
-        {/* Page intro below header (non-scrollable) */}
-        <View style={styles.pageHeader}>
-          <Text style={styles.pageHeaderSubtext}>Manage your group details and settings</Text>
-        </View>
-
-  <View style={styles.scrollContainer}>
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContentContainer} showsVerticalScrollIndicator={false}>
         {/* Group Info Card */}
         <View style={styles.listContainer}>
           <View style={pageStyles.groupCard}>
@@ -306,21 +580,23 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
               <View style={pageStyles.groupInfoRow}>
                 <View style={pageStyles.groupInfoItem}>
                   <MaterialCommunityIcons name="account-group" size={16} color="#6B46C1" />
-                  <Text style={pageStyles.groupInfoText}>{memberMappings.length} Members</Text>
+                  <Text style={pageStyles.groupInfoText}>{formData.currentMembers} / {formData.totalMembers || 'N/A'} Members</Text>
                 </View>
                 <View style={pageStyles.groupInfoItem}>
                   <MaterialCommunityIcons name="currency-inr" size={16} color="#059669" />
-                  <Text style={pageStyles.groupInfoText}>{formatCurrency(formData.monthlyAmount || group.monthlyAmount)}</Text>
+                  <Text style={pageStyles.groupInfoText}>
+                    {formatCurrency(formData.monthlyAmount)} / month
+                  </Text>
                 </View>
               </View>
 
               {/* Footer */}
               <View style={pageStyles.groupCardFooter}>
                 <Text style={pageStyles.groupDate}>
-                  Created: {new Date(formData.createdDate || group.createdDate).toLocaleDateString('en-IN')}
+                  Start Date: {new Date(formData.createdDate || group.createdDate).toLocaleDateString('en-IN')}
                 </Text>
                 <Text style={pageStyles.groupAmount}>
-                  Total Fund: {formatCurrency((formData.monthlyAmount || group.monthlyAmount) * memberMappings.length)}
+                  Total Fund: {formatCurrency(formData.groupAmount || (formData.monthlyAmount * (formData.totalMembers || formData.currentMembers || 0)))}
                 </Text>
               </View>
             </View>
@@ -356,10 +632,11 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           <View style={styles.monthNavigation}>
             <TouchableOpacity
               onPress={() => setCurrentMonth(currentMonth - 1)}
-              style={styles.monthNavButton}
+              disabled={isStartMonth()}
+              style={[styles.monthNavButton, isStartMonth() && styles.monthNavButtonDisabled]}
             >
-              <MaterialCommunityIcons name="chevron-left" size={20} color="#6B46C1" />
-              <Text style={styles.monthNavButtonText}>Previous</Text>
+              <MaterialCommunityIcons name="chevron-left" size={20} color={isStartMonth() ? "#9CA3AF" : "#6B46C1"} />
+              <Text style={[styles.monthNavButtonText, isStartMonth() && { color: '#9CA3AF' }]}>Previous</Text>
             </TouchableOpacity>
 
             <View style={styles.monthDisplay}>
@@ -373,8 +650,8 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
               disabled={currentMonth >= 0}
               style={[styles.monthNavButton, currentMonth >= 0 && styles.monthNavButtonDisabled]}
             >
-              <Text style={styles.monthNavButtonText}>Next</Text>
-              <MaterialCommunityIcons name="chevron-right" size={20} color="#6B46C1" />
+              <Text style={[styles.monthNavButtonText, currentMonth >= 0 && { color: '#9CA3AF' }]}>Next</Text>
+              <MaterialCommunityIcons name="chevron-right" size={20} color={currentMonth >= 0 ? "#9CA3AF" : "#6B46C1"} />
             </TouchableOpacity>
           </View>
 
@@ -425,104 +702,13 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
               />
             </TouchableOpacity>
           </View>
-
-
-          {/* Previous Month Data */}
-          {currentMonthData && (
-            <View style={styles.section}>
-              <TouchableOpacity
-                onPress={() => toggleSection('history')}
-                style={styles.sectionHeader}
-              >
-                <View style={styles.sectionHeaderLeft}>
-                  <View style={[styles.sectionIcon, { backgroundColor: '#D1FAE5' }]}>
-                    <MaterialCommunityIcons name="history" size={20} color="#10B981" />
-                  </View>
-                  <View>
-                    <Text style={styles.sectionTitle}>Saved Month Data</Text>
-                    <Text style={styles.sectionSubtitle}>Previously saved information</Text>
-                  </View>
-                </View>
-                <MaterialCommunityIcons
-                  name={expandedSections.history ? "chevron-up" : "chevron-down"}
-                  size={24}
-                  color="#6B7280"
-                />
-              </TouchableOpacity>
-
-              {expandedSections.history && (
-                <View style={styles.sectionContent}>
-                  <View style={styles.historyGrid}>
-                    <View style={styles.historyCard}>
-                      <Text style={styles.historyCardLabel}>Amount</Text>
-                      <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.amount)}</Text>
-                    </View>
-                    <View style={styles.historyCard}>
-                      <Text style={styles.historyCardLabel}>Discount</Text>
-                      <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.discount)}</Text>
-                    </View>
-                    <View style={styles.historyCard}>
-                      <Text style={styles.historyCardLabel}>Commission</Text>
-                      <Text style={styles.historyCardValue}>{formatCurrency(currentMonthData.commission)}</Text>
-                    </View>
-                  </View>
-
-                  {currentMonthData.winner && (
-                    <View style={styles.winnerDetailsCard}>
-                      <Text style={styles.winnerDetailsTitle}>Winner Details</Text>
-                      <Text style={styles.winnerDetailsText}>
-                        <Text style={styles.winnerDetailsLabel}>Name: </Text>
-                        {currentMonthData.winner.name}
-                      </Text>
-                      <Text style={styles.winnerDetailsText}>
-                        <Text style={styles.winnerDetailsLabel}>Amount: </Text>
-                        {formatCurrency(currentMonthData.winner.amountTaken)}
-                      </Text>
-                      <Text style={styles.winnerDetailsText}>
-                        <Text style={styles.winnerDetailsLabel}>Date: </Text>
-                        {formatDateForDisplay(currentMonthData.winner.date)}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.historyMembersContainer}>
-                    <Text style={styles.historyMembersTitle}>
-                      Member Payments ({currentMonthData.mappedMembers.length})
-                    </Text>
-                    {currentMonthData.mappedMembers.map((member, idx) => (
-                      <View key={idx} style={styles.historyMemberCard}>
-                        <View>
-                          <Text style={styles.historyMemberName}>{member.name}</Text>
-                          <Text style={styles.historyMemberPhone}>{member.memberId}</Text>
-                        </View>
-                        <View style={styles.historyMemberRight}>
-                          <Text style={styles.historyMemberAmount}>{formatCurrency(member.amount)}</Text>
-                          <View style={[
-                            styles.historyMemberStatus,
-                            { backgroundColor: member.status === 'paid' ? '#D1FAE5' : '#FEF3C7' }
-                          ]}>
-                            <Text style={[
-                              styles.historyMemberStatusText,
-                              { color: member.status === 'paid' ? '#10B981' : '#F59E0B' }
-                            ]}>
-                              {member.status}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
         </View>
 
-      </View>
+      </ScrollView>
 
       {/* Auction winner date picker moved into AuctionW modal */}
 
-      {/* Created Date Picker Modal */}
+      {/* Start Date Picker Modal */}
       {showCreatedDatePicker && (
         <Modal
           visible={showCreatedDatePicker}
@@ -533,7 +719,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           <View style={styles.modalOverlay}>
             <View style={styles.datePickerModal}>
               <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Created Date</Text>
+                <Text style={styles.datePickerTitle}>Select Start Date</Text>
                 <TouchableOpacity onPress={() => setShowCreatedDatePicker(false)}>
                   <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
@@ -620,7 +806,8 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         onClose={() => setShowEditGroupModal(false)}
         initialData={{
           groupName: formData.groupName,
-          monthlyAmount: formData.monthlyAmount,
+          totalAmount: formData.groupAmount || formData.monthlyAmount,
+          numberOfUsers: formData.totalMembers,
           createdDate: formData.createdDate
         }}
         onSave={handleEditSave}
@@ -631,7 +818,9 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         visible={showMemberRegistration}
         onClose={() => setShowMemberRegistration(false)}
         group={{
+          id: formData.groupId, // Pass id explicitly to ensure getGroupDbId works
           groupName: formData.groupName,
+          groupId: formData.groupId,
           monthlyAmount: formData.monthlyAmount,
           memberMappings: memberMappings
         }}
@@ -639,6 +828,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           setMemberMappings(updatedMemberMappings);
           setShowMemberRegistration(false);
         }}
+        onMembersUpdate={handleMembersUpdate}
       />
 
       {/* Payment Details Modal */}
@@ -657,6 +847,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
       <AuctionW
         visible={showAuctionModal}
         onClose={() => setShowAuctionModal(false)}
+        groupMembers={memberMappings}
         initialWinnerData={{
           chitWinnerName: formData.chitWinnerName,
           chitWinnerMemberId: formData.chitWinnerMemberId,

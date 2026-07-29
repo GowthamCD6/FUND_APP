@@ -1,0 +1,528 @@
+/* ══════════════════════════════════════
+   BETTING AUCTION - LIVE LAYOUT
+   ══════════════════════════════════════ */
+
+.auc-betting-live-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Controls Card */
+.auc-live-controls-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+}
+
+.auc-live-controls-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.auc-controls-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 4px rgba(107, 70, 193, 0.06);
+}
+
+.auc-controls-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.3px;
+}
+
+.auc-controls-subtitle {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Initial Amount Input */
+.auc-initial-amount-card {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.auc-input-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.auc-amount-input-row {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 16px;
+  transition: all 0.2s ease;
+}
+
+.auc-amount-input-row:focus-within {
+  border-color: #6B46C1;
+  box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.15);
+}
+
+.auc-currency-symbol {
+  font-size: 18px;
+  font-weight: 800;
+  color: #6B46C1;
+  margin-right: 10px;
+}
+
+.auc-amount-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 14px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  background: transparent;
+}
+
+.auc-amount-input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.auc-input-hint {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.auc-duration-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #334155;
+  background-color: #ffffff;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.auc-duration-select:focus {
+  border-color: #6B46C1;
+  box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.15);
+}
+
+/* Control Buttons */
+.auc-control-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.auc-ctrl-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.auc-ctrl-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.auc-ctrl-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.auc-ctrl-start {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.auc-ctrl-start:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.auc-ctrl-pause {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+.auc-ctrl-pause:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+}
+
+.auc-ctrl-reset {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+}
+.auc-ctrl-reset:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+}
+
+/* Timer Card */
+.auc-timer-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.auc-timer-card.warning {
+  border-color: #fecdd3;
+  background: linear-gradient(180deg, #fff5f5 0%, #fff1f2 100%);
+  animation: pulse-border 1.5s ease infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.2); }
+  50% { box-shadow: 0 0 12px 4px rgba(244, 63, 94, 0.15); }
+}
+
+.auc-timer-value {
+  font-size: 52px;
+  font-weight: 900;
+  color: #6B46C1;
+  margin: 10px 0;
+  letter-spacing: 4px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 4px rgba(107, 70, 193, 0.1);
+}
+
+.auc-timer-value.warning {
+  color: #e11d48;
+  text-shadow: 0 2px 4px rgba(225, 29, 72, 0.1);
+}
+
+.auc-timer-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.auc-timer-warning-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #ffe4e6;
+  border: 1px solid #fecdd3;
+  padding: 6px 14px;
+  border-radius: 20px;
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: #be123c;
+  font-weight: 700;
+  animation: pulse-warning 1.5s ease infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(0.97); }
+}
+
+/* Stats Row */
+.auc-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.auc-stat-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.auc-stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.auc-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.auc-stat-icon.blue { background-color: #eff6ff; color: #2563eb; }
+.auc-stat-icon.purple { background-color: #f5f3ff; color: #6b46c1; }
+.auc-stat-icon.green { background-color: #ecfdf5; color: #10b981; }
+
+.auc-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.auc-stat-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Live Grid */
+.auc-live-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Section Cards */
+.auc-section-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.auc-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+}
+
+.auc-connection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #047857;
+  background-color: #d1fae5;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid #a7f3d0;
+}
+
+.auc-connection-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  animation: pulse-dot-badge 2s infinite;
+}
+
+@keyframes pulse-dot-badge {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.3); }
+}
+
+.auc-empty-section {
+  text-align: center;
+  padding: 36px 0;
+  color: #94a3b8;
+}
+
+.auc-empty-section p {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+/* Bidder List */
+.auc-bidder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.auc-bidder-list::-webkit-scrollbar {
+  width: 6px;
+}
+.auc-bidder-list::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+  border-radius: 3px;
+}
+
+.auc-bidder-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.auc-bidder-row:hover {
+  transform: scale(1.01);
+  border-color: #cbd5e1;
+}
+
+.auc-bidder-row.leader {
+  border-color: #fde68a;
+  background-color: #fffdf5;
+  box-shadow: 0 2px 4px rgba(253, 218, 13, 0.05);
+}
+
+.auc-bidder-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auc-bidder-amount-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auc-bidder-amount {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.auc-bidder-amount.leader {
+  color: #d97706;
+}
+
+.auc-rank {
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b46c1;
+  background-color: #f5f3ff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #ede9fe;
+}
+
+/* History */
+.auc-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.auc-history-list::-webkit-scrollbar {
+  width: 6px;
+}
+.auc-history-list::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+  border-radius: 3px;
+}
+
+.auc-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f8fafc;
+  transition: all 0.15s ease;
+}
+
+.auc-history-row:hover {
+  background-color: #f8fafc;
+}
+
+.auc-history-user {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.auc-history-time {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.auc-history-bid {
+  font-size: 15px;
+  font-weight: 800;
+  color: #6B46C1;
+}
+
+/* Betting Footer */
+.auc-betting-footer {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.auc-btn-finish {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+  transition: all 0.2s ease;
+}
+
+.auc-btn-finish:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}

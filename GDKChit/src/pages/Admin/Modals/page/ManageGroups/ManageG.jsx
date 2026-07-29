@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,8 +12,9 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import styles from './ManageGsty';
 import GroupInfoAdmin from './GroupManagement/GroupInfo.jsx';
 import ApiService from '../../../../../services/ApiService';
+import Header from '../../../../../components/HeaderComponent/Header';
 
-const ManageGroups = ({onBack}) => {
+const ManageGroups = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('Active');
   const [refreshing, setRefreshing] = useState(false);
   const [groups, setGroups] = useState([]);
@@ -135,11 +136,36 @@ const ManageGroups = ({onBack}) => {
       }
 
       if (!response.ok || !result?.success) {
-        throw new Error(result?.message || 'Failed to create group');
+        throw new Error(result?.message || 'Failed to fetch groups');
       }
 
-      setGroups(result.data);
-      console.log(result.data);
+      const mapped = (result.data || result.groups || []).map(g => {
+        const totalNum = Number(g.totalMembers || g.total_members) || 1;
+        const totalAmount = Number(g.groupAmount || g.group_amount) || 0;
+        return {
+          ...g,
+          id: g.id,
+          name: g.name || g.group_name || 'Untitled',
+          status: g.status === 'Not Started' || g.status === 'not started' || g.status === 'not-started' ? 'Not Started' : 'Active',
+          totalMembers: g.totalMembers !== undefined ? g.totalMembers : (g.total_members !== undefined ? g.total_members : 0),
+          currentMembers: g.currentMembers !== undefined ? g.currentMembers : (g.current_members !== undefined ? g.current_members : 0),
+          completedCycles: g.completedCycles || 0,
+          duration: g.duration || totalNum || 20,
+          totalCycles: g.duration || totalNum || 20,
+          monthlyAmount: g.monthly_amount || Math.round(totalAmount / (g.duration || totalNum)),
+          groupAmount: totalAmount,
+          startDate: g.startDate || g.start_date,
+          endDate: g.endDate || g.end_date,
+          nextDueDate: g.nextDueDate || g.next_due_date,
+          collectedAmount: g.collectedAmount || 0,
+          remainingAmount: g.remainingAmount || 0,
+          groupCode: g.groupCode || g.group_code,
+          createdDate: g.createdDate || g.created_at,
+        };
+      });
+
+      setGroups(mapped);
+      console.log(mapped);
     } catch (error) {
       console.error('Error fetching groups:', error);
       setGroups([]); // Fallback to sample data on error
@@ -179,6 +205,8 @@ const ManageGroups = ({onBack}) => {
   };
 
   const openGroupDetails = group => {
+    // console.log(group);
+
     setSelectedGroup(group);
     setShowGroupDetails(true);
   };
@@ -192,7 +220,7 @@ const ManageGroups = ({onBack}) => {
 
   const handleActivateGroup = async () => {
     setShowActionModal(false);
-    
+
     Alert.alert(
       'Activate Group',
       `Are you sure you want to activate "${longPressedGroup.name}"?`,
@@ -207,26 +235,31 @@ const ManageGroups = ({onBack}) => {
           style: 'default',
           onPress: async () => {
             try {
-              // Add your API call here to activate the group
-              // const response = await ApiService.makeRequest('/admin/groups/activate', {
-              //   method: 'POST',
-              //   body: JSON.stringify({ groupId: longPressedGroup.id }),
-              // });
-              
-              // For now, update locally
+              const response = await ApiService.makeRequest('/admin/groups/activate', {
+                method: 'POST',
+                body: JSON.stringify({ groupId: longPressedGroup.id }),
+              });
+
+              const result = await response.json();
+
+              if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Failed to activate group');
+              }
+
+              // Update locally after successful backend confirmation
               setGroups(prevGroups =>
                 prevGroups.map(g =>
                   g.id === longPressedGroup.id
-                    ? {...g, status: 'Active'}
+                    ? { ...g, status: 'Active' }
                     : g
                 )
               );
-              
+
               Alert.alert('Success', 'Group activated successfully');
               setLongPressedGroup(null);
             } catch (error) {
               console.error('Error activating group:', error);
-              Alert.alert('Error', 'Failed to activate group');
+              Alert.alert('Error', error.message || 'Failed to activate group. Please try again later.');
             }
           },
         },
@@ -236,7 +269,7 @@ const ManageGroups = ({onBack}) => {
 
   const handleDeleteGroup = async () => {
     setShowActionModal(false);
-    
+
     Alert.alert(
       'Delete Group',
       `Are you sure you want to delete "${longPressedGroup.name}"? This action cannot be undone.`,
@@ -251,22 +284,27 @@ const ManageGroups = ({onBack}) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Add your API call here to delete the group
-              // const response = await ApiService.makeRequest('/admin/groups/delete', {
-              //   method: 'DELETE',
-              //   body: JSON.stringify({ groupId: longPressedGroup.id }),
-              // });
-              
-              // For now, update locally
+              const response = await ApiService.makeRequest('/admin/groups/delete', {
+                method: 'POST', // Backend route maps to POST /groups/delete
+                body: JSON.stringify({ groupId: longPressedGroup.id }),
+              });
+
+              const result = await response.json();
+
+              if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Failed to delete group');
+              }
+
+              // Update locally after successful backend confirmation
               setGroups(prevGroups =>
                 prevGroups.filter(g => g.id !== longPressedGroup.id)
               );
-              
+
               Alert.alert('Success', 'Group deleted successfully');
               setLongPressedGroup(null);
             } catch (error) {
               console.error('Error deleting group:', error);
-              Alert.alert('Error', 'Failed to delete group');
+              Alert.alert('Error', 'Failed to delete group. Please try again later.');
             }
           },
         },
@@ -297,13 +335,13 @@ const ManageGroups = ({onBack}) => {
     return Math.round((completed / total) * 100);
   };
 
-  const renderGroupCard = ({item}) => (
+  const renderGroupCard = ({ item }) => (
     <View style={styles.groupCard}>
       <TouchableOpacity
         onLongPress={() => handleLongPress(item)}
         delayLongPress={500}
         activeOpacity={1}
-        style={{flex: 1}}>
+        style={{ flex: 1 }}>
         {/* Header with Group Name and Arrow */}
         <View style={styles.groupCardHeader}>
           <View style={styles.groupNameContainer}>
@@ -311,7 +349,7 @@ const ManageGroups = ({onBack}) => {
             <View
               style={[
                 styles.statusBadge,
-                {backgroundColor: getStatusColor(item.status)},
+                { backgroundColor: getStatusColor(item.status) },
               ]}>
               <MaterialCommunityIcons
                 name="clock-outline"
@@ -323,7 +361,7 @@ const ManageGroups = ({onBack}) => {
               </Text>
             </View>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.arrowButton}
             onPress={() => openGroupDetails(item)}
             activeOpacity={0.6}>
@@ -346,7 +384,7 @@ const ManageGroups = ({onBack}) => {
                 color="#6B7280"
               />
               <Text style={styles.groupInfoText}>
-                {item.totalMembers} Members
+                {item.currentMembers || item.totalMembers || 0} / {item.totalMembers} Members
               </Text>
             </View>
             <View style={styles.groupInfoItem}>
@@ -409,7 +447,7 @@ const ManageGroups = ({onBack}) => {
   const getTabCounts = () => {
     const active = groups.filter(g => g.status === 'Active').length;
     const notStarted = groups.filter(g => g.status === 'Not Started').length;
-    return {active, notStarted};
+    return { active, notStarted };
   };
 
   const tabCounts = getTabCounts();
@@ -421,7 +459,6 @@ const ManageGroups = ({onBack}) => {
         onBack={() => setShowGroupDetails(false)}
         onSave={data => {
           console.log('Group data updated:', data);
-          // Handle saving the data here
           setShowGroupDetails(false);
         }}
       />
@@ -431,18 +468,7 @@ const ManageGroups = ({onBack}) => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <MaterialCommunityIcons
-              name="arrow-left"
-              size={24}
-              color="#212121"
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Manage Groups</Text>
-        </View>
-      </View>
+      <Header title="Manage Groups" onBack={onBack} />
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
@@ -565,7 +591,7 @@ const ManageGroups = ({onBack}) => {
 };
 
 // Group Details Page Component
-const GroupDetailsPage = ({group, onBack}) => {
+const GroupDetailsPage = ({ group, onBack }) => {
   const formatDate = dateString => {
     if (!dateString) return 'Not Set';
     const date = new Date(dateString);
@@ -637,7 +663,7 @@ const GroupDetailsPage = ({group, onBack}) => {
           <View
             style={[
               styles.statusBadge,
-              {backgroundColor: getStatusColor(group.status)},
+              { backgroundColor: getStatusColor(group.status) },
             ]}>
             <MaterialCommunityIcons
               name={getStatusIcon(group.status)}

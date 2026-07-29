@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import ApiService from '../services/ApiService';
 
 const AuthLoader = () => {
   const navigation = useNavigation();
@@ -10,20 +11,43 @@ const AuthLoader = () => {
     const checkLogin = async () => {
       try {
         const phone = await AsyncStorage.getItem('userPhone');
-        const name = await AsyncStorage.getItem('userName');
         const role = await AsyncStorage.getItem('userRole');
-        
-        if (phone && role) {
-          if(role === 'Admin') {
-            navigation.navigate('AdminTabs');
-          } else {
-            navigation.navigate('TabRouter');
-          }
-        } else {
-          navigation.reset({
+        const accessToken = await AsyncStorage.getItem('accessToken');
+        const refreshToken = await AsyncStorage.getItem('refreshToken');
+
+        if (!phone || !role || !accessToken || !refreshToken) {
+          await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+          return navigation.reset({
             index: 0,
             routes: [{ name: 'Welcome' }],
           });
+        }
+
+        // Verify session in the background so that user transition is instant
+        ApiService.getProfile().then(profile => {
+          if (!profile.success) {
+            AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Welcome' }],
+            });
+          }
+        }).catch(error => {
+          console.error('Background session validation failed:', error);
+          const errorMessage = error?.message || '';
+          if (!errorMessage.includes('Network') && !errorMessage.toLowerCase().includes('blocked')) {
+            AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Welcome' }],
+            });
+          }
+        });
+
+        if (role === 'Admin') {
+          navigation.navigate('AdminTabs');
+        } else {
+          navigation.navigate('TabRouter');
         }
       } catch (error) {
         console.error('Error checking login status:', error);

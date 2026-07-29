@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const AuctionW = ({ visible, onClose, initialWinnerData, onSave }) => {
+const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = [] }) => {
   const [formData, setFormData] = useState({
     chitWinnerName: '',
     chitWinnerMemberId: '',
@@ -21,6 +21,32 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave }) => {
   const [errors, setErrors] = useState({});
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const autoFilledPhoneRef = useRef('');
+
+  const normalizeText = (value) => (value || '').toString().trim().replace(/\s+/g, ' ').toLowerCase();
+
+  const findBestMemberMatch = (nameValue) => {
+    const query = normalizeText(nameValue);
+    if (!query || groupMembers.length === 0) {
+      return null;
+    }
+
+    const exactMatch = groupMembers.find((member) => normalizeText(member?.name) === query);
+    if (exactMatch) return exactMatch;
+
+    const startsWithMatch = groupMembers.find((member) => {
+      const memberName = normalizeText(member?.name);
+      return memberName && (memberName.startsWith(query) || query.startsWith(memberName));
+    });
+    if (startsWithMatch) return startsWithMatch;
+
+    const includesMatch = groupMembers.find((member) => {
+      const memberName = normalizeText(member?.name);
+      return memberName && (memberName.includes(query) || query.includes(memberName));
+    });
+
+    return includesMatch || null;
+  };
 
   useEffect(() => {
     if (initialWinnerData) {
@@ -40,10 +66,70 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave }) => {
     }
   }, [initialWinnerData, visible]);
 
+  useEffect(() => {
+    if (!visible || !formData.chitWinnerName.trim() || groupMembers.length === 0) {
+      return;
+    }
+
+    const matchedMember = findBestMemberMatch(formData.chitWinnerName);
+
+    if (matchedMember?.phone && matchedMember.phone !== formData.chitWinnerMemberId) {
+      setFormData((prev) => ({
+        ...prev,
+        chitWinnerMemberId: matchedMember.phone,
+      }));
+      autoFilledPhoneRef.current = matchedMember.phone;
+      if (errors.chitWinnerMemberId) {
+        setErrors((prev) => ({
+          ...prev,
+          chitWinnerMemberId: null,
+        }));
+      }
+      return;
+    }
+
+    if (!matchedMember && formData.chitWinnerMemberId === autoFilledPhoneRef.current) {
+      setFormData((prev) => ({
+        ...prev,
+        chitWinnerMemberId: '',
+      }));
+      autoFilledPhoneRef.current = '';
+    }
+  }, [errors.chitWinnerMemberId, formData.chitWinnerMemberId, formData.chitWinnerName, groupMembers, visible]);
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
+    }
+
+    if (field === 'chitWinnerName') {
+      const matchedMember = findBestMemberMatch(value);
+
+      if (matchedMember?.phone) {
+        setFormData((prev) => ({
+          ...prev,
+          chitWinnerName: value,
+          chitWinnerMemberId: matchedMember.phone,
+        }));
+        autoFilledPhoneRef.current = matchedMember.phone;
+        if (errors.chitWinnerMemberId) {
+          setErrors((prev) => ({
+            ...prev,
+            chitWinnerMemberId: null,
+          }));
+        }
+        return;
+      }
+
+      if (formData.chitWinnerMemberId === autoFilledPhoneRef.current) {
+        setFormData((prev) => ({
+          ...prev,
+          chitWinnerName: value,
+          chitWinnerMemberId: '',
+        }));
+        autoFilledPhoneRef.current = '';
+      }
     }
   };
 
@@ -144,7 +230,7 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave }) => {
                 style={[styles.input, errors.chitWinnerMemberId && styles.inputError]}
                 value={formData.chitWinnerMemberId}
                 onChangeText={(value) => handleInputChange('chitWinnerMemberId', value)}
-                placeholder="10-digit mobile number"
+                placeholder="Auto-fills from winner name"
                 keyboardType="phone-pad"
                 maxLength={10}
                 placeholderTextColor="#9CA3AF"

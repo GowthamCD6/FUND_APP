@@ -1,6 +1,30 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Background location permission only for Android 10 and above -->
+    <uses-permission 
+        android:name="android.permission.ACCESS_BACKGROUND_LOCATION" 
+        android:minSdkVersion="29" />
+    
+    <!-- Biometric/Security permissions -->
+    <uses-permission 
+        android:name="android.permission.USE_FINGERPRINT" 
+        android:minSdkVersion="23" />
+    <uses-permission 
+        android:name="android.permission.USE_BIOMETRIC" 
+        android:minSdkVersion="28" />
+
+    <!-- Hardware features -->
+    <uses-feature 
+        android:name="android.hardware.fingerprint" 
+        android:required="false" />
+    <uses-feature 
+        android:name="android.hardware.biometrics" 
+        android:required="false" />
 
     <application
       android:name=".MainApplication"
@@ -9,8 +33,19 @@
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
       android:theme="@style/AppTheme"
-      android:usesCleartextTraffic="${usesCleartextTraffic}"
+      android:usesCleartextTraffic="true"
       android:supportsRtl="true">
+            <service
+                android:name="com.google.android.gms.metadata.ModuleDependencies"
+                android:enabled="false"
+                android:exported="false"
+                tools:ignore="MissingClass">
+                <intent-filter>
+                    <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
+                </intent-filter>
+                <meta-data android:name="photopicker_activity:0:required" android:value="" />
+            </service>
+      <!-- <uses-library android:name="org.apache.http.legacy" android:required="false" /> -->
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

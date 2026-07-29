@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import styles from './AdminTabsty.jsx'; // Adjust path if needed
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
@@ -9,16 +10,27 @@ import Dashboard from '../../../pages/Admin/pages/Dashboard/Dashboard.jsx';
 import Reports from '../../../pages/Admin/pages/Reports/Reports.jsx';
 import Settings from '../../../pages/Admin/pages/Settings/setting.jsx';
 import AdminMoreModal from '../../../pages/Admin/Modals/more.jsx';
+import ChatList from '../../../pages/Admin/pages/Chat/ChatList/ChatList.jsx';
 import { API_URL } from '../../../utils/env.js';
 import { useAuth } from '../../../utils/AuthContext.js';
 
 export const ADMIN_PHONE = '123456789';
 export const ADMIN_PASSWORD = 'abc';
 
-// Admin Dashboard Screens
-function DashboardScreen() {
-  return <Dashboard />;
-}
+const withSafe = (Component) => {
+  return (props) => {
+    return (
+      <View style={{ flex: 1 }}>
+        <Component {...props} />
+      </View>
+    );
+  };
+};
+
+const DashboardWithSafe = withSafe(Dashboard);
+const ReportsWithSafe = withSafe(Reports);
+const ChatListWithSafe = withSafe(ChatList);
+const SettingsWithSafe = withSafe(Settings);
 
 function MembersScreen() {
   return (
@@ -46,14 +58,6 @@ function TransactionsScreen() {
   );
 }
 
-function ReportsScreen() {
-  return <Reports />;
-}
-
-function SettingsScreen() {
-  return <Settings />;
-}
-
 const Tab = createBottomTabNavigator();
 
 // Custom Center Tab Button
@@ -72,6 +76,7 @@ const CustomTabBarButton = ({ children, onPress }) => (
 const AdminTab = () => {
   const navigation = useNavigation();
   const [showMoreModal, setShowMoreModal] = useState(false);
+  const insets = useSafeAreaInsets();
 
   return (
     <>
@@ -79,13 +84,19 @@ const AdminTab = () => {
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
-          tabBarStyle: styles.tabBar,
+          tabBarStyle: [
+            styles.tabBar,
+            {
+              height: Platform.OS === 'ios' ? 70 + insets.bottom : 60 + Math.max(insets.bottom, 10),
+              paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 15) : Math.max(insets.bottom, 6),
+            },
+          ],
           tabBarHideOnKeyboard: true,
         }}
       >
         <Tab.Screen
           name="Dashboard"
-          component={DashboardScreen}
+          component={DashboardWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
@@ -104,7 +115,7 @@ const AdminTab = () => {
         />
         <Tab.Screen
           name="Reports"
-          component={ReportsScreen}
+          component={ReportsWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
@@ -143,7 +154,7 @@ const AdminTab = () => {
         />
         <Tab.Screen
           name="Messages"
-          component={MembersScreen}
+          component={ChatListWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
@@ -162,7 +173,7 @@ const AdminTab = () => {
         />
         <Tab.Screen
           name="Settings"
-          component={SettingsScreen}
+          component={SettingsWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={styles.tabIconContainer}>
