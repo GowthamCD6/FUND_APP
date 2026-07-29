@@ -16,7 +16,7 @@ import {
   Modal,
   Linking,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets, SafeAreaProvider } from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from './FinanceStyle';
@@ -98,7 +98,8 @@ const Finance = ({ selectedGroup, onBack }) => {
 
 
   return (
-    <View style={[styles.container, { backgroundColor: '#4C1D95' }]}>
+    <SafeAreaProvider>
+    <SafeAreaView style={[styles.container, { backgroundColor: '#4C1D95' }]}>
 
       <ScrollView
         style={styles.scrollView}
@@ -478,7 +479,8 @@ const Finance = ({ selectedGroup, onBack }) => {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 

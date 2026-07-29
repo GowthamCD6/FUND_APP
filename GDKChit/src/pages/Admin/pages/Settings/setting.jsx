@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BlockU from './pages/BlockUser/BlockU';
+import BlockU from './pages/BlockUser/BlockUser';
 import UserL from './pages/UserLocation/UserL';
 
 const Settings = () => {

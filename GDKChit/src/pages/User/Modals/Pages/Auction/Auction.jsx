@@ -13,6 +13,7 @@ import {
   Modal,
   Dimensions,
 } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -312,17 +313,20 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
   // If no group selected, show group selection
   if (!selectedGroup) {
     return (
-      <View style={styles.container}>
+      <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
         {renderGroupSelectHeader()}
         {renderGroupsList()}
-      </View>
+      </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
   // If group selected, show auction interface
   return (
-    <View style={styles.container}>
+    <SafeAreaProvider>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
       {renderAuctionHeader()}
       {renderAuctionTabs()}
@@ -347,7 +351,8 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
         )}
       </View>
       {renderResultModal()}
-    </View>
+    </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 

@@ -8,9 +8,9 @@ import {
   Dimensions,
   Platform,
   StatusBar,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../components/HeaderComponent/Header';
 import ChitCard from './ChitCard';
@@ -110,6 +110,7 @@ const GroupCards = ({ onBack, onSelectGroup }) => {
   );
 
   return (
+    <SafeAreaProvider>
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Header 
@@ -169,6 +170,7 @@ const GroupCards = ({ onBack, onSelectGroup }) => {
         </View>
       </View>
     </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 
@@ -176,12 +178,10 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F8F9FA',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
-    marginTop: -27,
   },
 
   // Group List Styles
