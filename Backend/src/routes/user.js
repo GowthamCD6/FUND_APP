@@ -10,6 +10,7 @@ const groupManagement = require('../controllers/admin/groupManagement');
 
 const preferencesController = require('../controllers/user/preferencesController');
 const ratingsController = require('../controllers/user/ratingsController');
+const otpController = require('../controllers/user/otpController');
 
 router.get('/portfolio', authenticateToken, portfolioController.getPortfolio);
 router.get('/portfolio/:groupId/months', authenticateToken, groupController.getGroupMonthlyInfo);
@@ -24,5 +25,9 @@ router.get('/preferences', authenticateToken, preferencesController.getPreferenc
 router.put('/preferences', authenticateToken, preferencesController.updatePreferences);
 router.post('/rate-app', authenticateToken, ratingsController.submitRating);
 router.get('/my-rating', authenticateToken, ratingsController.getMyRating);
+
+// OTP Routes
+router.get('/otp-requests', authenticateToken, otpController.getOTPRequests);
+router.post('/otp-requests/:id/viewed', authenticateToken, otpController.markOTPViewed);
 
 module.exports = router;

@@ -107,6 +107,28 @@ exports.getNotifications = async (req, res) => {
       }
     }
 
+    // ── OTP Request Notifications ──
+    const [otpRows] = await db.promise().query(
+      `SELECT id, group_id, group_name, status, expires_at, created_at
+       FROM otp_requests
+       WHERE user_id = ? AND status IN ('pending', 'viewed') AND expires_at > NOW()
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+
+    for (const otp of otpRows) {
+      notifications.unshift({
+        id: `otp-request-${otp.id}`,
+        type: 'otp_request',
+        title: 'OTP Verification Request',
+        message: `Admin is requesting OTP verification for "${otp.group_name}". Tap to view your OTP code.`,
+        date: otp.created_at,
+        otpRequestId: otp.id,
+        groupId: otp.group_id,
+        groupName: otp.group_name,
+      });
+    }
+
     res.json({ success: true, data: notifications });
   } catch (error) {
     console.error('Error fetching notifications:', error);

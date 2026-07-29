@@ -673,33 +673,44 @@ exports.getMemberChitCard = async (req, res) => {
 
 exports.sendPaymentOTP = async (req, res) => {
   try {
-    const { phoneNumber, userId, groupId } = req.body;
+    const { userId, groupId, groupName } = req.body;
 
-    if (!phoneNumber || !userId || !groupId) {
-      return res.status(400).json({ success: false, message: 'Phone number, userId, and groupId are required' });
+    if (!userId || !groupId) {
+      return res.status(400).json({ success: false, message: 'userId and groupId are required' });
     }
 
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(phoneNumber.replace(/\D/g, ''))) {
-      return res.status(400).json({ success: false, message: 'Invalid phone number format' });
-    }
+    // Expire any previous pending OTP requests for this user+group
+    await db.promise().query(
+      `UPDATE otp_requests SET status = 'expired' WHERE user_id = ? AND group_id = ? AND status IN ('pending', 'viewed')`,
+      [userId, groupId]
+    );
 
+    // Generate a 6-digit OTP and store it in the database with 10 minute expiry
     const otp = generateOTP();
-    storeOTP(phoneNumber, otp, 5);
+    const expiryMinutes = 10;
+    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
-    const smsResult = await sendSMS(phoneNumber, `Your FUND-APP OTP is: ${otp}. Valid for 5 minutes.`);
-
-    if (!smsResult.success) {
-      console.error('SMS sending failed:', smsResult.error);
+    // Resolve group name if not provided
+    let resolvedGroupName = groupName || '';
+    if (!resolvedGroupName) {
+      const [groupRows] = await db.promise().query('SELECT group_name FROM `groups` WHERE id = ?', [groupId]);
+      resolvedGroupName = groupRows.length > 0 ? groupRows[0].group_name : `Group ${groupId}`;
     }
+
+    await db.promise().query(
+      `INSERT INTO otp_requests (user_id, group_id, group_name, otp_code, status, expires_at) VALUES (?, ?, ?, ?, 'pending', ?)`,
+      [userId, groupId, resolvedGroupName, otp, expiresAt]
+    );
+
+    console.log(`[OTP] Created in-app OTP for user ${userId}, group ${groupId}: ${otp} (expires in ${expiryMinutes}min)`);
 
     return res.status(200).json({
       success: true,
-      message: 'OTP sent successfully',
+      message: 'OTP request sent to user app',
       data: {
         otpSent: true,
-        phoneNumber: phoneNumber.slice(-4).padStart(phoneNumber.length, '*'),
-        expiryMinutes: 5,
+        expiryMinutes,
+        method: 'in_app',
       },
     });
   } catch (error) {
@@ -710,21 +721,35 @@ exports.sendPaymentOTP = async (req, res) => {
 
 exports.verifyPaymentOTP = async (req, res) => {
   try {
-    const { phoneNumber, otp, groupId, userId, month, year } = req.body;
+    const { otp, groupId, userId, month, year } = req.body;
 
-    if (!phoneNumber || !otp) {
-      return res.status(400).json({ success: false, message: 'Phone number and OTP are required' });
+    if (!otp || !userId || !groupId) {
+      return res.status(400).json({ success: false, message: 'OTP, userId, and groupId are required' });
     }
 
-    const verificationResult = verifyOTP(phoneNumber, otp);
+    // Find a valid (non-expired, non-used) OTP request for this user+group
+    const [rows] = await db.promise().query(
+      `SELECT id, otp_code, status, expires_at FROM otp_requests 
+       WHERE user_id = ? AND group_id = ? AND status IN ('pending', 'viewed') AND expires_at > NOW()
+       ORDER BY created_at DESC LIMIT 1`,
+      [userId, groupId]
+    );
 
-    if (!verificationResult.success) {
-      return res.status(400).json({
-        success: false,
-        message: verificationResult.message,
-        attemptsLeft: verificationResult.attemptsLeft,
-      });
+    if (rows.length === 0) {
+      return res.status(400).json({ success: false, message: 'OTP expired or not found. Please request a new OTP.' });
     }
+
+    const otpRecord = rows[0];
+
+    if (otpRecord.otp_code !== otp) {
+      return res.status(400).json({ success: false, message: 'Incorrect OTP. Please try again.' });
+    }
+
+    // OTP matched — mark as used
+    await db.promise().query(
+      `UPDATE otp_requests SET status = 'used', updated_at = NOW() WHERE id = ?`,
+      [otpRecord.id]
+    );
 
     return res.status(200).json({
       success: true,

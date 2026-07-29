@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   Platform,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   StatusBar,
   Dimensions,
-  BackHandler,
+  BackHandler
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';;
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { width } = Dimensions.get('window');

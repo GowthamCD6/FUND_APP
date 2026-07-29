@@ -190,7 +190,13 @@ chatWss.on('connection', (ws, req) => {
       try {
         const payload = JSON.parse(message);
         
-        if (payload.type === 'join_room') {
+        if (payload.type === 'ping') {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'pong' }));
+          }
+          return;
+        }
+        else if (payload.type === 'join_room') {
           const client = chatClients.get(clientId);
           if (client) {
             client.rooms.add(payload.roomId);
@@ -389,6 +395,14 @@ chatWss.on('connection', (ws, req) => {
 
 // Handle auction messages
 async function handleAuctionMessage(type, data, clientId, userType) {
+  if (type === 'ping') {
+    const client = clientSessions.get(clientId);
+    if (client && client.ws && client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(JSON.stringify({ type: 'pong' }));
+    }
+    return;
+  }
+
   console.log(`📨 [${userType}] ${type}:`, data);
 
   switch (type) {

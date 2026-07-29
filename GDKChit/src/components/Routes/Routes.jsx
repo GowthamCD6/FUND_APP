@@ -32,6 +32,7 @@ import UserHelpSupport from "../../pages/User/Pages/Profile/Page/HelpAndSupport/
 import UserMyLocation from "../../pages/User/Pages/Profile/Page/MyLocation/MyLocation";
 import UserAdminLocation from "../../pages/User/Pages/Profile/Page/AdminLocation/AdminLocation";
 import LanguageSettings from "../../pages/User/Pages/Profile/Page/LanguageSettings/LanguageSettings";
+import OTPRequests from "../../pages/User/Pages/Profile/Page/OTPRequests/OTPRequests";
 
 import { navigationRef } from "../../utils/navigation";
 
@@ -108,6 +109,7 @@ const Routes = () => {
                     <Stack.Screen name="UserMyLocation" component={withSafe(UserMyLocation)} />
                     <Stack.Screen name="UserAdminLocation" component={withSafe(UserAdminLocation)} />
                     <Stack.Screen name="LanguageSettings" component={withSafe(LanguageSettings)} />
+                    <Stack.Screen name="OTPRequests" component={withSafe(OTPRequests)} />
                 </Stack.Navigator>
             </View>
         </NavigationContainer>
