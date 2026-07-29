@@ -15,15 +15,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Header from '../../../../components/HeaderComponent/Header';
-import MyLocation from './pages/MyLocation/MyLocation';
-import Share from './Model/ShareApp/Share';
-import Rate from './Model/RateApp/Rate';
+import BlockU from './pages/BlockUser/BlockUser';
+import UserL from './pages/UserLocation/UserL';
 
 const Settings = () => {
-  const [showMyLocation, setShowMyLocation] = useState(false);
-  const [showShare, setShowShare] = useState(false);
-  const [showRate, setShowRate] = useState(false);
+  const [showBlockU, setShowBlockU] = useState(false);
+  const [showUserL, setShowUserL] = useState(false);
   const navigation = useNavigation();
 
   // Animation values for slide-in effects
@@ -93,26 +90,16 @@ const Settings = () => {
         {
           icon: 'account-edit',
           title: 'Edit Profile',
-          iconColor: '#666666',
-          onPress: () => {
-            navigation.navigate('AdminEditProfile');
-          },
+          subtitle: 'Update your personal information',
+          iconColor: '#555555',
+          onPress: () => {},
         },
         {
           icon: 'shield-account',
           title: 'Security',
-          iconColor: '#666666',
-          onPress: () => {
-            navigation.navigate('AdminSecurityPerm');
-          },
-        },
-        {
-          icon: 'lock-reset',
-          title: 'Manage Passwords',
-          iconColor: '#10B981',
-          onPress: () => {
-            navigation.navigate('AdminPasswordManagement');
-          },
+          subtitle: 'Password and authentication',
+          iconColor: '#555555',
+          onPress: () => {},
         },
       ],
     },
@@ -122,13 +109,22 @@ const Settings = () => {
         {
           icon: 'bell-outline',
           title: 'Notifications',
-          iconColor: '#666666',
+          subtitle: 'Manage notification preferences',
+          iconColor: '#555555',
           onPress: () => {},
         },
         {
           icon: 'earth',
           title: 'Language',
-          iconColor: '#666666',
+          subtitle: 'English, Hindi, Tamil, Telugu, Kannada',
+          iconColor: '#555555',
+          onPress: () => {},
+        },
+        {
+          icon: 'currency-inr',
+          title: 'Currency',
+          subtitle: 'Set default currency (INR)',
+          iconColor: '#555555',
           onPress: () => {},
         },
       ],
@@ -139,16 +135,23 @@ const Settings = () => {
         {
           icon: 'account-group',
           title: 'Default Group Rules',
-          iconColor: '#666666',
+          subtitle: 'Set contribution amounts and payment cycles',
+          iconColor: '#555555',
+          onPress: () => {},
+        },
+        {
+          icon: 'cash-multiple',
+          title: 'Payment Settings',
+          subtitle: 'Configure payment rules and reminders',
+          iconColor: '#555555',
           onPress: () => {},
         },
         {
           icon: 'gavel',
           title: 'Auction Settings',
-          iconColor: '#666666',
-          onPress: () => {
-            navigation.navigate('AuctionSettings');
-          },
+          subtitle: 'Set default auction rules and duration',
+          iconColor: '#555555',
+          onPress: () => {},
         },
       ],
     },
@@ -158,10 +161,16 @@ const Settings = () => {
         {
           icon: 'download',
           title: 'Data Export',
-          iconColor: '#666666',
-          onPress: () => {
-            navigation.navigate('AdminDataExport');
-          },
+          subtitle: 'Download all your group data and history',
+          iconColor: '#555555',
+          onPress: () => {},
+        },
+        {
+          icon: 'lock-outline',
+          title: 'Privacy Controls',
+          subtitle: 'Control who can see your profile',
+          iconColor: '#555555',
+          onPress: () => {},
         },
         {
           icon: 'account-cancel',
@@ -186,8 +195,9 @@ const Settings = () => {
         },
         {
           icon: 'crosshairs-gps',
-          title: 'My Location',
-          iconColor: '#666666',
+          title: 'Location Sharing',
+          subtitle: 'Control location sharing preferences',
+          iconColor: '#555555',
           onPress: () => {
             setShowMyLocation(true);
           },
@@ -200,277 +210,226 @@ const Settings = () => {
         {
           icon: 'help-circle',
           title: 'Help & Support',
-          iconColor: '#666666',
+          subtitle: 'FAQs, tutorials, contact support',
+          iconColor: '#555555',
           onPress: () => {},
         },
         {
           icon: 'information',
           title: 'About App',
-          iconColor: '#666666',
+          subtitle: 'Version and legal information',
+          iconColor: '#555555',
           onPress: () => {},
         },
         {
           icon: 'share-variant-outline',
           title: 'Share App',
-          iconColor: '#666666',
-          onPress: () => {
-            setShowShare(true);
-          },
+          subtitle: 'Invite friends to join',
+          iconColor: '#555555',
+          onPress: () => {},
         },
         {
           icon: 'star-outline',
           title: 'Rate App',
-          iconColor: '#666666',
-          onPress: () => {
-            setShowRate(true);
-          },
+          subtitle: 'Rate us on Play Store',
+          iconColor: '#555555',
+          onPress: () => {},
         },
       ],
     },
   ];
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
-      {/* Main Settings Content */}
-      <View style={{flex: 1}}>
-        {!showMyLocation && (
-            <>
-              <Header 
-                title="Settings"
-                onBack={() => navigation.goBack()}
-              />
+      {showBlockU ? (
+        <BlockU onClose={() => setShowBlockU(false)} />
+      ) : showUserL ? (
+        <UserL onClose={() => setShowUserL(false)} />
+      ) : (
+        <View style={{flex: 1}}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Settings</Text>
+          </View>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}>
+          <View style={styles.profileSection}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarInitial}>
+              {userData.name.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <Text style={styles.userName}>{userData.name.toUpperCase()}</Text>
+          <Text style={styles.userPhone}>{userData.phone}</Text>
+          <Text style={styles.userStatus}>{userData.role}</Text>
+        </View>
 
-              <ScrollView
-                style={styles.content}
-                showsVerticalScrollIndicator={false}>
-                
-                {/* Profile Section */}
-                <View style={styles.profileSection}>
-                  <View style={styles.profileImageContainer}>
-                    <View style={styles.profileImage}>
-                      <Text style={styles.profileInitial}>
-                        {userData.name.charAt(0).toUpperCase()}
-                      </Text>
+        {settingSections.map((section, sectionIndex) => (
+          <View key={sectionIndex} style={styles.settingsContainer}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <View style={styles.menuCard}>
+              {section.items.map((item, itemIndex) => (
+                <React.Fragment key={itemIndex}>
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={item.onPress}>
+                    <View style={styles.menuItemContent}>
+                      <MaterialCommunityIcons
+                        name={item.icon}
+                        size={24}
+                        color={item.iconColor}
+                      />
+                      <View style={styles.menuItemTextBox}>
+                        <Text style={styles.menuItemText}>{item.title}</Text>
+                        {item.subtitle && (
+                          <Text style={styles.menuItemSubtitle}>
+                            {item.subtitle}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                  </View>
-                  <Text style={styles.userName}>{userData.name.toUpperCase()}</Text>
-                  <Text style={styles.userPhone}>{userData.phone}</Text>
-                  <Text style={styles.userStatus}>{userData.role}</Text>
-                </View>
-
-                {/* Settings Sections */}
-                {settingSections.map((section, sectionIndex) => (
-                  <View key={sectionIndex} style={styles.sectionContainer}>
-                    <Text style={styles.sectionTitle}>{section.title}</Text>
-                    <View style={styles.menuSection}>
-                      {section.items.map((item, itemIndex) => (
-                        <React.Fragment key={itemIndex}>
-                          <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={item.onPress}
-                          >
-                            <View style={styles.menuItemLeft}>
-                              <MaterialCommunityIcons
-                                name={item.icon}
-                                size={22}
-                                color={item.iconColor}
-                              />
-                              <Text style={styles.menuItemText}>
-                                {item.title}
-                              </Text>
-                            </View>
-                            <MaterialCommunityIcons
-                              name="chevron-right"
-                              size={22}
-                              color="#CCCCCC"
-                            />
-                          </TouchableOpacity>
-                          {itemIndex < section.items.length - 1 && (
-                            <View style={styles.customDivider} />
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </View>
-                  </View>
-                ))}
-
-                {/* Follow Section */}
-                <View style={styles.followSection}>
-                  <Text style={styles.followText}>
-                    Follow us, to stay updated
-                  </Text>
-                  <View style={styles.socialIcons}>
-                    <TouchableOpacity style={styles.socialIcon}>
-                      <MaterialCommunityIcons
-                        name="instagram"
-                        size={24}
-                        color="#333333"
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.socialIcon}>
-                      <MaterialCommunityIcons
-                        name="youtube"
-                        size={24}
-                        color="#333333"
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.socialIcon}>
-                      <MaterialCommunityIcons
-                        name="whatsapp"
-                        size={24}
-                        color="#333333"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                    <Text style={styles.logoutText}>Logout</Text>
+                    <MaterialCommunityIcons
+                      name="chevron-right"
+                      size={24}
+                      color="#B0B0B0"
+                    />
                   </TouchableOpacity>
-                  <Text style={styles.versionText}>Version 1.0.0</Text>
-                </View>
-              </ScrollView>
-            </>
-          )}
+                  {itemIndex < section.items.length - 1 && (
+                    <View style={styles.divider} />
+                  )}
+                </React.Fragment>
+              ))}
+            </View>
+          </View>
+        ))}
 
-
-
-
-        {/* My Location Overlay */}
-        {showMyLocation && (
-          <Animated.View
-            style={[
-              styles.fullScreenOverlay,
-              {transform: [{translateX: myLocationAnim}]},
-            ]}>
-            <MyLocation
-              onBack={() => {
-                Animated.timing(myLocationAnim, {
-                  toValue: Dimensions.get('window').width,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setShowMyLocation(false);
-                });
-              }}
-            />
-          </Animated.View>
-        )}
-
-
+        <View style={styles.followSection}>
+          <Text style={styles.followText}>Follow us, to stay updated</Text>
+          <View style={styles.socialIcons}>
+            <TouchableOpacity style={styles.socialIcon}>
+              <MaterialCommunityIcons
+                name="instagram"
+                size={24}
+                color="#333333"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialIcon}>
+              <MaterialCommunityIcons
+                name="youtube"
+                size={24}
+                color="#333333"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialIcon}>
+              <MaterialCommunityIcons
+                name="whatsapp"
+                size={24}
+                color="#333333"
+              />
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+          <Text style={styles.versionText}>Version 1.0.0</Text>
+        </View>
+          </ScrollView>
+        </View>
+      )}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem}>
+          <MaterialCommunityIcons name="home" size={28} color="#555" />
+          <Text style={styles.navText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <MaterialCommunityIcons name="briefcase" size={28} color="#555" />
+          <Text style={styles.navText}>Portfolio</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.centerButton}>
+          <MaterialCommunityIcons name="plus" size={32} color="#FFF" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <MaterialCommunityIcons name="chat" size={28} color="#555" />
+          <Text style={styles.navText}>Chat</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <MaterialCommunityIcons name="account" size={28} color="#6B46C1" />
+          <Text style={[styles.navText, styles.navTextActive]}>Profile</Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Share Modal */}
-      {showShare && (
-        <Share visible={showShare} onClose={() => setShowShare(false)} />
-      )}
-
-      {/* Rate Modal */}
-      {showRate && (
-        <Rate visible={showRate} onClose={() => setShowRate(false)} />
-      )}
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  blockUserContainer: {
+    flex: 1,
+    backgroundColor: '#F7F7F7',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F7F7F7',
   },
-  content: {
-    flex: 1,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EFEFEF',
+    marginTop: 20,
   },
+  backButton: {marginRight: 16},
+  headerTitle: {fontSize: 20, fontWeight: 'bold', color: '#000'},
+  scrollContent: {paddingBottom: 100},
   profileSection: {
     backgroundColor: '#FFFFFF',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    marginBottom: 24,
   },
-  profileImageContainer: {
-    marginBottom: 16,
-  },
-  profileImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#6B46C1',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -13,
+    marginBottom: 12,
   },
-  profileInitial: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
-  },
+  avatarInitial: {fontSize: 40, fontWeight: 'bold', color: '#FFFFFF'},
   userName: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 8,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
-  },
-  userPhone: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
     marginBottom: 4,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
   },
-  userStatus: {
-    fontSize: 14,
-    color: '#999999',
-    marginBottom: -10,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
-  },
-  sectionContainer: {
-    marginBottom: 24,
-  },
+  userPhone: {fontSize: 16, color: '#666', marginBottom: 4},
+  userStatus: {fontSize: 14, color: '#888'},
+  settingsContainer: {paddingHorizontal: 16, marginTop: 24},
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    marginTop: -7,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
+    color: '#333',
+    marginBottom: 12,
   },
-  menuSection: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    borderRadius: 12,
-  },
+  menuCard: {backgroundColor: '#FFFFFF', borderRadius: 8, overflow: 'hidden'},
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 18,
+    padding: 16,
   },
-  menuItemBorder: {
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  customDivider: {
-    height: 1,
-    backgroundColor: '#F0F0F0',
-    alignSelf: 'center',
-    width: '100%',
-    marginVertical: 0,
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuItemText: {
-    fontSize: 16,
-    color: '#333333',
-    marginLeft: 12,
-    fontWeight: '400',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
-  },
+  menuItemContent: {flexDirection: 'row', alignItems: 'center', flex: 1},
+  menuItemTextBox: {marginLeft: 16, flex: 1},
+  menuItemText: {fontSize: 16, color: '#000'},
+  menuItemSubtitle: {fontSize: 13, color: '#999999', marginTop: 2},
+  divider: {height: 1, backgroundColor: '#F0F0F0', marginLeft: 56},
   followSection: {
     alignItems: 'center',
     marginVertical: 16,
@@ -505,22 +464,14 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  logoutButton: {
-    marginBottom: 12,
-  },
-  logoutText: {
-    fontSize: 16,
-    color: '#EF4444',
-    fontWeight: '500',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
-  },
+  logoutButton: {marginBottom: 16},
+  logoutText: {fontSize: 16, color: '#EF4444', fontWeight: '500'},
   versionText: {
     fontSize: 12,
     color: '#999999',
     backgroundColor: '#E5E5E5',
-    marginBottom: 95,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 12,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
   },
@@ -547,30 +498,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#6B46C1',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 4,
-  },
-  navText: {
-    fontSize: 12,
-    color: '#999999',
-    marginTop: 4,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
-  },
-  navTextCenter: {
-    fontSize: 12,
-    color: '#999999',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
-  },
-  navTextActive: {
-    color: '#6B46C1',
-  },
-  fullScreenOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#FFFFFF',
-    zIndex: 1000,
+    bottom: 25,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 });
 

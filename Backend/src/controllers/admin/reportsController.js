@@ -673,16 +673,18 @@ exports.getMemberChitCard = async (req, res) => {
 
 exports.sendPaymentOTP = async (req, res) => {
   try {
-    const { userId, groupId, groupName } = req.body;
+    const { userId, groupId, groupName, phoneNumber } = req.body;
+    const numUserId = Number(userId);
+    const numGroupId = Number(groupId);
 
-    if (!userId || !groupId) {
-      return res.status(400).json({ success: false, message: 'userId and groupId are required' });
+    if (!numUserId || !numGroupId || Number.isNaN(numUserId) || Number.isNaN(numGroupId)) {
+      return res.status(400).json({ success: false, message: 'Valid userId and groupId are required' });
     }
 
     // Expire any previous pending OTP requests for this user+group
     await db.promise().query(
       `UPDATE otp_requests SET status = 'expired' WHERE user_id = ? AND group_id = ? AND status IN ('pending', 'viewed')`,
-      [userId, groupId]
+      [numUserId, numGroupId]
     );
 
     // Generate a 6-digit OTP and store it in the database with 10 minute expiry
@@ -693,16 +695,29 @@ exports.sendPaymentOTP = async (req, res) => {
     // Resolve group name if not provided
     let resolvedGroupName = groupName || '';
     if (!resolvedGroupName) {
-      const [groupRows] = await db.promise().query('SELECT group_name FROM `groups` WHERE id = ?', [groupId]);
-      resolvedGroupName = groupRows.length > 0 ? groupRows[0].group_name : `Group ${groupId}`;
+      const [groupRows] = await db.promise().query('SELECT group_name FROM `groups` WHERE id = ?', [numGroupId]);
+      resolvedGroupName = groupRows.length > 0 ? groupRows[0].group_name : `Group ${numGroupId}`;
     }
 
     await db.promise().query(
-      `INSERT INTO otp_requests (user_id, group_id, group_name, otp_code, status, expires_at) VALUES (?, ?, ?, ?, 'pending', ?)`,
-      [userId, groupId, resolvedGroupName, otp, expiresAt]
+      `INSERT INTO otp_requests (user_id, group_id, group_name, otp_code, status, expires_at) VALUES (?, ?, ?, ?, 'pending', DATE_ADD(NOW(), INTERVAL 10 MINUTE))`,
+      [numUserId, numGroupId, resolvedGroupName, otp]
     );
 
-    console.log(`[OTP] Created in-app OTP for user ${userId}, group ${groupId}: ${otp} (expires in ${expiryMinutes}min)`);
+    console.log(`[OTP] Created in-app OTP for user ${numUserId}, group ${numGroupId}: ${otp} (expires in ${expiryMinutes}min)`);
+
+    // Try sending SMS if phoneNumber is provided
+    let smsResult = null;
+    if (phoneNumber) {
+      try {
+        smsResult = await sendSMS(
+          phoneNumber,
+          `Your OTP code for ${resolvedGroupName} payment verification is: ${otp}. Valid for ${expiryMinutes} minutes.`
+        );
+      } catch (smsErr) {
+        console.error('[OTP SMS Error]', smsErr);
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -711,19 +726,24 @@ exports.sendPaymentOTP = async (req, res) => {
         otpSent: true,
         expiryMinutes,
         method: 'in_app',
+        otpCode: otp, // Returned for dev/demo mode
+        smsResult,
       },
     });
   } catch (error) {
     console.error('Error sending OTP:', error);
-    return res.status(500).json({ success: false, message: 'Failed to send OTP' });
+    return res.status(500).json({ success: false, message: 'Failed to send OTP: ' + (error.message || '') });
   }
 };
 
 exports.verifyPaymentOTP = async (req, res) => {
   try {
     const { otp, groupId, userId, month, year } = req.body;
+    const cleanOtp = String(otp || '').trim();
+    const numUserId = Number(userId);
+    const numGroupId = Number(groupId);
 
-    if (!otp || !userId || !groupId) {
+    if (!cleanOtp || !numUserId || !numGroupId || Number.isNaN(numUserId) || Number.isNaN(numGroupId)) {
       return res.status(400).json({ success: false, message: 'OTP, userId, and groupId are required' });
     }
 
@@ -732,7 +752,7 @@ exports.verifyPaymentOTP = async (req, res) => {
       `SELECT id, otp_code, status, expires_at FROM otp_requests 
        WHERE user_id = ? AND group_id = ? AND status IN ('pending', 'viewed') AND expires_at > NOW()
        ORDER BY created_at DESC LIMIT 1`,
-      [userId, groupId]
+      [numUserId, numGroupId]
     );
 
     if (rows.length === 0) {
@@ -741,7 +761,7 @@ exports.verifyPaymentOTP = async (req, res) => {
 
     const otpRecord = rows[0];
 
-    if (otpRecord.otp_code !== otp) {
+    if (String(otpRecord.otp_code).trim() !== cleanOtp) {
       return res.status(400).json({ success: false, message: 'Incorrect OTP. Please try again.' });
     }
 
@@ -756,14 +776,14 @@ exports.verifyPaymentOTP = async (req, res) => {
       message: 'OTP verified successfully',
       data: {
         verified: true,
-        groupId,
-        userId,
+        groupId: numGroupId,
+        userId: numUserId,
         month,
         year,
       },
     });
   } catch (error) {
     console.error('Error verifying OTP:', error);
-    return res.status(500).json({ success: false, message: 'Failed to verify OTP' });
+    return res.status(500).json({ success: false, message: 'Failed to verify OTP: ' + (error.message || '') });
   }
 };
