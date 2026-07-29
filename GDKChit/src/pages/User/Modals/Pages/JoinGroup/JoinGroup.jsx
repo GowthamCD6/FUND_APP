@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, TextInput, Alert, ActivityIndicator, Modal } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 import Header from '../../../../../components/HeaderComponent/Header';
@@ -146,7 +147,8 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaProvider>
+    <SafeAreaView style={styles.container}>
       <Header 
         title="Join Group"
         onBack={onBack}
@@ -205,7 +207,8 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
       </View>
 
       {renderResultModal()}
-    </View>
+    </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 

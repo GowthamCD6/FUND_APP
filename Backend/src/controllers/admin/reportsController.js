@@ -726,7 +726,6 @@ exports.sendPaymentOTP = async (req, res) => {
         otpSent: true,
         expiryMinutes,
         method: 'in_app',
-        otpCode: otp, // Returned for dev/demo mode
         smsResult,
       },
     });
