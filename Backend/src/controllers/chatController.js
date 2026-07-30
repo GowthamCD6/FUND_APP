@@ -193,7 +193,7 @@ exports.getMessages = async (req, res) => {
         const { roomId } = req.params;
         const { after } = req.query; // After message ID for polling
         const userId = req.user.id || req.user.userId;
-        
+
         let sql = `
             SELECT cm.id, cm.room_id, cm.source_room_id, cm.sender_id, cm.sender_type, cm.message, cm.message_type,
                    cm.created_at,
@@ -208,14 +208,14 @@ exports.getMessages = async (req, res) => {
             WHERE (cm.room_id = ? OR (cm.source_room_id = ? AND cm.sender_id = ?))
         `;
         const params = [userId, roomId, roomId, userId];
-        
+
         if (after) {
             sql += ` AND cm.id > ?`;
             params.push(after);
         }
-        
+
         sql += ` ORDER BY cm.created_at ASC`;
-        
+
         const [messages] = await db.promise().query(sql, params);
 
         // Dynamically update group invite message payloads with live member counts from DB
@@ -302,7 +302,7 @@ const getOrCreatePrivateRoomInternal = async (userId1, userId2, db) => {
             'SELECT room_id FROM private_conversations WHERE user1 = ? AND user2 = ? FOR UPDATE',
             [u1, u2]
         );
-        
+
         if (checkAgain.length > 0) {
             await connection.rollback();
             connection.release();
@@ -397,10 +397,10 @@ exports.sendMessage = async (req, res) => {
             [targetRoomId, senderId, senderType, message, sourceRoomId, 'text', replyTo || null]
         );
 
-        return res.json({ 
-            success: true, 
-            message: 'Message sent', 
-            data: { id: insertMsg.insertId, roomId: targetRoomId, sourceRoomId, senderId, senderType, message, created_at: new Date() } 
+        return res.json({
+            success: true,
+            message: 'Message sent',
+            data: { id: insertMsg.insertId, roomId: targetRoomId, sourceRoomId, senderId, senderType, message, created_at: new Date() }
         });
     } catch (error) {
         console.error('Error in sendMessage:', error);
@@ -419,7 +419,7 @@ exports.deleteMessage = async (req, res) => {
         if (msgRows.length === 0) {
             return res.status(404).json({ success: false, message: 'Message not found' });
         }
-        
+
         if (msgRows[0].sender_id != userId) {
             return res.status(403).json({ success: false, message: 'You can only delete your own messages' });
         }
@@ -438,13 +438,13 @@ exports.getOrCreatePrivateRoom = async (req, res) => {
     try {
         const { targetUserId } = req.body;
         const loggedInUserId = req.user.id || req.user.userId;
-        
+
         if (!targetUserId) {
             return res.status(400).json({ success: false, message: 'targetUserId is required' });
         }
-        
+
         const roomId = await getOrCreatePrivateRoomInternal(loggedInUserId, targetUserId, db);
-        
+
         return res.json({ success: true, roomId });
     } catch (error) {
         console.error('Error in getOrCreatePrivateRoom:', error);
@@ -495,7 +495,7 @@ exports.createCustomGroup = async (req, res) => {
 
         // 2. Add creator and other users as members
         const membersToInsert = Array.from(new Set([creatorId, ...(userIds || [])])); // remove duplicates
-        
+
         const memberQueries = membersToInsert.map(userId => {
             const role = userId === creatorId ? 'Admin' : 'Member';
             return db.promise().query(
@@ -503,14 +503,14 @@ exports.createCustomGroup = async (req, res) => {
                 [roomId, userId, role]
             );
         });
-        
+
         await Promise.all(memberQueries);
 
-        return res.json({ 
-            success: true, 
-            roomId, 
+        return res.json({
+            success: true,
+            roomId,
             message: 'Group created successfully',
-            data: { id: roomId, name, description, avatar, type: 'group' } 
+            data: { id: roomId, name, description, avatar, type: 'group' }
         });
     } catch (error) {
         console.error('Error in createCustomGroup:', error);
@@ -573,11 +573,11 @@ exports.createCommunity = async (req, res) => {
 
         await Promise.all(memberQueries);
 
-        return res.json({ 
-            success: true, 
-            roomId: communityId, 
+        return res.json({
+            success: true,
+            roomId: communityId,
             message: 'Community created successfully',
-            data: { id: communityId, name, description, avatar, type: 'community' } 
+            data: { id: communityId, name, description, avatar, type: 'community' }
         });
     } catch (error) {
         console.error('Error in createCommunity:', error);
@@ -651,8 +651,8 @@ exports.getStarredMessages = async (req, res) => {
             text: r.text,
             timestamp: r.timestamp,
             senderName: r.sender_type === 'Admin' ? 'Admin' : (r.sender_name || 'User'),
-            roomName: r.room_type === 'group_broadcast' ? r.broadcast_room_name : 
-                      r.room_type === 'private' ? 'Private Support' : r.room_name,
+            roomName: r.room_type === 'group_broadcast' ? r.broadcast_room_name :
+                r.room_type === 'private' ? 'Private Support' : r.room_name,
             isStarred: true
         }));
 
@@ -668,10 +668,10 @@ exports.getRoomMembers = async (req, res) => {
     try {
         const { roomId } = req.params;
         const queryGroupId = req.query.groupId;
-        
+
         // 1. Find room details by room id or group_id
         const [roomRows] = await db.promise().query(
-            'SELECT * FROM chat_rooms WHERE id = ? OR group_id = ? OR id = (SELECT id FROM chat_rooms WHERE group_id = ? LIMIT 1)', 
+            'SELECT * FROM chat_rooms WHERE id = ? OR group_id = ? OR id = (SELECT id FROM chat_rooms WHERE group_id = ? LIMIT 1)',
             [roomId, queryGroupId || roomId, queryGroupId || roomId]
         );
 
@@ -718,7 +718,7 @@ exports.getRoomMembers = async (req, res) => {
         `;
 
         let [members] = await db.promise().query(memberSql, [targetRoomId, targetGroupId, targetRoomId, targetGroupId]);
-        
+
         // Fallback 1: If no members matched, query user_grouping by targetGroupId directly
         if (members.length === 0 && targetGroupId) {
             const [gRows] = await db.promise().query(`
@@ -807,11 +807,11 @@ exports.getRoomMembers = async (req, res) => {
             groupAmount: groupRecord?.group_amount || null,
             duration: groupRecord?.duration || null
         };
-        
-        return res.json({ 
-            success: true, 
+
+        return res.json({
+            success: true,
             members: members,
-            groupInfo: groupInfo 
+            groupInfo: groupInfo
         });
     } catch (error) {
         console.error('Error in getRoomMembers:', error);
@@ -829,7 +829,7 @@ exports.addRoomMembers = async (req, res) => {
             return res.status(400).json({ success: false, message: 'userIds are required' });
         }
 
-        const queries = userIds.map(userId => 
+        const queries = userIds.map(userId =>
             db.promise().query(
                 'INSERT IGNORE INTO chat_room_members (room_id, user_id, role) VALUES (?, ?, ?)',
                 [roomId, userId, 'Member']
@@ -979,12 +979,18 @@ exports.uploadChatFile = async (req, res) => {
             base64Data = matches[2];
         }
 
-        // Determine extension
+        // Determine extension from clientFileName or fall back to mimeType
         let ext = 'jpg';
-        if (mimeType.includes('png')) ext = 'png';
+        if (clientFileName && typeof clientFileName === 'string' && clientFileName.includes('.')) {
+            ext = clientFileName.split('.').pop().toLowerCase();
+        } else if (mimeType.includes('png')) ext = 'png';
         else if (mimeType.includes('gif')) ext = 'gif';
         else if (mimeType.includes('webp')) ext = 'webp';
         else if (mimeType.includes('pdf')) ext = 'pdf';
+        else if (mimeType.includes('doc')) ext = 'docx';
+        else if (mimeType.includes('xls')) ext = 'xlsx';
+        else if (mimeType.includes('zip')) ext = 'zip';
+        else if (mimeType.includes('audio') || mimeType.includes('mp3')) ext = 'mp3';
 
         const uploadsDir = path.join(__dirname, '../../uploads');
         if (!fs.existsSync(uploadsDir)) {
@@ -1001,10 +1007,30 @@ exports.uploadChatFile = async (req, res) => {
         return res.json({
             success: true,
             fileUrl,
-            fileName
+            fileName: clientFileName || fileName
         });
     } catch (error) {
         console.error('Error uploading chat file:', error);
+        return res.status(500).json({ success: false, message: 'Failed to upload chat file' });
+    }
+};
+
+// Upload chat file via multipart form (for React Native FormData uploads)
+exports.uploadChatFileMultipart = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No file uploaded' });
+        }
+
+        const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+        return res.json({
+            success: true,
+            fileUrl,
+            fileName: req.file.originalname || req.file.filename
+        });
+    } catch (error) {
+        console.error('Error uploading chat file (multipart):', error);
         return res.status(500).json({ success: false, message: 'Failed to upload chat file' });
     }
 };

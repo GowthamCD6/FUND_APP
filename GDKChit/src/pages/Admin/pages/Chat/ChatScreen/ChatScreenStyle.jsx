@@ -5,7 +5,7 @@ const { width, height } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDE5F5',
+    backgroundColor: '#f5f5f5',
   },
 
   // Enhanced Header Styles - Exact UI Match
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#EDE5F5',
+    backgroundColor: '#f5f5f5',
   },
 
   loadingText: {
@@ -133,65 +133,77 @@ const styles = StyleSheet.create({
   messagesList: {
     flexGrow: 1,
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#EDE5F5',
+    paddingTop: 0,
+    paddingBottom: 12,
+    backgroundColor: '#f5f5f5',
   },
   messageContainer: {
     flexDirection: 'row',
     marginVertical: 6,
-    alignItems: 'flex-end',
+    width: '100%',
   },
   userMessageContainer: {
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-end',
   },
   otherMessageContainer: {
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
 
   // Avatar Styles
   avatarContainer: {
-    marginRight: 12,
+    marginRight: 10,
     marginBottom: 4,
   },
   avatarPlaceholder: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#DCC9F0',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#E9D5FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarEmoji: {
-    fontSize: 18,
+    fontSize: 16,
   },
   spacer: {
-    width: 38,
+    width: 34,
   },
 
-  // Message Bubble Styles - 100% Pixel Perfect
+  // Message Bubble Styles
   messageBubble: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingTop: 8,
     paddingBottom: 6,
-    borderRadius: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
     minWidth: 85,
   },
   userBubble: {
     backgroundColor: '#7C3AED',
-    borderBottomLeftRadius: 4,
-    borderBottomRightRadius: 20,
-  },
-  otherBubble: {
-    backgroundColor: '#E8D5C4',
-    borderBottomLeftRadius: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 16,
     borderBottomRightRadius: 4,
   },
+  otherBubble: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 16,
+  },
   groupedUserBubble: {
-    borderTopRightRadius: 4,
+    borderTopRightRadius: 16,
     borderBottomRightRadius: 4,
   },
   groupedOtherBubble: {
-    borderTopLeftRadius: 4,
+    borderTopLeftRadius: 16,
     borderBottomLeftRadius: 4,
   },
   messageContentRow: {
@@ -203,8 +215,8 @@ const styles = StyleSheet.create({
     rowGap: 2,
   },
   messageText: {
-    fontSize: 16,
-    color: '#6B5344',
+    fontSize: 15,
+    color: '#1F2937',
     lineHeight: 22,
     fontWeight: '400',
     textAlign: 'left',
@@ -212,7 +224,8 @@ const styles = StyleSheet.create({
   },
   userMessageText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 22,
     textAlign: 'left',
     flexShrink: 1,
   },
@@ -226,7 +239,7 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 11,
-    color: '#9B8B7E',
+    color: '#9CA3AF',
     fontWeight: '500',
     lineHeight: 15,
   },
@@ -235,6 +248,129 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     lineHeight: 15,
+  },
+
+  // Image & Rich Attachment Styles
+  imageCardContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    marginVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  imageMessage: {
+    width: 275,
+    height: 275,
+    borderRadius: 16,
+  },
+  imageGlassOverlay: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  imageTimestampText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  attachmentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 12,
+    minWidth: 250,
+    maxWidth: 310,
+  },
+  attachmentUserCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  attachmentOtherCard: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  attachmentIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  attachmentTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  attachmentSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  
+  // WhatsApp-Style Contact Card
+  contactCard: {
+    borderRadius: 14,
+    minWidth: 250,
+    maxWidth: 310,
+    overflow: 'hidden',
+    marginVertical: 2,
+  },
+  contactUserCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  contactOtherCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  contactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  contactAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  contactNameText: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  contactSubText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  contactDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+  },
+  contactActionBtn: {
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactActionText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 
   // Typing Indicator
@@ -465,27 +601,27 @@ const styles = StyleSheet.create({
   },
   groupInfoAvatarEditIcon: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    right: -5,
+    bottom: 5,
     backgroundColor: '#7C3AED',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: '#FFFFFF',
   },
   groupInfoNameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   groupInfoNameText: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#111827',
-    marginRight: 8,
   },
   groupInfoMembersSection: {
     flex: 1,
@@ -517,83 +653,45 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
+  groupListAvatarText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#7C3AED',
+  },
   groupInfoMemberItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   groupInfoMemberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F3E8FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 14,
     overflow: 'hidden',
   },
   groupInfoMemberInfo: {
     flex: 1,
   },
   groupInfoMemberName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1F2937',
   },
   groupInfoMemberPhone: {
     fontSize: 14,
     color: '#6B7280',
     marginTop: 2,
-  },
-  renameDialogOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  renameDialogContainer: {
-    width: '85%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
-  },
-  renameDialogTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  renameDialogInput: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#7C3AED',
-    fontSize: 16,
-    color: '#111827',
-    paddingVertical: 8,
-    marginBottom: 24,
-  },
-  renameDialogActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  renameDialogButton: {
-    marginLeft: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  renameDialogButtonCancel: {
-    backgroundColor: '#F3F4F6',
-  },
-  renameDialogButtonCancelText: {
-    color: '#4B5563',
-    fontWeight: '600',
-  },
-  renameDialogButtonSave: {
-    backgroundColor: '#7C3AED',
-  },
-  renameDialogButtonSaveText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
   },
   groupInfoTypeBadge: {
     backgroundColor: '#F3E8FF',
@@ -683,6 +781,57 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '700',
+  },
+  renameDialogOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  renameDialogContainer: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+  },
+  renameDialogTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    color: '#111827',
+  },
+  renameDialogInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+    color: '#111827',
+  },
+  renameDialogButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  renameDialogButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  renameDialogButtonPrimary: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#7C3AED',
+  },
+  renameDialogButtonText: {
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  renameDialogButtonPrimaryText: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });
 

@@ -16,13 +16,20 @@ import {
   Image,
   Keyboard,
   Dimensions,
+  Linking,
+  PermissionsAndroid,
+  NativeModules,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { pick, types } from '@react-native-documents/picker';
+import Geolocation from '@react-native-community/geolocation';
+import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import styles from './ChatScreenStyle';
 import ApiService from '../../../../../services/ApiService';
+import { getUserCurrentLocationWithFallback, getStoredLocation, storeLocationLocally } from '../../../../../services/locationService';
 import Header from '../../../../../components/HeaderComponent/Header';
 import Join from '../../../Modals/Pages/JoinGroup/JoinGroup';
 
@@ -62,6 +69,137 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinModalCode, setJoinModalCode] = useState('');
+  const audioRecorderPlayer = useRef(new AudioRecorderPlayer()).current;
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [recordTime, setRecordTime] = useState('00:00');
+  const [showRecordModal, setShowRecordModal] = useState(false);
+  const [currentlyPlayingUrl, setCurrentlyPlayingUrl] = useState(null);
+  const [showShareContactModal, setShowShareContactModal] = useState(false);
+  const [contactNameInput, setContactNameInput] = useState('');
+  const [contactPhoneInput, setContactPhoneInput] = useState('');
+
+  const handleMakeCall = (phoneNumber) => {
+    if (!phoneNumber) {
+      Alert.alert('Notice', 'No phone number available');
+      return;
+    }
+    const cleaned = phoneNumber.replace(/[^\d+]/g, '');
+    const url = `tel:${cleaned}`;
+    Linking.openURL(url).catch((err) => {
+      console.log('Dialer error:', err);
+      Alert.alert('Call Error', `Could not open dialer for ${cleaned}`, [
+        { text: 'Copy Number', onPress: () => Clipboard.setString(cleaned) },
+        { text: 'OK' }
+      ]);
+    });
+  };
+
+  const parseContactMessage = (text) => {
+    if (!text) return null;
+    if (text.startsWith('[CONTACT_CARD]')) {
+      try {
+        const data = JSON.parse(text.replace('[CONTACT_CARD]', ''));
+        return { name: data.name || 'Shared Contact', phone: data.phone || '' };
+      } catch (e) {
+        return { name: 'Shared Contact', phone: '' };
+      }
+    }
+    if (text.startsWith('Contact:') || text.startsWith('👤 Contact:')) {
+      const raw = text.replace(/^(👤\s*)?Contact:/i, '').trim();
+      const phoneMatch = raw.match(/(\+?\d[\d\s-]{7,15}\d)/);
+      const phone = phoneMatch ? phoneMatch[1].trim() : '';
+      let name = raw;
+      if (phoneMatch) {
+        name = raw.replace(phoneMatch[0], '').replace(/[()\-:]/g, '').trim();
+      }
+      if (!name) name = 'Shared Contact';
+      return { name, phone: phone || raw };
+    }
+    return null;
+  };
+
+  const handleSendShareContact = () => {
+    if (!contactNameInput.trim()) {
+      Alert.alert('Required', 'Please enter a contact name.');
+      return;
+    }
+    if (!contactPhoneInput.trim()) {
+      Alert.alert('Required', 'Please enter a phone number.');
+      return;
+    }
+    const name = contactNameInput.trim();
+    const phone = contactPhoneInput.trim();
+    const payload = JSON.stringify({ name, phone });
+    sendDirectMessage(`[CONTACT_CARD]${payload}`);
+    setShowShareContactModal(false);
+    setContactNameInput('');
+    setContactPhoneInput('');
+  };
+
+  const handlePickNativeContact = async () => {
+    try {
+      setShowAttachmentModal(false);
+
+      if (Platform.OS === 'android') {
+        const hasPerm = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_CONTACTS);
+        if (!hasPerm) {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
+            {
+              title: 'Contacts Permission Required',
+              message: 'This app needs access to your contacts so you can select a contact from your phone to share in chat.',
+              buttonPositive: 'Allow',
+              buttonNegative: 'Deny',
+            }
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert(
+              'Permission Denied',
+              'Contacts permission is required to select a contact from your phone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Open Settings', onPress: () => Linking.openSettings() }
+              ]
+            );
+            return;
+          }
+        }
+      }
+
+      const { ContactPickerModule } = NativeModules;
+      if (ContactPickerModule && ContactPickerModule.pickContact) {
+        const result = await ContactPickerModule.pickContact();
+        if (result && (result.name || result.number)) {
+          const name = result.name || 'Shared Contact';
+          const phone = result.number || '';
+          const payload = JSON.stringify({ name, phone });
+          sendDirectMessage(`[CONTACT_CARD]${payload}`);
+          setShowShareContactModal(false);
+        }
+      } else {
+        setContactNameInput('');
+        setContactPhoneInput('');
+        setShowShareContactModal(true);
+      }
+    } catch (err) {
+      if (err && String(err.message || err).includes('CANCELLED')) {
+        console.log('User cancelled contact selection');
+      } else {
+        console.log('Error picking contact:', err);
+        Alert.alert('Notice', 'Could not open contact picker. You can enter details manually.', [
+          {
+            text: 'Enter Manually',
+            onPress: () => {
+              setContactNameInput('');
+              setContactPhoneInput('');
+              setShowShareContactModal(true);
+            }
+          },
+          { text: 'Cancel', style: 'cancel' }
+        ]);
+      }
+    }
+  };
 
   const handleOpenJoinModal = (code) => {
     setJoinModalCode(code);
@@ -137,7 +275,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             replyTo: activeReply?.id || null
           }
         }));
-        
+
         // Optimistically set to delivered
         setTimeout(() => {
           setMessages(prev =>
@@ -158,15 +296,15 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           }),
         });
         const data = await response.json();
-        
+
         if (data.success) {
           setMessages(prev =>
             prev.map(msg =>
-              msg.id === tempId ? { 
-                ...msg, 
+              msg.id === tempId ? {
+                ...msg,
                 id: data.data.id,
-                status: 'read', 
-                isRead: true 
+                status: 'read',
+                isRead: true
               } : msg
             )
           );
@@ -199,6 +337,251 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       Alert.alert('Error', 'Failed to send image');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const uploadAndSendDocument = async (doc) => {
+    try {
+      setIsSending(true);
+
+      // Use FormData — React Native natively handles content:// URIs with this approach
+      const formData = new FormData();
+      formData.append('file', {
+        uri: doc.uri,
+        type: doc.type || 'application/octet-stream',
+        name: doc.name || 'document.pdf',
+      });
+
+      const token = await ApiService.getAccessToken();
+      const baseUrl = (ApiService.baseURL || '').replace(/\/+$/, '');
+
+      const res = await fetch(`${baseUrl}/chats/upload-file`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success && data.fileUrl) {
+        await sendDirectMessage(`Document: ${data.fileName || doc.name || 'File'} | ${data.fileUrl}`);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to upload document');
+      }
+    } catch (e) {
+      console.log('Error uploading document:', e);
+      Alert.alert('Error', 'Failed to send document');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const shareCurrentLocation = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const hasPerm = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+        if (!hasPerm) {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: 'Location Permission Required',
+              message: 'This app needs access to your location so you can share your live location in chat.',
+              buttonPositive: 'Allow',
+              buttonNegative: 'Deny',
+            }
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert(
+              'Permission Denied',
+              'Location permission is required to share your location. Please grant permission in Settings.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Open Settings',
+                  onPress: () => Linking.openSettings(),
+                },
+              ]
+            );
+            return;
+          }
+        }
+      }
+
+      setIsSending(true);
+
+      try {
+        const locationCoords = await getUserCurrentLocationWithFallback();
+        if (locationCoords && locationCoords.latitude && locationCoords.longitude) {
+          const { latitude, longitude, fromCache } = locationCoords;
+          const mapUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
+          sendDirectMessage(`Location: ${mapUrl}`);
+          if (fromCache) {
+            Alert.alert(
+              'Location Shared',
+              'Shared your last known location. For live updates, please turn on high accuracy GPS in device settings.'
+            );
+          }
+          return;
+        }
+      } catch (locErr) {
+        console.log('Location acquisition failed:', locErr);
+      }
+
+      // If live location failed (GPS off/unavailable), prompt user and offer cached location if available
+      const cached = await getStoredLocation();
+      const alertButtons = [
+        {
+          text: 'Turn On Location (Settings)',
+          onPress: () => {
+            if (Platform.OS === 'android') {
+              Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() => {
+                Linking.openSettings();
+              });
+            } else {
+              Linking.openSettings();
+            }
+          },
+        },
+      ];
+
+      if (cached && cached.latitude && cached.longitude) {
+        alertButtons.unshift({
+          text: 'Share Last Known Location',
+          onPress: () => {
+            const mapUrl = `https://maps.google.com/?q=${cached.latitude},${cached.longitude}`;
+            sendDirectMessage(`Location: ${mapUrl}`);
+          },
+        });
+      }
+
+      alertButtons.push({ text: 'Cancel', style: 'cancel' });
+
+      Alert.alert(
+        'Location Services Disabled',
+        'Could not get your current location. Please turn on Location (GPS) in your device settings to share your live location.',
+        alertButtons
+      );
+    } catch (e) {
+      console.log('Location sharing error:', e);
+      Alert.alert('Error', 'Failed to share location');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const startRecordingAudio = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const grants = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        ]);
+        if (grants['android.permission.RECORD_AUDIO'] !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert('Permission Denied', 'Microphone permission is required to record audio.');
+          return;
+        }
+      }
+      setShowRecordModal(true);
+      setIsRecordingAudio(true);
+      setRecordTime('00:00');
+      await audioRecorderPlayer.startRecorder();
+      audioRecorderPlayer.addRecordBackListener((e) => {
+        setRecordTime(audioRecorderPlayer.mmssss(Math.floor(e.currentPosition)));
+      });
+    } catch (e) {
+      console.log('Error starting record:', e);
+      setIsRecordingAudio(false);
+      setShowRecordModal(false);
+      Alert.alert('Error', 'Could not start audio recorder');
+    }
+  };
+
+  const stopAndSendRecording = async () => {
+    try {
+      const result = await audioRecorderPlayer.stopRecorder();
+      audioRecorderPlayer.removeRecordBackListener();
+      setIsRecordingAudio(false);
+      setShowRecordModal(false);
+      if (result) {
+        uploadAndSendAudio(result);
+      }
+    } catch (e) {
+      console.log('Error stopping record:', e);
+      setIsRecordingAudio(false);
+      setShowRecordModal(false);
+    }
+  };
+
+  const cancelRecordingAudio = async () => {
+    try {
+      await audioRecorderPlayer.stopRecorder();
+      audioRecorderPlayer.removeRecordBackListener();
+    } catch (e) {}
+    setIsRecordingAudio(false);
+    setShowRecordModal(false);
+  };
+
+  const uploadAndSendAudio = async (audioUri) => {
+    try {
+      setIsSending(true);
+      const formData = new FormData();
+      formData.append('file', {
+        uri: audioUri.startsWith('file://') ? audioUri : `file://${audioUri}`,
+        type: 'audio/m4a',
+        name: `voice_${Date.now()}.m4a`,
+      });
+
+      const token = await ApiService.getAccessToken();
+      const baseUrl = (ApiService.baseURL || '').replace(/\/+$/, '');
+
+      const res = await fetch(`${baseUrl}/chats/upload-file`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success && data.fileUrl) {
+        await sendDirectMessage(`Audio: Voice Note | ${data.fileUrl}`);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to upload audio');
+      }
+    } catch (e) {
+      console.log('Error uploading audio:', e);
+      Alert.alert('Error', 'Failed to send audio recording');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleTogglePlayAudio = async (url) => {
+    try {
+      if (currentlyPlayingUrl === url) {
+        await audioRecorderPlayer.stopPlayer();
+        audioRecorderPlayer.removePlayBackListener();
+        setCurrentlyPlayingUrl(null);
+        return;
+      }
+      if (currentlyPlayingUrl) {
+        await audioRecorderPlayer.stopPlayer();
+        audioRecorderPlayer.removePlayBackListener();
+      }
+      setCurrentlyPlayingUrl(url);
+      await audioRecorderPlayer.startPlayer(url);
+      audioRecorderPlayer.addPlayBackListener((e) => {
+        if (e.currentPosition >= e.duration && e.duration > 0) {
+          audioRecorderPlayer.stopPlayer();
+          audioRecorderPlayer.removePlayBackListener();
+          setCurrentlyPlayingUrl(null);
+        }
+      });
+    } catch (e) {
+      console.log('Error playing audio:', e);
+      setCurrentlyPlayingUrl(null);
     }
   };
 
@@ -239,13 +622,24 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         }
       });
     } else if (type === 'document') {
-      sendDirectMessage('Document: invoice_2026.pdf');
+      pick({
+        type: [types.allFiles],
+        allowMultiSelection: false,
+      }).then((result) => {
+        if (result && result.length > 0) {
+          uploadAndSendDocument(result[0]);
+        }
+      }).catch((e) => {
+        if (e && !String(e).toLowerCase().includes('cancel') && !String(e).toLowerCase().includes('abort')) {
+          console.log('Doc Picker Error:', e);
+        }
+      });
     } else if (type === 'audio') {
-      sendDirectMessage('Audio recording (0:30)');
+      startRecordingAudio();
     } else if (type === 'location') {
-      sendDirectMessage('Location: https://maps.google.com/?q=12.9716,77.5946');
+      shareCurrentLocation();
     } else if (type === 'contact') {
-      sendDirectMessage('Contact: GDK Support (+91 98765 43210)');
+      handlePickNativeContact();
     }
   };
 
@@ -290,8 +684,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     setShowDropdown(false);
     Alert.alert(
       'Delete Chat',
-      isGroup 
-        ? 'Are you sure you want to delete this group chat and all its messages?' 
+      isGroup
+        ? 'Are you sure you want to delete this group chat and all its messages?'
         : 'Are you sure you want to delete this chat and all its messages?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -376,7 +770,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   // Handle WebSocket messages
   useEffect(() => {
     if (!ws) return;
-    
+
     if (ws.readyState === 1) {
       ws.send(JSON.stringify({ type: 'join_room', roomId: chatId }));
       // Notify server that we've read all messages in this room
@@ -387,7 +781,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         ws.send(JSON.stringify({ type: 'mark_read', roomId: chatId }));
       });
     }
-    
+
     const handleWsMessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
@@ -430,9 +824,9 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         console.error('WS error parsing message', e);
       }
     };
-    
+
     ws.addEventListener('message', handleWsMessage);
-    
+
     return () => {
       if (ws.readyState === 1) {
         ws.send(JSON.stringify({ type: 'leave_room', roomId: chatId }));
@@ -602,7 +996,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       `Are you sure you want to forward this message to ${targetChat.name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
+        {
           text: 'Forward',
           onPress: async () => {
             try {
@@ -637,7 +1031,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       'Are you sure you want to delete this message?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
+        {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
@@ -666,8 +1060,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   // Filter messages by search query (forced rebuild)
   const filteredMessages = searchQuery.trim()
     ? messages.filter(msg =>
-        msg.text.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      msg.text.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : messages;
 
   // WhatsApp-style tick icons
@@ -700,9 +1094,9 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         animationType="slide"
         onRequestClose={() => setShowMsgOptionsModal(false)}
       >
-        <TouchableOpacity 
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
           onPress={() => setShowMsgOptionsModal(false)}
         >
           <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingVertical: 20, paddingBottom: 35 }}>
@@ -892,14 +1286,14 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' }}>
           <SafeAreaView style={{ position: 'absolute', top: 10, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, zIndex: 10 }}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}
               onPress={() => setViewerImageUri(null)}
             >
               <MaterialCommunityIcons name="close" size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Photo Preview</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}
               onPress={() => Alert.alert('Saved', 'Image saved to gallery')}
             >
@@ -992,103 +1386,241 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                   {isUserMessage && getStatusIcon(item.status)}
                 </View>
               </TouchableOpacity>
-            ) : item.text && (item.text.startsWith('Document:') || item.text.startsWith('📄 Document:')) ? (
-              <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
-                <View style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard]}>
-                  <View style={[styles.attachmentIconContainer, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#EEF2FF' }]}>
-                    <MaterialCommunityIcons name="file-pdf-box" size={26} color={isUserMessage ? "#FFFFFF" : "#7C3AED"} />
-                  </View>
-                  <View style={{ flex: 1, paddingRight: 6 }}>
-                    <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]} numberOfLines={1}>
-                      {item.text.replace(/^(📄\s*)?Document:/i, '').trim()}
+            ) : item.text && (item.text.startsWith('Document:') || item.text.startsWith('📄 Document:')) ? (() => {
+              const cleanText = item.text.replace(/^(📄\s*)?Document:/i, '').trim();
+              const [docTitle = 'Document File', docUrl = ''] = cleanText.split('|').map(s => s.trim());
+              const isPdf = docTitle.toLowerCase().endsWith('.pdf');
+              return (
+                <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => docUrl ? Linking.openURL(docUrl) : Alert.alert('Notice', 'No download link available')}
+                    style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard]}
+                  >
+                    <View style={[styles.attachmentIconContainer, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#EEF2FF' }]}>
+                      <MaterialCommunityIcons name={isPdf ? "file-pdf-box" : "file-document"} size={26} color={isUserMessage ? "#FFFFFF" : "#7C3AED"} />
+                    </View>
+                    <View style={{ flex: 1, paddingRight: 6 }}>
+                      <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]} numberOfLines={1}>
+                        {docTitle}
+                      </Text>
+                      <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>Tap to open / download</Text>
+                    </View>
+                    <MaterialCommunityIcons name="download" size={20} color={isUserMessage ? "#FFFFFF" : "#7C3AED"} />
+                  </TouchableOpacity>
+                  <View style={styles.messageFooter}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
+                      {formatTime(item.timestamp)}
                     </Text>
-                    <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>PDF Document • 250 KB</Text>
-                  </View>
-                  <MaterialCommunityIcons name="download" size={20} color={isUserMessage ? "#FFFFFF" : "#7C3AED"} />
-                </View>
-                <View style={styles.messageFooter}>
-                  {item.isStarred && (
-                    <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
-                  )}
-                  <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
-                    {formatTime(item.timestamp)}
-                  </Text>
-                  {isUserMessage && getStatusIcon(item.status)}
-                </View>
-              </View>
-            ) : item.text && (item.text.startsWith('Audio') || item.text.startsWith('🎵 Audio')) ? (
-              <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
-                <View style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard]}>
-                  <View style={[styles.attachmentIconContainer, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#FEF3C7' }]}>
-                    <MaterialCommunityIcons name="play" size={24} color={isUserMessage ? "#FFFFFF" : "#D97706"} />
-                  </View>
-                  <View style={{ flex: 1, paddingRight: 6 }}>
-                    <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]}>Voice Note</Text>
-                    <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>0:30 • Audio</Text>
+                    {isUserMessage && getStatusIcon(item.status)}
                   </View>
                 </View>
-                <View style={styles.messageFooter}>
-                  {item.isStarred && (
-                    <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
-                  )}
-                  <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
-                    {formatTime(item.timestamp)}
-                  </Text>
-                  {isUserMessage && getStatusIcon(item.status)}
-                </View>
-              </View>
-            ) : item.text && (item.text.startsWith('Location:') || item.text.startsWith('📍 Location:')) ? (
-              <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
-                <View style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard]}>
-                  <View style={[styles.attachmentIconContainer, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#D1FAE5' }]}>
-                    <MaterialCommunityIcons name="map-marker" size={24} color={isUserMessage ? "#FFFFFF" : "#059669"} />
-                  </View>
-                  <View style={{ flex: 1, paddingRight: 6 }}>
-                    <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]}>Shared Location</Text>
-                    <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]} numberOfLines={1}>Tap to open map</Text>
-                  </View>
-                </View>
-                <View style={styles.messageFooter}>
-                  {item.isStarred && (
-                    <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
-                  )}
-                  <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
-                    {formatTime(item.timestamp)}
-                  </Text>
-                  {isUserMessage && getStatusIcon(item.status)}
-                </View>
-              </View>
-            ) : item.text && (item.text.startsWith('Contact:') || item.text.startsWith('👤 Contact:')) ? (
-              <View style={[styles.contactCard, isUserMessage ? styles.contactUserCard : styles.contactOtherCard]}>
-                <View style={styles.contactHeader}>
-                  <View style={[styles.contactAvatar, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#E9D5FF' }]}>
-                    <MaterialCommunityIcons name="account" size={24} color={isUserMessage ? "#FFFFFF" : "#7C3AED"} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.contactNameText, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]} numberOfLines={1}>
-                      {item.text.replace(/^(👤\s*)?Contact:/i, '').trim()}
+              );
+            })() : item.text && (item.text.startsWith('Audio') || item.text.startsWith('🎵 Audio')) ? (() => {
+              const cleanText = item.text.replace(/^(🎵\s*)?Audio:/i, '').trim();
+              const [audioTitle = 'Voice Note', audioUrl = ''] = cleanText.split('|').map(s => s.trim());
+              const isPlaying = currentlyPlayingUrl === audioUrl;
+              return (
+                <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => audioUrl ? handleTogglePlayAudio(audioUrl) : Alert.alert('Notice', 'No audio file available')}
+                    style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard]}
+                  >
+                    <View style={[styles.attachmentIconContainer, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#FEF3C7' }]}>
+                      <MaterialCommunityIcons name={isPlaying ? "pause" : "play"} size={24} color={isUserMessage ? "#FFFFFF" : "#D97706"} />
+                    </View>
+                    <View style={{ flex: 1, paddingRight: 6 }}>
+                      <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]}>{audioTitle}</Text>
+                      <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>
+                        {isPlaying ? '▶ Playing Audio...' : 'Tap to Listen • Voice Note'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <View style={styles.messageFooter}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
+                      {formatTime(item.timestamp)}
                     </Text>
-                    <Text style={[styles.contactSubText, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>Shared Contact</Text>
+                    {isUserMessage && getStatusIcon(item.status)}
                   </View>
                 </View>
-                <View style={[styles.contactDivider, isUserMessage && { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
-                <TouchableOpacity 
-                  style={styles.contactActionBtn} 
-                  onPress={() => Alert.alert('Contact', `Messaging ${item.text.replace(/^(👤\s*)?Contact:/i, '').trim()}`)}
-                >
-                  <Text style={[styles.contactActionText, { color: isUserMessage ? '#FFFFFF' : '#7C3AED' }]}>Message Contact</Text>
-                </TouchableOpacity>
-                <View style={styles.messageFooter}>
-                  {item.isStarred && (
-                    <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
-                  )}
-                  <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
-                    {formatTime(item.timestamp)}
-                  </Text>
-                  {isUserMessage && getStatusIcon(item.status)}
+              );
+            })() : item.text && (item.text.startsWith('Location:') || item.text.startsWith('📍 Location:')) ? (() => {
+              const locText = item.text.replace(/^(📍\s*)?Location:/i, '').trim();
+              const coordMatch = locText.match(/q=([\d.-]+),([\d.-]+)/);
+              const lat = coordMatch ? coordMatch[1] : null;
+              const lng = coordMatch ? coordMatch[2] : null;
+              const mapUrl = lat && lng ? `https://maps.google.com/?q=${lat},${lng}` : locText;
+              const mapPreview = lat && lng ? `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=300x150&markers=color:red%7C${lat},${lng}&key=YOUR_KEY` : null;
+              return (
+                <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => Linking.openURL(mapUrl)}
+                    style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard, { flexDirection: 'column', alignItems: 'stretch' }]}
+                  >
+                    <View style={{ backgroundColor: isUserMessage ? 'rgba(255,255,255,0.1)' : '#D1FAE5', borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 8 }}>
+                      <MaterialCommunityIcons name="map-marker-radius" size={36} color={isUserMessage ? '#FFFFFF' : '#059669'} />
+                      {lat && lng && (
+                        <Text style={{ fontSize: 11, color: isUserMessage ? '#DDD6FE' : '#6B7280', marginTop: 4 }}>{lat}, {lng}</Text>
+                      )}
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]}>📍 Live Location</Text>
+                        <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>Tap to open in Google Maps</Text>
+                      </View>
+                      <MaterialCommunityIcons name="open-in-new" size={18} color={isUserMessage ? '#FFFFFF' : '#059669'} />
+                    </View>
+                  </TouchableOpacity>
+                  <View style={styles.messageFooter}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                    {isUserMessage && getStatusIcon(item.status)}
+                  </View>
                 </View>
-              </View>
-            ) : item.text && item.text.startsWith('[GROUP_INVITE]') ? (() => {
+              );
+            })() : item.text && (item.text.startsWith('[CONTACT_CARD]') || item.text.startsWith('Contact:') || item.text.startsWith('👤 Contact:')) ? (() => {
+              const contact = parseContactMessage(item.text);
+              const name = contact ? contact.name : 'Shared Contact';
+              const phone = contact ? contact.phone : '';
+
+              return (
+                <View style={{
+                  width: 260,
+                  borderRadius: 16,
+                  backgroundColor: '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  padding: 14,
+                  marginVertical: 4,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 6,
+                  elevation: 4,
+                }}>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => handleMakeCall(phone)}
+                  >
+                    {/* Header: Avatar + Contact Info */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      {/* Avatar Icon */}
+                      <View style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: '#F3E8FF',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginRight: 12,
+                        borderWidth: 1.5,
+                        borderColor: '#C084FC',
+                      }}>
+                        <MaterialCommunityIcons name="account" size={28} color="#7C3AED" />
+                      </View>
+
+                      {/* Name & Phone */}
+                      <View style={{ flex: 1 }}>
+                        <Text style={{
+                          fontSize: 16,
+                          fontWeight: '700',
+                          color: '#111827',
+                          marginBottom: 3,
+                        }} numberOfLines={1}>
+                          {name}
+                        </Text>
+
+                        {phone ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <MaterialCommunityIcons name="phone" size={14} color="#7C3AED" style={{ marginRight: 4 }} />
+                            <Text style={{
+                              fontSize: 13,
+                              fontWeight: '600',
+                              color: '#374151',
+                            }} numberOfLines={1}>
+                              {phone}
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text style={{
+                            fontSize: 12,
+                            color: '#9CA3AF',
+                            fontStyle: 'italic',
+                          }}>
+                            No phone number
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+
+                    {/* Separator Line */}
+                    <View style={{
+                      height: 1,
+                      backgroundColor: '#F3F4F6',
+                      marginVertical: 12,
+                    }} />
+
+                    {/* Call Now Action Button */}
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={{
+                        backgroundColor: '#7C3AED',
+                        borderRadius: 12,
+                        paddingVertical: 10,
+                        paddingHorizontal: 16,
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        elevation: 2,
+                        shadowColor: '#7C3AED',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 3,
+                      }}
+                      onPress={() => handleMakeCall(phone)}
+                    >
+                      <MaterialCommunityIcons
+                        name="phone-in-talk"
+                        size={18}
+                        color="#FFFFFF"
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text style={{
+                        color: '#FFFFFF',
+                        fontWeight: '700',
+                        fontSize: 14,
+                        letterSpacing: 0.3,
+                      }}>
+                        {phone ? `Call ${phone}` : 'Call Now'}
+                      </Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+
+                  {/* Footer Timestamp */}
+                  <View style={[styles.messageFooter, { marginTop: 8 }]}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color="#7C3AED" style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={[styles.timestamp, { color: '#6B7280' }]}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                    {isUserMessage && getStatusIcon(item.status)}
+                  </View>
+                </View>
+              );
+            })() : item.text && item.text.startsWith('[GROUP_INVITE]') ? (() => {
               let inviteData = null;
               try {
                 const jsonStr = item.text.replace('[GROUP_INVITE]', '');
@@ -1263,18 +1795,18 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         animationType="slide"
         onRequestClose={() => setShowAttachmentModal(false)}
       >
-        <TouchableOpacity 
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
           onPress={() => setShowAttachmentModal(false)}
         >
-          <View style={{ 
-            backgroundColor: '#FFFFFF', 
-            borderTopLeftRadius: 24, 
-            borderTopRightRadius: 24, 
-            paddingVertical: 24, 
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingVertical: 24,
             paddingHorizontal: 20,
-            paddingBottom: 40 
+            paddingBottom: 40
           }}>
             <View style={{ alignItems: 'center', marginBottom: 20 }}>
               <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' }} />
@@ -1282,7 +1814,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             <Text style={{ fontSize: 18, fontWeight: '700', color: '#1F2937', marginBottom: 20, textAlign: 'center' }}>
               Share Attachment
             </Text>
-            
+
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' }}>
               <TouchableOpacity style={{ alignItems: 'center', width: '30%', marginVertical: 12 }} onPress={() => handleAttachmentOption('document')}>
                 <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#5F59F7', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
@@ -1335,16 +1867,16 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
+
       {/* Enhanced Header with Profile Info - Exact Match */}
       <View style={styles.headerContainer}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
             <MaterialCommunityIcons name="chevron-left" size={28} color="#000" />
           </TouchableOpacity>
-          
+
           {/* Profile Section */}
-          <TouchableOpacity style={styles.profileSection} onPress={() => { if(isGroup) handleOpenGroupInfo(); }} activeOpacity={isGroup ? 0.7 : 1}>
+          <TouchableOpacity style={styles.profileSection} onPress={() => { if (isGroup) handleOpenGroupInfo(); }} activeOpacity={isGroup ? 0.7 : 1}>
             <View style={styles.avatarWithStatus}>
               <View style={styles.profileAvatar}>
                 {chatAvatar && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
@@ -1371,12 +1903,12 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             <TouchableOpacity style={styles.iconButton} onPress={() => setShowDropdown(!showDropdown)}>
               <MaterialCommunityIcons name="dots-vertical" size={24} color="#000" />
             </TouchableOpacity>
-            
+
             {showDropdown && (
               <View style={styles.dropdownMenu}>
                 {isGroup && (
-                  <TouchableOpacity 
-                    style={styles.dropdownItem} 
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
                     onPress={() => {
                       setShowDropdown(false);
                       handleOpenGroupInfo();
@@ -1386,9 +1918,9 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                     <Text style={styles.dropdownItemText}>Group Info</Text>
                   </TouchableOpacity>
                 )}
-                
-                <TouchableOpacity 
-                  style={styles.dropdownItem} 
+
+                <TouchableOpacity
+                  style={styles.dropdownItem}
                   onPress={() => {
                     setShowDropdown(false);
                     setShowStarredModal(true);
@@ -1398,8 +1930,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                   <Text style={styles.dropdownItemText}>Starred Messages</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={styles.dropdownItem} 
+                <TouchableOpacity
+                  style={styles.dropdownItem}
                   onPress={confirmDeleteChat}
                 >
                   <MaterialCommunityIcons name="delete-outline" size={20} color="#EF4444" />
@@ -1409,7 +1941,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             )}
           </View>
         </View>
-        
+
         {/* Search Bar - Conditional */}
         {searchActive && (
           <View style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: 2 }}>
@@ -1436,7 +1968,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         )}
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
@@ -1514,8 +2046,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           )}
 
           <View style={styles.inputWrapper}>
-            <TouchableOpacity 
-              style={styles.attachButton} 
+            <TouchableOpacity
+              style={styles.attachButton}
               disabled={isSending}
               onPress={() => setShowAttachmentModal(true)}
             >
@@ -1538,15 +2070,15 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               editable={!isSending}
             />
 
-            <TouchableOpacity 
-              style={styles.emojiButton} 
+            <TouchableOpacity
+              style={styles.emojiButton}
               disabled={isSending}
               onPress={toggleEmojiPicker}
             >
-              <MaterialCommunityIcons 
-                name={showEmojiPicker ? "keyboard-outline" : "emoticon-outline"} 
-                size={22} 
-                color="#B4B4B4" 
+              <MaterialCommunityIcons
+                name={showEmojiPicker ? "keyboard-outline" : "emoticon-outline"}
+                size={22}
+                color="#B4B4B4"
               />
             </TouchableOpacity>
 
@@ -1588,19 +2120,19 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 borderBottomColor: '#F3F4F6',
                 backgroundColor: '#F9FAFB',
               }}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'smileys' ? 2 : 0, borderBottomColor: '#7C3AED' }}
                   onPress={() => setActiveEmojiTab('smileys')}
                 >
                   <MaterialCommunityIcons name="emoticon-outline" size={20} color={activeEmojiTab === 'smileys' ? '#7C3AED' : '#9CA3AF'} />
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'hands' ? 2 : 0, borderBottomColor: '#7C3AED' }}
                   onPress={() => setActiveEmojiTab('hands')}
                 >
                   <MaterialCommunityIcons name="thumb-up-outline" size={20} color={activeEmojiTab === 'hands' ? '#7C3AED' : '#9CA3AF'} />
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'hearts' ? 2 : 0, borderBottomColor: '#7C3AED' }}
                   onPress={() => setActiveEmojiTab('hearts')}
                 >
@@ -1616,8 +2148,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 ] : [
                   '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔'
                 ]).map((emoji, index) => (
-                  <TouchableOpacity 
-                    key={index} 
+                  <TouchableOpacity
+                    key={index}
                     style={{ width: '12%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', margin: 2 }}
                     onPress={() => handleEmojiSelect(emoji)}
                   >
@@ -1652,7 +2184,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                   </View>
                 )}
               </View>
-              
+
               <View style={styles.groupInfoNameContainer}>
                 <Text style={styles.groupInfoNameText}>{groupDetails?.name || chatName}</Text>
               </View>
@@ -1826,6 +2358,152 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       {/* Attachment share options modal */}
       {renderAttachmentModal()}
 
+      {/* Share Contact input modal */}
+      <Modal
+        visible={showShareContactModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowShareContactModal(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}
+          activeOpacity={1}
+          onPress={() => Keyboard.dismiss()}
+        >
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 20,
+            width: '100%',
+            maxWidth: 340,
+            padding: 24,
+            elevation: 10,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.25,
+            shadowRadius: 10,
+          }}>
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: '#EFF6FF', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}>
+                <MaterialCommunityIcons name="account-plus" size={28} color="#2563EB" />
+              </View>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#1F2937' }}>
+                Share Contact
+              </Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, textAlign: 'center' }}>
+                Enter contact details to share with this chat
+              </Text>
+            </View>
+
+            <View style={{ marginBottom: 14 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6 }}>
+                Contact Name
+              </Text>
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#D1D5DB',
+                  borderRadius: 10,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  fontSize: 15,
+                  color: '#1F2937',
+                  backgroundColor: '#F9FAFB',
+                }}
+                placeholder="e.g. John Doe"
+                placeholderTextColor="#9CA3AF"
+                value={contactNameInput}
+                onChangeText={setContactNameInput}
+              />
+            </View>
+
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6 }}>
+                Phone Number
+              </Text>
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#D1D5DB',
+                  borderRadius: 10,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  fontSize: 15,
+                  color: '#1F2937',
+                  backgroundColor: '#F9FAFB',
+                }}
+                placeholder="e.g. +91 98765 43210"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+                value={contactPhoneInput}
+                onChangeText={setContactPhoneInput}
+              />
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  marginRight: 8,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  backgroundColor: '#F3F4F6',
+                  alignItems: 'center',
+                }}
+                onPress={() => setShowShareContactModal(false)}
+              >
+                <Text style={{ color: '#4B5563', fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  marginLeft: 8,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  backgroundColor: '#2563EB',
+                  alignItems: 'center',
+                }}
+                onPress={handleSendShareContact}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>Send Contact</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Voice Note Recording Modal */}
+      <Modal
+        visible={showRecordModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={cancelRecordingAudio}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24, width: '82%', alignItems: 'center', elevation: 8 }}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center', marginBottom: 14 }}>
+              <MaterialCommunityIcons name="microphone" size={36} color="#EF4444" />
+            </View>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: '#1F2937', marginBottom: 4 }}>Recording Voice Note</Text>
+            <Text style={{ fontSize: 22, fontWeight: '800', color: '#EF4444', marginBottom: 20 }}>{recordTime}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#F3F4F6', alignItems: 'center', marginRight: 8 }}
+                onPress={cancelRecordingAudio}
+              >
+                <Text style={{ fontSize: 15, fontWeight: '600', color: '#4B5563' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#7C3AED', alignItems: 'center', marginLeft: 8 }}
+                onPress={stopAndSendRecording}
+              >
+                <Text style={{ fontSize: 15, fontWeight: '600', color: '#FFFFFF' }}>Send 🚀</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Fullscreen Photo Lightbox Modal */}
       {renderImageViewerModal()}
 
@@ -1839,12 +2517,12 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           loadMessages();
         }}
       >
-        <Join 
+        <Join
           onBack={() => {
             setShowJoinModal(false);
             loadMessages();
-          }} 
-          initialGroupCode={joinModalCode} 
+          }}
+          initialGroupCode={joinModalCode}
         />
       </Modal>
 

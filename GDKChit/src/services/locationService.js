@@ -41,6 +41,7 @@ export const getUserCurrentLocation = async (options = {}) => {
             speed: pos.coords.speed,
           };
           console.log("✅ Location retrieved successfully:", coords);
+          storeLocationLocally(coords);
           resolve(coords);
         },
         (error) => {

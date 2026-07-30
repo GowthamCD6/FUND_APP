@@ -131,7 +131,18 @@ const ChatList = ({ navigation }) => {
         let userId = 'unknown';
         try {
           const payloadBase64 = token.split('.')[1];
-          const payload = JSON.parse(atob(payloadBase64));
+          const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+          const decode = (str) => {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+            let output = '';
+            str = String(str).replace(/=+$/, '');
+            for (let bc = 0, bs = 0, buffer, idx = 0; buffer = str.charAt(idx++); ~buffer && (bs = bc % 4 ? bs * 64 + buffer : buffer, bc++) ? output += String.fromCharCode(255 & bs >> (-2 * bc & 6)) : 0) {
+              buffer = chars.indexOf(buffer);
+            }
+            return output;
+          };
+          const jsonPayload = (typeof global.atob === 'function') ? global.atob(base64) : decode(base64);
+          const payload = JSON.parse(jsonPayload);
           userId = payload.userId || payload.id || 'unknown';
         } catch (e) {
           console.warn('Could not decode JWT for userId:', e);

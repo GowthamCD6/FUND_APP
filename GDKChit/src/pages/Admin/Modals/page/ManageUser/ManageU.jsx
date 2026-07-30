@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useRef, useEffect} from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import ApiService from '../../../../../services/ApiService';
 import Header from '../../../../../components/HeaderComponent/Header';
 
-const ManageU = ({onBack}) => {
+const ManageU = ({ onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -29,20 +29,20 @@ const ManageU = ({onBack}) => {
   const [editedType, setEditedType] = useState('');
   const [editedNickname, setEditedNickname] = useState('');
   const [editedDateOfYear, setEditedDateOfYear] = useState('');
-  const [menuPosition, setMenuPosition] = useState({top: 0, right: 0});
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const menuButtonRefs = useRef({});
 
   // Sample users data
   // Initialize as empty array to avoid `undefined` errors when filtering
   const [users, setUsers] = useState([]);
 
-  const fetchUsers = async() => {
-    try{
-      const response = await ApiService.makeRequest('/admin/users/getAllUsers',{
+  const fetchUsers = async () => {
+    try {
+      const response = await ApiService.makeRequest('/admin/users/getAllUsers', {
         method: 'GET',
       });
       const data = await response.json();
-      if(data.success){
+      if (data.success) {
         setUsers(data.data);
       }
     } catch (error) {
@@ -88,7 +88,7 @@ const ManageU = ({onBack}) => {
       });
     } else {
       // fallback position if measure isn't available
-      setMenuPosition({top: 120, right: Platform.OS === 'ios' ? 16 : 24});
+      setMenuPosition({ top: 120, right: Platform.OS === 'ios' ? 16 : 24 });
       setShowMenu(true);
     }
   };
@@ -120,13 +120,13 @@ const ManageU = ({onBack}) => {
       users.map(user =>
         user.id === selectedUser.id
           ? {
-              ...user,
-              name: editedName,
-              phone: editedPhone,
-              type: editedType,
-              nickname: editedNickname,
-              dateOfBirth: `${editedDateOfYear}-01-01`,
-            }
+            ...user,
+            name: editedName,
+            phone: editedPhone,
+            type: editedType,
+            nickname: editedNickname,
+            dateOfBirth: `${editedDateOfYear}-01-01`,
+          }
           : user,
       ),
     );
@@ -135,14 +135,14 @@ const ManageU = ({onBack}) => {
 
   const confirmDelete = async () => {
     if (!selectedUser?.id) return;
-    
+
     try {
       const response = await ApiService.makeRequest('/admin/users/deleteUser', {
         method: 'POST',
         body: JSON.stringify({ userId: selectedUser.id }),
       });
       const data = await response.json();
-      
+
       if (data.success) {
         setUsers(users.filter(user => user.id !== selectedUser.id));
         Alert.alert('Success', 'User deleted successfully');
@@ -256,7 +256,7 @@ const ManageU = ({onBack}) => {
           <View
             style={[
               customStyles.menuModal,
-              {top: menuPosition.top, right: menuPosition.right},
+              { top: menuPosition.top, right: menuPosition.right },
             ]}>
             <TouchableOpacity
               style={customStyles.menuItem}
@@ -277,7 +277,7 @@ const ManageU = ({onBack}) => {
                 size={20}
                 color="#3B82F6"
               />
-              <Text style={[customStyles.menuText, {color: '#3B82F6'}]}>
+              <Text style={[customStyles.menuText, { color: '#3B82F6' }]}>
                 Edit User
               </Text>
             </TouchableOpacity>
@@ -290,7 +290,7 @@ const ManageU = ({onBack}) => {
                 size={20}
                 color="#EF4444"
               />
-              <Text style={[customStyles.menuText, {color: '#EF4444'}]}>
+              <Text style={[customStyles.menuText, { color: '#EF4444' }]}>
                 Delete User
               </Text>
             </TouchableOpacity>
@@ -306,7 +306,7 @@ const ManageU = ({onBack}) => {
         onRequestClose={() => setShowEditModal(false)}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={customStyles.centeredModalOverlay}> 
+          style={customStyles.centeredModalOverlay}>
           <View style={customStyles.modalContainer}>
             <View style={customStyles.modalHeader}>
               <TouchableOpacity onPress={() => setShowEditModal(false)}>
@@ -317,10 +317,10 @@ const ManageU = ({onBack}) => {
                 />
               </TouchableOpacity>
               <Text style={customStyles.modalTitle}>Edit User</Text>
-              <View style={{width: 24}} />
+              <View style={{ width: 24 }} />
             </View>
             <View style={customStyles.modalHeaderSeparator} />
-            
+
             <ScrollView style={customStyles.modalContent}>
               {/* Full Name */}
               <View style={customStyles.inputGroup}>
@@ -431,7 +431,7 @@ const ManageU = ({onBack}) => {
                     <Text
                       style={[
                         customStyles.typeOptionText,
-                        editedType === 'user' && {color: '#3B82F6'},
+                        editedType === 'user' && { color: '#3B82F6' },
                       ]}>
                       User
                     </Text>
@@ -450,7 +450,7 @@ const ManageU = ({onBack}) => {
                     <Text
                       style={[
                         customStyles.typeOptionText,
-                        editedType === 'admin' && {color: '#7C3AED'},
+                        editedType === 'admin' && { color: '#7C3AED' },
                       ]}>
                       Admin
                     </Text>
@@ -468,7 +468,7 @@ const ManageU = ({onBack}) => {
                   size={20}
                   color="#FFFFFF"
                 />
-                <Text style={[customStyles.buttonText, {color: '#FFFFFF'}]}>
+                <Text style={[customStyles.buttonText, { color: '#FFFFFF' }]}>
                   Update User
                 </Text>
               </TouchableOpacity>
@@ -483,7 +483,7 @@ const ManageU = ({onBack}) => {
         transparent={true}
         animationType="slide"
         onRequestClose={() => setShowViewModal(false)}>
-        <View style={customStyles.centeredModalOverlay}> 
+        <View style={customStyles.centeredModalOverlay}>
           <View style={customStyles.viewModalContainer}>
             <View style={customStyles.modalHeader}>
               <TouchableOpacity onPress={() => setShowViewModal(false)}>
@@ -494,10 +494,10 @@ const ManageU = ({onBack}) => {
                 />
               </TouchableOpacity>
               <Text style={customStyles.viewModalTitle}>User Details</Text>
-              <View style={{width: 24}} />
+              <View style={{ width: 24 }} />
             </View>
             <View style={customStyles.modalHeaderSeparator} />
-            
+
             <ScrollView style={customStyles.modalContent}>
               {/* Full Name */}
               <View style={customStyles.inputGroup}>
@@ -604,11 +604,11 @@ const ManageU = ({onBack}) => {
               </View>
             </ScrollView>
 
-            <View style={customStyles.modalActions}> 
+            <View style={customStyles.modalActions}>
               <TouchableOpacity
                 style={customStyles.saveButtonFull} // Reusing the saveButtonFull style for consistency
                 onPress={() => setShowViewModal(false)}>
-                <Text style={[customStyles.buttonText, {color: '#FFFFFF'}]}>
+                <Text style={[customStyles.buttonText, { color: '#FFFFFF' }]}>
                   Close
                 </Text>
               </TouchableOpacity>
@@ -633,7 +633,7 @@ const ManageU = ({onBack}) => {
             <Text style={customStyles.deleteTitle}>Confirm Deletion</Text>
             <Text style={customStyles.deleteMessage}>
               Are you sure you want to delete{' '}
-              <Text style={{fontWeight: 'bold'}}>{selectedUser?.name || selectedUser?.nickname || 'this user'}</Text>?
+              <Text style={{ fontWeight: 'bold' }}>{selectedUser?.name || selectedUser?.nickname || 'this user'}</Text>?
               This cannot be undone.
             </Text>
             <View style={customStyles.deleteActions}>
@@ -643,9 +643,9 @@ const ManageU = ({onBack}) => {
                 <Text style={customStyles.buttonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[customStyles.saveButton, {backgroundColor: '#EF4444'}]}
+                style={[customStyles.saveButton, { backgroundColor: '#EF4444' }]}
                 onPress={confirmDelete}>
-                <Text style={[customStyles.buttonText, {color: '#FFFFFF'}]}>
+                <Text style={[customStyles.buttonText, { color: '#FFFFFF' }]}>
                   Delete
                 </Text>
               </TouchableOpacity>
@@ -770,7 +770,7 @@ const customStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  centeredModalOverlay: { 
+  centeredModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
@@ -956,7 +956,7 @@ const customStyles = StyleSheet.create({
   // View Modal Styles
   viewModalContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24, 
+    borderRadius: 24,
     width: '90%',
     maxHeight: '85%',
     shadowColor: '#000',
@@ -985,11 +985,11 @@ const customStyles = StyleSheet.create({
     fontSize: 16,
     color: '#1F2937',
   },
-  viewModalActions: { 
+  viewModalActions: {
     padding: 20,
     marginTop: 8,
   },
-  closeButtonFull: { 
+  closeButtonFull: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
