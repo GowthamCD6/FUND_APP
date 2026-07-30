@@ -448,6 +448,37 @@ class ApiService {
       return { success: false, message: error.message };
     }
   }
+
+  // OTP Request methods
+  async getOTPRequests() {
+    try {
+      const response = await this.makeRequest('/user/otp-requests');
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async markOTPViewed(requestId) {
+    try {
+      const response = await this.makeRequest(`/user/otp-requests/${requestId}/viewed`, {
+        method: 'POST',
+      });
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: false, message: 'Invalid response from server' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
 }
 
 export default new ApiService();

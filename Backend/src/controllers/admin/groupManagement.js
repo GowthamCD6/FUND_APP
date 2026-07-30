@@ -375,15 +375,7 @@ exports.deleteGroup = async (req, res) => {
 };
 
 exports.saveGroupMonthlyDetails = async (req, res) => {
-    const {
-        groupId,
-        month,
-        year,
-        currentMonthAmount,
-        elathThalupadi,
-        commission,
-        notes,
-    } = req.body;
+    const { groupId, month, year, currentMonthAmount, elathThalupadi, commission, notes, deadlineDate } = req.body;
     const adminId = req.user ? (req.user.userId || req.user.id) : null;
 
     const groupIdNum = Number(groupId);
@@ -408,6 +400,10 @@ exports.saveGroupMonthlyDetails = async (req, res) => {
 
     // Convert month/year into collection_period (first of that month)
     const collectionPeriodStr = `${yearNum}-${String(monthNum + 1).padStart(2, '0')}-01`;
+    let paymentDueDate = deadlineDate ? new Date(deadlineDate) : null;
+    if (paymentDueDate && Number.isNaN(paymentDueDate.getTime())) {
+        paymentDueDate = null;
+    }
 
     const connection = await db.promise().getConnection();
     try {
@@ -425,19 +421,20 @@ exports.saveGroupMonthlyDetails = async (req, res) => {
 
         // Fetch old values if any
         const [[oldDetail]] = await connection.query(
-            'SELECT monthly_amount, discount_amount, commission_amount, customer_notes FROM group_monthly_details WHERE group_id = ? AND collection_period = ? AND deleted_at IS NULL',
+            'SELECT monthly_amount, discount_amount, commission_amount, customer_notes, payment_due_date FROM group_monthly_details WHERE group_id = ? AND collection_period = ? AND deleted_at IS NULL',
             [groupIdNum, collectionPeriodStr]
         );
 
         await connection.query(
             `
             INSERT INTO group_monthly_details
-            (group_id, collection_period, monthly_amount, discount_amount, commission_amount, customer_notes, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (group_id, collection_period, monthly_amount, discount_amount, commission_amount, payment_due_date, customer_notes, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 monthly_amount = VALUES(monthly_amount),
                 discount_amount = VALUES(discount_amount),
                 commission_amount = VALUES(commission_amount),
+                payment_due_date = VALUES(payment_due_date),
                 customer_notes = VALUES(customer_notes),
                 updated_by = ?,
                 version = version + 1,
@@ -449,21 +446,22 @@ exports.saveGroupMonthlyDetails = async (req, res) => {
                 Number(currentMonthAmount) || 0,
                 Number(elathThalupadi) || 0,
                 Number(commission) || 0,
+                paymentDueDate,
                 notes ? String(notes) : null,
                 adminId ? Number(adminId) : null,
                 adminId ? Number(adminId) : null,
             ],
         );
 
-        // Update all pending `monthly_collections` rows for this group/month with the requested net amount
+        // Update all pending `monthly_collections` rows for this group/month with the requested net amount and due_date
         const netAmount = (Number(currentMonthAmount) || 0) + (Number(commission) || 0) - (Number(elathThalupadi) || 0);
         await connection.query(
             `
             UPDATE monthly_collections 
-            SET amount = ?, updated_by = ?, version = version + 1
+            SET amount = ?, due_date = COALESCE(?, due_date), updated_by = ?, version = version + 1
             WHERE group_id = ? AND collection_period = ? AND status = 'pending' AND deleted_at IS NULL
             `,
-            [netAmount, adminId ? Number(adminId) : null, groupIdNum, collectionPeriodStr]
+            [netAmount, paymentDueDate, adminId ? Number(adminId) : null, groupIdNum, collectionPeriodStr]
         );
 
         // Log audit event
@@ -477,6 +475,7 @@ exports.saveGroupMonthlyDetails = async (req, res) => {
                 monthly_amount: Number(currentMonthAmount) || 0,
                 discount_amount: Number(elathThalupadi) || 0,
                 commission_amount: Number(commission) || 0,
+                payment_due_date: paymentDueDate,
                 customer_notes: notes ? String(notes) : null
             }
         });
@@ -492,6 +491,7 @@ exports.saveGroupMonthlyDetails = async (req, res) => {
                 currentMonthAmount: Number(currentMonthAmount) || 0,
                 elathThalupadi: Number(elathThalupadi) || 0,
                 commission: Number(commission) || 0,
+                deadlineDate: deadlineDate || null,
             },
         });
     } catch (error) {
@@ -697,7 +697,7 @@ exports.getGroupMonthSnapshot = async (req, res) => {
     try {
         const [[payment]] = await db.promise().query(
             `
-            SELECT monthly_amount, discount_amount, commission_amount, customer_notes
+            SELECT monthly_amount, discount_amount, commission_amount, customer_notes, payment_due_date
             FROM group_monthly_details
             WHERE group_id = ? AND collection_period = ? AND deleted_at IS NULL
             LIMIT 1
@@ -726,6 +726,7 @@ exports.getGroupMonthSnapshot = async (req, res) => {
                         currentMonthAmount: Number(payment.monthly_amount) || 0,
                         elathThalupadi: Number(payment.discount_amount) || 0,
                         commission: Number(payment.commission_amount) || 0,
+                        deadlineDate: payment.payment_due_date ? new Date(payment.payment_due_date).toISOString().split('T')[0] : null,
                         notes: payment.customer_notes || null,
                     }
                     : null,

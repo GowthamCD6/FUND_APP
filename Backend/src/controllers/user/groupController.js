@@ -162,7 +162,7 @@ exports.getGroupMonthlyInfo = async (req, res) => {
     );
 
     const [monthlyDetails] = await db.promise().query(
-      `SELECT MONTH(collection_period) - 1 AS month, YEAR(collection_period) AS year, monthly_amount, discount_amount, commission_amount, customer_notes AS notes 
+      `SELECT MONTH(collection_period) - 1 AS month, YEAR(collection_period) AS year, monthly_amount, discount_amount, commission_amount, payment_due_date, customer_notes AS notes 
        FROM group_monthly_details 
        WHERE group_id = ? AND deleted_at IS NULL`,
       [rawGroupId]
@@ -183,7 +183,7 @@ exports.getGroupMonthlyInfo = async (req, res) => {
         discount: Number(d.discount_amount) || 0,
         commission: Number(d.commission_amount) || 0,
         netAmount: net,
-        dueDate: null,
+        dueDate: d.payment_due_date ? formatDateLocal(d.payment_due_date) : null,
         paidDate: null,
         daysPending: 0,
         auctionWinner: 'N/A',

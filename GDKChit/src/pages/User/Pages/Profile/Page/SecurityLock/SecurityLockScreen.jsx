@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Platform,
   StatusBar,
   ActivityIndicator,
-  Dimensions,
+  Dimensions
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';;
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import BiometricService from '../../../../../../services/BiometricService';
 

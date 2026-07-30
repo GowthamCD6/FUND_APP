@@ -73,6 +73,24 @@ async function checkAndInitializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // Ensure otp_requests table exists
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS otp_requests (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        group_id INT NOT NULL,
+        group_name VARCHAR(255) NULL,
+        otp_code VARCHAR(10) NOT NULL,
+        status ENUM('pending', 'viewed', 'used', 'expired') DEFAULT 'pending',
+        expires_at DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_otp_user_status (user_id, status),
+        INDEX idx_otp_verify (user_id, group_id, status, expires_at),
+        CONSTRAINT fk_otp_requests_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     // Check for required tables
     const [tables] = await connection.query(
       `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ?`,
@@ -94,6 +112,7 @@ async function checkAndInitializeDatabase() {
       'group_auction_participants',
       'user_preferences',
       'app_ratings',
+      'otp_requests',
     ];
 
     const existingTables = new Set(tables.map(t => t.TABLE_NAME));

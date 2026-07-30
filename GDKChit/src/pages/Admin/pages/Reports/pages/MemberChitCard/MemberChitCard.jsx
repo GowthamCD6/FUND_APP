@@ -107,8 +107,17 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack, onPaymentMarkedPaid }
   };
 
   const sendOtp = async () => {
-    if (!memberInfo?.phone) {
+    const targetPhone = memberInfo?.phone || selectedMember?.phone;
+    const targetUserId = memberInfo?.id || selectedMember?.id;
+    const targetGroupId = selectedGroup?.id || groupInfo?.id;
+
+    if (!targetPhone) {
       Alert.alert('Error', 'Member phone number not available');
+      return;
+    }
+
+    if (!targetUserId || !targetGroupId) {
+      Alert.alert('Error', 'Member ID or Group ID missing');
       return;
     }
 
@@ -118,9 +127,10 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack, onPaymentMarkedPaid }
       const response = await ApiService.makeRequest('/admin/reports/send-otp', {
         method: 'POST',
         body: JSON.stringify({
-          phoneNumber: memberInfo.phone,
-          userId: memberInfo.id,
-          groupId: selectedGroup.id,
+          phoneNumber: targetPhone,
+          userId: targetUserId,
+          groupId: targetGroupId,
+          groupName: groupInfo?.name || selectedGroup?.group_name || selectedGroup?.name,
         }),
       });
 
@@ -131,7 +141,12 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack, onPaymentMarkedPaid }
       }
 
       setOtpSent(true);
-      Alert.alert('Success', `OTP sent to ${memberInfo.phone}`);
+      if (result?.data?.otpCode) {
+        setGeneratedOtp(result.data.otpCode);
+        Alert.alert('Success', `OTP request sent to app! (Demo Code: ${result.data.otpCode})`);
+      } else {
+        Alert.alert('Success', `OTP request sent to app for ${targetPhone}`);
+      }
     } catch (error) {
       console.error('Failed to send OTP:', error);
       Alert.alert('Error', error.message || 'Failed to send OTP');
@@ -158,6 +173,9 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack, onPaymentMarkedPaid }
       return;
     }
 
+    const targetUserId = memberInfo?.id || selectedMember?.id;
+    const targetGroupId = selectedGroup?.id || groupInfo?.id;
+
     try {
       setOtpSubmitting(true);
 
@@ -165,10 +183,10 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack, onPaymentMarkedPaid }
       const verifyResponse = await ApiService.makeRequest('/admin/reports/verify-otp', {
         method: 'POST',
         body: JSON.stringify({
-          phoneNumber: memberInfo?.phone,
+          phoneNumber: memberInfo?.phone || selectedMember?.phone,
           otp: otpInput,
-          groupId: Number(selectedGroup?.id),
-          userId: Number(selectedMember?.id),
+          groupId: Number(targetGroupId),
+          userId: Number(targetUserId),
           month: Number(selectedPendingRow.month),
           year: Number(selectedPendingRow.year),
         }),
@@ -184,8 +202,8 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack, onPaymentMarkedPaid }
       const paymentResponse = await ApiService.makeRequest('/admin/reports/payment-status', {
         method: 'POST',
         body: JSON.stringify({
-          groupId: Number(selectedGroup?.id),
-          userId: Number(selectedMember?.id),
+          groupId: Number(targetGroupId),
+          userId: Number(targetUserId),
           month: Number(selectedPendingRow.month),
           year: Number(selectedPendingRow.year),
           status: 'paid',

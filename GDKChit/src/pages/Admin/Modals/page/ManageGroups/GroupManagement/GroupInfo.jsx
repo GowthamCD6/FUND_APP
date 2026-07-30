@@ -92,6 +92,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           currentMonthAmount: payment.currentMonthAmount?.toString() || prev.currentMonthAmount,
           elathThalupadi: payment.elathThalupadi?.toString() || '',
           commission: payment.commission?.toString() || '',
+          deadlineDate: payment.deadlineDate || '',
         }));
       } else {
         setFormData((prev) => ({
@@ -99,6 +100,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           currentMonthAmount: '',
           elathThalupadi: '',
           commission: '',
+          deadlineDate: '',
         }));
       }
 
@@ -273,6 +275,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           currentMonthAmount: Number(paymentData.currentMonthAmount) || 0,
           elathThalupadi: Number(paymentData.elathThalupadi) || 0,
           commission: Number(paymentData.commission) || 0,
+          deadlineDate: paymentData.deadlineDate || null,
         }),
       });
 
@@ -286,6 +289,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         currentMonthAmount: paymentData.currentMonthAmount,
         elathThalupadi: paymentData.elathThalupadi,
         commission: paymentData.commission,
+        deadlineDate: paymentData.deadlineDate,
       }));
 
       setMonthlyData((prev) => {
@@ -839,6 +843,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
           currentMonthAmount: formData.currentMonthAmount,
           elathThalupadi: formData.elathThalupadi,
           commission: formData.commission,
+          deadlineDate: formData.deadlineDate,
         }}
         onSave={handlePaymentSave}
       />

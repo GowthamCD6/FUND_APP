@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Alert,
   Platform,
   ScrollView,
@@ -13,8 +12,9 @@ import {
   Linking,
   Modal,
   BackHandler,
-  RefreshControl,
+  RefreshControl
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';;
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 import Header from '../../../../../../components/HeaderComponent/Header';

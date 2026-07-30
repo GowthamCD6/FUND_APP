@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Switch,
   Alert,
   Platform,
@@ -13,8 +12,9 @@ import {
   Share,
   BackHandler,
   ScrollView,
-  RefreshControl,
+  RefreshControl
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';;
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 import ShareLocationInfo from './Share_info_modal/ShareLocationInfo';

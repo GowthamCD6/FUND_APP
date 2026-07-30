@@ -996,23 +996,54 @@ const Home = () => {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {notifications.length > 0 ? (
-                notifications.map((notif, index) => (
-                  <View key={index} style={{ marginBottom: 15, padding: 15, backgroundColor: notif.type === 'danger' ? '#FEF2F2' : '#FFFBEB', borderRadius: 12, borderWidth: 1, borderColor: notif.type === 'danger' ? '#FECACA' : '#FEF3C7' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                      <Icon
-                        name={notif.type === 'danger' ? 'alert-circle' : 'clock-alert'}
-                        size={20}
-                        color={notif.type === 'danger' ? '#EF4444' : '#F59E0B'}
-                      />
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: notif.type === 'danger' ? '#991B1B' : '#B45309' }}>
-                        {notif.title}
+                notifications.map((notif, index) => {
+                  // Special handling for OTP request notifications
+                  if (notif.type === 'otp_request') {
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setShowNotifications(false);
+                          navigation.navigate('OTPRequests');
+                        }}
+                        style={{ marginBottom: 15, padding: 15, backgroundColor: '#EEF2FF', borderRadius: 12, borderWidth: 1, borderColor: '#C7D2FE' }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                          <Icon name="shield-check" size={20} color="#6366F1" />
+                          <Text style={{ fontSize: 16, fontWeight: '600', color: '#4338CA', marginLeft: 6 }}>
+                            {notif.title}
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 14, color: '#4B5563', lineHeight: 20 }}>
+                          {notif.message}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, justifyContent: 'flex-end' }}>
+                          <Text style={{ fontSize: 12, color: '#6366F1', fontWeight: '600' }}>Tap to view OTP</Text>
+                          <Icon name="arrow-right" size={14} color="#6366F1" />
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  }
+
+                  return (
+                    <View key={index} style={{ marginBottom: 15, padding: 15, backgroundColor: notif.type === 'danger' ? '#FEF2F2' : '#FFFBEB', borderRadius: 12, borderWidth: 1, borderColor: notif.type === 'danger' ? '#FECACA' : '#FEF3C7' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                        <Icon
+                          name={notif.type === 'danger' ? 'alert-circle' : 'clock-alert'}
+                          size={20}
+                          color={notif.type === 'danger' ? '#EF4444' : '#F59E0B'}
+                        />
+                        <Text style={{ fontSize: 16, fontWeight: '600', color: notif.type === 'danger' ? '#991B1B' : '#B45309' }}>
+                          {notif.title}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 14, color: '#4B5563', lineHeight: 20 }}>
+                        {notif.message}
                       </Text>
                     </View>
-                    <Text style={{ fontSize: 14, color: '#4B5563', lineHeight: 20 }}>
-                      {notif.message}
-                    </Text>
-                  </View>
-                ))
+                  );
+                })
               ) : (
                 <View style={{ padding: 30, alignItems: 'center' }}>
                   <Icon name="bell-sleep" size={48} color="#D1D5DB" />

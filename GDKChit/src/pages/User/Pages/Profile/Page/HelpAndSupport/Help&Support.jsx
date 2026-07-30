@@ -4,15 +4,15 @@ import {
   Text,
   StyleSheet,
   Platform,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   StatusBar,
   Linking,
   Alert,
   Dimensions,
-  BackHandler,
+  BackHandler
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';;
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 

@@ -112,30 +112,6 @@ const ChitfundPortfolio = ({ navigation }) => {
 
   // Function to transform Portfolio data to GroupCard format
   const transformGroupData = (group) => {
-    let dynamicNextDue = group.estimatedPayDate;
-
-    if (group.startDate) {
-      const parts = group.startDate.split('-');
-      if (parts.length >= 3) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1; // 0-indexed
-        const day = parseInt(parts[2], 10);
-
-        const paidCycles = Math.max(0, Number(group.currentMonth) || 0);
-        const nextCycleIndex = group.paymentStatus === 'completed' ? paidCycles - 1 : paidCycles;
-        const cycleIndex = Math.max(0, nextCycleIndex);
-        const nextCycleStart = new Date(year, month + cycleIndex, day);
-
-        const cycleDue = new Date(nextCycleStart);
-        cycleDue.setDate(cycleDue.getDate() + 20);
-
-        const yyyy = cycleDue.getFullYear();
-        const mm = String(cycleDue.getMonth() + 1).padStart(2, '0');
-        const dd = String(cycleDue.getDate()).padStart(2, '0');
-        dynamicNextDue = `${yyyy}-${mm}-${dd}`;
-      }
-    }
-
     return {
       id: group.id,
       name: group.groupName,
@@ -145,7 +121,7 @@ const ChitfundPortfolio = ({ navigation }) => {
       monthlyAmount: group.monthlyContribution,
       completedCycles: group.currentMonth,
       totalCycles: group.totalMonths,
-      nextDueDate: dynamicNextDue,
+      nextDueDate: group.estimatedPayDate || 'N/A',
       completedDate: group.estimatedPayDate,
       totalAmount: group.investmentAmount,
       groupId: group.groupId,

@@ -83,28 +83,7 @@ const GroupCardInfo = ({ onClose, group }) => {
     daysPending: 0,
   };
 
-  const computeDefaultDueDate = (monthDate, startDate) => {
-    if (!startDate || !monthDate) return null;
-    const parts = startDate.split('-');
-    if (parts.length < 3) return null;
-    
-    const day = parseInt(parts[2], 10);
-    const dueDay = day > 1 ? day - 1 : 0;
-
-    let dueDate;
-    if (dueDay > 0) {
-      dueDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), dueDay);
-    } else {
-      dueDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), 0);
-    }
-
-    const yyyy = dueDate.getFullYear();
-    const mm = String(dueDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(dueDate.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
-
-  const effectiveDueDate = monthData.dueDate || computeDefaultDueDate(selectedDate, groupInfo.startDate);
+  const effectiveDueDate = monthData.dueDate || null;
 
   const formatCurrency = (amount) => {
     if (amount == null || amount === '' || isNaN(amount)) return 'nil';

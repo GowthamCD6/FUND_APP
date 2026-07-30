@@ -203,6 +203,23 @@ const Profile = () => {
                   color="#CCCCCC"
                 />
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.menuItem, styles.menuItemBorder]}
+                onPress={() => navigation.navigate('OTPRequests')}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="shield-key-outline"
+                    size={22}
+                    color="#4F46E5"
+                  />
+                  <Text style={[styles.menuItemText, language === 'ta' && { fontSize: 14 }]}>{t('OTP Requests')}</Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#CCCCCC"
+                />
+              </TouchableOpacity>
             </View>
           </View>
           {/* Advanced Features Section */}
