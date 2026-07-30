@@ -8,6 +8,10 @@ import {
   Alert,
   Modal,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../../components/HeaderComponent/Header';
@@ -141,12 +145,7 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack, onPaymentMarkedPaid }
       }
 
       setOtpSent(true);
-      if (result?.data?.otpCode) {
-        setGeneratedOtp(result.data.otpCode);
-        Alert.alert('Success', `OTP request sent to app! (Demo Code: ${result.data.otpCode})`);
-      } else {
-        Alert.alert('Success', `OTP request sent to app for ${targetPhone}`);
-      }
+      Alert.alert('Success', `OTP request sent successfully to member (${targetPhone})`);
     } catch (error) {
       console.error('Failed to send OTP:', error);
       Alert.alert('Error', error.message || 'Failed to send OTP');
@@ -383,114 +382,120 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack, onPaymentMarkedPaid }
         visible={otpVisible}
         transparent={true}
         animationType="fade"
+        statusBarTranslucent={true}
         onRequestClose={closeOtpModal}
       >
-        <View style={styles.otpModalOverlay}>
-          <View style={styles.otpModalContainer}>
-            {/* Header */}
-            <View style={styles.otpModalHeader}>
-              <View>
-                <Text style={styles.otpModalTitle}>Verify Payment</Text>
-                <Text style={styles.otpModalSubheader}>
-                  {otpSent ? 'Enter the OTP sent to member' : 'Send OTP to member'}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={closeOtpModal} disabled={otpSubmitting}>
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.otpModalOverlay}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={{ width: '100%', alignItems: 'center' }}
+            >
+              <View style={styles.otpModalContainer}>
+                {/* Header */}
+                <View style={styles.otpModalHeader}>
+                  <View>
+                    <Text style={styles.otpModalTitle}>Verify Payment</Text>
+                    <Text style={styles.otpModalSubheader}>
+                      {otpSent ? 'Enter the OTP sent to member' : 'Send OTP to member'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={closeOtpModal} disabled={otpSubmitting}>
+                    <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
 
-            {/* Step 1: Send OTP */}
-            {!otpSent ? (
-              <View style={styles.otpSendContainer}>
-                <MaterialCommunityIcons name="send" size={48} color="#6B46C1" />
-                <Text style={styles.otpSendTitle}>Ready to send OTP?</Text>
-                <Text style={styles.otpSendDescription}>
-                  Click the button below to send a 6-digit OTP to the member's registered phone number
-                </Text>
-              </View>
-            ) : null}
+                {/* Step 1: Send OTP */}
+                {!otpSent ? (
+                  <View style={styles.otpSendContainer}>
+                    <MaterialCommunityIcons name="send" size={48} color="#6B46C1" />
+                    <Text style={styles.otpSendTitle}>Ready to send OTP?</Text>
+                    <Text style={styles.otpSendDescription}>
+                      Click the button below to send a 6-digit OTP to the member's registered phone number
+                    </Text>
+                  </View>
+                ) : null}
 
-            {/* Step 2: Enter OTP */}
-            {otpSent ? (
-              <>
-                {/* OTP Display Indicator */}
-                <View style={styles.otpDisplayContainer}>
-                  <View style={styles.otpDotsContainer}>
-                    {[...Array(6)].map((_, index) => (
-                      <View
-                        key={index}
-                        style={[
-                          styles.otpDot,
-                          index < otpInput.length && styles.otpDotFilled,
-                        ]}
+                {/* Step 2: Enter OTP */}
+                {otpSent ? (
+                  <>
+                    {/* OTP Display Indicator */}
+                    <View style={styles.otpDisplayContainer}>
+                      <View style={styles.otpDotsContainer}>
+                        {[...Array(6)].map((_, index) => (
+                          <View
+                            key={index}
+                            style={[
+                              styles.otpDot,
+                              index < otpInput.length && styles.otpDotFilled,
+                            ]}
+                          />
+                        ))}
+                      </View>
+                    </View>
+
+                    {/* OTP Input */}
+                    <View style={styles.otpInputContainer}>
+                      <Text style={styles.otpInputLabel}>Enter OTP</Text>
+                      <TextInput
+                        style={styles.otpInput}
+                        value={otpInput}
+                        onChangeText={setOtpInput}
+                        keyboardType="number-pad"
+                        maxLength={6}
+                        placeholder="000000"
+                        placeholderTextColor="#D1D5DB"
+                        editable={!otpSubmitting}
+                        autoFocus={true}
                       />
-                    ))}
-                  </View>
-                </View>
+                    </View>
 
-                {/* OTP Input */}
-                <View style={styles.otpInputContainer}>
-                  <Text style={styles.otpInputLabel}>Enter OTP</Text>
-                  <TextInput
-                    style={styles.otpInput}
-                    value={otpInput}
-                    onChangeText={setOtpInput}
-                    keyboardType="numeric"
-                    maxLength={6}
-                    placeholder="000000"
-                    placeholderTextColor="#D1D5DB"
-                    editable={!otpSubmitting}
-                  />
-                </View>
+                    {/* Verification Status */}
+                    {otpSubmitting && (
+                      <View style={styles.otpVerifyingContainer}>
+                        <ActivityIndicator size="small" color="#6B46C1" />
+                        <Text style={styles.otpVerifyingText}>Verifying OTP...</Text>
+                      </View>
+                    )}
+                  </>
+                ) : null}
 
-            {/* Demo OTP Display - REMOVED */}
-            {/* OTP has been sent to member's phone. No demo display. */}
-
-                {/* Verification Status */}
-                {otpSubmitting && (
-                  <View style={styles.otpVerifyingContainer}>
-                    <ActivityIndicator size="small" color="#6B46C1" />
-                    <Text style={styles.otpVerifyingText}>Verifying OTP...</Text>
-                  </View>
-                )}
-              </>
-            ) : null}
-
-            {/* Buttons */}
-            <View style={styles.otpModalButtons}>
-              <TouchableOpacity
-                style={[styles.otpCancelButton, (otpSubmitting || !otpSent) && styles.disabledButton]}
-                onPress={closeOtpModal}
-                disabled={otpSubmitting}
-              >
-                <Text style={styles.otpCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              {!otpSent ? (
-                <TouchableOpacity
-                  style={styles.otpSendButton}
-                  onPress={sendOtp}
-                  disabled={otpSubmitting}
-                >
-                  <MaterialCommunityIcons name="send" size={18} color="#FFFFFF" />
-                  <Text style={styles.otpSendButtonText}>Send OTP</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.otpSubmitButton, (otpSubmitting || otpInput.length !== 6) && styles.disabledButton]}
-                  onPress={verifyOtpAndMarkPaid}
-                  disabled={otpSubmitting || otpInput.length !== 6}
-                >
-                  {otpSubmitting ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
+                {/* Buttons */}
+                <View style={styles.otpModalButtons}>
+                  <TouchableOpacity
+                    style={[styles.otpCancelButton, (otpSubmitting || !otpSent) && styles.disabledButton]}
+                    onPress={closeOtpModal}
+                    disabled={otpSubmitting}
+                  >
+                    <Text style={styles.otpCancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  {!otpSent ? (
+                    <TouchableOpacity
+                      style={styles.otpSendButton}
+                      onPress={sendOtp}
+                      disabled={otpSubmitting}
+                    >
+                      <MaterialCommunityIcons name="send" size={18} color="#FFFFFF" />
+                      <Text style={styles.otpSendButtonText}>Send OTP</Text>
+                    </TouchableOpacity>
                   ) : (
-                    <Text style={styles.otpSubmitButtonText}>Verify & Confirm</Text>
+                    <TouchableOpacity
+                      style={[styles.otpSubmitButton, (otpSubmitting || otpInput.length !== 6) && styles.disabledButton]}
+                      onPress={verifyOtpAndMarkPaid}
+                      disabled={otpSubmitting || otpInput.length !== 6}
+                    >
+                      {otpSubmitting ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.otpSubmitButtonText}>Verify & Confirm</Text>
+                      )}
+                    </TouchableOpacity>
                   )}
-                </TouchableOpacity>
-              )}
-            </View>
+                </View>
+              </View>
+            </KeyboardAvoidingView>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );
