@@ -21,6 +21,7 @@ import UserL from './pages/UserLocation/UserL';
 const Settings = () => {
   const [showBlockU, setShowBlockU] = useState(false);
   const [showUserL, setShowUserL] = useState(false);
+  const [showMyLocation, setShowMyLocation] = useState(false);
   const navigation = useNavigation();
 
   // Animation values for slide-in effects
@@ -92,14 +93,14 @@ const Settings = () => {
           title: 'Edit Profile',
           subtitle: 'Update your personal information',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           icon: 'shield-account',
           title: 'Security',
           subtitle: 'Password and authentication',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
       ],
     },
@@ -111,21 +112,21 @@ const Settings = () => {
           title: 'Notifications',
           subtitle: 'Manage notification preferences',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           icon: 'earth',
           title: 'Language',
           subtitle: 'English, Hindi, Tamil, Telugu, Kannada',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           icon: 'currency-inr',
           title: 'Currency',
           subtitle: 'Set default currency (INR)',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
       ],
     },
@@ -137,21 +138,21 @@ const Settings = () => {
           title: 'Default Group Rules',
           subtitle: 'Set contribution amounts and payment cycles',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           icon: 'cash-multiple',
           title: 'Payment Settings',
           subtitle: 'Configure payment rules and reminders',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           icon: 'gavel',
           title: 'Auction Settings',
           subtitle: 'Set default auction rules and duration',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
       ],
     },
@@ -163,14 +164,14 @@ const Settings = () => {
           title: 'Data Export',
           subtitle: 'Download all your group data and history',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           icon: 'lock-outline',
           title: 'Privacy Controls',
           subtitle: 'Control who can see your profile',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           icon: 'account-cancel',
@@ -212,28 +213,28 @@ const Settings = () => {
           title: 'Help & Support',
           subtitle: 'FAQs, tutorials, contact support',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           icon: 'information',
           title: 'About App',
           subtitle: 'Version and legal information',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           icon: 'share-variant-outline',
           title: 'Share App',
           subtitle: 'Invite friends to join',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           icon: 'star-outline',
           title: 'Rate App',
           subtitle: 'Rate us on Play Store',
           iconColor: '#555555',
-          onPress: () => {},
+          onPress: () => { },
         },
       ],
     },
@@ -242,13 +243,13 @@ const Settings = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
+
       {showBlockU ? (
         <BlockU onClose={() => setShowBlockU(false)} />
       ) : showUserL ? (
         <UserL onClose={() => setShowUserL(false)} />
       ) : (
-        <View style={{flex: 1}}>
+        <View style={{ flex: 1 }}>
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.backButton}
@@ -260,86 +261,86 @@ const Settings = () => {
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}>
-          <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>
-              {userData.name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <Text style={styles.userName}>{userData.name.toUpperCase()}</Text>
-          <Text style={styles.userPhone}>{userData.phone}</Text>
-          <Text style={styles.userStatus}>{userData.role}</Text>
-        </View>
-
-        {settingSections.map((section, sectionIndex) => (
-          <View key={sectionIndex} style={styles.settingsContainer}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <View style={styles.menuCard}>
-              {section.items.map((item, itemIndex) => (
-                <React.Fragment key={itemIndex}>
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={item.onPress}>
-                    <View style={styles.menuItemContent}>
-                      <MaterialCommunityIcons
-                        name={item.icon}
-                        size={24}
-                        color={item.iconColor}
-                      />
-                      <View style={styles.menuItemTextBox}>
-                        <Text style={styles.menuItemText}>{item.title}</Text>
-                        {item.subtitle && (
-                          <Text style={styles.menuItemSubtitle}>
-                            {item.subtitle}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                    <MaterialCommunityIcons
-                      name="chevron-right"
-                      size={24}
-                      color="#B0B0B0"
-                    />
-                  </TouchableOpacity>
-                  {itemIndex < section.items.length - 1 && (
-                    <View style={styles.divider} />
-                  )}
-                </React.Fragment>
-              ))}
+            <View style={styles.profileSection}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarInitial}>
+                  {userData.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <Text style={styles.userName}>{userData.name.toUpperCase()}</Text>
+              <Text style={styles.userPhone}>{userData.phone}</Text>
+              <Text style={styles.userStatus}>{userData.role}</Text>
             </View>
-          </View>
-        ))}
 
-        <View style={styles.followSection}>
-          <Text style={styles.followText}>Follow us, to stay updated</Text>
-          <View style={styles.socialIcons}>
-            <TouchableOpacity style={styles.socialIcon}>
-              <MaterialCommunityIcons
-                name="instagram"
-                size={24}
-                color="#333333"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon}>
-              <MaterialCommunityIcons
-                name="youtube"
-                size={24}
-                color="#333333"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon}>
-              <MaterialCommunityIcons
-                name="whatsapp"
-                size={24}
-                color="#333333"
-              />
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-          <Text style={styles.versionText}>Version 1.0.0</Text>
-        </View>
+            {settingSections.map((section, sectionIndex) => (
+              <View key={sectionIndex} style={styles.settingsContainer}>
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+                <View style={styles.menuCard}>
+                  {section.items.map((item, itemIndex) => (
+                    <React.Fragment key={itemIndex}>
+                      <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={item.onPress}>
+                        <View style={styles.menuItemContent}>
+                          <MaterialCommunityIcons
+                            name={item.icon}
+                            size={24}
+                            color={item.iconColor}
+                          />
+                          <View style={styles.menuItemTextBox}>
+                            <Text style={styles.menuItemText}>{item.title}</Text>
+                            {item.subtitle && (
+                              <Text style={styles.menuItemSubtitle}>
+                                {item.subtitle}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                        <MaterialCommunityIcons
+                          name="chevron-right"
+                          size={24}
+                          color="#B0B0B0"
+                        />
+                      </TouchableOpacity>
+                      {itemIndex < section.items.length - 1 && (
+                        <View style={styles.divider} />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </View>
+              </View>
+            ))}
+
+            <View style={styles.followSection}>
+              <Text style={styles.followText}>Follow us, to stay updated</Text>
+              <View style={styles.socialIcons}>
+                <TouchableOpacity style={styles.socialIcon}>
+                  <MaterialCommunityIcons
+                    name="instagram"
+                    size={24}
+                    color="#333333"
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.socialIcon}>
+                  <MaterialCommunityIcons
+                    name="youtube"
+                    size={24}
+                    color="#333333"
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.socialIcon}>
+                  <MaterialCommunityIcons
+                    name="whatsapp"
+                    size={24}
+                    color="#333333"
+                  />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+                <Text style={styles.logoutText}>Logout</Text>
+              </TouchableOpacity>
+              <Text style={styles.versionText}>Version 1.0.0</Text>
+            </View>
           </ScrollView>
         </View>
       )}
@@ -387,9 +388,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#EFEFEF',
     marginTop: 20,
   },
-  backButton: {marginRight: 16},
-  headerTitle: {fontSize: 20, fontWeight: 'bold', color: '#000'},
-  scrollContent: {paddingBottom: 100},
+  backButton: { marginRight: 16 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#000' },
+  scrollContent: { paddingBottom: 100 },
   profileSection: {
     backgroundColor: '#FFFFFF',
   },
@@ -402,7 +403,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  avatarInitial: {fontSize: 40, fontWeight: 'bold', color: '#FFFFFF'},
+  avatarInitial: { fontSize: 40, fontWeight: 'bold', color: '#FFFFFF' },
   userName: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -410,26 +411,26 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
   },
-  userPhone: {fontSize: 16, color: '#666', marginBottom: 4},
-  userStatus: {fontSize: 14, color: '#888'},
-  settingsContainer: {paddingHorizontal: 16, marginTop: 24},
+  userPhone: { fontSize: 16, color: '#666', marginBottom: 4 },
+  userStatus: { fontSize: 14, color: '#888' },
+  settingsContainer: { paddingHorizontal: 16, marginTop: 24 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
     marginBottom: 12,
   },
-  menuCard: {backgroundColor: '#FFFFFF', borderRadius: 8, overflow: 'hidden'},
+  menuCard: { backgroundColor: '#FFFFFF', borderRadius: 8, overflow: 'hidden' },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 16,
   },
-  menuItemContent: {flexDirection: 'row', alignItems: 'center', flex: 1},
-  menuItemTextBox: {marginLeft: 16, flex: 1},
-  menuItemText: {fontSize: 16, color: '#000'},
-  menuItemSubtitle: {fontSize: 13, color: '#999999', marginTop: 2},
-  divider: {height: 1, backgroundColor: '#F0F0F0', marginLeft: 56},
+  menuItemContent: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  menuItemTextBox: { marginLeft: 16, flex: 1 },
+  menuItemText: { fontSize: 16, color: '#000' },
+  menuItemSubtitle: { fontSize: 13, color: '#999999', marginTop: 2 },
+  divider: { height: 1, backgroundColor: '#F0F0F0', marginLeft: 56 },
   followSection: {
     alignItems: 'center',
     marginVertical: 16,
@@ -464,8 +465,8 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  logoutButton: {marginBottom: 16},
-  logoutText: {fontSize: 16, color: '#EF4444', fontWeight: '500'},
+  logoutButton: { marginBottom: 16 },
+  logoutText: { fontSize: 16, color: '#EF4444', fontWeight: '500' },
   versionText: {
     fontSize: 12,
     color: '#999999',
@@ -503,7 +504,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     elevation: 8,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },

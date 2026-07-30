@@ -106,9 +106,15 @@ const OTPRequests = ({ navigation }) => {
   };
 
   const getTimeRemaining = (expiresAt) => {
-    const now = new Date().getTime();
-    const expiry = new Date(expiresAt).getTime();
-    const diff = expiry - now;
+    const now = Date.now();
+    const expiry = typeof expiresAt === 'number' ? expiresAt : new Date(expiresAt).getTime();
+    let diff = expiry - now;
+
+    // Safety cap: max 10 minutes (600,000 ms)
+    if (diff > 10 * 60 * 1000) {
+      diff = 10 * 60 * 1000;
+    }
+
     if (diff <= 0) return { minutes: 0, seconds: 0, expired: true };
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);

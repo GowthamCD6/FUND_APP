@@ -226,9 +226,9 @@ class MemberDetails extends Component {
 
     const dueDate = this.parseDateValue(
       member?.currentPayment?.dueDate ||
-        member?.currentPayment?.due_date ||
-        member?.paymentHistory?.[0]?.dueDate ||
-        member?.paymentHistory?.[0]?.due_date,
+      member?.currentPayment?.due_date ||
+      member?.paymentHistory?.[0]?.dueDate ||
+      member?.paymentHistory?.[0]?.due_date,
     );
 
     if (dueDate) {
@@ -444,7 +444,7 @@ class MemberDetails extends Component {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
-    
+
     let startYear = currentYear;
     let startMonth = 0;
 
@@ -464,7 +464,7 @@ class MemberDetails extends Component {
     for (let y = startYear; y <= endYear; y++) {
       const sMonth = y === startYear ? startMonth : 0;
       let eMonth = 11;
-      
+
       if (y === endYear) {
         if (endYear === currentYear) {
           eMonth = Math.max(currentMonth, y === startYear ? startMonth : 0);
@@ -474,7 +474,7 @@ class MemberDetails extends Component {
       } else if (y === currentYear) {
         eMonth = currentMonth;
       }
-      
+
       for (let m = sMonth; m <= eMonth; m++) {
         availableMonths.push({
           index: m,
