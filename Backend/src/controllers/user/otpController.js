@@ -11,9 +11,11 @@ exports.getOTPRequests = async (req, res) => {
       [userId]
     );
 
-    // Fetch active (pending/viewed) OTP requests
+    // Fetch active (pending/viewed) OTP requests with epoch millisecond timestamps
     const [rows] = await db.promise().query(
-      `SELECT id, group_id, group_name, otp_code, status, expires_at, created_at
+      `SELECT id, group_id, group_name, otp_code, status,
+              UNIX_TIMESTAMP(expires_at) * 1000 AS expires_at_ms,
+              UNIX_TIMESTAMP(created_at) * 1000 AS created_at_ms
        FROM otp_requests
        WHERE user_id = ? AND status IN ('pending', 'viewed') AND expires_at > NOW()
        ORDER BY created_at DESC`,
@@ -28,8 +30,8 @@ exports.getOTPRequests = async (req, res) => {
         groupName: row.group_name,
         otpCode: row.otp_code,
         status: row.status,
-        expiresAt: row.expires_at,
-        createdAt: row.created_at,
+        expiresAt: Number(row.expires_at_ms),
+        createdAt: Number(row.created_at_ms),
       })),
     });
   } catch (error) {
