@@ -10,10 +10,13 @@ import {
   Animated,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import LottieView from 'lottie-react-native';
 import ApiService from '../../../../../../services/ApiService';
+import Header from '../../../../../../components/HeaderComponent/Header';
 
 const { width } = Dimensions.get('window');
 
@@ -21,29 +24,8 @@ const OTPRequests = ({ navigation }) => {
   const [otpRequests, setOtpRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
-
-  // Pulse animation for OTP code
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [pulseAnim]);
 
   // Entrance animation
   useEffect(() => {
@@ -75,9 +57,29 @@ const OTPRequests = ({ navigation }) => {
     try {
       const res = await ApiService.getOTPRequests();
       if (res.success) {
-        setOtpRequests(res.data || []);
+        const data = res.data || [];
+        setOtpRequests(data);
+        
+        // Check if any OTP was successfully verified
+        const verifiedOTP = data.find(otp => 
+          ['verified', 'approved', 'success', 'completed'].includes(otp.status)
+        );
+        
+        if (verifiedOTP) {
+          Alert.alert(
+            "Success! 🎉",
+            "Your OTP has been verified successfully.",
+            [
+              {
+                text: "View Portfolio",
+                onPress: () => navigation.navigate('Portfolio')
+              }
+            ]
+          );
+        }
+
         // Auto-mark pending ones as viewed
-        for (const otp of res.data || []) {
+        for (const otp of data) {
           if (otp.status === 'pending') {
             ApiService.markOTPViewed(otp.id).catch(() => {});
           }
@@ -89,7 +91,7 @@ const OTPRequests = ({ navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [navigation]);
 
   useEffect(() => {
     fetchOTPRequests();
@@ -175,14 +177,9 @@ const OTPRequests = ({ navigation }) => {
         </View>
 
         {/* OTP Display */}
-        <Animated.View
-          style={[
-            styles.otpDisplayContainer,
-            !isExpired && { transform: [{ scale: pulseAnim }] },
-          ]}
-        >
+        <View style={styles.otpDisplayContainer}>
           <View
-            style={[styles.otpGradient, { backgroundColor: isExpired ? '#1F2937' : '#4F46E5' }]}
+            style={[styles.otpGradient, { backgroundColor: isExpired ? '#1F2937' : '#6B46C1' }]}
           >
             <Text style={styles.otpLabel}>
               {isExpired ? 'OTP EXPIRED' : 'YOUR OTP CODE'}
@@ -202,7 +199,7 @@ const OTPRequests = ({ navigation }) => {
               </Text>
             )}
           </View>
-        </Animated.View>
+        </View>
 
         {/* Card Footer */}
         <View style={styles.cardFooter}>
@@ -219,9 +216,9 @@ const OTPRequests = ({ navigation }) => {
             <MaterialCommunityIcons
               name={isExpired ? 'close-circle' : otp.status === 'viewed' ? 'eye' : 'bell-ring'}
               size={14}
-              color={isExpired ? '#EF4444' : '#6366F1'}
+              color={isExpired ? '#EF4444' : '#6B46C1'}
             />
-            <Text style={[styles.footerText, { color: isExpired ? '#EF4444' : '#6366F1' }]}>
+            <Text style={[styles.footerText, { color: isExpired ? '#EF4444' : '#6B46C1' }]}>
               {isExpired ? 'Expired' : otp.status === 'viewed' ? 'Viewed' : 'New'}
             </Text>
           </View>
@@ -233,15 +230,12 @@ const OTPRequests = ({ navigation }) => {
   if (loading) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#111827" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>OTP Requests</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <Header 
+          title="OTP Requests"
+          onBack={() => navigation.goBack()}
+        />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
+          <ActivityIndicator size="large" color="#6B46C1" />
           <Text style={styles.loadingText}>Loading OTP requests...</Text>
         </View>
       </View>
@@ -250,20 +244,14 @@ const OTPRequests = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>OTP Requests</Text>
-        <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
-          <MaterialCommunityIcons name="refresh" size={22} color="#6366F1" />
-        </TouchableOpacity>
-      </View>
+      <Header 
+        title="OTP Requests"
+        onBack={() => navigation.goBack()}
+      />
 
       {/* Info Banner */}
       <View style={styles.infoBanner}>
-        <MaterialCommunityIcons name="shield-lock-outline" size={20} color="#6366F1" />
+        <MaterialCommunityIcons name="shield-lock-outline" size={20} color="#6B46C1" />
         <Text style={styles.infoBannerText}>
           Admin has requested OTP verification. Share the code with admin to verify your payment.
         </Text>
@@ -276,11 +264,21 @@ const OTPRequests = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#6366F1']}
-            tintColor="#6366F1"
+            colors={['#6B46C1']}
+            tintColor="#6B46C1"
           />
         }
       >
+        <View style={styles.lottieContainer}>
+          <LottieView
+            source={require('../../../../../../animation/OTP-Verification.json')}
+            autoPlay
+            loop
+            speed={0.5}
+            style={styles.lottieAnimation}
+          />
+        </View>
+
         {otpRequests.length > 0 ? (
           otpRequests.map((otp, index) => renderOTPCard(otp, index))
         ) : (
@@ -299,51 +297,24 @@ const OTPRequests = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  lottieContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  lottieAnimation: {
+    width: 200,
+    height: 200,
+  },
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: 0.3,
-  },
-  refreshButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EEF2FF',
-  },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F3E8FF',
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 8,
@@ -351,13 +322,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: '#E9D5FF',
     gap: 10,
   },
   infoBannerText: {
     flex: 1,
     fontSize: 13,
-    color: '#4338CA',
+    color: '#5B21B6',
     lineHeight: 18,
   },
   scrollView: {
@@ -371,7 +342,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: 'hidden',
     elevation: 4,
-    shadowColor: '#6366F1',
+    shadowColor: '#6B46C1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
