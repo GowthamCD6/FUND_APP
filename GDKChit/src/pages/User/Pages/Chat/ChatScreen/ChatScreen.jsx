@@ -518,7 +518,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     try {
       await audioRecorderPlayer.stopRecorder();
       audioRecorderPlayer.removeRecordBackListener();
-    } catch (e) {}
+    } catch (e) { }
     setIsRecordingAudio(false);
     setShowRecordModal(false);
   };
