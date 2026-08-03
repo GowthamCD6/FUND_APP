@@ -44,7 +44,7 @@ const AuthLoader = () => {
           }
         });
 
-        if (role === 'Admin') {
+        if (String(role || '').toLowerCase() === 'admin') {
           navigation.navigate('AdminTabs');
         } else {
           navigation.navigate('TabRouter');

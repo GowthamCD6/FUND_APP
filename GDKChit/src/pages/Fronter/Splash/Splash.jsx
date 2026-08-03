@@ -41,7 +41,7 @@ export const SplashScreen = ({ navigation, onFinish, loop = false }) => {
 
         if (!phone || !role || !accessToken || !refreshToken) {
           targetRouteRef.current = 'Welcome';
-        } else if (role === 'Admin') {
+        } else if (String(role || '').toLowerCase() === 'admin') {
           targetRouteRef.current = 'AdminTabs';
         } else {
           targetRouteRef.current = 'TabRouter';

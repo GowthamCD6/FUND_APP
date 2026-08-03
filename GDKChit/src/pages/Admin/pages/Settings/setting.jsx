@@ -10,6 +10,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -17,6 +18,9 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BlockU from './pages/BlockUser/BlockUser';
 import UserL from './pages/UserLocation/UserL';
+import ApiService from '../../../../services/ApiService';
+import { API_URL } from '../../../../utils/env';
+import Header from '../../../../components/HeaderComponent/Header';
 
 const Settings = () => {
   const [showBlockU, setShowBlockU] = useState(false);
@@ -47,10 +51,19 @@ const Settings = () => {
 
 
 
+  const getProfileImageUrl = (img) => {
+    if (!img) return null;
+    if (img.startsWith('http') || img.startsWith('data:')) return img;
+    const cleanPath = img.startsWith('/') ? img : `/${img}`;
+    const baseUrl = (API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+    return `${baseUrl}${cleanPath}`;
+  };
+
   const [userData, setUserData] = useState({
     name: 'Admin',
-    role: 'Super Admin',
-    phone: '+91 XXXXXXXXXX',
+    role: 'Admin',
+    phone: '',
+    userImage: '',
   });
 
   useEffect(() => {
@@ -61,11 +74,25 @@ const Settings = () => {
     try {
       const storedName = await AsyncStorage.getItem('userName');
       const storedPhone = await AsyncStorage.getItem('userPhone');
-      if (storedName) {
-        setUserData(prev => ({ ...prev, name: storedName }));
-      }
-      if (storedPhone) {
-        setUserData(prev => ({ ...prev, phone: storedPhone }));
+      const storedRole = await AsyncStorage.getItem('userRole');
+
+      setUserData(prev => ({
+        ...prev,
+        name: storedName || prev.name,
+        phone: storedPhone || prev.phone,
+        role: storedRole || prev.role,
+      }));
+
+      const response = await ApiService.getProfile();
+      if (response && response.success && response.data) {
+        const u = response.data.user || {};
+        const p = response.data.profile || {};
+        setUserData({
+          name: u.username || u.name || storedName || 'Admin',
+          phone: u.phone || storedPhone || '',
+          role: u.role || storedRole || 'Admin',
+          userImage: p.userImage || '',
+        });
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -241,7 +268,7 @@ const Settings = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {showBlockU ? (
@@ -250,26 +277,28 @@ const Settings = () => {
         <UserL onClose={() => setShowUserL(false)} />
       ) : (
         <View style={{ flex: 1 }}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Settings</Text>
-          </View>
+          <Header title="Settings" onBack={() => navigation.goBack()} />
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}>
             <View style={styles.profileSection}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarInitial}>
-                  {userData.name.charAt(0).toUpperCase()}
-                </Text>
+                {userData.userImage ? (
+                  <Image
+                    source={{ uri: getProfileImageUrl(userData.userImage) }}
+                    style={styles.avatarImage}
+                  />
+                ) : (
+                  <Text style={styles.avatarInitial}>
+                    {(userData.name || 'A').charAt(0).toUpperCase()}
+                  </Text>
+                )}
               </View>
-              <Text style={styles.userName}>{userData.name.toUpperCase()}</Text>
-              <Text style={styles.userPhone}>{userData.phone}</Text>
-              <Text style={styles.userStatus}>{userData.role}</Text>
+              <Text style={styles.userName}>{(userData.name || 'ADMIN').toUpperCase()}</Text>
+              {Boolean(userData.phone) && (
+                <Text style={styles.userPhone}>{userData.phone}</Text>
+              )}
+              <Text style={styles.userStatus}>{userData.role || 'Admin'} Account</Text>
             </View>
 
             {settingSections.map((section, sectionIndex) => (
@@ -299,7 +328,7 @@ const Settings = () => {
                         <MaterialCommunityIcons
                           name="chevron-right"
                           size={24}
-                          color="#B0B0B0"
+                          color="#CCCCCC"
                         />
                       </TouchableOpacity>
                       {itemIndex < section.items.length - 1 && (
@@ -312,8 +341,15 @@ const Settings = () => {
             ))}
 
             <View style={styles.followSection}>
-              <Text style={styles.followText}>Follow us, to stay updated</Text>
+              <Text style={styles.followText}>Follow Us</Text>
               <View style={styles.socialIcons}>
+                <TouchableOpacity style={styles.socialIcon}>
+                  <MaterialCommunityIcons
+                    name="facebook"
+                    size={24}
+                    color="#333333"
+                  />
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.socialIcon}>
                   <MaterialCommunityIcons
                     name="instagram"
@@ -344,28 +380,7 @@ const Settings = () => {
           </ScrollView>
         </View>
       )}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <MaterialCommunityIcons name="home" size={28} color="#555" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <MaterialCommunityIcons name="briefcase" size={28} color="#555" />
-          <Text style={styles.navText}>Portfolio</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.centerButton}>
-          <MaterialCommunityIcons name="plus" size={32} color="#FFF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <MaterialCommunityIcons name="chat" size={28} color="#555" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <MaterialCommunityIcons name="account" size={28} color="#6B46C1" />
-          <Text style={[styles.navText, styles.navTextActive]}>Profile</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -378,21 +393,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F7F7F7',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EFEFEF',
-    marginTop: 20,
-  },
-  backButton: { marginRight: 16 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#000' },
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: { paddingBottom: 90 },
   profileSection: {
     backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   avatar: {
     width: 80,
@@ -402,17 +411,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    overflow: 'hidden',
   },
-  avatarInitial: { fontSize: 40, fontWeight: 'bold', color: '#FFFFFF' },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  avatarInitial: { fontSize: 36, fontWeight: 'bold', color: '#FFFFFF' },
   userName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#111827',
     marginBottom: 4,
+    textAlign: 'center',
     fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
   },
-  userPhone: { fontSize: 16, color: '#666', marginBottom: 4 },
-  userStatus: { fontSize: 14, color: '#888' },
+  userPhone: { fontSize: 15, color: '#6B7280', marginBottom: 4, textAlign: 'center' },
+  userStatus: {
+    fontSize: 13,
+    color: '#6B46C1',
+    fontWeight: '600',
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 4,
+    textAlign: 'center',
+  },
   settingsContainer: { paddingHorizontal: 16, marginTop: 24 },
   sectionTitle: {
     fontSize: 18,
@@ -433,14 +460,15 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#F0F0F0', marginLeft: 56 },
   followSection: {
     alignItems: 'center',
-    marginVertical: 16,
+    marginTop: 32,
+    marginBottom: 12,
     paddingHorizontal: 16,
   },
   followText: {
     fontSize: 14,
     color: '#666666',
     marginBottom: 12,
-    marginTop: -15,
+    marginTop: 0,
     fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
   },
   socialIcons: {
