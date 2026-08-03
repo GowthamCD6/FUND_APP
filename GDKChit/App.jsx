@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Alert } from "react-native";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, initialWindowMetrics, SafeAreaView } from "react-native-safe-area-context";
 import Router from "./src/components/Routes/Routes";
 import "react-native-get-random-values";
 import { AuthProvider } from "./src/utils/AuthContext";
@@ -66,7 +66,7 @@ const AppContent = () => {
   if (securityState.isLoading) {
     console.log('App.jsx: Still loading...');
     return (
-      <SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <SafeAreaView style={[styles.container]}>
           {/* You can add a loading spinner here if needed */}
         </SafeAreaView>
@@ -78,7 +78,7 @@ const AppContent = () => {
   if (securityState.isLocked) {
     console.log('App.jsx: Showing SecurityLockScreen');
     return (
-      <SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <SecurityLockScreen onAuthenticationSuccess={handleUnlock} />
       </SafeAreaProvider>
     );
@@ -86,7 +86,7 @@ const AppContent = () => {
 
   console.log('App.jsx: Showing main Router');
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <Router />
     </SafeAreaProvider>
   );

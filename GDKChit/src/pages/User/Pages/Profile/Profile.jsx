@@ -91,7 +91,7 @@ const Profile = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {/* Main Profile Content */}
       <View style={{ flex: 1 }}>
@@ -434,18 +434,20 @@ const Profile = () => {
         visible={showRateModal}
         onClose={() => setShowRateModal(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     marginTop: 0,
   },
   content: {
     flex: 1,
+    backgroundColor: '#F5F5F5',
   },
   scrollContent: {
     paddingBottom: Platform.OS === 'ios' ? 75 : 60,

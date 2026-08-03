@@ -38,7 +38,13 @@ const HomeWithSafe = (props) => {
 
 const PortfolioWithSafe = withSafe(Portfolio);
 const ChatListWithSafe = withSafe(ChatList);
-const ProfileWithSafe = withSafe(Profile);
+const ProfileWithSafe = (props) => {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <Profile {...props} />
+    </View>
+  );
+};
 
 // ---- Screen Components ----
 const MoreScreen = () => null; // Placeholder, modal will be shown instead

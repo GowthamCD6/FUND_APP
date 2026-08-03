@@ -22,7 +22,7 @@ import AdminEditProfile from "../../pages/Admin/pages/Settings/pages/AccountDeta
 import NewGroup from "../../pages/Admin/pages/Chat/NewGroup/NewGroup";
 import NewGroupDetails from "../../pages/Admin/pages/Chat/NewGroup/NewGroupDetails";
 import AdminNotification from "../../pages/Admin/pages/Notification/Notification";
-import { StatusBar, View } from "react-native";
+import { StatusBar, View, Platform } from "react-native";
 import TabRouter from "../Tab/TabRouter";
 import UserTabs from "../Tab/UTab/UserTab";
 import AdminTab from "../Tab/ATab/AdminTab";
@@ -44,7 +44,14 @@ const AdminDataExport = props => {
 
 const withSafe = (Component, bgColor = '#ffffffff') => {
     return (props) => (
-        <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }} edges={['top', 'left', 'right']}>
+        <SafeAreaView 
+            style={{ 
+                flex: 1, 
+                backgroundColor: bgColor,
+                paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
+            }} 
+            edges={Platform.OS === 'android' ? ['left', 'right'] : ['top', 'left', 'right']}
+        >
             <Component {...props} />
         </SafeAreaView>
     );

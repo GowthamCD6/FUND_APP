@@ -11,7 +11,7 @@ import { useLanguage } from '../../utils/LanguageContext';
 
 const GroupCard = ({ group, onPress, onArrowPress }) => {
   const { t, language } = useLanguage();
-  
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return '#10B981';
@@ -52,7 +52,7 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
   };
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.groupCard}
       onPress={() => onPress && onPress(group)}
       activeOpacity={1}
@@ -61,15 +61,15 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
         <View style={styles.groupNameContainer}>
           <Text style={[styles.groupName, language === 'ta' && { fontSize: 16 }]}>{group.name}</Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(group.status) }]}>
-            <MaterialCommunityIcons 
-              name={getStatusIcon(group.status)} 
-              size={12} 
-              color="#FFFFFF" 
+            <MaterialCommunityIcons
+              name={getStatusIcon(group.status)}
+              size={12}
+              color="#FFFFFF"
             />
             <Text style={[styles.statusText, language === 'ta' && { fontSize: 9 }]}>{t(group.status).toUpperCase()}</Text>
           </View>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => onArrowPress && onArrowPress(group)}
           style={styles.arrowButton}
           activeOpacity={0.6}
@@ -100,18 +100,18 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
             </Text>
           </View>
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
-                styles.progressFill, 
+                styles.progressFill,
                 { width: `${(group.completedCycles / group.totalCycles) * 100}%` }
-              ]} 
+              ]}
             />
           </View>
         </View>
 
         <View style={styles.groupCardFooter}>
           <Text style={[styles.groupDate, language === 'ta' && { fontSize: 11 }]}>
-            {group.status === 'completed' 
+            {group.status === 'completed'
               ? `${t('Completed:')} ${formatDate(group.completedDate)}`
               : `${t('Next Due:')} ${formatDate(group.nextDueDate)}`
             }

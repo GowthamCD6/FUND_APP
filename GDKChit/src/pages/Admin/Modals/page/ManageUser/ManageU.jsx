@@ -11,6 +11,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Alert,
+  StatusBar,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../../../../services/ApiService';
@@ -662,6 +663,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   inputLabel: {
     fontSize: 15,

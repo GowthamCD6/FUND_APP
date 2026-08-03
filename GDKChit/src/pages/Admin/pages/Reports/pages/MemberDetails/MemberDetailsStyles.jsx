@@ -8,7 +8,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   headerWrapper: {
-    paddingTop: 27,
+    paddingTop: 0,
     paddingBottom: -1,
   },
   monthSelector: {
@@ -257,6 +257,7 @@ const styles = StyleSheet.create({
   },
   monthList: {
     paddingHorizontal: 20,
+    paddingTop: 12,
   },
   monthItem: {
     paddingVertical: 16,
