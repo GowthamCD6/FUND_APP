@@ -23,7 +23,7 @@ const LanguageSettings = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <Header
         title="Language Settings"
@@ -127,7 +127,7 @@ const LanguageSettings = () => {
         </View>
 
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

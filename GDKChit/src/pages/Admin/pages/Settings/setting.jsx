@@ -11,6 +11,8 @@ import {
   Animated,
   Dimensions,
   Image,
+  Share,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -111,6 +113,33 @@ const Settings = () => {
     }
   };
 
+  const handleShareApp = async () => {
+    try {
+      await Share.share({
+        title: 'GDK Chit Fund App',
+        message: 'Manage your chit fund groups, auctions, and payments securely with GDK Chit Fund App!\nDownload now: https://play.google.com/store/apps/details?id=com.gdkchit',
+        url: 'https://play.google.com/store/apps/details?id=com.gdkchit',
+      });
+    } catch (error) {
+      console.log('Error sharing app:', error);
+      Alert.alert('Share App', 'Share GDK Chit Fund App with your colleagues and friends!');
+    }
+  };
+
+  const handleRateApp = async () => {
+    const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.gdkchit';
+    try {
+      const canOpen = await Linking.canOpenURL(playStoreUrl);
+      if (canOpen) {
+        await Linking.openURL(playStoreUrl);
+      } else {
+        Alert.alert('Rate App', 'Thank you for using GDK Chit Fund App!');
+      }
+    } catch (error) {
+      Alert.alert('Rate App', 'Thank you for using GDK Chit Fund App!');
+    }
+  };
+
   const settingSections = [
     {
       title: 'Account',
@@ -120,14 +149,14 @@ const Settings = () => {
           title: 'Edit Profile',
           subtitle: 'Update your personal information',
           iconColor: '#555555',
-          onPress: () => { },
+          onPress: () => navigation.navigate('AdminEditProfile'),
         },
         {
           icon: 'shield-account',
           title: 'Security',
           subtitle: 'Password and authentication',
           iconColor: '#555555',
-          onPress: () => { },
+          onPress: () => navigation.navigate('AdminSecurityPerm'),
         },
       ],
     },
@@ -139,21 +168,14 @@ const Settings = () => {
           title: 'Notifications',
           subtitle: 'Manage notification preferences',
           iconColor: '#555555',
-          onPress: () => { },
+          onPress: () => navigation.navigate('AdminNotification'),
         },
         {
           icon: 'earth',
           title: 'Language',
-          subtitle: 'English, Hindi, Tamil, Telugu, Kannada',
+          subtitle: 'English, Tamil, Hindi, Telugu',
           iconColor: '#555555',
-          onPress: () => { },
-        },
-        {
-          icon: 'currency-inr',
-          title: 'Currency',
-          subtitle: 'Set default currency (INR)',
-          iconColor: '#555555',
-          onPress: () => { },
+          onPress: () => navigation.navigate('LanguageSettings'),
         },
       ],
     },
@@ -161,25 +183,18 @@ const Settings = () => {
       title: 'Group Management',
       items: [
         {
-          icon: 'account-group',
-          title: 'Default Group Rules',
-          subtitle: 'Set contribution amounts and payment cycles',
-          iconColor: '#555555',
-          onPress: () => { },
-        },
-        {
           icon: 'cash-multiple',
           title: 'Payment Settings',
-          subtitle: 'Configure payment rules and reminders',
+          subtitle: 'Configure payment rules and OTP requests',
           iconColor: '#555555',
-          onPress: () => { },
+          onPress: () => navigation.navigate('OTPRequests'),
         },
         {
           icon: 'gavel',
           title: 'Auction Settings',
           subtitle: 'Set default auction rules and duration',
           iconColor: '#555555',
-          onPress: () => { },
+          onPress: () => navigation.navigate('AuctionSettings'),
         },
       ],
     },
@@ -191,22 +206,13 @@ const Settings = () => {
           title: 'Data Export',
           subtitle: 'Download all your group data and history',
           iconColor: '#555555',
-          onPress: () => { },
-        },
-        {
-          icon: 'lock-outline',
-          title: 'Privacy Controls',
-          subtitle: 'Control who can see your profile',
-          iconColor: '#555555',
-          onPress: () => { },
+          onPress: () => navigation.navigate('AdminDataExport'),
         },
         {
           icon: 'account-cancel',
           title: 'Block User',
           iconColor: '#EF4444',
-          onPress: () => {
-            navigation.navigate('AdminBlockUser');
-          },
+          onPress: () => navigation.navigate('AdminBlockUser'),
         },
       ],
     },
@@ -217,18 +223,14 @@ const Settings = () => {
           icon: 'map-marker-radius',
           title: 'User Location Map',
           iconColor: '#10B981',
-          onPress: () => {
-            navigation.navigate('AdminUserLocation');
-          },
+          onPress: () => navigation.navigate('AdminUserLocation'),
         },
         {
           icon: 'crosshairs-gps',
           title: 'Location Sharing',
           subtitle: 'Control location sharing preferences',
           iconColor: '#555555',
-          onPress: () => {
-            setShowMyLocation(true);
-          },
+          onPress: () => navigation.navigate('UserMyLocation'),
         },
       ],
     },
@@ -240,28 +242,28 @@ const Settings = () => {
           title: 'Help & Support',
           subtitle: 'FAQs, tutorials, contact support',
           iconColor: '#555555',
-          onPress: () => { },
+          onPress: () => navigation.navigate('UserHelpSupport'),
         },
         {
-          icon: 'information',
-          title: 'About App',
-          subtitle: 'Version and legal information',
+          icon: 'lock-outline',
+          title: 'Privacy Controls',
+          subtitle: 'Control privacy policies and profile data',
           iconColor: '#555555',
-          onPress: () => { },
+          onPress: () => navigation.navigate('UserPrivacyPolicy'),
         },
         {
           icon: 'share-variant-outline',
           title: 'Share App',
           subtitle: 'Invite friends to join',
           iconColor: '#555555',
-          onPress: () => { },
+          onPress: handleShareApp,
         },
         {
           icon: 'star-outline',
           title: 'Rate App',
           subtitle: 'Rate us on Play Store',
           iconColor: '#555555',
-          onPress: () => { },
+          onPress: handleRateApp,
         },
       ],
     },

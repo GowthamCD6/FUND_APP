@@ -10,17 +10,15 @@ import {
   Dimensions,
   BackHandler
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';;
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { width } = Dimensions.get('window');
 
 const PrivacyPolicy = ({ navigation }) => {
-  // Handle hardware back button to navigate back to profile page
   useEffect(() => {
     const backAction = () => {
-      navigation.goBack(); // Navigate back to profile page
-      return true; // Prevent default back action
+      navigation.goBack();
+      return true;
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
@@ -29,7 +27,7 @@ const PrivacyPolicy = ({ navigation }) => {
   }, [navigation]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#6B46C1" />
       {/* Modern Header with Gradient Effect */}
       <View style={styles.header}>
@@ -47,7 +45,6 @@ const PrivacyPolicy = ({ navigation }) => {
         {/* Introduction Modal Card */}
         <View style={styles.introCard}>
           <View style={styles.introHeader}>
-            <MaterialCommunityIcons name="shield-check" size={32} color="#6B46C1" />
             <Text style={styles.introTitle}>Your Privacy Matters</Text>
           </View>
           <Text style={styles.introText}>
@@ -307,7 +304,7 @@ const PrivacyPolicy = ({ navigation }) => {
           <Text style={styles.footerSubtext}>By using our services, you agree to these terms and conditions.</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

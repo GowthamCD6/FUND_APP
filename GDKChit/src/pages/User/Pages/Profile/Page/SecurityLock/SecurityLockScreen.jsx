@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Dimensions
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';;
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import BiometricService from '../../../../../../services/BiometricService';
 
@@ -23,14 +22,11 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
   useEffect(() => {
     checkBiometricAvailability();
 
-    // Update time every second for accurate time display
     const timeInterval = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
 
-    // Auto-trigger authentication when component mounts
     const timer = setTimeout(() => {
-      console.log('Auto-triggering authentication...');
       handleAuthenticate();
     }, 800);
 
@@ -41,24 +37,22 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
   }, []);
 
   const checkBiometricAvailability = async () => {
-    const info = await BiometricService.checkBiometricAvailability();
-    setBiometricInfo(info);
+    try {
+      const info = await BiometricService.isBiometricAvailable();
+      setBiometricInfo(info);
+    } catch (error) {
+      console.error('Error checking biometric availability:', error);
+    }
   };
 
   const handleAuthenticate = async () => {
     if (isAuthenticating) return;
-
     setIsAuthenticating(true);
-    try {
-      console.log('Attempting authentication...');
-      const result = await BiometricService.authenticate('Unlock GDK Chit Fund');
-      console.log('Authentication result:', result);
 
-      if (result.success) {
-        console.log('Authentication successful, calling success callback');
-        if (onAuthenticationSuccess) {
-          onAuthenticationSuccess();
-        }
+    try {
+      const result = await BiometricService.authenticate('Unlock GDK Chit Fund');
+      if (result.success && onAuthenticationSuccess) {
+        onAuthenticationSuccess();
       }
     } catch (error) {
       console.error('Authentication error:', error);
@@ -69,14 +63,10 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
 
   const handlePinAuth = async () => {
     setIsAuthenticating(true);
-
     try {
       const result = await BiometricService.authenticateWithDeviceCredentials('Unlock GDK Chit Fund with device credentials');
-
-      if (result.success) {
-        if (onAuthenticationSuccess) {
-          onAuthenticationSuccess();
-        }
+      if (result.success && onAuthenticationSuccess) {
+        onAuthenticationSuccess();
       }
     } catch (error) {
       console.error('Device authentication error:', error);
@@ -115,18 +105,15 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" translucent />
 
-      {/* Time and Date Header */}
       <View style={styles.timeContainer}>
         <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
         <Text style={styles.dateText}>{formatDate(currentTime)}</Text>
       </View>
 
-      {/* Main Content */}
       <View style={styles.content}>
-        {/* Biometric Icon */}
         <View style={styles.biometricContainer}>
           <MaterialCommunityIcons
             name={getBiometricIcon()}
@@ -136,13 +123,10 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
           />
         </View>
 
-        {/* Instruction Text */}
         <Text style={styles.instructionText}>Verify to continue</Text>
       </View>
 
-      {/* Bottom Actions */}
       <View style={styles.bottomContainer}>
-        {/* Primary Verify Button */}
         <TouchableOpacity
           style={[styles.verifyButton, isAuthenticating && styles.verifyButtonDisabled]}
           onPress={biometricInfo.available ? handleAuthenticate : handlePinAuth}
@@ -156,7 +140,6 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
           )}
         </TouchableOpacity>
 
-        {/* Alternative Authentication */}
         {biometricInfo.available && (
           <TouchableOpacity
             style={styles.alternativeButton}
@@ -168,7 +151,6 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
           </TouchableOpacity>
         )}
 
-        {/* Support Information */}
         <View style={styles.supportContainer}>
           <Text style={styles.supportText}>
             For help, contact support at{' '}
@@ -184,9 +166,8 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
         </View>
       </View>
 
-      {/* Home Indicator */}
       <View style={styles.homeIndicator} />
-    </SafeAreaView>
+    </View>
   );
 };
 

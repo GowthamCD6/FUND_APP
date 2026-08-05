@@ -79,7 +79,7 @@ const Routes = () => {
                 translucent={true}
             />
             <View style={{ flex: 1, backgroundColor: '#1A0C38' }}>
-                <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false, animation: 'fade', animationDuration: 400 }}>
+                <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
 
                     <Stack.Screen name="Splash" component={SplashScreen} />
                     <Stack.Screen name="Welcome" component={withSafe(Welcome)} />
