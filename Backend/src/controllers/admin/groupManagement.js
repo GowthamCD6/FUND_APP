@@ -1033,3 +1033,180 @@ exports.getPendingAuctionWinner = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
+
+exports.getDashboardOverview = async (req, res) => {
+    try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const currentPeriodStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+
+        const [[groupCounts]] = await db.promise().query(`
+            SELECT 
+                COUNT(CASE WHEN status IN ('Active', 'OnGoing', 'ongoing', 'active') THEN 1 END) AS active_groups,
+                COUNT(CASE WHEN status IN ('Completed', 'completed') THEN 1 END) AS completed_groups
+            FROM \`groups\`
+            WHERE deleted_at IS NULL
+        `);
+
+        const [[memberCountRow]] = await db.promise().query(`
+            SELECT COUNT(DISTINCT user_id) AS total_members
+            FROM user_grouping ug
+            JOIN \`groups\` g ON ug.group_id = g.id
+            WHERE g.deleted_at IS NULL AND g.status IN ('Active', 'OnGoing', 'ongoing', 'active')
+        `);
+
+        const [[collectionRow]] = await db.promise().query(`
+            SELECT 
+                COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) AS total_collected,
+                COALESCE(SUM(amount), 0) AS total_target,
+                COUNT(CASE WHEN status = 'paid' THEN 1 END) AS paid_count,
+                COUNT(CASE WHEN status IN ('pending', 'overdue') THEN 1 END) AS pending_count
+            FROM monthly_collections
+            WHERE collection_period = ? AND deleted_at IS NULL
+        `, [currentPeriodStr]);
+
+        const [[overdueRow]] = await db.promise().query(`
+            SELECT 
+                COALESCE(SUM(amount), 0) AS overdue_amount,
+                COUNT(DISTINCT user_id) AS overdue_count
+            FROM monthly_collections
+            WHERE (status = 'overdue' OR (status = 'pending' AND due_date < CURRENT_DATE))
+              AND deleted_at IS NULL
+        `);
+
+        const [unfilledPaymentGroups] = await db.promise().query(`
+            SELECT g.id, g.group_name
+            FROM \`groups\` g
+            LEFT JOIN group_monthly_details gmd ON g.id = gmd.group_id 
+                AND gmd.collection_period = ? AND gmd.deleted_at IS NULL
+            WHERE g.deleted_at IS NULL 
+              AND g.status IN ('Active', 'OnGoing', 'ongoing', 'active')
+              AND gmd.id IS NULL
+        `, [currentPeriodStr]);
+
+        const [pendingAuctionWinnerGroups] = await db.promise().query(`
+            SELECT g.id, g.group_name
+            FROM \`groups\` g
+            LEFT JOIN group_auction_winners gaw ON g.id = gaw.group_id 
+                AND gaw.collection_period = ? AND gaw.deleted_at IS NULL
+            WHERE g.deleted_at IS NULL 
+              AND g.status IN ('Active', 'OnGoing', 'ongoing', 'active')
+              AND gaw.id IS NULL
+        `, [currentPeriodStr]);
+
+        const [pendingMemberPayments] = await db.promise().query(`
+            SELECT 
+                mc.id,
+                mc.group_id,
+                mc.user_id,
+                mc.amount,
+                mc.status,
+                mc.due_date,
+                g.group_name,
+                u.name AS user_name,
+                u.phone AS user_phone,
+                GREATEST(0, DATEDIFF(CURRENT_DATE, mc.due_date)) AS days_overdue
+            FROM monthly_collections mc
+            JOIN \`groups\` g ON mc.group_id = g.id
+            JOIN users u ON mc.user_id = u.id
+            WHERE mc.status IN ('pending', 'overdue')
+              AND mc.deleted_at IS NULL
+              AND g.deleted_at IS NULL
+              AND g.status IN ('Active', 'OnGoing', 'ongoing', 'active')
+              AND u.deleted_at IS NULL
+            ORDER BY mc.due_date ASC
+            LIMIT 10
+        `);
+
+        const [recentAuctionWinners] = await db.promise().query(`
+            SELECT 
+                gaw.id,
+                g.group_name,
+                gaw.winner_name,
+                gaw.winner_member_phone,
+                gaw.amount_taken,
+                gaw.auction_date,
+                gaw.collection_period
+            FROM group_auction_winners gaw
+            JOIN \`groups\` g ON gaw.group_id = g.id
+            WHERE gaw.deleted_at IS NULL AND g.deleted_at IS NULL
+            ORDER BY gaw.auction_date DESC, gaw.created_at DESC
+            LIMIT 10
+        `);
+
+        const [upcomingAuctions] = await db.promise().query(`
+            SELECT id, group_name, start_date, group_amount
+            FROM \`groups\`
+            WHERE deleted_at IS NULL 
+              AND status IN ('Active', 'OnGoing', 'ongoing', 'active', 'not-started', 'not started')
+            ORDER BY start_date ASC
+            LIMIT 5
+        `);
+
+        const [recentActivities] = await db.promise().query(`
+            SELECT 
+                mc.id,
+                'payment' AS type,
+                u.name AS user_name,
+                g.group_name,
+                mc.amount,
+                mc.status,
+                mc.updated_at
+            FROM monthly_collections mc
+            JOIN \`groups\` g ON mc.group_id = g.id
+            JOIN users u ON mc.user_id = u.id
+            WHERE mc.deleted_at IS NULL
+            ORDER BY mc.updated_at DESC
+            LIMIT 6
+        `);
+
+        const [[nextMonthRow]] = await db.promise().query(`
+            SELECT COALESCE(SUM(g.group_amount / GREATEST(1, g.duration)), 0) AS projected_target
+            FROM \`groups\` g
+            WHERE g.deleted_at IS NULL AND g.status IN ('Active', 'OnGoing', 'ongoing', 'active')
+        `);
+
+        const monthlyTargetNum = Number(collectionRow?.total_target) || (Number(nextMonthRow?.projected_target) || 5000000);
+        const monthlyCollectedNum = Number(collectionRow?.total_collected) || 0;
+        const collectionRate = monthlyTargetNum > 0 ? ((monthlyCollectedNum / monthlyTargetNum) * 100).toFixed(1) : '0.0';
+
+        const paidMembersCount = Number(collectionRow?.paid_count) || 0;
+        const totalMembersCount = Number(memberCountRow?.total_members) || 0;
+        const pendingMembersCount = collectionRow?.pending_count > 0
+            ? Number(collectionRow.pending_count)
+            : Math.max(0, totalMembersCount - paidMembersCount);
+        const overdueMembersCount = Number(overdueRow?.overdue_count) || 0;
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                metrics: {
+                    activeGroups: groupCounts?.active_groups || 0,
+                    completedGroups: groupCounts?.completed_groups || 0,
+                    totalMembers: totalMembersCount,
+                    monthlyTarget: monthlyTargetNum,
+                    monthlyCollected: monthlyCollectedNum,
+                    collectionRate: collectionRate,
+                    paidMembers: paidMembersCount,
+                    pendingMembers: pendingMembersCount,
+                    overdueAmount: Number(overdueRow?.overdue_amount) || 0,
+                    overdueCount: overdueMembersCount,
+                },
+                actionRequired: {
+                    unfilledPaymentGroups: unfilledPaymentGroups || [],
+                    pendingAuctionWinnerGroups: pendingAuctionWinnerGroups || [],
+                    pendingMemberPayments: pendingMemberPayments || [],
+                },
+                auctionsHub: {
+                    recentWinners: recentAuctionWinners || [],
+                    upcomingAuctions: upcomingAuctions || [],
+                },
+                recentActivities: recentActivities || [],
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching dashboard overview:', error);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};

@@ -212,10 +212,8 @@ const ManageGroups = ({ onBack }) => {
   };
 
   const handleLongPress = group => {
-    if (group.status === 'Not Started') {
-      setLongPressedGroup(group);
-      setShowActionModal(true);
-    }
+    setLongPressedGroup(group);
+    setShowActionModal(true);
   };
 
   const handleActivateGroup = async () => {
@@ -549,18 +547,22 @@ const ManageGroups = ({ onBack }) => {
               </Text>
             </View>
 
-            <TouchableOpacity
-              style={styles.modalActionButton}
-              onPress={handleActivateGroup}>
-              <MaterialCommunityIcons
-                name="play-circle"
-                size={24}
-                color="#10B981"
-              />
-              <Text style={styles.modalActionText}>Activate Group</Text>
-            </TouchableOpacity>
+            {longPressedGroup?.status === 'Not Started' && (
+              <>
+                <TouchableOpacity
+                  style={styles.modalActionButton}
+                  onPress={handleActivateGroup}>
+                  <MaterialCommunityIcons
+                    name="play-circle"
+                    size={24}
+                    color="#10B981"
+                  />
+                  <Text style={styles.modalActionText}>Activate Group</Text>
+                </TouchableOpacity>
 
-            <View style={styles.modalDivider} />
+                <View style={styles.modalDivider} />
+              </>
+            )}
 
             <TouchableOpacity
               style={styles.modalActionButton}
