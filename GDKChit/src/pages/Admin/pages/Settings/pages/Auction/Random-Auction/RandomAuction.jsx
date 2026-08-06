@@ -111,15 +111,15 @@ const RandomAuction = ({
     }
 
     const finalValue = Math.floor(Math.random() * maxParticipants) + 1;
-    const winnerIndex = Math.floor(Math.random() * participants.length);
-    const winner = participants[winnerIndex];
+    const winner = participants[finalValue - 1]; // Dice value maps directly to participant number
 
     if (selectedGroup?.id) {
       AuctionWebSocketService.rollDice(
         selectedGroup.id,
         30000, 
         finalValue,
-        winner
+        winner,
+        parseFloat(poolAmount)
       );
     }
     
@@ -239,28 +239,40 @@ const RandomAuction = ({
     return transforms;
   };
 
-  const renderParticipantsGrid = () => (
+  const renderParticipantsTable = () => (
     <View style={styles.participantsCard}>
       <Text style={styles.cardTitle}>Participants</Text>
-      <View style={styles.participantsGrid}>
-        {participants.map((participant, index) => (
-          <View key={participant.id} style={styles.participantCard}>
-            <View style={styles.participantAvatar}>
-              <Text style={styles.avatarText}>{participant.avatar}</Text>
+      <View style={styles.tableContainer}>
+        <View style={styles.tableHeader}>
+          <Text style={[styles.tableHeaderText, { flex: 0.2 }]}>No.</Text>
+          <Text style={[styles.tableHeaderText, { flex: 0.5 }]}>Participant</Text>
+          <Text style={[styles.tableHeaderText, { flex: 0.3, textAlign: 'right' }]}>Status</Text>
+        </View>
+        {participants.map((participant, index) => {
+          const isJoined = joinedParticipants.has(participant.id.toString());
+          return (
+            <View key={participant.id} style={styles.tableRow}>
+              <View style={{ flex: 0.2, justifyContent: 'center' }}>
+                <View style={styles.numberBadge}>
+                  <Text style={styles.numberBadgeText}>{index + 1}</Text>
+                </View>
+              </View>
+              <View style={styles.tableCellUser}>
+                <View style={styles.smallAvatar}>
+                  <Text style={styles.smallAvatarText}>{participant.avatar}</Text>
+                </View>
+                <Text style={styles.tableUserName} numberOfLines={1}>{participant.name}</Text>
+              </View>
+              <View style={{ flex: 0.3, alignItems: 'flex-end', justifyContent: 'center' }}>
+                <View style={[styles.statusBadgeInline, isJoined ? {backgroundColor: '#D1FAE5'} : {backgroundColor: '#FEF3C7'}]}>
+                  <Text style={[styles.statusBadgeTextInline, isJoined ? {color: '#065F46'} : {color: '#92400E'}]}>
+                    {isJoined ? 'Joined' : 'Pending'}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.participantName} numberOfLines={1}>
-              {participant.name.split(' ')[0]}
-            </Text>
-            <View style={[styles.statusBadge, joinedParticipants.has(participant.id.toString()) ? {backgroundColor: '#D1FAE5'} : {backgroundColor: '#FEF3C7'}]}>
-              <Text style={[styles.statusBadgeText, joinedParticipants.has(participant.id.toString()) ? {color: '#065F46'} : {color: '#92400E'}]}>
-                {joinedParticipants.has(participant.id.toString()) ? 'Joined' : 'Pending'}
-              </Text>
-            </View>
-            <View style={styles.participantNumber}>
-              <Text style={styles.participantNumberText}>{index + 1}</Text>
-            </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );
@@ -350,7 +362,7 @@ const RandomAuction = ({
           </TouchableOpacity>
         )}
       </View>
-      {renderParticipantsGrid()}
+      {renderParticipantsTable()}
     </View>
   );
 };
@@ -551,67 +563,77 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 16,
   },
-  participantsGrid: {
+  tableContainer: {
+    marginTop: 4,
+  },
+  tableHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    marginBottom: 4,
   },
-  participantCard: {
-    width: (width - 80) / 3,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 12,
+  tableHeaderText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  tableRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    position: 'relative',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 6,
-  },
-  statusBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  participantAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#6B46C1',
+  numberBadge: {
+    backgroundColor: '#F3F4F6',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  avatarText: {
-    fontSize: 16,
+  numberBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  tableCellUser: {
+    flex: 0.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  smallAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#6B46C1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  smallAvatarText: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  participantName: {
-    fontSize: 13,
+  tableUserName: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
-    textAlign: 'center',
+    color: '#111827',
+    flexShrink: 1,
   },
-  participantNumber: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    width: 24,
-    height: 24,
+  statusBadgeInline: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#FFD700',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
   },
-  participantNumberText: {
+  statusBadgeTextInline: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#1F2937',
   },
 });
 

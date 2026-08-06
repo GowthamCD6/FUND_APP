@@ -25,6 +25,8 @@ router.post('/groups/saveMonthlyDetails', authenticateToken, groupManagement.sav
 router.post('/groups/saveAuctionWinner', authenticateToken, groupManagement.saveAuctionWinner);
 router.post('/groups/notifyAuctionMembers', authenticateToken, groupManagement.notifyAuctionMembers);
 router.get('/groups/getMonthlySnapshot', authenticateToken, groupManagement.getGroupMonthSnapshot);
+router.get('/groups/getCompletedAuctions', authenticateToken, groupManagement.getCompletedAuctions);
+router.get('/groups/getPendingAuctionWinner', authenticateToken, groupManagement.getPendingAuctionWinner);
 router.get('/notifications', authenticateToken, groupManagement.getAdminNotifications);
 
 router.post('/users/addUser', authenticateToken, userManagement.addUser);

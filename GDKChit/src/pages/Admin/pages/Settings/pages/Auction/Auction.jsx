@@ -147,38 +147,36 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
     }
   };
 
-  // Save auction winner to backend
+  // Send auction winner to GroupInfo via event
   const saveAuctionWinnerToBackend = async (winner) => {
     try {
       setSavingWinner(true);
+      
       const payload = {
         groupId: selectedGroup.id,
-        month: new Date().getMonth(),
-        year: new Date().getFullYear(),
         chitWinnerName: winner.name,
         chitWinnerMemberId: winner.phone || '',
         amountTaken: (winner.bid !== undefined && winner.bid > 0)
           ? winner.bid
           : (auctionResult?.amount !== undefined ? auctionResult.amount : selectedGroup.groupAmount),
-        datePicked: new Date().toISOString(),
-        winnerUserId: winner.id,
+        datePicked: new Date().toISOString().split('T')[0],
       };
-      const response = await ApiService.makeRequest('/admin/groups/saveAuctionWinner', { 
-        method: 'POST', 
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
       
-      if (data && data.success) {
-        Alert.alert('Success', `${winner.name} has been declared as the winner!`);
-        setShowResultModal(false);
-        resetAuction();
-      } else {
-        Alert.alert('Error', data?.message || 'Failed to save auction winner');
-      }
+      // Emit event so GroupInfo can catch it and populate the modal
+      import('react-native').then(({ DeviceEventEmitter }) => {
+        DeviceEventEmitter.emit('auctionWinnerSelected', payload);
+      });
+
+      Alert.alert('Success', `${winner.name} has been selected!`);
+      setShowResultModal(false);
+      resetAuction();
+      
+      // Go back to the ManageGroups screen where GroupInfo is
+      navigation.goBack();
+      
     } catch (error) {
-      console.error('Error saving auction winner:', error);
-      Alert.alert('Error', 'Failed to save auction winner');
+      console.error('Error sending auction winner:', error);
+      Alert.alert('Error', 'Failed to process auction winner');
     } finally {
       setSavingWinner(false);
     }

@@ -9,9 +9,12 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import ApiService from '../../../../../../../services/ApiService';
 
-const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = [] }) => {
+const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = [], groupId }) => {
+  const navigation = useNavigation();
   const [formData, setFormData] = useState({
     chitWinnerName: '',
     chitWinnerMemberId: '',
@@ -63,8 +66,29 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
         amountTaken: '',
         datePicked: '',
       });
+      
+      if (visible && groupId) {
+        fetchPendingAuction();
+      }
     }
-  }, [initialWinnerData, visible]);
+  }, [initialWinnerData, visible, groupId]);
+
+  const fetchPendingAuction = async () => {
+    try {
+      const response = await ApiService.makeRequest(`/admin/groups/getPendingAuctionWinner?groupId=${groupId}`, { method: 'GET' });
+      const result = await response.json();
+      if (result && result.success && result.data) {
+        setFormData({
+          chitWinnerName: result.data.chitWinnerName || '',
+          chitWinnerMemberId: result.data.chitWinnerMemberId || '',
+          amountTaken: result.data.amountTaken?.toString() || '',
+          datePicked: result.data.datePicked?.split('T')[0] || '',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching pending auction:', error);
+    }
+  };
 
   useEffect(() => {
     if (!visible || !formData.chitWinnerName.trim() || groupMembers.length === 0) {
@@ -284,6 +308,17 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
               <Text style={styles.saveButtonText}>Save</Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity 
+            style={styles.liveAuctionButton} 
+            onPress={() => {
+              onClose();
+              navigation.navigate('AuctionSettings');
+            }}
+          >
+            <MaterialCommunityIcons name="gavel" size={20} color="#FFFFFF" />
+            <Text style={styles.liveAuctionButtonText}>Go to Live Auction</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -508,6 +543,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  liveAuctionButton: {
+    backgroundColor: '#10B981', // Emerald green color
+    paddingVertical: 14,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    marginTop: -5,
+  },
+  liveAuctionButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',

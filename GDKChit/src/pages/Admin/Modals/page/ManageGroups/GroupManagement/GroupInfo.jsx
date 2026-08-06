@@ -9,6 +9,8 @@ import {
   ScrollView,
   Platform,
   StatusBar,
+  ActivityIndicator,
+  DeviceEventEmitter,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import pageStyles from '../ManageGsty';
@@ -58,6 +60,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const [showMemberRegistration, setShowMemberRegistration] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false); // State for PaymentD modal
   const [showAuctionModal, setShowAuctionModal] = useState(false); // State for AuctionW modal
+  const groupIdNum = Number(formData.groupId || group.id);
 
   const getPeriodFromOffset = useCallback((offset) => {
     const date = new Date();
@@ -157,6 +160,27 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     loadMonthSnapshot();
   }, [loadMonthSnapshot]);
 
+  // Listener for returning from Live Auction
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('auctionWinnerSelected', (data) => {
+      // If the event is for this group
+      if (data.groupId === (formData.groupId || group.id)) {
+        setFormData(prev => ({
+          ...prev,
+          chitWinnerName: data.chitWinnerName,
+          chitWinnerMemberId: data.chitWinnerMemberId,
+          amountTaken: data.amountTaken?.toString() || '',
+          datePicked: data.datePicked
+        }));
+        setShowAuctionModal(true); // Auto-open the modal so the admin can verify and save
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [formData.groupId, group.id]);
+
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -171,7 +195,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const handleEditSave = async (updatedData) => {
     try {
       const payload = {
-        groupId: formData.groupId || group.id,
+        groupId: groupIdNum,
         groupName: updatedData.groupName,
         totalAmount: updatedData.totalAmount,
         numberOfUsers: updatedData.numberOfUsers,
@@ -712,7 +736,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
       </ScrollView>
 
-      {/* Auction winner date picker moved into AuctionW modal */}
+
 
       {/* Start Date Picker Modal */}
       {showCreatedDatePicker && (
@@ -855,6 +879,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         visible={showAuctionModal}
         onClose={() => setShowAuctionModal(false)}
         groupMembers={memberMappings}
+        groupId={formData.groupId || group.id}
         initialWinnerData={{
           chitWinnerName: formData.chitWinnerName,
           chitWinnerMemberId: formData.chitWinnerMemberId,

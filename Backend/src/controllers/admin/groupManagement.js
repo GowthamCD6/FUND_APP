@@ -6,16 +6,28 @@ const { logAuditEvent } = require('../../utils/auditLogger');
 exports.getAdminNotifications = async (req, res) => {
     try {
         const [rows] = await db.promise().query(
-            "SELECT group_name, start_date, duration FROM `groups` WHERE (status = 'OnGoing' OR status = 'not-started' OR status = 'not started') AND deleted_at IS NULL"
+            "SELECT id, group_name, start_date, duration FROM `groups` WHERE (status = 'OnGoing' OR status = 'not-started' OR status = 'not started') AND deleted_at IS NULL"
         );
 
         const notifications = [];
+        const now = new Date();
+        now.setHours(0,0,0,0);
+
+        // Current collection period for payment check
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const currentCollectionPeriod = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+
+        // Fetch all group IDs that already have payment details for this month
+        const [existingPayments] = await db.promise().query(
+            'SELECT group_id FROM group_monthly_details WHERE collection_period = ? AND deleted_at IS NULL',
+            [currentCollectionPeriod]
+        );
+        const groupsWithPayment = new Set(existingPayments.map(p => p.group_id));
         
         rows.forEach(group => {
             if (group.start_date) {
                 const st = new Date(group.start_date);
-                const now = new Date();
-                now.setHours(0,0,0,0);
                 
                 let elapsedMonths = (now.getFullYear() - st.getFullYear()) * 12 + (now.getMonth() - st.getMonth());
                 if (now.getDate() >= st.getDate()) {
@@ -70,6 +82,18 @@ exports.getAdminNotifications = async (req, res) => {
                                 date: new Date().toISOString()
                             });
                         }
+                    }
+
+                    // Payment details missing warning for ongoing groups
+                    // Only warn if the group has already started (st <= now)
+                    if (!groupsWithPayment.has(group.id)) {
+                        notifications.push({
+                            id: `admin-notif-${group.group_name}-payment-missing`,
+                            type: 'warning',
+                            title: 'Payment Details Missing',
+                            message: `Group "${group.group_name}" does not have payment details set for ${new Date(currentYear, currentMonth).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}. Please fill in the monthly amount, discount, and commission.`,
+                            date: new Date().toISOString()
+                        });
                     }
                 }
             }
@@ -880,5 +904,132 @@ exports.notifyAuctionMembers = async (req, res) => {
     } catch (error) {
         console.error('Error notifying auction members:', error);
         return res.status(500).json({ success: false, message: 'Failed to send notifications' });
+    }
+};
+
+exports.getCompletedAuctions = async (req, res) => {
+    const groupId = req.query.groupId;
+    const groupIdNum = Number(groupId);
+
+    if (Number.isNaN(groupIdNum)) {
+        return res.status(400).json({ success: false, message: 'Invalid groupId' });
+    }
+
+    try {
+        const sqlAuctions = `
+            SELECT id AS auction_id, auction_type, initial_amount, created_at, updated_at
+            FROM group_auctions
+            WHERE group_id = ? AND status = 'ended'
+            ORDER BY updated_at DESC
+        `;
+        const [auctions] = await db.promise().query(sqlAuctions, [groupIdNum]);
+
+        const sqlWinners = `
+            SELECT winner_user_id, winner_name, winner_member_phone, amount_taken, auction_date, collection_period, updated_at
+            FROM group_auction_winners
+            WHERE group_id = ? AND deleted_at IS NULL
+            ORDER BY updated_at DESC
+        `;
+        const [winners] = await db.promise().query(sqlWinners, [groupIdNum]);
+
+        const completedAuctions = winners.map(winner => {
+            const wDate = new Date(winner.updated_at).getTime();
+            let matchedAuction = auctions.find(a => {
+                const aDate = new Date(a.updated_at).getTime();
+                return Math.abs(aDate - wDate) < 1000 * 60 * 60 * 24;
+            }) || auctions[0];
+
+            return {
+                id: winner.collection_period + '-' + winner.winner_name,
+                winner_name: winner.winner_name,
+                winner_member_phone: winner.winner_member_phone,
+                amount_taken: winner.amount_taken,
+                auction_date: winner.auction_date,
+                initial_amount: matchedAuction ? matchedAuction.initial_amount : null,
+                auction_type: matchedAuction ? matchedAuction.auction_type : null,
+                collection_period: winner.collection_period
+            };
+        });
+
+        res.json({ success: true, data: completedAuctions });
+    } catch (error) {
+        console.error('Error fetching completed auctions:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+exports.getPendingAuctionWinner = async (req, res) => {
+    const groupIdNum = Number(req.query.groupId);
+
+    if (Number.isNaN(groupIdNum)) {
+        return res.status(400).json({ success: false, message: 'Invalid groupId' });
+    }
+
+    try {
+        const sqlAuction = `
+            SELECT id, auction_type, initial_amount, updated_at
+            FROM group_auctions
+            WHERE group_id = ? AND status = 'ended'
+            ORDER BY updated_at DESC
+            LIMIT 1
+        `;
+        const [auctions] = await db.promise().query(sqlAuction, [groupIdNum]);
+
+        if (auctions.length === 0) {
+            return res.json({ success: true, data: null });
+        }
+
+        const auction = auctions[0];
+
+        // check if this auction is already saved in group_auction_winners for the same date approx
+        const [winners] = await db.promise().query(`
+            SELECT id, auction_date FROM group_auction_winners
+            WHERE group_id = ?
+        `, [groupIdNum]);
+
+        const isAlreadySaved = winners.some(w => {
+            const diffTime = Math.abs(new Date(w.auction_date).getTime() - new Date(auction.updated_at).getTime());
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            return diffDays <= 2;
+        });
+
+        if (isAlreadySaved) {
+            return res.json({ success: true, data: null });
+        }
+
+        let winnerData = null;
+
+        if (auction.auction_type === 'betting') {
+            const [bids] = await db.promise().query(`
+                SELECT u.name, u.phone, gab.bid_amount
+                FROM group_auction_bids gab
+                JOIN users u ON gab.user_id = u.id
+                WHERE gab.auction_id = ?
+                ORDER BY gab.bid_amount ASC
+                LIMIT 1
+            `, [auction.id]);
+
+            if (bids.length > 0) {
+                winnerData = {
+                    chitWinnerName: bids[0].name,
+                    chitWinnerMemberId: bids[0].phone,
+                    amountTaken: bids[0].bid_amount,
+                    datePicked: auction.updated_at
+                };
+            }
+        } else {
+            // For random, assuming winner can be derived or it returns blank for now
+            winnerData = {
+                chitWinnerName: '',
+                chitWinnerMemberId: '',
+                amountTaken: auction.initial_amount,
+                datePicked: auction.updated_at
+            };
+        }
+
+        return res.json({ success: true, data: winnerData });
+    } catch (error) {
+        console.error('Error fetching pending auction winner:', error);
+        return res.status(500).json({ success: false, message: 'Server Error' });
     }
 };

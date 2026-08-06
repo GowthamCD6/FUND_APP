@@ -170,12 +170,13 @@ class AuctionWebSocketService {
   }
 
   // Roll dice
-  rollDice(groupId, duration, finalValue, winner) {
+  rollDice(groupId, duration, finalValue, winner, initialAmount = 0) {
     this.send('roll_dice', {
       groupId,
       duration,
       finalValue,
       winner,
+      initialAmount,
     });
   }
 

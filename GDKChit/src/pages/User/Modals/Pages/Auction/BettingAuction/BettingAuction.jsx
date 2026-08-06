@@ -21,6 +21,7 @@ const BettingAuction = ({
   selectedMembers,
   onAuctionComplete,
   onAuctionStatusChange,
+  onAmountChange,
 }) => {
   // All useState hooks MUST come first, before any other code
   const [bidAmount, setBidAmount] = useState('');
@@ -107,6 +108,9 @@ const BettingAuction = ({
   const handleAuctionStartedEvent = (data) => {
     setAuctionStatus('active');
     if (onAuctionStatusChange) onAuctionStatusChange(true);
+    if (data.initialAmount && onAmountChange) {
+      onAmountChange(data.initialAmount);
+    }
     setTimeRemaining(data.remainingTime !== undefined ? data.remainingTime : (data.duration || 300));
     
     if (Array.isArray(data.bids)) {

@@ -36,6 +36,7 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
   const [auctionResult, setAuctionResult] = useState(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [isAuctionActive, setIsAuctionActive] = useState(false);
+  const [liveAmount, setLiveAmount] = useState(null);
 
   useEffect(() => {
     fetchUserGroups();
@@ -90,6 +91,7 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
 
   const handleGroupSelect = async (group) => {
     setSelectedGroup(group);
+    setLiveAmount(group.groupAmount || null);
     try {
       const response = await ApiService.makeRequest(`/user/groups/getMembers?groupId=${group.id}`, { method: 'GET' });
       const data = await response.json();
@@ -300,10 +302,10 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
       onBack={handleBackFromAuction}
       showBackButton={true}
       rightComponent={
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <MaterialCommunityIcons name="cash" size={20} color="#6B46C1" />
-          <Text style={{ fontSize: 14, fontWeight: '700', color: '#6B46C1' }}>
-            ₹{selectedGroup?.groupAmount?.toLocaleString()}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <MaterialCommunityIcons name="cash" size={24} color="#6B46C1" />
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#6B46C1' }}>
+            ₹{(liveAmount !== null && liveAmount !== undefined ? liveAmount : selectedGroup?.groupAmount)?.toLocaleString('en-IN')}
           </Text>
         </View>
       }
@@ -340,6 +342,7 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
             selectedMembers={participants}
             onAuctionComplete={handleAuctionComplete}
             onAuctionStatusChange={setIsAuctionActive}
+            onAmountChange={(amount) => setLiveAmount(amount)}
           />
         ) : (
           <RandomAuction
@@ -347,6 +350,7 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
             selectedGroup={selectedGroup}
             onAuctionComplete={handleAuctionComplete}
             onAuctionStatusChange={setIsAuctionActive}
+            onAmountChange={(amount) => setLiveAmount(amount)}
           />
         )}
       </View>

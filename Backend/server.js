@@ -498,12 +498,13 @@ async function handleAuctionMessage(type, data, clientId, userType) {
     
     case 'roll_dice':
       if (userType === 'admin') {
-        const { groupId, duration, finalValue, winner } = data;
+        const { groupId, duration, finalValue, winner, initialAmount } = data;
+        const rollInitialAmount = Number(initialAmount) || 0;
         try {
-          // Update state in database
+          // Update state in database — store initial_amount too
           db.promise().query(
-            "UPDATE group_auctions SET status = 'active', duration = ? WHERE group_id = ? AND status = 'setup'",
-            [Math.floor(duration / 1000), groupId]
+            "UPDATE group_auctions SET status = 'active', initial_amount = ?, duration = ? WHERE group_id = ? AND status = 'setup'",
+            [rollInitialAmount, Math.floor(duration / 1000), groupId]
           );
         } catch (err) {
           console.error('Error updating auction status to active (roll_dice) in DB:', err);
@@ -517,11 +518,29 @@ async function handleAuctionMessage(type, data, clientId, userType) {
                 groupId,
                 duration,
                 finalValue,
-                winner
+                winner,
+                initialAmount: rollInitialAmount,
               }
             }));
           }
         });
+
+        // Auto-save the random auction winner to the database after dice roll completes
+        if (winner) {
+          // Mark auction as ended
+          db.promise().query(
+            "UPDATE group_auctions SET status = 'ended' WHERE group_id = ? AND status IN ('setup', 'active')",
+            [groupId]
+          ).catch(err => console.error('Error ending random auction in DB:', err));
+
+          // Save winner to group_auction_winners — use initialAmount as the amount taken
+          saveAuctionWinnerToDb(groupId, {
+            userId: winner.id || winner.userId,
+            userName: winner.name || winner.userName,
+            amount: rollInitialAmount,
+          });
+          console.log(`🎲 Random auction winner auto-saved: ${winner.name || winner.userName}, Amount: ₹${rollInitialAmount}`);
+        }
       }
       break;
     
