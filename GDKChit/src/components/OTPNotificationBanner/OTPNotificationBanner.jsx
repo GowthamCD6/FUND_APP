@@ -8,6 +8,7 @@ import {
   Easing,
   Platform,
   StatusBar,
+  Vibration,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../services/ApiService';
@@ -17,46 +18,65 @@ const OTPNotificationBanner = () => {
   const [activeOtp, setActiveOtp] = useState(null);
   const [visible, setVisible] = useState(false);
   const [dismissedIds, setDismissedIds] = useState(new Set());
+  const notifiedOtpIds = useRef(new Set());
 
-  const slideAnim = useRef(new Animated.Value(-150)).current;
+  const slideAnim = useRef(new Animated.Value(-180)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0.35)).current;
 
-  // Pulse animation for the bell/key icon
+  // Pulse & glow animation loop for the security shield badge
   useEffect(() => {
-    let pulseLoop;
+    let animationLoop;
     if (visible) {
-      pulseLoop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.15,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
+      animationLoop = Animated.loop(
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(pulseAnim, {
+              toValue: 1.1,
+              duration: 850,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseAnim, {
+              toValue: 1,
+              duration: 850,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(glowAnim, {
+              toValue: 0.85,
+              duration: 850,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(glowAnim, {
+              toValue: 0.35,
+              duration: 850,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]),
         ])
       );
-      pulseLoop.start();
+      animationLoop.start();
     } else {
       pulseAnim.setValue(1);
+      glowAnim.setValue(0.35);
     }
     return () => {
-      if (pulseLoop) pulseLoop.stop();
+      if (animationLoop) animationLoop.stop();
     };
-  }, [visible, pulseAnim]);
+  }, [visible, pulseAnim, glowAnim]);
+
+  const targetTop = Platform.OS === 'android' ? (StatusBar.currentHeight || 28) + 8 : 54;
 
   const checkPendingOtp = useCallback(async () => {
     try {
-      const token = ApiService.getAuthToken ? await ApiService.getAuthToken() : null;
-      // Skip check if user is not logged in
       const res = await ApiService.getOTPRequests().catch(() => null);
       if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
-        // Find the latest active (pending or viewed) OTP request that hasn't been dismissed by user in this session
+        // Find the latest active (pending or viewed) OTP request that hasn't been dismissed in this session
         const candidate = res.data.find(
           (otp) =>
             (otp.status === 'pending' || otp.status === 'viewed') &&
@@ -65,12 +85,23 @@ const OTPNotificationBanner = () => {
 
         if (candidate) {
           setActiveOtp(candidate);
+          
+          // Trigger device vibration notification if this is a newly detected OTP
+          if (!notifiedOtpIds.current.has(candidate.id)) {
+            notifiedOtpIds.current.add(candidate.id);
+            try {
+              Vibration.vibrate([0, 180, 100, 180]);
+            } catch (err) {
+              // Ignore vibration error if unsupported
+            }
+          }
+
           if (!visible) {
             setVisible(true);
             Animated.spring(slideAnim, {
-              toValue: Platform.OS === 'android' ? (StatusBar.currentHeight || 30) + 10 : 50,
-              tension: 60,
-              friction: 9,
+              toValue: targetTop,
+              tension: 55,
+              friction: 8,
               useNativeDriver: true,
             }).start();
           }
@@ -83,20 +114,20 @@ const OTPNotificationBanner = () => {
         hideBanner();
       }
     } catch (error) {
-      // Silent error handling for background polling
+      // Silent catch for background polling
     }
-  }, [visible, dismissedIds, slideAnim]);
+  }, [visible, dismissedIds, slideAnim, targetTop]);
 
   useEffect(() => {
     checkPendingOtp();
-    const interval = setInterval(checkPendingOtp, 6000); // Check every 6 seconds
+    const interval = setInterval(checkPendingOtp, 5000); // Poll every 5 seconds
     return () => clearInterval(interval);
   }, [checkPendingOtp]);
 
   const hideBanner = () => {
     Animated.timing(slideAnim, {
-      toValue: -150,
-      duration: 300,
+      toValue: -180,
+      duration: 250,
       easing: Easing.in(Easing.ease),
       useNativeDriver: true,
     }).start(() => {
@@ -115,6 +146,7 @@ const OTPNotificationBanner = () => {
   const handleBannerPress = () => {
     if (activeOtp?.id) {
       setDismissedIds((prev) => new Set(prev).add(activeOtp.id));
+      ApiService.markOTPViewed(activeOtp.id).catch(() => {});
     }
     hideBanner();
     navigate('OTPRequests');
@@ -132,46 +164,58 @@ const OTPNotificationBanner = () => {
       ]}
     >
       <TouchableOpacity
-        style={styles.bannerTouchArea}
-        activeOpacity={0.9}
+        style={styles.cardContainer}
+        activeOpacity={0.94}
         onPress={handleBannerPress}
       >
-        <View style={styles.bannerContent}>
-          {/* Left Icon with Pulse */}
-          <Animated.View
-            style={[
-              styles.iconWrapper,
-              { transform: [{ scale: pulseAnim }] },
-            ]}
-          >
-            <MaterialCommunityIcons name="shield-key-outline" size={24} color="#F59E0B" />
-          </Animated.View>
+        {/* Top Right Close Button */}
+        <TouchableOpacity
+          style={styles.closeButtonTopRight}
+          onPress={handleDismiss}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <MaterialCommunityIcons name="close" size={14} color="#FFFFFF" />
+        </TouchableOpacity>
 
-          {/* Center Text */}
-          <View style={styles.textContainer}>
-            <View style={styles.headerRow}>
-              <Text style={styles.titleText}>OTP Verification Requested</Text>
-              <View style={styles.badgePill}>
-                <Text style={styles.badgeText}>ACTION REQUIRED</Text>
-              </View>
-            </View>
-            <Text style={styles.messageText} numberOfLines={2}>
-              Admin requested OTP for <Text style={styles.groupNameText}>{activeOtp.groupName || 'Chit Group'}</Text>. Tap to share code.
+        <View style={styles.cardInnerContent}>
+          {/* Animated Security Icon Badge */}
+          <View style={styles.iconContainer}>
+            <Animated.View
+              style={[
+                styles.iconGlowRing,
+                { opacity: glowAnim, transform: [{ scale: pulseAnim }] },
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.iconCircle,
+                { transform: [{ scale: pulseAnim }] },
+              ]}
+            >
+              <MaterialCommunityIcons name="shield-lock" size={24} color="#FFFFFF" />
+            </Animated.View>
+          </View>
+
+          {/* Main Content Area */}
+          <View style={styles.textDetailsArea}>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              OTP Authorization
+            </Text>
+
+            <Text style={styles.messageSubtext} numberOfLines={2}>
+              Admin requested OTP for{' '}
+              <Text style={styles.groupHighlight}>
+                {activeOtp.groupName || 'Chit Group'}
+              </Text>
+              . Tap to review code.
             </Text>
           </View>
 
-          {/* Action Arrow & Dismiss Button */}
-          <View style={styles.actionContainer}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={handleDismiss}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialCommunityIcons name="close" size={18} color="#A5B4FC" />
-            </TouchableOpacity>
-            <View style={styles.viewCodeButton}>
-              <Text style={styles.viewCodeText}>View</Text>
-              <MaterialCommunityIcons name="chevron-right" size={16} color="#FFFFFF" />
+          {/* Right Action Section */}
+          <View style={styles.rightActionSection}>
+            <View style={styles.shareCodePill}>
+              <Text style={styles.shareCodeText}>Share Code</Text>
+              <MaterialCommunityIcons name="arrow-right" size={13} color="#6B46C1" />
             </View>
           </View>
         </View>
@@ -184,98 +228,110 @@ const styles = StyleSheet.create({
   bannerContainer: {
     position: 'absolute',
     top: 0,
-    left: 12,
-    right: 12,
+    left: 10,
+    right: 10,
     zIndex: 99999,
-    elevation: 20,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
+    elevation: 16,
+    shadowColor: '#6B46C1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
   },
-  bannerTouchArea: {
-    backgroundColor: '#1E1B4B',
-    borderRadius: 16,
+  cardContainer: {
+    backgroundColor: '#6B46C1',
+    borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#6366F1',
+    borderColor: '#8B5CF6',
     overflow: 'hidden',
+    position: 'relative',
   },
-  bannerContent: {
+  closeButtonTopRight: {
+    position: 'absolute',
+    top: 11,
+    right: 11,
+    zIndex: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardInnerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
   },
-  iconWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(79, 70, 229, 0.35)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.5)',
+  iconContainer: {
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  textContainer: {
+  iconGlowRing: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  iconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  textDetailsArea: {
     flex: 1,
     justifyContent: 'center',
-    marginRight: 8,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  titleText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
     marginRight: 6,
+    paddingRight: 22,
   },
-  badgePill: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  messageText: {
-    fontSize: 12,
-    color: '#C7D2FE',
-    lineHeight: 16,
-  },
-  groupNameText: {
+  headerTitle: {
+    fontSize: 14.5,
     fontWeight: '700',
-    color: '#F59E0B',
+    color: '#FFFFFF',
+    marginBottom: 3,
+    letterSpacing: -0.2,
   },
-  actionContainer: {
+  messageSubtext: {
+    fontSize: 12.5,
+    color: '#E9D5FF',
+    lineHeight: 17.5,
+  },
+  groupHighlight: {
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  rightActionSection: {
+    justifyContent: 'flex-end',
     alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    height: 42,
+    alignSelf: 'flex-end',
   },
-  closeButton: {
-    padding: 2,
-  },
-  viewCodeButton: {
+  shareCodePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4F46E5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 4,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
-  viewCodeText: {
-    fontSize: 11,
+  shareCodeText: {
+    fontSize: 12,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginRight: 1,
+    color: '#6B46C1',
+    marginRight: 4,
   },
 });
 

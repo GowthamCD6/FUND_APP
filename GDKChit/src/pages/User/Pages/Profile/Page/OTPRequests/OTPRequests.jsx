@@ -11,9 +11,11 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Vibration,
+  Share,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Clipboard from '@react-native-clipboard/clipboard';
 import LottieView from 'lottie-react-native';
 import ApiService from '../../../../../../services/ApiService';
 import Header from '../../../../../../components/HeaderComponent/Header';
@@ -24,8 +26,11 @@ const OTPRequests = ({ navigation }) => {
   const [otpRequests, setOtpRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const toastAnim = useRef(new Animated.Value(0)).current;
 
   // Entrance animation
   useEffect(() => {
@@ -43,6 +48,23 @@ const OTPRequests = ({ navigation }) => {
     ]).start();
   }, [fadeAnim, slideAnim]);
 
+  // Hide parent bottom tab bar while viewing OTPRequests page
+  useEffect(() => {
+    const parentNav = navigation.getParent();
+    if (parentNav) {
+      parentNav.setOptions({
+        tabBarStyle: { display: 'none' },
+      });
+    }
+    return () => {
+      if (parentNav) {
+        parentNav.setOptions({
+          tabBarStyle: undefined,
+        });
+      }
+    };
+  }, [navigation]);
+
   // Hardware back button
   useEffect(() => {
     const backAction = () => {
@@ -52,6 +74,23 @@ const OTPRequests = ({ navigation }) => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
     return () => backHandler.remove();
   }, [navigation]);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    Animated.sequence([
+      Animated.timing(toastAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.delay(2000),
+      Animated.timing(toastAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const fetchOTPRequests = useCallback(async () => {
     try {
@@ -67,8 +106,8 @@ const OTPRequests = ({ navigation }) => {
         
         if (verifiedOTP) {
           Alert.alert(
-            "Success! 🎉",
-            "Your OTP has been verified successfully.",
+            "Verification Complete 🎉",
+            "Your OTP has been verified successfully by admin.",
             [
               {
                 text: "View Portfolio",
@@ -95,8 +134,8 @@ const OTPRequests = ({ navigation }) => {
 
   useEffect(() => {
     fetchOTPRequests();
-    // Auto-refresh every 15 seconds
-    const interval = setInterval(fetchOTPRequests, 15000);
+    // Auto-refresh every 12 seconds
+    const interval = setInterval(fetchOTPRequests, 12000);
     return () => clearInterval(interval);
   }, [fetchOTPRequests]);
 
@@ -110,7 +149,6 @@ const OTPRequests = ({ navigation }) => {
     const expiry = typeof expiresAt === 'number' ? expiresAt : new Date(expiresAt).getTime();
     let diff = expiry - now;
 
-    // Safety cap: max 10 minutes (600,000 ms)
     if (diff > 10 * 60 * 1000) {
       diff = 10 * 60 * 1000;
     }
@@ -119,6 +157,26 @@ const OTPRequests = ({ navigation }) => {
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
     return { minutes, seconds, expired: false };
+  };
+
+  const handleCopyOTP = (code) => {
+    if (code) {
+      Clipboard.setString(code);
+      try {
+        Vibration.vibrate(50);
+      } catch (e) {}
+      showToast('OTP copied to clipboard! 📋');
+    }
+  };
+
+  const handleShareOTP = async (otp) => {
+    if (otp?.otpCode) {
+      try {
+        await Share.share({
+          message: `My OTP verification code for ${otp.groupName || 'Chit Group'} is: ${otp.otpCode}`,
+        });
+      } catch (e) {}
+    }
   };
 
   const CountdownTimer = ({ expiresAt }) => {
@@ -133,16 +191,16 @@ const OTPRequests = ({ navigation }) => {
 
     if (time.expired) {
       return (
-        <View style={styles.timerContainer}>
-          <MaterialCommunityIcons name="timer-off" size={16} color="#EF4444" />
+        <View style={styles.timerContainerExpired}>
+          <MaterialCommunityIcons name="clock-alert-outline" size={14} color="#EF4444" />
           <Text style={styles.timerExpired}>Expired</Text>
         </View>
       );
     }
 
     return (
-      <View style={styles.timerContainer}>
-        <MaterialCommunityIcons name="timer-outline" size={16} color="#F59E0B" />
+      <View style={styles.timerContainerActive}>
+        <MaterialCommunityIcons name="timer-outline" size={14} color="#D97706" />
         <Text style={styles.timerText}>
           {String(time.minutes).padStart(2, '0')}:{String(time.seconds).padStart(2, '0')}
         </Text>
@@ -153,7 +211,8 @@ const OTPRequests = ({ navigation }) => {
   const renderOTPCard = (otp, index) => {
     const timeInfo = getTimeRemaining(otp.expiresAt);
     const isExpired = timeInfo.expired;
-    const otpDigits = otp.otpCode.split('');
+    const isVerified = ['verified', 'approved', 'success', 'completed'].includes(otp.status);
+    const otpDigits = (otp.otpCode || '').split('');
 
     return (
       <Animated.View
@@ -167,23 +226,50 @@ const OTPRequests = ({ navigation }) => {
           isExpired && styles.otpCardExpired,
         ]}
       >
+        {/* Card Top Strip Accent */}
+        <View
+          style={[
+            styles.cardTopBar,
+            { backgroundColor: isVerified ? '#10B981' : isExpired ? '#EF4444' : '#6B46C1' },
+          ]}
+        />
+
         {/* Card Header */}
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
-            <View style={[styles.statusDot, { backgroundColor: isExpired ? '#EF4444' : '#10B981' }]} />
-            <Text style={styles.groupName}>{otp.groupName}</Text>
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: isVerified ? '#10B981' : isExpired ? '#EF4444' : '#F59E0B' },
+              ]}
+            />
+            <Text style={styles.groupName} numberOfLines={1}>
+              {otp.groupName || 'Chit Group'}
+            </Text>
           </View>
           <CountdownTimer expiresAt={otp.expiresAt} />
         </View>
 
-        {/* OTP Display */}
+        {/* OTP Display Card */}
         <View style={styles.otpDisplayContainer}>
           <View
-            style={[styles.otpGradient, { backgroundColor: isExpired ? '#1F2937' : '#6B46C1' }]}
+            style={[
+              styles.otpGradient,
+              { backgroundColor: isVerified ? '#065F46' : isExpired ? '#1F2937' : '#6B46C1' },
+            ]}
           >
-            <Text style={styles.otpLabel}>
-              {isExpired ? 'OTP EXPIRED' : 'YOUR OTP CODE'}
-            </Text>
+            <View style={styles.otpLabelRow}>
+              <Text style={styles.otpLabel}>
+                {isVerified ? 'VERIFIED CODE' : isExpired ? 'EXPIRED CODE' : 'ACTIVE OTP CODE'}
+              </Text>
+              <TouchableOpacity
+                style={styles.cardCopyIconBtn}
+                onPress={() => handleCopyOTP(otp.otpCode)}
+              >
+                <MaterialCommunityIcons name="content-copy" size={16} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.otpDigitsRow}>
               {otpDigits.map((digit, i) => (
                 <View key={i} style={[styles.otpDigitBox, isExpired && styles.otpDigitBoxExpired]}>
@@ -193,33 +279,58 @@ const OTPRequests = ({ navigation }) => {
                 </View>
               ))}
             </View>
-            {!isExpired && (
+
+            {!isExpired && !isVerified && (
               <Text style={styles.otpHint}>
-                Show this code to admin for verification
+                Tap copy or share below to verify with admin
               </Text>
             )}
           </View>
         </View>
 
-        {/* Card Footer */}
-        <View style={styles.cardFooter}>
-          <View style={styles.footerItem}>
-            <MaterialCommunityIcons name="clock-outline" size={14} color="#9CA3AF" />
-            <Text style={styles.footerText}>
-              {new Date(otp.createdAt).toLocaleTimeString('en-IN', {
+        {/* Interactive Action Footer */}
+        <View style={styles.cardFooterActions}>
+          <TouchableOpacity
+            style={styles.actionBtnSecondary}
+            onPress={() => handleCopyOTP(otp.otpCode)}
+          >
+            <MaterialCommunityIcons name="content-copy" size={16} color="#6B46C1" />
+            <Text style={styles.actionBtnSecondaryText}>Copy OTP</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionBtnPrimary}
+            onPress={() => handleShareOTP(otp)}
+          >
+            <MaterialCommunityIcons name="share-variant" size={16} color="#FFFFFF" />
+            <Text style={styles.actionBtnPrimaryText}>Share Code</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Meta Info Bar */}
+        <View style={styles.metaBar}>
+          <View style={styles.metaItem}>
+            <MaterialCommunityIcons name="clock-outline" size={13} color="#9CA3AF" />
+            <Text style={styles.metaText}>
+              Requested at {new Date(otp.createdAt).toLocaleTimeString('en-IN', {
                 hour: '2-digit',
                 minute: '2-digit',
               })}
             </Text>
           </View>
-          <View style={styles.footerItem}>
+          <View style={styles.metaItem}>
             <MaterialCommunityIcons
-              name={isExpired ? 'close-circle' : otp.status === 'viewed' ? 'eye' : 'bell-ring'}
-              size={14}
-              color={isExpired ? '#EF4444' : '#6B46C1'}
+              name={isVerified ? 'check-circle' : isExpired ? 'close-circle' : 'shield-check'}
+              size={13}
+              color={isVerified ? '#10B981' : isExpired ? '#EF4444' : '#6B46C1'}
             />
-            <Text style={[styles.footerText, { color: isExpired ? '#EF4444' : '#6B46C1' }]}>
-              {isExpired ? 'Expired' : otp.status === 'viewed' ? 'Viewed' : 'New'}
+            <Text
+              style={[
+                styles.metaTextStatus,
+                { color: isVerified ? '#10B981' : isExpired ? '#EF4444' : '#6B46C1' },
+              ]}
+            >
+              {isVerified ? 'Verified' : isExpired ? 'Expired' : 'Pending Share'}
             </Text>
           </View>
         </View>
@@ -231,12 +342,12 @@ const OTPRequests = ({ navigation }) => {
     return (
       <View style={styles.container}>
         <Header 
-          title="OTP Requests"
+          title="OTP Management"
           onBack={() => navigation.goBack()}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6B46C1" />
-          <Text style={styles.loadingText}>Loading OTP requests...</Text>
+          <Text style={styles.loadingText}>Fetching OTP requests...</Text>
         </View>
       </View>
     );
@@ -245,15 +356,17 @@ const OTPRequests = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header 
-        title="OTP Requests"
+        title="OTP Management"
         onBack={() => navigation.goBack()}
       />
 
-      {/* Info Banner */}
+      {/* Info Advice Banner */}
       <View style={styles.infoBanner}>
-        <MaterialCommunityIcons name="shield-lock-outline" size={20} color="#6B46C1" />
+        <View style={styles.infoBannerIcon}>
+          <MaterialCommunityIcons name="shield-lock" size={20} color="#6B46C1" />
+        </View>
         <Text style={styles.infoBannerText}>
-          Admin has requested OTP verification. Share the code with admin to verify your payment.
+          Admin requested OTP verification for chit auction approval. Share the code to authorize.
         </Text>
       </View>
 
@@ -283,82 +396,103 @@ const OTPRequests = ({ navigation }) => {
           otpRequests.map((otp, index) => renderOTPCard(otp, index))
         ) : (
           <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="shield-check" size={64} color="#D1D5DB" />
+            <MaterialCommunityIcons name="shield-check" size={56} color="#D1D5DB" />
             <Text style={styles.emptyTitle}>No Active OTP Requests</Text>
             <Text style={styles.emptySubtitle}>
-              When admin requests verification, your OTP code will appear here.
+              When your admin requests verification, your OTP codes will appear here.
             </Text>
           </View>
         )}
-        <View style={{ height: 30 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Floating Toast Notification */}
+      <Animated.View style={[styles.toastBanner, { opacity: toastAnim }]}>
+        <MaterialCommunityIcons name="check-circle" size={18} color="#10B981" />
+        <Text style={styles.toastText}>{toastMessage}</Text>
+      </Animated.View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  lottieContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  lottieAnimation: {
-    width: 200,
-    height: 200,
-  },
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8F9FA',
   },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F3E8FF',
     marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 14,
+    marginBottom: 10,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 11,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E9D5FF',
-    gap: 10,
+  },
+  infoBannerIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
   infoBannerText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#5B21B6',
-    lineHeight: 18,
+    lineHeight: 17,
+    fontWeight: '500',
   },
+
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 8,
   },
+  lottieContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  lottieAnimation: {
+    width: 170,
+    height: 170,
+  },
+
+  // Card Styles
   otpCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 18,
     marginBottom: 16,
     overflow: 'hidden',
     elevation: 4,
     shadowColor: '#6B46C1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E9D5FF',
   },
   otpCardExpired: {
-    opacity: 0.6,
-    borderColor: '#D1D5DB',
+    opacity: 0.75,
+    borderColor: '#E5E7EB',
+  },
+  cardTopBar: {
+    height: 4,
+    width: '100%',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
@@ -374,47 +508,64 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   groupName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15.5,
+    fontWeight: '700',
     color: '#111827',
     flex: 1,
   },
-  timerContainer: {
+  timerContainerActive: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FFFBEB',
+    backgroundColor: '#FEF3C7',
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  timerContainerExpired: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
   timerText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#F59E0B',
-    fontVariant: ['tabular-nums'],
+    color: '#D97706',
   },
   timerExpired: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#EF4444',
   },
   otpDisplayContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 14,
   },
   otpGradient: {
     borderRadius: 16,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: 'center',
   },
+  otpLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 14,
+  },
   otpLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 2,
-    marginBottom: 16,
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.75)',
+    letterSpacing: 1.5,
+  },
+  cardCopyIconBtn: {
+    padding: 4,
   },
   otpDigitsRow: {
     flexDirection: 'row',
@@ -422,54 +573,105 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   otpDigitBox: {
-    width: 44,
-    height: 56,
+    width: 42,
+    height: 52,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.22)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   otpDigitBoxExpired: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   otpDigit: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 1,
   },
   otpDigitExpired: {
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.35)',
   },
   otpHint: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.65)',
-    marginTop: 14,
+    fontSize: 11.5,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 12,
     textAlign: 'center',
   },
-  cardFooter: {
+
+  // Card Action Buttons
+  cardFooterActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    gap: 10,
+  },
+  actionBtnSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3E8FF',
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+  },
+  actionBtnSecondaryText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B46C1',
+  },
+  actionBtnPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6B46C1',
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 6,
+    elevation: 2,
+    shadowColor: '#6B46C1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  actionBtnPrimaryText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  // Meta Bar
+  metaBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: '#FAFAFA',
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },
-  footerItem: {
+  metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
   },
-  footerText: {
-    fontSize: 12,
+  metaText: {
+    fontSize: 11.5,
     color: '#9CA3AF',
     fontWeight: '500',
   },
+  metaTextStatus: {
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
@@ -483,22 +685,44 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 80,
+    paddingVertical: 60,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#374151',
-    marginTop: 16,
+    marginTop: 14,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#9CA3AF',
     textAlign: 'center',
-    marginTop: 8,
-    paddingHorizontal: 40,
-    lineHeight: 20,
+    marginTop: 6,
+    paddingHorizontal: 36,
+    lineHeight: 19,
+  },
+
+  toastBanner: {
+    position: 'absolute',
+    bottom: 24,
+    left: 20,
+    right: 20,
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    elevation: 10,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '600',
   },
 });
 
 export default OTPRequests;
+
