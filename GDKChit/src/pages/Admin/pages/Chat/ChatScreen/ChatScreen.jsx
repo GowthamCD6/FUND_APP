@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
-  Dimensions,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
@@ -16,16 +15,23 @@ import {
   Modal,
   Image,
   Keyboard,
+  Dimensions,
+  Linking,
+  PermissionsAndroid,
+  NativeModules,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Clipboard from '@react-native-clipboard/clipboard';
-import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { pick, types } from '@react-native-documents/picker';
+import Geolocation from '@react-native-community/geolocation';
+import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import styles from './ChatScreenStyle';
-import Header from '../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../services/ApiService';
-
-const { width, height } = Dimensions.get('window');
+import { getUserCurrentLocationWithFallback, getStoredLocation, storeLocationLocally } from '../../../../../services/locationService';
+import Header from '../../../../../components/HeaderComponent/Header';
+import Join from '../../../../User/Modals/Pages/JoinGroup/JoinGroup';
 
 // Enable long press context menu on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -52,7 +58,6 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMessage, setSelectedMessage] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
   const [showMsgOptionsModal, setShowMsgOptionsModal] = useState(false);
   const [selectedMsgOptions, setSelectedMsgOptions] = useState(null);
@@ -61,12 +66,152 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [loadingForward, setLoadingForward] = useState(false);
   const flatListRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const [onlineStatus, setOnlineStatus] = useState(true);
+  const onlineStatus = true;
   const [showStarredModal, setShowStarredModal] = useState(false);
+
   const [showAttachmentModal, setShowAttachmentModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeEmojiTab, setActiveEmojiTab] = useState('smileys');
+  const [viewerImageUri, setViewerImageUri] = useState(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinModalCode, setJoinModalCode] = useState('');
+  const audioRecorderPlayer = useRef(typeof AudioRecorderPlayer === 'function' ? new AudioRecorderPlayer() : AudioRecorderPlayer).current;
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [recordTime, setRecordTime] = useState('00:00');
+  const [showRecordModal, setShowRecordModal] = useState(false);
+  const [currentlyPlayingUrl, setCurrentlyPlayingUrl] = useState(null);
+  const [showShareContactModal, setShowShareContactModal] = useState(false);
+  const [contactNameInput, setContactNameInput] = useState('');
+  const [contactPhoneInput, setContactPhoneInput] = useState('');
+
+  const handleMakeCall = (phoneNumber) => {
+    if (!phoneNumber) {
+      Alert.alert('Notice', 'No phone number available');
+      return;
+    }
+    const cleaned = phoneNumber.replace(/[^\d+]/g, '');
+    const url = `tel:${cleaned}`;
+    Linking.openURL(url).catch((err) => {
+      console.log('Dialer error:', err);
+      Alert.alert('Call Error', `Could not open dialer for ${cleaned}`, [
+        { text: 'Copy Number', onPress: () => Clipboard.setString(cleaned) },
+        { text: 'OK' }
+      ]);
+    });
+  };
+
+  const parseContactMessage = (text) => {
+    if (!text) return null;
+    if (text.startsWith('[CONTACT_CARD]')) {
+      try {
+        const data = JSON.parse(text.replace('[CONTACT_CARD]', ''));
+        return { name: data.name || 'Shared Contact', phone: data.phone || '' };
+      } catch (e) {
+        return { name: 'Shared Contact', phone: '' };
+      }
+    }
+    if (text.startsWith('Contact:') || text.startsWith('👤 Contact:')) {
+      const raw = text.replace(/^(👤\s*)?Contact:/i, '').trim();
+      const phoneMatch = raw.match(/(\+?\d[\d\s-]{7,15}\d)/);
+      const phone = phoneMatch ? phoneMatch[1].trim() : '';
+      let name = raw;
+      if (phoneMatch) {
+        name = raw.replace(phoneMatch[0], '').replace(/[()\-:]/g, '').trim();
+      }
+      if (!name) name = 'Shared Contact';
+      return { name, phone: phone || raw };
+    }
+    return null;
+  };
+
+  const handleSendShareContact = () => {
+    if (!contactNameInput.trim()) {
+      Alert.alert('Required', 'Please enter a contact name.');
+      return;
+    }
+    if (!contactPhoneInput.trim()) {
+      Alert.alert('Required', 'Please enter a phone number.');
+      return;
+    }
+    const name = contactNameInput.trim();
+    const phone = contactPhoneInput.trim();
+    const payload = JSON.stringify({ name, phone });
+    sendDirectMessage(`[CONTACT_CARD]${payload}`);
+    setShowShareContactModal(false);
+    setContactNameInput('');
+    setContactPhoneInput('');
+  };
+
+  const handlePickNativeContact = async () => {
+    try {
+      setShowAttachmentModal(false);
+
+      if (Platform.OS === 'android') {
+        const hasPerm = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_CONTACTS);
+        if (!hasPerm) {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
+            {
+              title: 'Contacts Permission Required',
+              message: 'This app needs access to your contacts so you can select a contact from your phone to share in chat.',
+              buttonPositive: 'Allow',
+              buttonNegative: 'Deny',
+            }
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert(
+              'Permission Denied',
+              'Contacts permission is required to select a contact from your phone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Open Settings', onPress: () => Linking.openSettings() }
+              ]
+            );
+            return;
+          }
+        }
+      }
+
+      const { ContactPickerModule } = NativeModules;
+      if (ContactPickerModule && ContactPickerModule.pickContact) {
+        const result = await ContactPickerModule.pickContact();
+        if (result && (result.name || result.number)) {
+          const name = result.name || 'Shared Contact';
+          const phone = result.number || '';
+          const payload = JSON.stringify({ name, phone });
+          sendDirectMessage(`[CONTACT_CARD]${payload}`);
+          setShowShareContactModal(false);
+        }
+      } else {
+        setContactNameInput('');
+        setContactPhoneInput('');
+        setShowShareContactModal(true);
+      }
+    } catch (err) {
+      if (err && String(err.message || err).includes('CANCELLED')) {
+        console.log('User cancelled contact selection');
+      } else {
+        console.log('Error picking contact:', err);
+        Alert.alert('Notice', 'Could not open contact picker. You can enter details manually.', [
+          {
+            text: 'Enter Manually',
+            onPress: () => {
+              setContactNameInput('');
+              setContactPhoneInput('');
+              setShowShareContactModal(true);
+            }
+          },
+          { text: 'Cancel', style: 'cancel' }
+        ]);
+      }
+    }
+  };
+
+  const handleOpenJoinModal = (code) => {
+    setJoinModalCode(code);
+    setShowJoinModal(true);
+  };
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -137,7 +282,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             replyTo: activeReply?.id || null
           }
         }));
-        
+
         // Optimistically set to delivered
         setTimeout(() => {
           setMessages(prev =>
@@ -158,15 +303,15 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           }),
         });
         const data = await response.json();
-        
+
         if (data.success) {
           setMessages(prev =>
             prev.map(msg =>
-              msg.id === tempId ? { 
-                ...msg, 
+              msg.id === tempId ? {
+                ...msg,
                 id: data.data.id,
-                status: 'read', 
-                isRead: true 
+                status: 'read',
+                isRead: true
               } : msg
             )
           );
@@ -199,6 +344,251 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       Alert.alert('Error', 'Failed to send image');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const uploadAndSendDocument = async (doc) => {
+    try {
+      setIsSending(true);
+
+      // Use FormData — React Native natively handles content:// URIs with this approach
+      const formData = new FormData();
+      formData.append('file', {
+        uri: doc.uri,
+        type: doc.type || 'application/octet-stream',
+        name: doc.name || 'document.pdf',
+      });
+
+      const token = await ApiService.getAccessToken();
+      const baseUrl = (ApiService.baseURL || '').replace(/\/+$/, '');
+
+      const res = await fetch(`${baseUrl}/chats/upload-file`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success && data.fileUrl) {
+        await sendDirectMessage(`Document: ${data.fileName || doc.name || 'File'} | ${data.fileUrl}`);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to upload document');
+      }
+    } catch (e) {
+      console.log('Error uploading document:', e);
+      Alert.alert('Error', 'Failed to send document');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const shareCurrentLocation = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const hasPerm = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+        if (!hasPerm) {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: 'Location Permission Required',
+              message: 'This app needs access to your location so you can share your live location in chat.',
+              buttonPositive: 'Allow',
+              buttonNegative: 'Deny',
+            }
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert(
+              'Permission Denied',
+              'Location permission is required to share your location. Please grant permission in Settings.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Open Settings',
+                  onPress: () => Linking.openSettings(),
+                },
+              ]
+            );
+            return;
+          }
+        }
+      }
+
+      setIsSending(true);
+
+      try {
+        const locationCoords = await getUserCurrentLocationWithFallback();
+        if (locationCoords && locationCoords.latitude && locationCoords.longitude) {
+          const { latitude, longitude, fromCache } = locationCoords;
+          const mapUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
+          sendDirectMessage(`Location: ${mapUrl}`);
+          if (fromCache) {
+            Alert.alert(
+              'Location Shared',
+              'Shared your last known location. For live updates, please turn on high accuracy GPS in device settings.'
+            );
+          }
+          return;
+        }
+      } catch (locErr) {
+        console.log('Location acquisition failed:', locErr);
+      }
+
+      // If live location failed (GPS off/unavailable), prompt user and offer cached location if available
+      const cached = await getStoredLocation();
+      const alertButtons = [
+        {
+          text: 'Turn On Location (Settings)',
+          onPress: () => {
+            if (Platform.OS === 'android') {
+              Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() => {
+                Linking.openSettings();
+              });
+            } else {
+              Linking.openSettings();
+            }
+          },
+        },
+      ];
+
+      if (cached && cached.latitude && cached.longitude) {
+        alertButtons.unshift({
+          text: 'Share Last Known Location',
+          onPress: () => {
+            const mapUrl = `https://maps.google.com/?q=${cached.latitude},${cached.longitude}`;
+            sendDirectMessage(`Location: ${mapUrl}`);
+          },
+        });
+      }
+
+      alertButtons.push({ text: 'Cancel', style: 'cancel' });
+
+      Alert.alert(
+        'Location Services Disabled',
+        'Could not get your current location. Please turn on Location (GPS) in your device settings to share your live location.',
+        alertButtons
+      );
+    } catch (e) {
+      console.log('Location sharing error:', e);
+      Alert.alert('Error', 'Failed to share location');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const startRecordingAudio = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const grants = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        ]);
+        if (grants['android.permission.RECORD_AUDIO'] !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert('Permission Denied', 'Microphone permission is required to record audio.');
+          return;
+        }
+      }
+      setShowRecordModal(true);
+      setIsRecordingAudio(true);
+      setRecordTime('00:00');
+      await audioRecorderPlayer.startRecorder();
+      audioRecorderPlayer.addRecordBackListener((e) => {
+        setRecordTime(audioRecorderPlayer.mmssss(Math.floor(e.currentPosition)));
+      });
+    } catch (e) {
+      console.log('Error starting record:', e);
+      setIsRecordingAudio(false);
+      setShowRecordModal(false);
+      Alert.alert('Error', 'Could not start audio recorder');
+    }
+  };
+
+  const stopAndSendRecording = async () => {
+    try {
+      const result = await audioRecorderPlayer.stopRecorder();
+      audioRecorderPlayer.removeRecordBackListener();
+      setIsRecordingAudio(false);
+      setShowRecordModal(false);
+      if (result) {
+        uploadAndSendAudio(result);
+      }
+    } catch (e) {
+      console.log('Error stopping record:', e);
+      setIsRecordingAudio(false);
+      setShowRecordModal(false);
+    }
+  };
+
+  const cancelRecordingAudio = async () => {
+    try {
+      await audioRecorderPlayer.stopRecorder();
+      audioRecorderPlayer.removeRecordBackListener();
+    } catch (e) { }
+    setIsRecordingAudio(false);
+    setShowRecordModal(false);
+  };
+
+  const uploadAndSendAudio = async (audioUri) => {
+    try {
+      setIsSending(true);
+      const formData = new FormData();
+      formData.append('file', {
+        uri: audioUri.startsWith('file://') ? audioUri : `file://${audioUri}`,
+        type: 'audio/m4a',
+        name: `voice_${Date.now()}.m4a`,
+      });
+
+      const token = await ApiService.getAccessToken();
+      const baseUrl = (ApiService.baseURL || '').replace(/\/+$/, '');
+
+      const res = await fetch(`${baseUrl}/chats/upload-file`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success && data.fileUrl) {
+        await sendDirectMessage(`Audio: Voice Note | ${data.fileUrl}`);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to upload audio');
+      }
+    } catch (e) {
+      console.log('Error uploading audio:', e);
+      Alert.alert('Error', 'Failed to send audio recording');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleTogglePlayAudio = async (url) => {
+    try {
+      if (currentlyPlayingUrl === url) {
+        await audioRecorderPlayer.stopPlayer();
+        audioRecorderPlayer.removePlayBackListener();
+        setCurrentlyPlayingUrl(null);
+        return;
+      }
+      if (currentlyPlayingUrl) {
+        await audioRecorderPlayer.stopPlayer();
+        audioRecorderPlayer.removePlayBackListener();
+      }
+      setCurrentlyPlayingUrl(url);
+      await audioRecorderPlayer.startPlayer(url);
+      audioRecorderPlayer.addPlayBackListener((e) => {
+        if (e.currentPosition >= e.duration && e.duration > 0) {
+          audioRecorderPlayer.stopPlayer();
+          audioRecorderPlayer.removePlayBackListener();
+          setCurrentlyPlayingUrl(null);
+        }
+      });
+    } catch (e) {
+      console.log('Error playing audio:', e);
+      setCurrentlyPlayingUrl(null);
     }
   };
 
@@ -239,13 +629,24 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         }
       });
     } else if (type === 'document') {
-      sendDirectMessage('📄 Document: invoice_2026.pdf');
+      pick({
+        type: [types.allFiles],
+        allowMultiSelection: false,
+      }).then((result) => {
+        if (result && result.length > 0) {
+          uploadAndSendDocument(result[0]);
+        }
+      }).catch((e) => {
+        if (e && !String(e).toLowerCase().includes('cancel') && !String(e).toLowerCase().includes('abort')) {
+          console.log('Doc Picker Error:', e);
+        }
+      });
     } else if (type === 'audio') {
-      sendDirectMessage('🎵 Audio recording (0:30)');
+      startRecordingAudio();
     } else if (type === 'location') {
-      sendDirectMessage('📍 Location: https://maps.google.com/?q=12.9716,77.5946');
+      shareCurrentLocation();
     } else if (type === 'contact') {
-      sendDirectMessage('👤 Contact: GDK Support (+91 98765 43210)');
+      handlePickNativeContact();
     }
   };
 
@@ -290,8 +691,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     setShowDropdown(false);
     Alert.alert(
       'Delete Chat',
-      isGroup 
-        ? 'Are you sure you want to delete this group chat and all its messages?' 
+      isGroup
+        ? 'Are you sure you want to delete this group chat and all its messages?'
         : 'Are you sure you want to delete this chat and all its messages?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -300,7 +701,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     );
   };
 
-  // Fetch group members & metadata
+  // Fetch group members if isGroup on load
   const fetchGroupMembers = React.useCallback(async () => {
     try {
       const query = groupId ? `?groupId=${groupId}` : '';
@@ -317,60 +718,170 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     }
   }, [chatId, groupId]);
 
+  const fetchAllUsers = async () => {
+    try {
+      const res = await ApiService.makeRequest('/admin/users/getAllUsers');
+      const data = await res.json();
+      if (data.success) setAllUsers(data.users || []);
+    } catch (e) {
+      console.log('Error fetching users', e);
+    }
+  };
+
+  const handleOpenAddUser = () => {
+    setShowDropdown(false);
+    fetchGroupMembers();
+    fetchAllUsers();
+    setShowAddUserModal(true);
+  };
+
+  const handleOpenRemoveUser = () => {
+    setShowDropdown(false);
+    fetchGroupMembers();
+    setShowRemoveUserModal(true);
+  };
+
+  const handleAddUserToGroup = async (user) => {
+    try {
+      const res = await ApiService.makeRequest('/admin/groups/addMembers', {
+        method: 'POST',
+        body: JSON.stringify({ groupId, members: [user] })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert('Success', 'User added to group');
+        setShowAddUserModal(false);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to add user');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong');
+    }
+  };
+
+  const handleRemoveUserFromGroup = async (user) => {
+    try {
+      const res = await ApiService.makeRequest('/admin/groups/removeMembers', {
+        method: 'POST',
+        body: JSON.stringify({ groupId, members: [{ id: user.userId || user.id }] })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert('Success', 'User removed from group');
+        setShowRemoveUserModal(false);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to remove user');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong');
+    }
+  };
+
+  const handleChangeGroupPhoto = async () => {
+    launchImageLibrary({ mediaType: 'photo', includeBase64: true, quality: 0.5 }, async (response) => {
+      if (response.didCancel || response.errorCode || !response.assets) return;
+      const base64 = `data:${response.assets[0].type};base64,${response.assets[0].base64}`;
+      try {
+        const res = await ApiService.makeRequest('/chats/groups/updateAvatar', {
+          method: 'POST',
+          body: JSON.stringify({ groupId, avatarBase64: base64 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          Alert.alert('Success', 'Group photo updated!');
+        } else {
+          Alert.alert('Error', data.message || 'Failed to update photo');
+        }
+      } catch (e) {
+        Alert.alert('Error', 'Something went wrong');
+      }
+    });
+  };
+
+  const handleOpenGroupInfo = () => {
+    setShowDropdown(false);
+    fetchGroupMembers();
+    fetchAllUsers();
+    setNewGroupName(localChatName);
+    setShowGroupInfoModal(true);
+  };
+
+  const handleRenameGroup = async () => {
+    if (!newGroupName.trim()) return;
+    try {
+      const res = await ApiService.makeRequest('/admin/groups/renameGroup', {
+        method: 'POST',
+        body: JSON.stringify({ groupId, groupName: newGroupName.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLocalChatName(newGroupName.trim());
+        setShowRenameDialog(false);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to rename group');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong');
+    }
+  };
+
+  // Load messages from API
+  const loadMessages = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await ApiService.makeRequest(`/chats/messages/${chatId}`);
+      const data = await response.json();
+      if (data.success && data.messages) {
+        const formatted = data.messages.map(msg => {
+          const isMine = msg.sender_type === 'Admin'; // Admin app — 'Admin' = me
+          // Determine tick status for my sent messages
+          let status = 'sent';
+          if (isMine) {
+            status = msg.read_at ? 'read' : 'sent';
+          }
+          return {
+            id: msg.id,
+            sender: isMine ? 'user' : 'other',
+            text: msg.message,
+            timestamp: msg.created_at, // keep raw string, parse in formatTime
+            isRead: !!msg.read_at,
+            status,
+            avatar: isMine ? null : chatAvatar,
+            senderName: msg.sender_name,
+            isStarred: msg.isStarred > 0,
+            replyTo: msg.reply_to ? {
+              id: msg.reply_to,
+              text: msg.replied_to_message
+            } : null
+          };
+        });
+        setMessages(formatted);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [chatId, chatAvatar]);
+
+  // Load messages on component mount
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
+
   useEffect(() => {
     if (isGroup) {
       fetchGroupMembers();
     }
   }, [isGroup, fetchGroupMembers]);
 
-  // Load messages on component mount
-  useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        setLoading(true);
-        const response = await ApiService.makeRequest(`/chats/messages/${chatId}`);
-        const data = await response.json();
-        if (data.success && data.messages) {
-          const formatted = data.messages.map(msg => {
-            const isMine = msg.sender_type === 'Admin'; // Admin app — 'Admin' = me
-            let status = 'sent';
-            if (isMine) {
-              status = msg.read_at ? 'read' : 'sent';
-            }
-            return {
-              id: msg.id,
-              sender: isMine ? 'user' : 'other',
-              text: msg.message,
-              timestamp: msg.created_at, // raw string; parsed in formatTime
-              isRead: !!msg.read_at,
-              status,
-              avatar: isMine ? null : chatAvatar,
-              senderName: msg.sender_name,
-              isStarred: msg.isStarred > 0,
-              replyTo: msg.reply_to ? {
-                id: msg.reply_to,
-                text: msg.replied_to_message
-              } : null
-            };
-          });
-          setMessages(formatted);
-        }
-      } catch (error) {
-        console.error('Error loading messages:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMessages();
-  }, [chatId]);
-
   // Handle WebSocket messages
   useEffect(() => {
     if (!ws) return;
-    
+
     if (ws.readyState === 1) {
       ws.send(JSON.stringify({ type: 'join_room', roomId: chatId }));
+      // Notify server that we've read all messages in this room
       ws.send(JSON.stringify({ type: 'mark_read', roomId: chatId }));
     } else {
       ws.addEventListener('open', () => {
@@ -378,13 +889,13 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         ws.send(JSON.stringify({ type: 'mark_read', roomId: chatId }));
       });
     }
-    
+
     const handleWsMessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
 
         // New incoming message
-        if (payload.type === 'new_message' && payload.data.roomId === chatId) {
+        if (payload.type === 'new_message' && (payload.data.roomId === chatId || payload.data.sourceRoomId === chatId)) {
           setMessages(prev => {
             if (prev.find(m => m.id === payload.data.id)) return prev;
             const filtered = prev.filter(m => !(String(m.id).startsWith('temp-') && m.text === payload.data.message));
@@ -408,7 +919,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           });
         }
 
-        // Read receipt — turn my messages blue tick
+        // Read receipt — upgrade my sent messages to blue tick
         if (payload.type === 'read_receipt' && payload.data.roomId === chatId) {
           const readIds = new Set(payload.data.messageIds);
           setMessages(prev =>
@@ -421,16 +932,16 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         console.error('WS error parsing message', e);
       }
     };
-    
+
     ws.addEventListener('message', handleWsMessage);
-    
+
     return () => {
       if (ws.readyState === 1) {
         ws.send(JSON.stringify({ type: 'leave_room', roomId: chatId }));
       }
       ws.removeEventListener('message', handleWsMessage);
     };
-  }, [ws, chatId]);
+  }, [ws, chatId, chatAvatar]);
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -465,6 +976,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       date = rawTimestamp;
     } else {
       // Normalize MySQL DATETIME: "2025-07-16 04:27:36" → "2025-07-16T04:27:36Z"
+      // Also handles ISO strings that already have T and Z
       const str = String(rawTimestamp).trim().replace(' ', 'T');
       date = new Date(str.endsWith('Z') ? str : str + 'Z');
     }
@@ -592,7 +1104,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       `Are you sure you want to forward this message to ${targetChat.name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
+        {
           text: 'Forward',
           onPress: async () => {
             try {
@@ -627,7 +1139,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       'Are you sure you want to delete this message?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
+        {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
@@ -653,6 +1165,31 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     );
   };
 
+  // Filter messages by search query (forced rebuild)
+  const filteredMessages = (messages || []).filter(msg => {
+    if (!msg) return false;
+    if (!searchQuery.trim()) return true;
+    return msg.text ? String(msg.text).toLowerCase().includes(searchQuery.trim().toLowerCase()) : false;
+  });
+
+  // WhatsApp-style tick icons
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'sent':
+        // Single grey tick — sent but not delivered/read
+        return <MaterialCommunityIcons name="check" size={14} color="rgba(255,255,255,0.6)" />;
+      case 'delivered':
+        // Double grey tick — delivered but not read
+        return <MaterialCommunityIcons name="check-all" size={14} color="rgba(255,255,255,0.6)" />;
+      case 'read':
+        // Double BLUE tick — recipient has seen the message
+        return <MaterialCommunityIcons name="check-all" size={14} color="#60D0FE" />;
+      default:
+        // Clock icon while sending
+        return <MaterialCommunityIcons name="clock-outline" size={12} color="rgba(255,255,255,0.5)" />;
+    }
+  };
+
   const renderMsgOptionsModal = () => {
     if (!selectedMsgOptions) return null;
     const isStarred = selectedMsgOptions.isStarred;
@@ -665,9 +1202,9 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         animationType="slide"
         onRequestClose={() => setShowMsgOptionsModal(false)}
       >
-        <TouchableOpacity 
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
           onPress={() => setShowMsgOptionsModal(false)}
         >
           <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingVertical: 20, paddingBottom: 35 }}>
@@ -773,7 +1310,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                     onPress={() => handleForwardToChat(item)}
                   >
                     <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#E9D5FF', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
-                      <Text style={{ fontSize: 16 }}>{item.isGroup ? '👥' : '👤'}</Text>
+                      <MaterialCommunityIcons name={item.isGroup ? "account-group" : "account"} size={22} color="#7C3AED" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937' }}>{item.name}</Text>
@@ -794,37 +1331,93 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     );
   };
 
-  // Filter messages by search query (forced rebuild)
-  const filteredMessages = searchQuery.trim()
-    ? messages.filter(msg =>
-        msg.text.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : messages;
+  const renderSkeletonMessages = () => (
+    <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
+      {[
+        { isUser: false, width: 210, height: 48 },
+        { isUser: true, width: 160, height: 42 },
+        { isUser: false, width: 240, height: 54 },
+        { isUser: true, width: 190, height: 46 },
+        { isUser: false, width: 170, height: 42 },
+        { isUser: true, width: 220, height: 52 },
+      ].map((item, index) => (
+        <View
+          key={index}
+          style={{
+            flexDirection: 'row',
+            justifyContent: item.isUser ? 'flex-end' : 'flex-start',
+            marginVertical: 6,
+          }}
+        >
+          <View
+            style={{
+              width: item.width,
+              height: item.height,
+              backgroundColor: item.isUser ? '#E9D5FF' : '#FFFFFF',
+              borderRadius: 16,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              borderBottomLeftRadius: item.isUser ? 16 : 4,
+              borderBottomRightRadius: item.isUser ? 4 : 16,
+              borderWidth: item.isUser ? 0 : 1,
+              borderColor: '#E5E7EB',
+              padding: 10,
+              justifyContent: 'space-around',
+            }}
+          >
+            <View style={{ width: '80%', height: 10, borderRadius: 5, backgroundColor: item.isUser ? '#D8BFD8' : '#E5E7EB' }} />
+            <View style={{ width: '45%', height: 8, borderRadius: 4, backgroundColor: item.isUser ? '#D8BFD8' : '#F3F4F6', alignSelf: 'flex-end' }} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
 
-  // WhatsApp-style tick icons
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'sent':
-        // Single grey tick — sent but not read
-        return <MaterialCommunityIcons name="check" size={14} color="rgba(255,255,255,0.6)" />;
-      case 'delivered':
-        // Double grey tick — delivered but not read
-        return <MaterialCommunityIcons name="check-all" size={14} color="rgba(255,255,255,0.6)" />;
-      case 'read':
-        // Double BLUE tick — recipient has seen the message
-        return <MaterialCommunityIcons name="check-all" size={14} color="#60D0FE" />;
-      default:
-        // Clock icon while sending
-        return <MaterialCommunityIcons name="clock-outline" size={12} color="rgba(255,255,255,0.5)" />;
-    }
+  const renderImageViewerModal = () => {
+    if (!viewerImageUri) return null;
+
+    return (
+      <Modal
+        visible={!!viewerImageUri}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setViewerImageUri(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' }}>
+          <SafeAreaView style={{ position: 'absolute', top: 10, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, zIndex: 10 }}>
+            <TouchableOpacity
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => setViewerImageUri(null)}
+            >
+              <MaterialCommunityIcons name="close" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Photo Preview</Text>
+            <TouchableOpacity
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => Alert.alert('Saved', 'Image saved to gallery')}
+            >
+              <MaterialCommunityIcons name="download" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+          </SafeAreaView>
+
+          <Image
+            source={{ uri: viewerImageUri }}
+            style={{ width: Dimensions.get('window').width, height: Dimensions.get('window').height * 0.75 }}
+            resizeMode="contain"
+          />
+        </View>
+      </Modal>
+    );
   };
 
   const renderMessage = ({ item, index }) => {
+    if (!item) return null;
     const isUserMessage = item.sender === 'user';
-    const showDateSeparator = shouldShowDateSeparator(item, messages[index - 1]);
-    const isGrouped = shouldGroupWithPrevious(item, messages[index - 1]);
-    const nextMsg = messages[index + 1];
+    const showDateSeparator = shouldShowDateSeparator(item, filteredMessages[index - 1]);
+    const isGrouped = shouldGroupWithPrevious(item, filteredMessages[index - 1]);
+    const nextMsg = filteredMessages[index + 1];
     const isLastInGroup = !shouldGroupWithPrevious(nextMsg, item);
+    const isImg = isImageContent(item.text);
 
     return (
       <View>
@@ -832,7 +1425,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         {showDateSeparator && (
           <View style={{ alignItems: 'center', marginTop: 16, marginBottom: 4 }}>
             <View style={{ backgroundColor: '#E5E7EB', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 16 }}>
-              <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600' }}>
+              <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: '600', letterSpacing: 0.2 }}>
                 {formatDateSeparator(item.timestamp)}
               </Text>
             </View>
@@ -842,65 +1435,427 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         {/* Message */}
         <TouchableOpacity
           onLongPress={() => handleMessageLongPress(item)}
-          delayLongPress={500}
-          activeOpacity={0.7}
+          delayLongPress={400}
+          activeOpacity={0.8}
           style={[
             styles.messageContainer,
             isUserMessage ? styles.userMessageContainer : styles.otherMessageContainer,
-            !isLastInGroup && { marginBottom: -2 },
-            isGrouped && { marginTop: -2 },
           ]}
         >
           <View style={[
-            { maxWidth: '85%' },
-            isUserMessage && { alignItems: 'flex-start' },
-            !isUserMessage && { alignItems: 'flex-end' },
+            { maxWidth: '88%' },
+            isUserMessage ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' },
           ]}>
             {/* Reply Preview */}
             {item.replyTo && (
               <View style={{
-                backgroundColor: isUserMessage ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+                backgroundColor: isUserMessage ? 'rgba(255,255,255,0.2)' : '#F3F4F6',
                 paddingHorizontal: 12,
-                paddingVertical: 8,
-                marginBottom: 8,
+                paddingVertical: 6,
+                marginBottom: 4,
                 borderLeftWidth: 3,
                 borderLeftColor: '#7C3AED',
-                borderRadius: 4,
+                borderRadius: 6,
               }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: isUserMessage ? '#DDD6FE' : '#7C3AED' }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: isUserMessage ? '#DDD6FE' : '#7C3AED' }}>
                   Replying to
                 </Text>
-                <Text style={{ fontSize: 12, color: isUserMessage ? '#E9D5FF' : '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: isUserMessage ? '#FFFFFF' : '#4B5563', marginTop: 1 }} numberOfLines={1}>
                   {item.replyTo.text}
                 </Text>
               </View>
             )}
 
-            {/* Message Bubble */}
-            <View style={[
-              styles.messageBubble,
-              isUserMessage ? styles.userBubble : styles.otherBubble,
-              isGrouped && (isUserMessage ? styles.groupedUserBubble : styles.groupedOtherBubble),
-              (item.text && (item.text.startsWith('http://') || item.text.startsWith('https://')) && (item.text.match(/\.(jpeg|jpg|gif|png|webp)/i) || item.text.includes('/uploads/'))) && { paddingHorizontal: 4, paddingVertical: 4, borderRadius: 16 }
-            ]}>
-              {(item.text && (item.text.startsWith('http://') || item.text.startsWith('https://')) && (item.text.match(/\.(jpeg|jpg|gif|png|webp)/i) || item.text.includes('/uploads/'))) ? (
-                <Image 
-                  source={{ uri: item.text.trim() }} 
-                  style={{ 
-                    width: 220, 
-                    height: 220, 
-                    borderRadius: 12,
-                    backgroundColor: '#F3F4F6'
-                  }} 
+            {/* Message Content */}
+            {isImg ? (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => setViewerImageUri(item.text.trim())}
+                style={styles.imageCardContainer}
+              >
+                <Image
+                  source={{ uri: item.text.trim() }}
+                  style={styles.imageMessage}
                   resizeMode="cover"
                 />
-              ) : (
-                <View style={styles.messageContentRow}>
-                  {isGroup && !isUserMessage && (
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#7C3AED', width: '100%', marginBottom: 3 }}>
-                      {item.senderName || 'Member'}
-                    </Text>
+                <View style={styles.imageGlassOverlay}>
+                  {item.isStarred && (
+                    <MaterialCommunityIcons name="star" size={12} color="#F59E0B" />
                   )}
+                  <Text style={styles.imageTimestampText}>{formatTime(item.timestamp)}</Text>
+                  {isUserMessage && getStatusIcon(item.status)}
+                </View>
+              </TouchableOpacity>
+            ) : item.text && (item.text.startsWith('Document:') || item.text.startsWith('📄 Document:')) ? (() => {
+              const cleanText = item.text.replace(/^(📄\s*)?Document:/i, '').trim();
+              const [docTitle = 'Document File', docUrl = ''] = cleanText.split('|').map(s => s.trim());
+              const isPdf = docTitle.toLowerCase().endsWith('.pdf');
+              return (
+                <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => docUrl ? Linking.openURL(docUrl) : Alert.alert('Notice', 'No download link available')}
+                    style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard]}
+                  >
+                    <View style={[styles.attachmentIconContainer, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#EEF2FF' }]}>
+                      <MaterialCommunityIcons name={isPdf ? "file-pdf-box" : "file-document"} size={26} color={isUserMessage ? "#FFFFFF" : "#7C3AED"} />
+                    </View>
+                    <View style={{ flex: 1, paddingRight: 6 }}>
+                      <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]} numberOfLines={1}>
+                        {docTitle}
+                      </Text>
+                      <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>Tap to open / download</Text>
+                    </View>
+                    <MaterialCommunityIcons name="download" size={20} color={isUserMessage ? "#FFFFFF" : "#7C3AED"} />
+                  </TouchableOpacity>
+                  <View style={styles.messageFooter}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                    {isUserMessage && getStatusIcon(item.status)}
+                  </View>
+                </View>
+              );
+            })() : item.text && (item.text.startsWith('Audio') || item.text.startsWith('🎵 Audio')) ? (() => {
+              const cleanText = item.text.replace(/^(🎵\s*)?Audio:/i, '').trim();
+              const [audioTitle = 'Voice Note', audioUrl = ''] = cleanText.split('|').map(s => s.trim());
+              const isPlaying = currentlyPlayingUrl === audioUrl;
+              return (
+                <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => audioUrl ? handleTogglePlayAudio(audioUrl) : Alert.alert('Notice', 'No audio file available')}
+                    style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard]}
+                  >
+                    <View style={[styles.attachmentIconContainer, { backgroundColor: isUserMessage ? 'rgba(255,255,255,0.25)' : '#FEF3C7' }]}>
+                      <MaterialCommunityIcons name={isPlaying ? "pause" : "play"} size={24} color={isUserMessage ? "#FFFFFF" : "#D97706"} />
+                    </View>
+                    <View style={{ flex: 1, paddingRight: 6 }}>
+                      <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]}>{audioTitle}</Text>
+                      <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>
+                        {isPlaying ? '▶ Playing Audio...' : 'Tap to Listen • Voice Note'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <View style={styles.messageFooter}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                    {isUserMessage && getStatusIcon(item.status)}
+                  </View>
+                </View>
+              );
+            })() : item.text && (item.text.startsWith('Location:') || item.text.startsWith('📍 Location:')) ? (() => {
+              const locText = item.text.replace(/^(📍\s*)?Location:/i, '').trim();
+              const coordMatch = locText.match(/q=([\d.-]+),([\d.-]+)/);
+              const lat = coordMatch ? coordMatch[1] : null;
+              const lng = coordMatch ? coordMatch[2] : null;
+              const mapUrl = lat && lng ? `https://maps.google.com/?q=${lat},${lng}` : locText;
+              return (
+                <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => Linking.openURL(mapUrl)}
+                    style={[styles.attachmentCard, isUserMessage ? styles.attachmentUserCard : styles.attachmentOtherCard, { flexDirection: 'column', alignItems: 'stretch' }]}
+                  >
+                    <View style={{ backgroundColor: isUserMessage ? 'rgba(255,255,255,0.1)' : '#D1FAE5', borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 8 }}>
+                      <MaterialCommunityIcons name="map-marker-radius" size={36} color={isUserMessage ? '#FFFFFF' : '#059669'} />
+                      {lat && lng && (
+                        <Text style={{ fontSize: 11, color: isUserMessage ? '#DDD6FE' : '#6B7280', marginTop: 4 }}>{lat}, {lng}</Text>
+                      )}
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.attachmentTitle, { color: isUserMessage ? '#FFFFFF' : '#1F2937' }]}>📍 Live Location</Text>
+                        <Text style={[styles.attachmentSubtitle, { color: isUserMessage ? '#DDD6FE' : '#6B7280' }]}>Tap to open in Google Maps</Text>
+                      </View>
+                      <MaterialCommunityIcons name="open-in-new" size={18} color={isUserMessage ? '#FFFFFF' : '#059669'} />
+                    </View>
+                  </TouchableOpacity>
+                  <View style={styles.messageFooter}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={[styles.timestamp, isUserMessage && styles.userTimestamp]}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                    {isUserMessage && getStatusIcon(item.status)}
+                  </View>
+                </View>
+              );
+            })() : item.text && (item.text.startsWith('[CONTACT_CARD]') || item.text.startsWith('Contact:') || item.text.startsWith('👤 Contact:')) ? (() => {
+              const contact = parseContactMessage(item.text);
+              const name = contact ? contact.name : 'Shared Contact';
+              const phone = contact ? contact.phone : '';
+
+              return (
+                <View style={{
+                  width: 260,
+                  borderRadius: 16,
+                  backgroundColor: '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  padding: 14,
+                  marginVertical: 4,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 6,
+                  elevation: 4,
+                }}>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => handleMakeCall(phone)}
+                  >
+                    {/* Header: Avatar + Contact Info */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      {/* Avatar Icon */}
+                      <View style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: '#F3E8FF',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginRight: 12,
+                        borderWidth: 1.5,
+                        borderColor: '#C084FC',
+                      }}>
+                        <MaterialCommunityIcons name="account" size={28} color="#7C3AED" />
+                      </View>
+
+                      {/* Name & Phone */}
+                      <View style={{ flex: 1 }}>
+                        <Text style={{
+                          fontSize: 16,
+                          fontWeight: '700',
+                          color: '#111827',
+                          marginBottom: 3,
+                        }} numberOfLines={1}>
+                          {name}
+                        </Text>
+
+                        {phone ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <MaterialCommunityIcons name="phone" size={14} color="#7C3AED" style={{ marginRight: 4 }} />
+                            <Text style={{
+                              fontSize: 13,
+                              fontWeight: '600',
+                              color: '#374151',
+                            }} numberOfLines={1}>
+                              {phone}
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text style={{
+                            fontSize: 12,
+                            color: '#9CA3AF',
+                            fontStyle: 'italic',
+                          }}>
+                            No phone number
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+
+                    {/* Separator Line */}
+                    <View style={{
+                      height: 1,
+                      backgroundColor: '#F3F4F6',
+                      marginVertical: 12,
+                    }} />
+
+                    {/* Call Now Action Button */}
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={{
+                        backgroundColor: '#7C3AED',
+                        borderRadius: 12,
+                        paddingVertical: 10,
+                        paddingHorizontal: 16,
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        elevation: 2,
+                        shadowColor: '#7C3AED',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 3,
+                      }}
+                      onPress={() => handleMakeCall(phone)}
+                    >
+                      <MaterialCommunityIcons
+                        name="phone-in-talk"
+                        size={18}
+                        color="#FFFFFF"
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text style={{
+                        color: '#FFFFFF',
+                        fontWeight: '700',
+                        fontSize: 14,
+                        letterSpacing: 0.3,
+                      }}>
+                        {phone ? `Call ${phone}` : 'Call Now'}
+                      </Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+
+                  {/* Footer Timestamp */}
+                  <View style={[styles.messageFooter, { marginTop: 8 }]}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color="#7C3AED" style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={[styles.timestamp, { color: '#6B7280' }]}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                    {isUserMessage && getStatusIcon(item.status)}
+                  </View>
+                </View>
+              );
+            })() : item.text && item.text.startsWith('[GROUP_INVITE]') ? (() => {
+              let inviteData = null;
+              try {
+                const jsonStr = item.text.replace('[GROUP_INVITE]', '');
+                inviteData = JSON.parse(jsonStr);
+              } catch (e) {
+                inviteData = null;
+              }
+
+              if (!inviteData) {
+                return (
+                  <View style={[styles.messageBubble, isUserMessage ? styles.userBubble : styles.otherBubble]}>
+                    <Text style={[styles.messageText, isUserMessage && styles.userMessageText]}>
+                      📢 Group Invitation
+                    </Text>
+                  </View>
+                );
+              }
+
+              return (
+                <View style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: 16,
+                  padding: 14,
+                  width: 260,
+                  borderWidth: 1.5,
+                  borderColor: '#DDD6FE',
+                  shadowColor: '#6B46C1',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 6,
+                  elevation: 3,
+                }}>
+                  {/* Invite Header */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                    <View style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: '#F3F0FF',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginRight: 10,
+                    }}>
+                      <MaterialCommunityIcons name="account-group" size={20} color="#7C3AED" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Group Invitation
+                      </Text>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937' }} numberOfLines={1}>
+                        {inviteData.groupName}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Group Details */}
+                  <View style={{ backgroundColor: '#F9FAFB', borderRadius: 10, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: '#F3F4F6' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Group Amount:</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#1F2937' }}>
+                        ₹{Number(inviteData.groupAmount || 0).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Duration:</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: '#1F2937' }}>
+                        {inviteData.duration} months
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Members:</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: '#1F2937' }}>
+                        {inviteData.currentMembers || 0}/{inviteData.totalMembers || 20}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Code Box */}
+                  <View style={{
+                    backgroundColor: '#F3F0FF',
+                    borderRadius: 8,
+                    paddingVertical: 6,
+                    paddingHorizontal: 12,
+                    alignItems: 'center',
+                    marginBottom: 12,
+                    borderWidth: 1,
+                    borderColor: '#E9D5FF'
+                  }}>
+                    <Text style={{ fontSize: 10, color: '#7C3AED', fontWeight: '600', textTransform: 'uppercase' }}>Group Code</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#5B21B6', letterSpacing: 1.5 }}>
+                      {inviteData.groupCode}
+                    </Text>
+                  </View>
+
+                  {/* Action Button */}
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#6B46C1',
+                      height: 40,
+                      borderRadius: 10,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                    }}
+                    onPress={() => handleOpenJoinModal(inviteData.groupCode)}
+                  >
+                    <MaterialCommunityIcons name="account-plus" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+                      Join Group
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Footer Timestamp */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 8 }}>
+                    {item.isStarred && (
+                      <MaterialCommunityIcons name="star" size={12} color="#7C3AED" style={{ marginRight: 2 }} />
+                    )}
+                    <Text style={{ fontSize: 10, color: '#9CA3AF' }}>
+                      {formatTime(item.timestamp)}
+                    </Text>
+                    {isUserMessage && getStatusIcon(item.status)}
+                  </View>
+                </View>
+              );
+            })() : (
+              <View style={[
+                styles.messageBubble,
+                isUserMessage ? styles.userBubble : styles.otherBubble,
+                isGrouped && (isUserMessage ? styles.groupedUserBubble : styles.groupedOtherBubble),
+              ]}>
+                {isGroup && !isUserMessage && (
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#7C3AED', marginBottom: 3 }}>
+                    {item.senderName || 'Member'}
+                  </Text>
+                )}
+                <View style={styles.messageContentRow}>
                   <Text style={[
                     styles.messageText,
                     isUserMessage && styles.userMessageText,
@@ -910,7 +1865,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
                   <View style={styles.messageFooter}>
                     {item.isStarred && (
-                      <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 4 }} />
+                      <MaterialCommunityIcons name="star" size={12} color={isUserMessage ? "#E0C3FC" : "#7C3AED"} style={{ marginRight: 2 }} />
                     )}
                     <Text style={[
                       styles.timestamp,
@@ -921,8 +1876,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                     {isUserMessage && getStatusIcon(item.status)}
                   </View>
                 </View>
-              )}
-            </View>
+              </View>
+            )}
           </View>
         </TouchableOpacity>
       </View>
@@ -930,113 +1885,6 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   };
 
 
-
-  const fetchAllUsers = async () => {
-    try {
-      const res = await ApiService.makeRequest('/admin/users/getAllUsers');
-      const data = await res.json();
-      if (data.success) setAllUsers(data.users || []);
-    } catch (e) {
-      console.log('Error fetching users', e);
-    }
-  };
-
-  const handleOpenAddUser = () => {
-    setShowDropdown(false);
-    fetchGroupMembers();
-    fetchAllUsers();
-    setShowAddUserModal(true);
-  };
-
-  const handleOpenRemoveUser = () => {
-    setShowDropdown(false);
-    fetchGroupMembers();
-    setShowRemoveUserModal(true);
-  };
-
-  const handleAddUserToGroup = async (user) => {
-    try {
-      const res = await ApiService.makeRequest('/admin/groups/addMembers', {
-        method: 'POST',
-        body: JSON.stringify({ groupId, members: [user] })
-      });
-      const data = await res.json();
-      if (data.success) {
-        Alert.alert('Success', 'User added to group');
-        setShowAddUserModal(false);
-      } else {
-        Alert.alert('Error', data.message || 'Failed to add user');
-      }
-    } catch (e) {
-      Alert.alert('Error', 'Something went wrong');
-    }
-  };
-
-  const handleRemoveUserFromGroup = async (user) => {
-    try {
-      const res = await ApiService.makeRequest('/admin/groups/removeMembers', {
-        method: 'POST',
-        body: JSON.stringify({ groupId, members: [{ id: user.userId || user.id }] })
-      });
-      const data = await res.json();
-      if (data.success) {
-        Alert.alert('Success', 'User removed from group');
-        setShowRemoveUserModal(false);
-      } else {
-        Alert.alert('Error', data.message || 'Failed to remove user');
-      }
-    } catch (e) {
-      Alert.alert('Error', 'Something went wrong');
-    }
-  };
-
-  const handleChangeGroupPhoto = async () => {
-    launchImageLibrary({ mediaType: 'photo', includeBase64: true, quality: 0.5 }, async (response) => {
-      if (response.didCancel || response.errorCode || !response.assets) return;
-      const base64 = `data:${response.assets[0].type};base64,${response.assets[0].base64}`;
-      try {
-        const res = await ApiService.makeRequest('/chats/groups/updateAvatar', {
-          method: 'POST',
-          body: JSON.stringify({ groupId, avatarBase64: base64 })
-        });
-        const data = await res.json();
-        if (data.success) {
-          Alert.alert('Success', 'Group photo updated!');
-        } else {
-          Alert.alert('Error', data.message || 'Failed to update photo');
-        }
-      } catch (e) {
-        Alert.alert('Error', 'Something went wrong');
-      }
-    });
-  };
-
-  const handleOpenGroupInfo = () => {
-    setShowDropdown(false);
-    fetchGroupMembers();
-    fetchAllUsers();
-    setNewGroupName(localChatName);
-    setShowGroupInfoModal(true);
-  };
-
-  const handleRenameGroup = async () => {
-    if (!newGroupName.trim()) return;
-    try {
-      const res = await ApiService.makeRequest('/admin/groups/renameGroup', {
-        method: 'POST',
-        body: JSON.stringify({ groupId, groupName: newGroupName.trim() })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setLocalChatName(newGroupName.trim());
-        setShowRenameDialog(false);
-      } else {
-        Alert.alert('Error', data.message || 'Failed to rename group');
-      }
-    } catch (e) {
-      Alert.alert('Error', 'Something went wrong');
-    }
-  };
 
   const renderAttachmentModal = () => {
     return (
@@ -1046,18 +1894,18 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         animationType="slide"
         onRequestClose={() => setShowAttachmentModal(false)}
       >
-        <TouchableOpacity 
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
           onPress={() => setShowAttachmentModal(false)}
         >
-          <View style={{ 
-            backgroundColor: '#FFFFFF', 
-            borderTopLeftRadius: 24, 
-            borderTopRightRadius: 24, 
-            paddingVertical: 24, 
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingVertical: 24,
             paddingHorizontal: 20,
-            paddingBottom: 40 
+            paddingBottom: 40
           }}>
             <View style={{ alignItems: 'center', marginBottom: 20 }}>
               <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' }} />
@@ -1065,7 +1913,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             <Text style={{ fontSize: 18, fontWeight: '700', color: '#1F2937', marginBottom: 20, textAlign: 'center' }}>
               Share Attachment
             </Text>
-            
+
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' }}>
               <TouchableOpacity style={{ alignItems: 'center', width: '30%', marginVertical: 12 }} onPress={() => handleAttachmentOption('document')}>
                 <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#5F59F7', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
@@ -1117,20 +1965,20 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F1F7" />
-      
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
       {/* Enhanced Header with Profile Info - Exact Match */}
       <View style={styles.headerContainer}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
             <MaterialCommunityIcons name="chevron-left" size={28} color="#000" />
           </TouchableOpacity>
-          
+
           {/* Profile Section */}
-          <TouchableOpacity style={styles.profileSection} onPress={() => { if(isGroup) handleOpenGroupInfo(); }} activeOpacity={isGroup ? 0.7 : 1}>
+          <TouchableOpacity style={styles.profileSection} onPress={() => { if (isGroup) handleOpenGroupInfo(); }} activeOpacity={isGroup ? 0.7 : 1}>
             <View style={styles.avatarWithStatus}>
               <View style={styles.profileAvatar}>
-                {chatAvatar && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
+                {chatAvatar && typeof chatAvatar === 'string' && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
                   <Image source={{ uri: chatAvatar }} style={{ width: 48, height: 48, borderRadius: 24 }} />
                 ) : (
                   <MaterialCommunityIcons name={isGroup ? "account-group" : "account"} size={30} color="#7C3AED" />
@@ -1139,9 +1987,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               {onlineStatus && <View style={styles.onlineStatusDot} />}
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName} numberOfLines={1}>
-                {localChatName}
-              </Text>
+              <Text style={styles.profileName} numberOfLines={1}>{chatName}</Text>
               <Text style={styles.profileStatus}>
                 {isGroup ? `${groupMembers.length || groupDetails?.totalMembers || 0} Members` : (onlineStatus ? 'Online' : 'Offline')}
               </Text>
@@ -1156,12 +2002,12 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             <TouchableOpacity style={styles.iconButton} onPress={() => setShowDropdown(!showDropdown)}>
               <MaterialCommunityIcons name="dots-vertical" size={24} color="#000" />
             </TouchableOpacity>
-            
+
             {showDropdown && (
               <View style={styles.dropdownMenu}>
                 {isGroup && (
-                  <TouchableOpacity 
-                    style={styles.dropdownItem} 
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
                     onPress={() => {
                       setShowDropdown(false);
                       handleOpenGroupInfo();
@@ -1171,9 +2017,9 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                     <Text style={styles.dropdownItemText}>Group Info</Text>
                   </TouchableOpacity>
                 )}
-                
-                <TouchableOpacity 
-                  style={styles.dropdownItem} 
+
+                <TouchableOpacity
+                  style={styles.dropdownItem}
                   onPress={() => {
                     setShowDropdown(false);
                     setShowStarredModal(true);
@@ -1183,8 +2029,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                   <Text style={styles.dropdownItemText}>Starred Messages</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={styles.dropdownItem} 
+                <TouchableOpacity
+                  style={styles.dropdownItem}
                   onPress={confirmDeleteChat}
                 >
                   <MaterialCommunityIcons name="delete-outline" size={20} color="#EF4444" />
@@ -1194,14 +2040,14 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             )}
           </View>
         </View>
-        
+
         {/* Search Bar - Conditional */}
         {searchActive && (
           <View style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: 2 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 20, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' }}>
-              <MaterialCommunityIcons name="magnify" size={20} color="#9CA3AF" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 22, paddingHorizontal: 14, paddingVertical: 4, borderWidth: 1, borderColor: '#E5E7EB' }}>
+              <MaterialCommunityIcons name="magnify" size={20} color="#7C3AED" />
               <TextInput
-                style={{ flex: 1, paddingVertical: 8, paddingHorizontal: 8, color: '#1F2937', fontSize: 14 }}
+                style={{ flex: 1, paddingVertical: 6, paddingHorizontal: 8, color: '#1F2937', fontSize: 14, fontWeight: '500' }}
                 placeholder="Search in chat..."
                 placeholderTextColor="#9CA3AF"
                 value={searchQuery}
@@ -1209,32 +2055,32 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 autoFocus
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 2, marginRight: 4 }}>
                   <MaterialCommunityIcons name="close-circle" size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               )}
+              <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchActive(false); }} style={{ padding: 2 }}>
+                <MaterialCommunityIcons name="close" size={20} color="#6B7280" />
+              </TouchableOpacity>
             </View>
           </View>
         )}
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {/* Messages List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6B46C1" />
-            <Text style={styles.loadingText}>Loading messages...</Text>
-          </View>
+          renderSkeletonMessages()
         ) : filteredMessages.length > 0 ? (
           <FlatList
             ref={flatListRef}
             data={filteredMessages}
-            renderItem={({ item, index }) => renderMessage({ item, index: filteredMessages.indexOf(item) })}
-            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item, index }) => renderMessage({ item, index })}
+            keyExtractor={(item, index) => (item && item.id ? String(item.id) : String(index))}
             contentContainerStyle={styles.messagesList}
             scrollEnabled={true}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
@@ -1299,8 +2145,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           )}
 
           <View style={styles.inputWrapper}>
-            <TouchableOpacity 
-              style={styles.attachButton} 
+            <TouchableOpacity
+              style={styles.attachButton}
               disabled={isSending}
               onPress={() => setShowAttachmentModal(true)}
             >
@@ -1323,15 +2169,15 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               editable={!isSending}
             />
 
-            <TouchableOpacity 
-              style={styles.emojiButton} 
+            <TouchableOpacity
+              style={styles.emojiButton}
               disabled={isSending}
               onPress={toggleEmojiPicker}
             >
-              <MaterialCommunityIcons 
-                name={showEmojiPicker ? "keyboard-outline" : "emoticon-outline"} 
-                size={22} 
-                color="#B4B4B4" 
+              <MaterialCommunityIcons
+                name={showEmojiPicker ? "keyboard-outline" : "emoticon-outline"}
+                size={22}
+                color="#B4B4B4"
               />
             </TouchableOpacity>
 
@@ -1373,23 +2219,23 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 borderBottomColor: '#F3F4F6',
                 backgroundColor: '#F9FAFB',
               }}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'smileys' ? 2 : 0, borderBottomColor: '#7C3AED' }}
                   onPress={() => setActiveEmojiTab('smileys')}
                 >
-                  <Text style={{ fontSize: 16 }}>😀</Text>
+                  <MaterialCommunityIcons name="emoticon-outline" size={20} color={activeEmojiTab === 'smileys' ? '#7C3AED' : '#9CA3AF'} />
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'hands' ? 2 : 0, borderBottomColor: '#7C3AED' }}
                   onPress={() => setActiveEmojiTab('hands')}
                 >
-                  <Text style={{ fontSize: 16 }}>👍</Text>
+                  <MaterialCommunityIcons name="thumb-up-outline" size={20} color={activeEmojiTab === 'hands' ? '#7C3AED' : '#9CA3AF'} />
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: activeEmojiTab === 'hearts' ? 2 : 0, borderBottomColor: '#7C3AED' }}
                   onPress={() => setActiveEmojiTab('hearts')}
                 >
-                  <Text style={{ fontSize: 16 }}>❤️</Text>
+                  <MaterialCommunityIcons name="heart-outline" size={20} color={activeEmojiTab === 'hearts' ? '#7C3AED' : '#9CA3AF'} />
                 </TouchableOpacity>
               </View>
 
@@ -1401,8 +2247,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 ] : [
                   '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔'
                 ]).map((emoji, index) => (
-                  <TouchableOpacity 
-                    key={index} 
+                  <TouchableOpacity
+                    key={index}
                     style={{ width: '12%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', margin: 2 }}
                     onPress={() => handleEmojiSelect(emoji)}
                   >
@@ -1414,154 +2260,6 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           )}
         </View>
       </KeyboardAvoidingView>
-      {/* Add User Modal */}
-      <Modal visible={showAddUserModal} transparent animationType="fade" onRequestClose={() => setShowAddUserModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add User to Group</Text>
-              <TouchableOpacity onPress={() => setShowAddUserModal(false)} style={styles.modalCloseButton}>
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={allUsers.filter(u => !groupMembers.find(m => m.userId === u.id))}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <View style={styles.userListItem}>
-                  <View style={styles.userListItemLeft}>
-                    <View style={styles.userListAvatar}>
-                      {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('data:image')) ? (
-                        <Image source={{ uri: item.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                      ) : (
-                        <MaterialCommunityIcons name="account" size={24} color="#7C3AED" />
-                      )}
-                    </View>
-                    <View>
-                      <Text style={styles.userListName}>{item.name || item.nick_name}</Text>
-                      <Text style={styles.userListPhone}>{item.phone}</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity style={styles.addUserButton} onPress={() => handleAddUserToGroup(item)}>
-                    <Text style={styles.actionButtonText}>Add</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>No available users to add.</Text>}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Remove User Modal */}
-      <Modal visible={showRemoveUserModal} transparent animationType="fade" onRequestClose={() => setShowRemoveUserModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Remove User</Text>
-              <TouchableOpacity onPress={() => setShowRemoveUserModal(false)} style={styles.modalCloseButton}>
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={groupMembers}
-              keyExtractor={(item) => item.userId.toString()}
-              renderItem={({ item }) => (
-                <View style={styles.userListItem}>
-                  <View style={styles.userListItemLeft}>
-                    <View style={styles.userListAvatar}>
-                      {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('data:image')) ? (
-                        <Image source={{ uri: item.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                      ) : (
-                        <MaterialCommunityIcons name="account" size={24} color="#7C3AED" />
-                      )}
-                    </View>
-                    <View>
-                      <Text style={styles.userListName}>{item.name}</Text>
-                      <Text style={styles.userListPhone}>{item.phone}</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity style={styles.removeUserButton} onPress={() => handleRemoveUserFromGroup(item)}>
-                    <Text style={styles.actionButtonText}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>No members found.</Text>}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Add User Modal */}
-      <Modal visible={showAddUserModal} transparent animationType="fade" onRequestClose={() => setShowAddUserModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add User to Group</Text>
-              <TouchableOpacity onPress={() => setShowAddUserModal(false)} style={styles.modalCloseButton}>
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={allUsers.filter(u => !groupMembers.find(m => m.userId === u.id))}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <View style={styles.userListItem}>
-                  <View style={styles.userListItemLeft}>
-                    <View style={styles.userListAvatar}>
-                      <Text style={styles.userListAvatarText}>{(item.name || item.nick_name || 'U').substring(0, 2).toUpperCase()}</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.userListName}>{item.name || item.nick_name}</Text>
-                      <Text style={styles.userListPhone}>{item.phone}</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity style={styles.addUserButton} onPress={() => handleAddUserToGroup(item)}>
-                    <Text style={styles.actionButtonText}>Add</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>No available users to add.</Text>}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Remove User Modal */}
-      <Modal visible={showRemoveUserModal} transparent animationType="fade" onRequestClose={() => setShowRemoveUserModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Remove User</Text>
-              <TouchableOpacity onPress={() => setShowRemoveUserModal(false)} style={styles.modalCloseButton}>
-                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={groupMembers}
-              keyExtractor={(item) => item.userId.toString()}
-              renderItem={({ item }) => (
-                <View style={styles.userListItem}>
-                  <View style={styles.userListItemLeft}>
-                    <View style={styles.userListAvatar}>
-                      <Text style={styles.userListAvatarText}>{item.avatar}</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.userListName}>{item.name}</Text>
-                      <Text style={styles.userListPhone}>{item.phone}</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity style={styles.removeUserButton} onPress={() => handleRemoveUserFromGroup(item)}>
-                    <Text style={styles.actionButtonText}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>No members found.</Text>}
-            />
-          </View>
-        </View>
-      </Modal>
-
       {/* Group Info Full Modal */}
       <Modal visible={showGroupInfoModal} animationType="slide" onRequestClose={() => setShowGroupInfoModal(false)}>
         <SafeAreaView style={styles.groupInfoModalOverlay}>
@@ -1577,7 +2275,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             {/* Top Section (Hero Header) */}
             <View style={styles.groupInfoHeaderSection}>
               <TouchableOpacity style={styles.groupInfoAvatarContainer} onPress={handleChangeGroupPhoto} activeOpacity={0.8}>
-                {chatAvatar && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
+                {chatAvatar && typeof chatAvatar === 'string' && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
                   <Image source={{ uri: chatAvatar }} style={{ width: 110, height: 110, borderRadius: 55 }} />
                 ) : (
                   <View style={{ width: 110, height: 110, borderRadius: 55, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center' }}>
@@ -1588,10 +2286,10 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                   <MaterialCommunityIcons name="camera" size={20} color="#FFFFFF" />
                 </View>
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.groupInfoNameContainer} onPress={() => setShowRenameDialog(true)}>
                 <Text style={styles.groupInfoNameText}>{localChatName}</Text>
-                <MaterialCommunityIcons name="pencil" size={20} color="#7C3AED" />
+                <MaterialCommunityIcons name="pencil" size={20} color="#7C3AED" style={{ marginLeft: 8 }} />
               </TouchableOpacity>
 
               {/* Group Started Date */}
@@ -1654,13 +2352,13 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             {/* WhatsApp Native Grey Section Divider */}
             <View style={{ height: 10, backgroundColor: '#F3F4F6', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#E5E7EB' }} />
 
-            {/* Members Section (Flat Native List with Add Members & Real-Time Profile Photos) */}
+            {/* Members Section (Flat Native List with Real-Time User Profile Photos) */}
             <View style={{ backgroundColor: '#FFFFFF', paddingBottom: 24 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.6 }}>{groupMembers.length} Members</Text>
               </View>
-              
-              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }} onPress={() => setShowAddUserModal(true)}>
+
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }} onPress={handleOpenAddUser}>
                 <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: '#7C3AED', justifyContent: 'center', alignItems: 'center', marginRight: 14 }}>
                   <MaterialCommunityIcons name="account-plus" size={24} color="#FFFFFF" />
                 </View>
@@ -1675,7 +2373,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                 const avatarUrl = getAvatarUrl(item.avatar);
 
                 return (
-                  <View key={item.userId || idx}>
+                  <View key={item.userId || item.id || idx}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }}>
                       <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center', marginRight: 14, overflow: 'hidden' }}>
                         {avatarUrl ? (
@@ -1710,30 +2408,6 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             </View>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
-
-      {/* Rename Dialog */}
-      <Modal visible={showRenameDialog} transparent animationType="fade" onRequestClose={() => setShowRenameDialog(false)}>
-        <View style={styles.renameDialogOverlay}>
-          <View style={styles.renameDialogContainer}>
-            <Text style={styles.renameDialogTitle}>Enter new subject</Text>
-            <TextInput
-              style={styles.renameDialogInput}
-              value={newGroupName}
-              onChangeText={setNewGroupName}
-              autoFocus
-              maxLength={25}
-            />
-            <View style={styles.renameDialogActions}>
-              <TouchableOpacity style={[styles.renameDialogButton, styles.renameDialogButtonCancel]} onPress={() => setShowRenameDialog(false)}>
-                <Text style={styles.renameDialogButtonCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.renameDialogButton, styles.renameDialogButtonSave]} onPress={handleRenameGroup}>
-                <Text style={styles.renameDialogButtonSaveText}>OK</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
       </Modal>
 
       {/* Starred Messages Modal */}
@@ -1799,6 +2473,218 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
       {/* Attachment share options modal */}
       {renderAttachmentModal()}
+
+      {/* Share Contact input modal */}
+      <Modal
+        visible={showShareContactModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowShareContactModal(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}
+          activeOpacity={1}
+          onPress={() => Keyboard.dismiss()}
+        >
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 20,
+            width: '100%',
+            maxWidth: 340,
+            padding: 24,
+            elevation: 10,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.25,
+            shadowRadius: 10,
+          }}>
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: '#EFF6FF', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}>
+                <MaterialCommunityIcons name="account-plus" size={28} color="#2563EB" />
+              </View>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#1F2937' }}>
+                Share Contact
+              </Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, textAlign: 'center' }}>
+                Enter contact details to share with this chat
+              </Text>
+            </View>
+
+            <View style={{ marginBottom: 14 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6 }}>
+                Contact Name
+              </Text>
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#D1D5DB',
+                  borderRadius: 10,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  fontSize: 15,
+                  color: '#1F2937',
+                  backgroundColor: '#F9FAFB',
+                }}
+                placeholder="e.g. John Doe"
+                placeholderTextColor="#9CA3AF"
+                value={contactNameInput}
+                onChangeText={setContactNameInput}
+              />
+            </View>
+
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6 }}>
+                Phone Number
+              </Text>
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#D1D5DB',
+                  borderRadius: 10,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  fontSize: 15,
+                  color: '#1F2937',
+                  backgroundColor: '#F9FAFB',
+                }}
+                placeholder="e.g. +91 98765 43210"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+                value={contactPhoneInput}
+                onChangeText={setContactPhoneInput}
+              />
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  marginRight: 8,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  backgroundColor: '#F3F4F6',
+                  alignItems: 'center',
+                }}
+                onPress={() => setShowShareContactModal(false)}
+              >
+                <Text style={{ color: '#4B5563', fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  marginLeft: 8,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  backgroundColor: '#2563EB',
+                  alignItems: 'center',
+                }}
+                onPress={handleSendShareContact}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>Send Contact</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Fullscreen Photo Lightbox Modal */}
+      {renderImageViewerModal()}
+
+      {/* Rename Group Dialog */}
+      <Modal visible={showRenameDialog} transparent animationType="fade" onRequestClose={() => setShowRenameDialog(false)}>
+        <View style={styles.renameDialogOverlay}>
+          <View style={styles.renameDialogContainer}>
+            <Text style={styles.renameDialogTitle}>Rename Group</Text>
+            <TextInput
+              style={styles.renameDialogInput}
+              value={newGroupName}
+              onChangeText={setNewGroupName}
+              placeholder="Enter new group name"
+              autoFocus
+            />
+            <View style={styles.renameDialogButtons}>
+              <TouchableOpacity style={styles.renameDialogButton} onPress={() => setShowRenameDialog(false)}>
+                <Text style={styles.renameDialogButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.renameDialogButtonPrimary} onPress={handleRenameGroup}>
+                <Text style={styles.renameDialogButtonPrimaryText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add User Modal */}
+      <Modal visible={showAddUserModal} animationType="slide" onRequestClose={() => setShowAddUserModal(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+          <Header title="Add Members" onBack={() => setShowAddUserModal(false)} showBackButton />
+          <FlatList
+            data={allUsers.filter(u => !groupMembers.find(m => m.id === u.id || m.userId === u.id))}
+            keyExtractor={item => item.id.toString()}
+            contentContainerStyle={{ padding: 16 }}
+            renderItem={({ item }) => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+                <Text style={{ fontSize: 16, color: '#1F2937' }}>{item.name || item.user_name}</Text>
+                <TouchableOpacity onPress={() => handleAddUserToGroup(item)} style={{ backgroundColor: '#7C3AED', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 }}>
+                  <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        </SafeAreaView>
+      </Modal>
+
+      {/* Voice Note Recording Modal */}
+      <Modal
+        visible={showRecordModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={cancelRecordingAudio}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24, width: '82%', alignItems: 'center', elevation: 8 }}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center', marginBottom: 14 }}>
+              <MaterialCommunityIcons name="microphone" size={36} color="#EF4444" />
+            </View>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: '#1F2937', marginBottom: 4 }}>Recording Voice Note</Text>
+            <Text style={{ fontSize: 22, fontWeight: '800', color: '#EF4444', marginBottom: 20 }}>{recordTime}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#F3F4F6', alignItems: 'center', marginRight: 8 }}
+                onPress={cancelRecordingAudio}
+              >
+                <Text style={{ fontSize: 15, fontWeight: '600', color: '#4B5563' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#7C3AED', alignItems: 'center', marginLeft: 8 }}
+                onPress={stopAndSendRecording}
+              >
+                <Text style={{ fontSize: 15, fontWeight: '600', color: '#FFFFFF' }}>Send 🚀</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Join Group Modal from Community Code */}
+      <Modal
+        visible={showJoinModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => {
+          setShowJoinModal(false);
+          loadMessages();
+        }}
+      >
+        <Join
+          onBack={() => {
+            setShowJoinModal(false);
+            loadMessages();
+          }}
+          initialGroupCode={joinModalCode}
+        />
+      </Modal>
 
     </SafeAreaView>
   );

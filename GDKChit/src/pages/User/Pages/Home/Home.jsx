@@ -658,7 +658,7 @@ const Home = () => {
               <LottieView
                 source={require('../../../../animation/UserHome/MoneyIncreaseGraph.json')}
                 autoPlay
-                loop
+                loop={false}
                 style={styles.lottieHero}
               />
             </View>
