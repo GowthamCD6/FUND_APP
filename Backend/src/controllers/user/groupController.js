@@ -265,3 +265,32 @@ exports.getGroupMonthlyInfo = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+exports.checkActiveAuction = async (req, res) => {
+  try {
+    const { groupId } = req.query;
+    if (!groupId) {
+      return res.status(400).json({ success: false, message: 'groupId is required' });
+    }
+    const [rows] = await db.promise().query(
+      "SELECT id, auction_type, initial_amount, duration, status FROM group_auctions WHERE group_id = ? AND status = 'active' LIMIT 1",
+      [groupId]
+    );
+    if (rows.length > 0) {
+      return res.json({
+        success: true,
+        active: true,
+        auction: rows[0]
+      });
+    } else {
+      return res.json({
+        success: true,
+        active: false,
+        auction: null
+      });
+    }
+  } catch (error) {
+    console.error('Error checking active auction status:', error);
+    return res.status(500).json({ success: false, message: 'Server error checking auction status' });
+  }
+};

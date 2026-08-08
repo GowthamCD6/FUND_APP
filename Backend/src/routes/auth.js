@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth/authController');
 const { authenticateToken } = require('../middleware/auth');
+const { authAttemptRateLimiter } = require('../middleware/rateLimiter');
 
 // Authentication routes
 // router.post('/register', authController.register);
-router.post('/login', authController.login);
+router.post('/login', authAttemptRateLimiter, authController.login);
 router.post('/refresh-token', authController.refreshToken);
 router.post('/logout', authController.logout);
 

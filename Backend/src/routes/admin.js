@@ -1,12 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const groupManagement = require('../controllers/admin/groupManagement');
 const manageGroupController = require('../controllers/admin/manageGroupController');
 const groupMessaging = require('../controllers/admin/groupMessaging');
 const monthlyCollection = require('../controllers/admin/monthlyCollection');
 const userManagement = require('../controllers/admin/userManagement');
 const reportsController = require('../controllers/admin/reportsController');
+const { otpRateLimiter, authAttemptRateLimiter } = require('../middleware/rateLimiter');
+const {
+  validatePaymentStatusPayload,
+  validateSendOtpPayload,
+  validateVerifyOtpPayload,
+} = require('../middleware/validators');
 
 // Using the new Manage Group separate controller page
 router.post('/groups/createGroup', authenticateToken, manageGroupController.createGroup);
@@ -43,12 +49,31 @@ router.post('/users/unblock', authenticateToken, userManagement.unblockUser);
 router.get('/collections/getMemberHistory', authenticateToken, monthlyCollection.getMemberPaymentHistory);
 router.get('/collections/defaulters', authenticateToken, monthlyCollection.getGlobalDefaulters);
 
-router.get('/reports/groups', authenticateToken, reportsController.getReportGroups);
-router.get('/reports/group-members', authenticateToken, reportsController.getGroupMemberPayments);
-router.post('/reports/payment-status', authenticateToken, reportsController.updateMemberPaymentStatus);
-router.get('/reports/member-chit-card', authenticateToken, reportsController.getMemberChitCard);
-router.post('/reports/send-otp', authenticateToken, reportsController.sendPaymentOTP);
-router.post('/reports/verify-otp', authenticateToken, reportsController.verifyPaymentOTP);
-
+router.get('/reports/groups', authenticateToken, requireAdmin, reportsController.getReportGroups);
+router.get('/reports/group-members', authenticateToken, requireAdmin, reportsController.getGroupMemberPayments);
+router.post(
+  '/reports/payment-status',
+  authenticateToken,
+  requireAdmin,
+  validatePaymentStatusPayload,
+  reportsController.updateMemberPaymentStatus,
+);
+router.get('/reports/member-chit-card', authenticateToken, requireAdmin, reportsController.getMemberChitCard);
+router.post(
+  '/reports/send-otp',
+  authenticateToken,
+  requireAdmin,
+  otpRateLimiter,
+  validateSendOtpPayload,
+  reportsController.sendPaymentOTP,
+);
+router.post(
+  '/reports/verify-otp',
+  authenticateToken,
+  requireAdmin,
+  authAttemptRateLimiter,
+  validateVerifyOtpPayload,
+  reportsController.verifyPaymentOTP,
+);
 
 module.exports = router;

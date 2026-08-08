@@ -82,9 +82,51 @@ const verifyRefreshToken = (token) => {
   }
 };
 
+// Middleware to ensure the authenticated user has Admin role/privileges
+const requireAdmin = async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required'
+    });
+  }
+  const tokenRole = String(req.user.role || req.user.userType || req.user.type || '').toLowerCase();
+  const isAdmin = tokenRole === 'admin' || req.user.isAdmin === true || req.user.is_admin === 1;
+
+  if (isAdmin) {
+    return next();
+  }
+
+  // Fallback database lookup if role was omitted in token
+  try {
+    const userId = req.user.userId || req.user.id;
+    if (userId) {
+      const [rows] = await db.promise().query(
+        'SELECT role FROM users WHERE id = ? AND deleted_at IS NULL',
+        [userId]
+      );
+      if (rows.length > 0) {
+        const dbRole = String(rows[0].role || '').toLowerCase();
+        if (dbRole === 'admin') {
+          req.user.role = 'admin';
+          return next();
+        }
+      }
+    }
+  } catch (dbErr) {
+    console.error('Error verifying admin role in DB:', dbErr);
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: 'Access denied. Administrative privileges required.'
+  });
+};
+
 module.exports = {
   authenticateToken,
   authenticateOptional,
+  requireAdmin,
   generateToken,
   generateRefreshToken,
   verifyRefreshToken,

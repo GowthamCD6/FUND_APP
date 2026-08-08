@@ -1,10 +1,80 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, TouchableOpacity, FlatList, RefreshControl, Animated, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../../../components/HeaderComponent/Header';
 import GroupCard from '../../../../components/GroupCard/GroupCard';
 import styles from './ReportsStyles';
 import ApiService from '../../../../services/ApiService';
+
+const SkeletonBox = ({ width, height, borderRadius = 6, style }) => {
+  const animatedValue = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 0.85,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0.3,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: '#CBD5E1',
+          opacity: animatedValue,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+const GroupCardSkeleton = () => (
+  <View style={[styles.groupCard, { opacity: 0.85 }]}>
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 20, paddingBottom: 12 }}>
+      <View style={{ flex: 1, gap: 8 }}>
+        <SkeletonBox width={160} height={18} borderRadius={4} />
+        <SkeletonBox width={70} height={20} borderRadius={10} />
+      </View>
+      <SkeletonBox width={24} height={24} borderRadius={12} />
+    </View>
+
+    <View style={{ paddingHorizontal: 20, paddingBottom: 20, gap: 16 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <SkeletonBox width={100} height={14} borderRadius={4} />
+        <SkeletonBox width={100} height={14} borderRadius={4} />
+      </View>
+
+      <View style={{ gap: 8 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <SkeletonBox width={80} height={14} borderRadius={4} />
+          <SkeletonBox width={36} height={14} borderRadius={4} />
+        </View>
+        <SkeletonBox width="100%" height={6} borderRadius={3} />
+      </View>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <SkeletonBox width={110} height={12} borderRadius={4} />
+        <SkeletonBox width={90} height={14} borderRadius={4} />
+      </View>
+    </View>
+  </View>
+);
 
 const Reports = () => {
   const navigation = useNavigation();
@@ -104,11 +174,13 @@ const Reports = () => {
   };
 
   const openGroupDetails = () => {
-    // Intentionally disabled for card body.
+    // Disabled for main card body; details page opened via right arrow chevron (>).
   };
 
   const openGroupModal = (group) => {
-    navigation.navigate('MembersDetails', { group });
+    if (group) {
+      navigation.navigate('MembersDetails', { group });
+    }
   };
 
   const getTabCounts = () => {
@@ -148,21 +220,27 @@ const Reports = () => {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={getFilteredGroups()}
-        renderItem={renderGroupCard}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={[styles.listContainer, { paddingBottom: 100 }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListEmptyComponent={
-          !isLoading ? (
+      {isLoading ? (
+        <ScrollView contentContainerStyle={[styles.listContainer, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+          {[1, 2, 3, 4].map((key) => (
+            <GroupCardSkeleton key={key} />
+          ))}
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={getFilteredGroups()}
+          renderItem={renderGroupCard}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={[styles.listContainer, { paddingBottom: 100 }]}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          ListEmptyComponent={
             <View style={{ paddingTop: 48, alignItems: 'center' }}>
               <Text style={{ color: '#6B7280', fontSize: 15 }}>No {activeTab} groups found.</Text>
             </View>
-          ) : null
-        }
-        showsVerticalScrollIndicator={false}
-      />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 };

@@ -18,11 +18,13 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 const { width, height } = Dimensions.get('window');
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import GroupCard from '../../../../../components/GroupCard/GroupCard';
 import Header from '../../../../../components/HeaderComponent/Header';
 import BettingAuction from './BettingAuction/BettingAuction';
 import RandomAuction from './RandomAuction/RandomAuction';
 import ApiService from '../../../../../services/ApiService';
+import AuctionWebSocketService from '../../../../../services/AuctionWebSocketService';
 
 const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupType }) => {
   const paramGroupId = route?.params?.groupId || selectedGroupId;
@@ -35,6 +37,8 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [auctionResult, setAuctionResult] = useState(null);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [targetGroupForModal, setTargetGroupForModal] = useState(null);
+  const [showNotActiveModal, setShowNotActiveModal] = useState(false);
   const [isAuctionActive, setIsAuctionActive] = useState(false);
   const [liveAmount, setLiveAmount] = useState(null);
 
@@ -90,8 +94,10 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
   };
 
   const handleGroupSelect = async (group) => {
-    setSelectedGroup(group);
+    setTargetGroupForModal(group);
     setLiveAmount(group.groupAmount || null);
+
+    // Fetch members in background
     try {
       const response = await ApiService.makeRequest(`/user/groups/getMembers?groupId=${group.id}`, { method: 'GET' });
       const data = await response.json();
@@ -110,7 +116,67 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
       console.error('Error fetching group members:', error);
       setParticipants([]);
     }
+
+    // Check if live auction is active for this group
+    let active = false;
+    try {
+      const resp = await ApiService.makeRequest(`/user/auctions/active?groupId=${group.id}`, { method: 'GET' });
+      const auctionData = await resp.json();
+      if (auctionData && auctionData.success && auctionData.active) {
+        active = true;
+      }
+    } catch (e) {
+      // Default to false if active auction not confirmed yet
+    }
+
+    if (active) {
+      setIsAuctionActive(true);
+      setSelectedGroup(group);
+      setShowNotActiveModal(false);
+    } else {
+      setIsAuctionActive(false);
+      setSelectedGroup(null); // Keep user OUTSIDE the auction page while auction is not held
+      setShowNotActiveModal(true); // Display modal over group list page
+    }
   };
+
+  // Socket listener to automatically bring user into auction room when admin starts auction
+  useEffect(() => {
+    const activeGroup = targetGroupForModal || selectedGroup;
+    if (!activeGroup) return;
+
+    let unsubStart = null;
+    let unsubEnd = null;
+
+    const initSocket = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const userId = await AsyncStorage.getItem('userId');
+        if (token && userId) {
+          await AuctionWebSocketService.connect(token, userId, 'user');
+          unsubStart = AuctionWebSocketService.on('auction_started', (data) => {
+            console.log('📢 Live Auction started for group:', data);
+            setIsAuctionActive(true);
+            setShowNotActiveModal(false);
+            setSelectedGroup(activeGroup); // Automatically enter auction page when started!
+          });
+          unsubEnd = AuctionWebSocketService.on('auction_ended', () => {
+            console.log('📢 Live Auction ended');
+            setIsAuctionActive(false);
+          });
+        }
+      } catch (err) {
+        console.log('WebSocket connect notice in Auction:', err);
+      }
+    };
+
+    initSocket();
+
+    return () => {
+      if (typeof unsubStart === 'function') unsubStart();
+      if (typeof unsubEnd === 'function') unsubEnd();
+    };
+  }, [targetGroupForModal, selectedGroup]);
 
   const handleBackFromAuction = () => {
     if (onClose) {
@@ -190,6 +256,59 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
     </Modal>
   );
 
+  const renderAuctionNotHeldModal = () => (
+    <Modal
+      visible={showNotActiveModal && !!targetGroupForModal && !isAuctionActive}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => {
+        setShowNotActiveModal(false);
+        setTargetGroupForModal(null);
+      }}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.notActiveCardContainer}>
+          {/* Circular Glowing Icon Badge */}
+          <View style={styles.notActiveIconWrapper}>
+            <View style={styles.notActiveIconCircle}>
+              <MaterialCommunityIcons name="gavel" size={40} color="#7C3AED" />
+            </View>
+          </View>
+
+          {/* Status Badge Pill */}
+          <View style={styles.notActiveBadgePill}>
+            <View style={styles.notActiveDot} />
+            <Text style={styles.notActiveBadgeText}>Auction Not Held</Text>
+          </View>
+
+          {/* Title & Description */}
+          <Text style={styles.notActiveMainTitle}>Auction Not Active</Text>
+          <Text style={styles.notActiveDescriptionText}>
+            The auction for <Text style={{ fontWeight: '700', color: '#111827' }}>{targetGroupForModal?.name || 'this group'}</Text> is currently not held or in progress.
+          </Text>
+          <Text style={styles.notActiveSubText}>
+            You are not permitted to enter the auction room right now. Please try again when the auction is officially started.
+          </Text>
+
+          {/* Action Button */}
+          <View style={styles.notActiveActionRow}>
+            <TouchableOpacity
+              style={styles.notActivePrimaryBtn}
+              onPress={() => {
+                setShowNotActiveModal(false);
+                setTargetGroupForModal(null);
+                setSelectedGroup(null);
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.notActivePrimaryBtnText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   const renderGroupSelectHeader = () => (
     <Header 
       title="Select Group" 
@@ -236,6 +355,7 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
               <GroupCard 
                 group={item}
                 onPress={() => handleGroupSelect(item)}
+                onArrowPress={() => handleGroupSelect(item)}
               />
             </TouchableOpacity>
           )}
@@ -320,6 +440,7 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
         <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
         {renderGroupSelectHeader()}
         {renderGroupsList()}
+        {renderAuctionNotHeldModal()}
       </SafeAreaView>
       </SafeAreaProvider>
     );
@@ -355,6 +476,7 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
         )}
       </View>
       {renderResultModal()}
+      {renderAuctionNotHeldModal()}
     </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -526,6 +648,128 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#6B7280",
+  },
+
+  // Auction Not Held Modal Styles
+  notActiveCardContainer: {
+    width: width * 0.88,
+    maxWidth: 400,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#6B46C1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  notActiveIconWrapper: {
+    marginBottom: 14,
+  },
+  notActiveIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#F3E8FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#DDD6FE',
+  },
+  notActiveBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  notActiveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D97706',
+    marginRight: 6,
+  },
+  notActiveBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#B45309',
+    letterSpacing: 0.3,
+  },
+  notActiveMainTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  notActiveDescriptionText: {
+    fontSize: 14,
+    color: '#4B5563',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 6,
+  },
+  notActiveSubText: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  notActiveWaitingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F0FF',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E9D5FF',
+    marginBottom: 20,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  notActiveWaitingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B46C1',
+  },
+  notActiveActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  notActivePrimaryBtn: {
+    flex: 1,
+    backgroundColor: '#7C3AED',
+    paddingVertical: 12,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+  },
+  notActivePrimaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  notActiveSecondaryBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notActiveSecondaryBtnText: {
+    color: '#4B5563',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

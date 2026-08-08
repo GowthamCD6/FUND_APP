@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../../components/HeaderComponent/Header';
@@ -15,6 +16,67 @@ import MemberChitCard from '../MemberChitCard/MemberChitCard';
 import PaymentEditor from '../PaymentEditiorModal/PaymentStatusEditior';
 import ApiService from '../../../../../../services/ApiService';
 import styles from './MemberDetailsStyles';
+
+const SkeletonBox = ({ width, height, borderRadius = 6, style }) => {
+  const animatedValue = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 0.85,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0.3,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: '#CBD5E1',
+          opacity: animatedValue,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+const MemberCardSkeleton = () => (
+  <View style={[styles.memberCard, { opacity: 0.85 }]}>
+    <View style={styles.memberHeader}>
+      <View style={styles.memberAvatarContainer}>
+        <SkeletonBox width={42} height={42} borderRadius={21} />
+      </View>
+      <View style={[styles.memberInfo, { gap: 8 }]}>
+        <SkeletonBox width={140} height={16} borderRadius={4} />
+        <SkeletonBox width={180} height={12} borderRadius={4} />
+      </View>
+      <View style={styles.statusAndArrowContainer}>
+        <SkeletonBox width={65} height={22} borderRadius={11} />
+      </View>
+    </View>
+  </View>
+);
+const getInitials = (name) => {
+  if (!name || typeof name !== 'string') return 'NA';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'NA';
+  return parts.map((p) => p.charAt(0)).join('').substring(0, 2).toUpperCase();
+};
 
 class MemberDetails extends Component {
   constructor(props) {
@@ -74,7 +136,8 @@ class MemberDetails extends Component {
 
 
   getStatusColor = (status) => {
-    switch (status) {
+    const safeStatus = String(status || '').toLowerCase();
+    switch (safeStatus) {
       case 'paid':
         return '#10B981';
       case 'pending':
@@ -87,7 +150,8 @@ class MemberDetails extends Component {
   };
 
   getStatusIcon = (status) => {
-    switch (status) {
+    const safeStatus = String(status || '').toLowerCase();
+    switch (safeStatus) {
       case 'paid':
         return 'check-circle';
       case 'pending':
@@ -199,7 +263,7 @@ class MemberDetails extends Component {
       return rawStatus;
     }
 
-    if (rawStatus === 'overdue') {
+    if (member?.isOverdue || rawStatus === 'overdue') {
       return 'overdue';
     }
 
@@ -224,9 +288,15 @@ class MemberDetails extends Component {
       return 'overdue';
     }
 
+    const targetPayment = paymentHistory.find(
+      (entry) => Number(entry?.month) === targetMonth && Number(entry?.year) === targetYear,
+    );
+
     const dueDate = this.parseDateValue(
       member?.currentPayment?.dueDate ||
       member?.currentPayment?.due_date ||
+      targetPayment?.dueDate ||
+      targetPayment?.due_date ||
       member?.paymentHistory?.[0]?.dueDate ||
       member?.paymentHistory?.[0]?.due_date,
     );
@@ -271,12 +341,32 @@ class MemberDetails extends Component {
         throw new Error(result?.message || 'Failed to fetch member report details');
       }
 
-      this.setState({
-        groupData: {
-          ...group,
+      this.setState((prevState) => {
+        const newGroupData = {
+          ...prevState.group,
           ...result.data.group,
           members: result.data.members || [],
-        },
+        };
+        
+        let newSelectedMember = prevState.selectedMember;
+        // If a member is currently selected (e.g. modal open), update them with the fresh data
+        if (newSelectedMember) {
+          const updatedMember = newGroupData.members.find(m => Number(m.id) === Number(newSelectedMember.id));
+          if (updatedMember) {
+            newSelectedMember = {
+              ...updatedMember,
+              currentPayment: {
+                ...updatedMember.currentPayment,
+                status: this.getComputedPaymentStatus(updatedMember),
+              },
+            };
+          }
+        }
+
+        return {
+          groupData: newGroupData,
+          selectedMember: newSelectedMember
+        };
       });
     } catch (error) {
       console.error('Failed to fetch report member details:', error);
@@ -294,34 +384,47 @@ class MemberDetails extends Component {
 
   getMonthlyStats = () => {
     const members = this.state.groupData.members || [];
-    const paid = members.filter((m) => this.getComputedPaymentStatus(m) === 'paid').length;
-    const pending = members.filter((m) => this.getComputedPaymentStatus(m) === 'pending').length;
-    const overdue = members.filter((m) => this.getComputedPaymentStatus(m) === 'overdue').length;
+    let paid = 0;
+    let pending = 0;
+    let overdue = 0;
+    let totalAmount = 0;
 
-    const totalAmount = members.reduce((sum, m) => {
-      const payment = Number(m?.currentPayment?.amount || 0);
-      return this.getComputedPaymentStatus(m) === 'paid' ? sum + payment : sum;
-    }, 0);
+    for (let i = 0; i < members.length; i += 1) {
+      const m = members[i];
+      const status = this.getComputedPaymentStatus(m);
+      if (status === 'paid') {
+        paid += 1;
+        totalAmount += Number(m?.currentPayment?.amount || 0);
+      } else if (status === 'overdue') {
+        overdue += 1;
+      } else {
+        pending += 1;
+      }
+    }
 
     return { paid, pending, overdue, totalAmount, total: members.length };
   };
 
-
-
-  updatePaymentStatus = async (memberId, newStatus) => {
+  updatePaymentStatus = async (memberId, newStatus, targetMonth, targetYear) => {
     const { groupData, selectedMonth, selectedYear } = this.state;
+    const m = targetMonth !== undefined ? targetMonth : selectedMonth;
+    const y = targetYear !== undefined ? targetYear : selectedYear;
 
     try {
-      const member = (groupData.members || []).find((m) => m.id === memberId);
+      const member = (groupData.members || []).find((mem) => Number(mem.id) === Number(memberId));
       if (!member) return;
+
+      const targetHistory = (member?.paymentHistory || []).find(
+        (h) => Number(h.month) === Number(m) && Number(h.year) === Number(y),
+      );
 
       const payload = {
         groupId: groupData.id,
         userId: memberId,
-        month: selectedMonth,
-        year: selectedYear,
+        month: m,
+        year: y,
         status: newStatus,
-        amount: Number(member?.currentPayment?.amount || groupData.monthlyAmount || 0),
+        amount: Number(targetHistory?.amount || member?.currentPayment?.amount || groupData.monthlyAmount || 0),
       };
 
       const response = await ApiService.makeRequest('/admin/reports/payment-status', {
@@ -335,31 +438,7 @@ class MemberDetails extends Component {
         throw new Error(result?.message || 'Failed to update payment status');
       }
 
-      const updated = result.data;
-
-      this.setState((prev) => ({
-        groupData: {
-          ...prev.groupData,
-          members: (prev.groupData.members || []).map((m) => {
-            if (m.id !== memberId) return m;
-
-            const currentPayment = {
-              ...m.currentPayment,
-              ...updated,
-            };
-
-            const historyWithoutCurrent = (m.paymentHistory || []).filter(
-              (p) => !(p.month === selectedMonth && p.year === selectedYear),
-            );
-
-            return {
-              ...m,
-              currentPayment,
-              paymentHistory: [currentPayment, ...historyWithoutCurrent],
-            };
-          }),
-        },
-      }));
+      await this.loadMemberPayments();
     } catch (error) {
       console.error('Failed to update payment status:', error);
       Alert.alert('Error', error.message || 'Unable to update payment status');
@@ -400,18 +479,14 @@ class MemberDetails extends Component {
       <TouchableOpacity
         style={styles.memberCard}
         onLongPress={() => this.openPaymentEditor(item)}
-        activeOpacity={1}
         delayLongPress={400}
+        activeOpacity={0.9}
       >
         <View style={styles.memberHeader}>
           <View style={styles.memberAvatarContainer}>
             <View style={styles.memberAvatar}>
               <Text style={styles.memberAvatarText}>
-                {item.name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .substring(0, 2)}
+                {getInitials(item.name)}
               </Text>
             </View>
           </View>
@@ -545,9 +620,11 @@ class MemberDetails extends Component {
         </View>
 
         {isLoading ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#6B46C1" />
-          </View>
+          <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
+            {[1, 2, 3, 4, 5, 6].map((key) => (
+              <MemberCardSkeleton key={key} />
+            ))}
+          </ScrollView>
         ) : (
           <FlatList
             data={groupData.members || []}
@@ -613,8 +690,7 @@ class MemberDetails extends Component {
           visible={showMemberChitCard}
           onRequestClose={() => {
             this.setState({ showMemberChitCard: false });
-            // Refresh member data when closing chit card
-            setTimeout(() => this.loadMemberPayments(), 500);
+            this.loadMemberPayments();
           }}
         >
           <MemberChitCard
@@ -622,8 +698,7 @@ class MemberDetails extends Component {
             selectedMember={selectedMemberForChitCard}
             onBack={() => {
               this.setState({ showMemberChitCard: false });
-              // Refresh member data when going back from chit card
-              setTimeout(() => this.loadMemberPayments(), 500);
+              this.loadMemberPayments();
             }}
             onPaymentMarkedPaid={this.handlePaymentMarkedPaid}
           />

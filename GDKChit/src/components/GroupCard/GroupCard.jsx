@@ -70,7 +70,7 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
           </View>
         </View>
         <TouchableOpacity
-          onPress={() => onArrowPress && onArrowPress(group)}
+          onPress={() => (onArrowPress ? onArrowPress(group) : onPress && onPress(group))}
           style={styles.arrowButton}
           activeOpacity={0.6}
         >

@@ -23,8 +23,9 @@ router.get('/admins/locations', authenticateToken, locationController.getAdminLo
 router.post('/groups/join', authenticateToken, groupController.joinGroup);
 router.get('/preferences', authenticateToken, preferencesController.getPreferences);
 router.put('/preferences', authenticateToken, preferencesController.updatePreferences);
-router.post('/rate-app', authenticateToken, ratingsController.submitRating);
+router.get('/rate-app', authenticateToken, ratingsController.submitRating);
 router.get('/my-rating', authenticateToken, ratingsController.getMyRating);
+router.get('/auctions/active', authenticateToken, groupController.checkActiveAuction);
 
 // OTP Routes
 router.get('/otp-requests', authenticateToken, otpController.getOTPRequests);
