@@ -86,34 +86,51 @@ const ChatList = ({ navigation }) => {
     loadSettings();
   }, []);
 
+  const parseJwtUserId = (token) => {
+    try {
+      if (!token) return 'unknown';
+      const base64Url = token.split('.')[1];
+      if (!base64Url) return 'unknown';
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=');
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+      let str = '';
+      for (let i = 0; i < padded.length; i += 4) {
+        const a = chars.indexOf(padded.charAt(i));
+        const b = chars.indexOf(padded.charAt(i + 1));
+        const c = chars.indexOf(padded.charAt(i + 2));
+        const d = chars.indexOf(padded.charAt(i + 3));
+        const bitmap = (a << 18) | (b << 12) | ((c & 63) << 6) | (d & 63);
+        str += String.fromCharCode((bitmap >> 16) & 255);
+        if (c !== 64) str += String.fromCharCode((bitmap >> 8) & 255);
+        if (d !== 64) str += String.fromCharCode(bitmap & 255);
+      }
+      const parsed = JSON.parse(str);
+      return parsed.userId || parsed.id || 'unknown';
+    } catch (err) {
+      return 'unknown';
+    }
+  };
+
   useEffect(() => {
     loadChats();
+
+    const unsubscribe = navigation?.addListener ? navigation.addListener('focus', () => {
+      loadChats();
+    }) : () => {};
 
     // Setup WebSocket
     const setupWebSocket = async () => {
       try {
-        // Read accessToken (the key ApiService stores the JWT under)
         const token = await AsyncStorage.getItem('accessToken') || await AsyncStorage.getItem('userToken');
-
-        // Read user info from individual AsyncStorage keys
         const userName = await AsyncStorage.getItem('userName') || '';
         const userRole = await AsyncStorage.getItem('userRole') || 'User';
 
         if (!token) return;
 
-        // Decode JWT for userId
-        let userId = 'unknown';
-        try {
-          const payloadBase64 = token.split('.')[1];
-          const payload = JSON.parse(atob(payloadBase64));
-          userId = payload.userId || payload.id || 'unknown';
-        } catch (e) {
-          console.warn('Could not decode JWT for userId:', e);
-        }
-
+        const userId = parseJwtUserId(token);
         const userType = userRole || 'User';
 
-        // Convert http:// API_URL to ws:// and use correct /api/chat path
         let wsUrl = ApiService.baseURL ? ApiService.baseURL.replace('http', 'ws') : 'ws://localhost:5000';
         wsUrl = wsUrl.replace(/\/api\/admin\/?$/, '').replace(/\/api\/?$/, '');
         wsUrl = `${wsUrl}/api/chat?token=${token}&userId=${userId}&userType=${userType}`;
@@ -127,10 +144,12 @@ const ChatList = ({ navigation }) => {
         const handleWsMessage = (event) => {
           try {
             const payload = JSON.parse(event.data);
-            if (payload.type === 'new_message_notification' || payload.type === 'new_message') {
+            if (payload.type === 'new_message_notification' || payload.type === 'new_message' || payload.type === 'user_presence') {
               loadChats();
             }
-          } catch (e) { }
+          } catch (e) {
+            console.error('Error parsing WS message:', e);
+          }
         };
 
         ws.current.addEventListener('message', handleWsMessage);
@@ -150,8 +169,9 @@ const ChatList = ({ navigation }) => {
     setupWebSocket();
 
     return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
       if (ws.current) {
-        ws.current.close();
+        try { ws.current.close(); } catch (e) { }
       }
     };
   }, []);

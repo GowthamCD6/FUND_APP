@@ -273,6 +273,30 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     }, 100);
 
     try {
+      // 1. Always persist message to backend MySQL database via REST API
+      const response = await ApiService.makeRequest('/chats/send', {
+        method: 'POST',
+        body: JSON.stringify({
+          roomId: chatId,
+          message: newMessage.text,
+          replyTo: activeReply?.id || null
+        }),
+      });
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === tempId ? {
+              ...msg,
+              id: data.data.id,
+              status: 'delivered'
+            } : msg
+          )
+        );
+      }
+
+      // 2. Broadcast via WebSocket if socket is open
       if (ws && ws.readyState === 1) {
         ws.send(JSON.stringify({
           type: 'send_message',
@@ -282,42 +306,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             replyTo: activeReply?.id || null
           }
         }));
-
-        // Optimistically set to delivered
-        setTimeout(() => {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === tempId ? { ...msg, status: 'delivered' } : msg
-            )
-          );
-          setIsSending(false);
-        }, 300);
-      } else {
-        // Fallback to HTTP if WS is down
-        const response = await ApiService.makeRequest('/chats/send', {
-          method: 'POST',
-          body: JSON.stringify({
-            roomId: chatId,
-            message: newMessage.text,
-            replyTo: activeReply?.id || null
-          }),
-        });
-        const data = await response.json();
-
-        if (data.success) {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === tempId ? {
-                ...msg,
-                id: data.data.id,
-                status: 'read',
-                isRead: true
-              } : msg
-            )
-          );
-        }
-        setIsSending(false);
       }
+      setIsSending(false);
     } catch (error) {
       console.error('Error sending message:', error);
       setIsSending(false);
@@ -943,11 +933,19 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     };
   }, [ws, chatId, chatAvatar]);
 
+  const initialScrollDone = useRef(false);
+
   useEffect(() => {
-    // Scroll to bottom when messages change
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    initialScrollDone.current = false;
+  }, [chatId]);
+
+  useEffect(() => {
+    if (messages.length > 0 && !initialScrollDone.current) {
+      initialScrollDone.current = true;
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 50);
+    }
   }, [messages]);
 
   const handleSendMessage = () => {
@@ -1174,19 +1172,16 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
   // WhatsApp-style tick icons
   const getStatusIcon = (status) => {
-    switch (status) {
-      case 'sent':
-        // Single grey tick — sent but not delivered/read
-        return <MaterialCommunityIcons name="check" size={14} color="rgba(255,255,255,0.6)" />;
-      case 'delivered':
-        // Double grey tick — delivered but not read
-        return <MaterialCommunityIcons name="check-all" size={14} color="rgba(255,255,255,0.6)" />;
+    const s = String(status || '').toLowerCase();
+    switch (s) {
       case 'read':
-        // Double BLUE tick — recipient has seen the message
-        return <MaterialCommunityIcons name="check-all" size={14} color="#60D0FE" />;
+        // Double BLUE tick — recipient opened/read message
+        return <MaterialCommunityIcons name="check-all" size={15} color="#60D0FE" style={{ marginLeft: 3 }} />;
+      case 'delivered':
+      case 'sent':
       default:
-        // Clock icon while sending
-        return <MaterialCommunityIcons name="clock-outline" size={12} color="rgba(255,255,255,0.5)" />;
+        // Double GREY tick — sent and delivered to recipient
+        return <MaterialCommunityIcons name="check-all" size={15} color="rgba(255,255,255,0.75)" style={{ marginLeft: 3 }} />;
     }
   };
 
@@ -1407,6 +1402,15 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           />
         </View>
       </Modal>
+    );
+  };
+
+  const isImageContent = (text) => {
+    if (!text || typeof text !== 'string') return false;
+    const trimmed = text.trim();
+    return (
+      (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image')) &&
+      (trimmed.match(/\.(jpeg|jpg|gif|png|webp)/i) || trimmed.includes('/uploads/'))
     );
   };
 
@@ -2083,7 +2087,19 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             keyExtractor={(item, index) => (item && item.id ? String(item.id) : String(index))}
             contentContainerStyle={styles.messagesList}
             scrollEnabled={true}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onLayout={() => {
+              if (!initialScrollDone.current) {
+                flatListRef.current?.scrollToEnd({ animated: false });
+              }
+            }}
+            onContentSizeChange={() => {
+              if (!initialScrollDone.current) {
+                flatListRef.current?.scrollToEnd({ animated: false });
+              }
+            }}
+            onScrollBeginDrag={() => {
+              initialScrollDone.current = true;
+            }}
             scrollEventThrottle={16}
           />
         ) : searchActive && searchQuery.length > 0 ? (

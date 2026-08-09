@@ -367,34 +367,94 @@ exports.activateGroup = async (req, res) => {
 exports.deleteGroup = async (req, res) => {
     const { groupId } = req.body;
     const adminId = req.user ? (req.user.userId || req.user.id) : null;
-    
-    if (!groupId) {
-        return res.status(400).json({ success: false, message: 'groupId is required' });
+    const groupIdNum = Number(groupId);
+
+    if (Number.isNaN(groupIdNum)) {
+        return res.status(400).json({ success: false, message: 'groupId is required and must be a valid number' });
     }
 
+    const connection = await db.promise().getConnection();
     try {
-        // Soft delete the group
-        const sql = `UPDATE \`groups\` SET deleted_at = CURRENT_TIMESTAMP, updated_by = ?, version = version + 1 WHERE id = ? AND deleted_at IS NULL`;
-        const [result] = await db.promise().query(sql, [adminId ? Number(adminId) : null, groupId]);
-        
+        await connection.beginTransaction();
+
+        // 1. Soft-delete the group record
+        const [result] = await connection.query(
+            `UPDATE \`groups\` SET deleted_at = CURRENT_TIMESTAMP, updated_by = ?, version = version + 1 WHERE id = ? AND deleted_at IS NULL`,
+            [adminId ? Number(adminId) : null, groupIdNum]
+        );
+
         if (result.affectedRows === 0) {
+            await connection.rollback();
+            connection.release();
             return res.status(404).json({ success: false, message: 'Group not found or already deleted' });
         }
 
-        // Soft delete the settings as well
-        await db.promise().query('UPDATE group_settings SET deleted_at = CURRENT_TIMESTAMP, updated_by = ?, version = version + 1 WHERE group_id = ? AND deleted_at IS NULL', [adminId ? Number(adminId) : null, groupId]);
+        // 2. Fetch linked chat room IDs for this group
+        const [roomRows] = await connection.query(
+            'SELECT id FROM chat_rooms WHERE group_id = ?',
+            [groupIdNum]
+        );
+        const roomIds = roomRows.map(r => r.id);
 
-        // Log audit event
+        if (roomIds.length > 0) {
+            // 3. Clean up chat_room_members for these rooms
+            await connection.query(
+                `DELETE FROM chat_room_members WHERE room_id IN (?)`,
+                [roomIds]
+            );
+        }
+
+        // 4. Delete user enrolment mappings for this group
+        await connection.query(
+            'DELETE FROM user_grouping WHERE group_id = ?',
+            [groupIdNum]
+        );
+
+        // 7. Soft-delete group settings
+        await connection.query(
+            'UPDATE group_settings SET deleted_at = CURRENT_TIMESTAMP, updated_by = ?, version = version + 1 WHERE group_id = ? AND deleted_at IS NULL',
+            [adminId ? Number(adminId) : null, groupIdNum]
+        );
+
+        // 8. Cancel & soft-delete active or setup live auctions for this group
+        await connection.query(
+            "UPDATE group_auctions SET status = 'cancelled', deleted_at = CURRENT_TIMESTAMP WHERE group_id = ? AND deleted_at IS NULL",
+            [groupIdNum]
+        );
+
+        // 9. Soft-delete financial records (monthly details, auction winners, payment collections)
+        await connection.query(
+            'UPDATE group_monthly_details SET deleted_at = CURRENT_TIMESTAMP, updated_by = ? WHERE group_id = ? AND deleted_at IS NULL',
+            [adminId ? Number(adminId) : null, groupIdNum]
+        );
+
+        await connection.query(
+            'UPDATE group_auction_winners SET deleted_at = CURRENT_TIMESTAMP, updated_by = ? WHERE group_id = ? AND deleted_at IS NULL',
+            [adminId ? Number(adminId) : null, groupIdNum]
+        );
+
+        await connection.query(
+            'UPDATE monthly_collections SET deleted_at = CURRENT_TIMESTAMP, updated_by = ? WHERE group_id = ? AND deleted_at IS NULL',
+            [adminId ? Number(adminId) : null, groupIdNum]
+        );
+
+        // 10. Audit event logging
         await logAuditEvent(req, {
-            actionType: 'DELETE',
+            actionType: 'DELETE_GROUP_CASCADE',
             tableName: 'groups',
-            recordId: Number(groupId)
+            recordId: groupIdNum,
+            newValues: { cascadeDeletedRooms: roomIds }
         });
 
-        return res.status(200).json({ success: true, message: 'Group deleted successfully' });
+        await connection.commit();
+        connection.release();
+
+        return res.status(200).json({ success: true, message: 'Group and all associated chat & financial data deleted successfully' });
     } catch (error) {
-        console.error('Error deleting group:', error);
-        return res.status(500).json({ success: false, message: 'Failed to delete group' });
+        await connection.rollback();
+        connection.release();
+        console.error('Error in cascading group delete:', error);
+        return res.status(500).json({ success: false, message: 'Failed to delete group and its associated data' });
     }
 };
 

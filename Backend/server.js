@@ -184,7 +184,19 @@ chatWss.on('connection', (ws, req) => {
       rooms: new Set() // Store active rooms they are looking at
     });
 
-    console.log(`✅ Chat WebSocket connected: ${clientId} (${userType})`);
+    // Mark user as Online in DB on WebSocket connection
+    try {
+      db.promise().query('UPDATE users SET is_online = 1 WHERE id = ?', [Number(userId)]);
+      // Broadcast online status to chat clients
+      chatClients.forEach(client => {
+        if (client.ws.readyState === WebSocket.OPEN && client.userId !== Number(userId)) {
+          client.ws.send(JSON.stringify({
+            type: 'user_presence',
+            data: { userId: Number(userId), isOnline: true }
+          }));
+        }
+      });
+    } catch (presErr) { console.error('Error setting user online:', presErr); }
 
     ws.on('message', async (message) => {
       try {
@@ -198,48 +210,102 @@ chatWss.on('connection', (ws, req) => {
         }
         else if (payload.type === 'join_room') {
           const client = chatClients.get(clientId);
-          if (client) {
+          if (client && payload.roomId !== undefined && payload.roomId !== null) {
             client.rooms.add(payload.roomId);
+            client.rooms.add(String(payload.roomId));
+            client.rooms.add(Number(payload.roomId));
             console.log(`Client ${clientId} joined room ${payload.roomId}`);
           }
         } 
         else if (payload.type === 'leave_room') {
           const client = chatClients.get(clientId);
-          if (client) {
+          if (client && payload.roomId !== undefined && payload.roomId !== null) {
             client.rooms.delete(payload.roomId);
+            client.rooms.delete(String(payload.roomId));
+            client.rooms.delete(Number(payload.roomId));
+          }
+        }
+        else if (payload.type === 'typing_start' || payload.type === 'typing_stop' || payload.type === 'recording_start' || payload.type === 'recording_stop') {
+          const { roomId } = payload.data || payload;
+          if (!roomId) return;
+
+          chatClients.forEach(client => {
+            if (client.ws.readyState === WebSocket.OPEN && Number(client.userId) !== Number(userId)) {
+              const isLooking = client.rooms.has(roomId) || client.rooms.has(String(roomId)) || client.rooms.has(Number(roomId));
+              if (isLooking) {
+                client.ws.send(JSON.stringify({
+                  type: payload.type,
+                  data: { roomId, userId: Number(userId), userName: decoded.name || 'User' }
+                }));
+              }
+            }
+          });
+        }
+        else if (payload.type === 'message_delivered') {
+          const { messageId, roomId } = payload.data || payload;
+          if (messageId) {
+            try {
+              await db.promise().query(
+                "UPDATE chat_messages SET status = 'DELIVERED', delivered_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'SENT'",
+                [messageId]
+              );
+            } catch (e) { }
+            // Notify sender if connected
+            chatClients.forEach(client => {
+              if (client.ws.readyState === WebSocket.OPEN) {
+                const isLooking = client.rooms.has(roomId) || client.rooms.has(String(roomId)) || client.rooms.has(Number(roomId));
+                if (isLooking) {
+                  client.ws.send(JSON.stringify({
+                    type: 'message_status_update',
+                    data: { messageId, status: 'DELIVERED' }
+                  }));
+                }
+              }
+            });
           }
         }
         else if (payload.type === 'mark_read') {
-          // Client opened a room — mark messages from others as read and notify senders
+          // Client opened a room — mark messages from others as READ and notify senders
           const { roomId } = payload;
           if (!roomId) return;
 
-          // Find which message IDs were unread (so we know whose messages to notify)
-          const [unreadRows] = await db.promise().query(
-            `SELECT id, sender_id FROM chat_messages WHERE room_id = ? AND sender_id != ? AND read_at IS NULL`,
-            [roomId, Number(userId)]
-          );
-
-          if (unreadRows.length > 0) {
-            // Mark them all read
-            await db.promise().query(
-              `UPDATE chat_messages SET read_at = CURRENT_TIMESTAMP WHERE room_id = ? AND sender_id != ? AND read_at IS NULL`,
+          try {
+            // Find which message IDs were unread (so we know whose messages to notify)
+            const [unreadRows] = await db.promise().query(
+              `SELECT id, sender_id FROM chat_messages WHERE room_id = ? AND sender_id != ? AND (read_at IS NULL OR status != 'READ')`,
               [roomId, Number(userId)]
             );
 
-            // Gather unique sender IDs whose messages were just read
-            const senderIds = [...new Set(unreadRows.map(r => r.sender_id))];
-            const msgIds = unreadRows.map(r => r.id);
-
-            // Push read_receipt to those senders if they are connected
-            chatClients.forEach(client => {
-              if (client.ws.readyState === WebSocket.OPEN && senderIds.includes(client.userId)) {
-                client.ws.send(JSON.stringify({
-                  type: 'read_receipt',
-                  data: { roomId, messageIds: msgIds, readBy: Number(userId) }
-                }));
+            if (unreadRows.length > 0) {
+              // Mark them all read
+              try {
+                await db.promise().query(
+                  `UPDATE chat_messages SET read_at = CURRENT_TIMESTAMP, status = 'READ' WHERE room_id = ? AND sender_id != ? AND (read_at IS NULL OR status != 'READ')`,
+                  [roomId, Number(userId)]
+                );
+              } catch (e) {
+                await db.promise().query(
+                  `UPDATE chat_messages SET read_at = CURRENT_TIMESTAMP WHERE room_id = ? AND sender_id != ? AND read_at IS NULL`,
+                  [roomId, Number(userId)]
+                );
               }
-            });
+
+              // Gather unique sender IDs whose messages were just read
+              const senderIds = [...new Set(unreadRows.map(r => Number(r.sender_id)))];
+              const msgIds = unreadRows.map(r => r.id);
+
+              // Push read_receipt to those senders if they are connected
+              chatClients.forEach(client => {
+                if (client.ws.readyState === WebSocket.OPEN && senderIds.includes(Number(client.userId))) {
+                  client.ws.send(JSON.stringify({
+                    type: 'read_receipt',
+                    data: { roomId, messageIds: msgIds, readBy: Number(userId), status: 'READ' }
+                  }));
+                }
+              });
+            }
+          } catch (e) {
+            console.warn('[mark_read] WS error:', e.message);
           }
         }
         else if (payload.type === 'send_message') {
@@ -247,7 +313,7 @@ chatWss.on('connection', (ws, req) => {
           const { roomId, text, replyTo } = payload.data;
           
           // Verify room and routing logic similar to chatController
-          const [roomArr] = await db.promise().query('SELECT * FROM chat_rooms WHERE id = ?', [roomId]);
+          const [roomArr] = await db.promise().query('SELECT * FROM chat_rooms WHERE id = ? AND deleted_at IS NULL', [roomId]);
           if (roomArr.length === 0) return;
           const room = roomArr[0];
 
@@ -260,7 +326,7 @@ chatWss.on('connection', (ws, req) => {
 
             if (room.group_id) {
               const [groupRows] = await db.promise().query(
-                'SELECT created_by FROM `groups` WHERE id = ?',
+                'SELECT created_by FROM `groups` WHERE id = ? AND deleted_at IS NULL',
                 [room.group_id]
               );
               if (groupRows.length > 0 && groupRows[0].created_by) {
@@ -271,7 +337,7 @@ chatWss.on('connection', (ws, req) => {
             // Fallback: first active admin if group has no creator
             if (!adminId) {
               const [adminUsers] = await db.promise().query(
-                "SELECT id FROM users WHERE role = 'Admin' AND is_active = 1 ORDER BY id ASC LIMIT 1"
+                "SELECT id FROM users WHERE role = 'Admin' AND is_active = 1 AND deleted_at IS NULL ORDER BY id ASC LIMIT 1"
               );
               adminId = adminUsers.length > 0 ? adminUsers[0].id : 1;
             }
@@ -300,11 +366,21 @@ chatWss.on('connection', (ws, req) => {
             }
           }
 
-          // Save message
-          const [insertMsg] = await db.promise().query(
-            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [targetRoomId, userId, userType, text, sourceRoomId, 'text', replyTo || null]
-          );
+          // Save message with fallback if status column is absent
+          let insertMsg;
+          try {
+            const [res] = await db.promise().query(
+              "INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'SENT')",
+              [targetRoomId, userId, userType, text, sourceRoomId, 'text', replyTo || null]
+            );
+            insertMsg = res;
+          } catch (e) {
+            const [res] = await db.promise().query(
+              "INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              [targetRoomId, userId, userType, text, sourceRoomId, 'text', replyTo || null]
+            );
+            insertMsg = res;
+          }
 
           const msgData = {
             id: insertMsg.insertId,
@@ -313,6 +389,7 @@ chatWss.on('connection', (ws, req) => {
             senderId: Number(userId),
             senderType: userType,
             message: text,
+            status: 'SENT',
             created_at: new Date(),
             sender_name: decoded.name || 'User',
             reply_to: replyTo || null,
@@ -326,25 +403,25 @@ chatWss.on('connection', (ws, req) => {
               'SELECT user_id FROM chat_room_members WHERE room_id = ?',
               [targetRoomId]
             );
-            memberUserIds = memberRows.map(row => row.user_id);
+            memberUserIds = memberRows.map(row => Number(row.user_id));
           } else if (room.type === 'group_broadcast') {
             const [memberRows] = await db.promise().query(
               'SELECT user_id FROM user_grouping WHERE group_id = ?',
               [room.group_id]
             );
-            memberUserIds = memberRows.map(row => row.user_id);
+            memberUserIds = memberRows.map(row => Number(row.user_id));
           }
 
           // Broadcast to connected clients who are in this room, or notify members/admins
           chatClients.forEach(client => {
             if (client.ws.readyState === WebSocket.OPEN) {
-              const isSender = client.userId === Number(userId);
-              const isAdmin = client.userType === 'Admin';
+              const isSender = Number(client.userId) === Number(userId);
+              const isAdmin = String(client.userType).toLowerCase() === 'admin';
 
               if (sourceRoomId) {
                 // If it's a private reply from group broadcast, ONLY sender and admins should receive it.
                 if (isSender || isAdmin) {
-                  const isLookingAtRoom = client.rooms.has(targetRoomId) || (isSender && client.rooms.has(roomId));
+                  const isLookingAtRoom = client.rooms.has(targetRoomId) || client.rooms.has(String(targetRoomId)) || client.rooms.has(Number(targetRoomId)) || (isSender && (client.rooms.has(roomId) || client.rooms.has(String(roomId)) || client.rooms.has(Number(roomId))));
                   if (isLookingAtRoom) {
                     client.ws.send(JSON.stringify({
                       type: 'new_message',
@@ -359,8 +436,8 @@ chatWss.on('connection', (ws, req) => {
                 }
               } else {
                 // Standard room broadcast (not a private reply from group broadcast)
-                const isLookingAtRoom = client.rooms.has(targetRoomId) || client.rooms.has(roomId);
-                const isMember = memberUserIds.includes(client.userId);
+                const isLookingAtRoom = client.rooms.has(targetRoomId) || client.rooms.has(String(targetRoomId)) || client.rooms.has(Number(targetRoomId)) || client.rooms.has(roomId) || client.rooms.has(String(roomId)) || client.rooms.has(Number(roomId));
+                const isMember = memberUserIds.includes(Number(client.userId));
 
                 if (isLookingAtRoom) {
                   client.ws.send(JSON.stringify({
@@ -383,13 +460,24 @@ chatWss.on('connection', (ws, req) => {
       }
     });
 
-    ws.on('close', () => {
+    ws.on('close', async () => {
       chatClients.delete(clientId);
       console.log(`🔌 Chat WebSocket disconnected: ${clientId}`);
+      try {
+        await db.promise().query('UPDATE users SET is_online = 0, last_seen = CURRENT_TIMESTAMP WHERE id = ?', [Number(userId)]);
+        chatClients.forEach(client => {
+          if (client.ws.readyState === WebSocket.OPEN) {
+            client.ws.send(JSON.stringify({
+              type: 'user_presence',
+              data: { userId: Number(userId), isOnline: false, lastSeen: new Date() }
+            }));
+          }
+        });
+      } catch (e) { }
     });
 
   } catch (error) {
-    ws.close(1008, 'Authentication failed');
+    try { ws.close(1008, 'Authentication failed'); } catch (e) { }
   }
 });
 

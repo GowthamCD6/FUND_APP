@@ -272,8 +272,8 @@ const ManageGroups = ({ onBack }) => {
     }
 
     Alert.alert(
-      'Delete Group',
-      `Are you sure you want to delete "${longPressedGroup.name}"? This action cannot be undone.`,
+      'Delete Group & Chat Room',
+      `Are you sure you want to delete "${longPressedGroup.name}"? Deleting this group will permanently remove it and its linked chat room for all members. This action cannot be undone.`,
       [
         {
           text: 'Cancel',

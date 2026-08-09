@@ -118,11 +118,88 @@ async function checkAndInitializeDatabase() {
     const existingTables = new Set(tables.map(t => t.TABLE_NAME));
     const missingTables = requiredTables.filter(t => !existingTables.has(t));
 
-    if (missingTables.length > 0) {
-      console.error(`❌ Missing required tables: ${missingTables.join(', ')}`);
-      await connection.end();
-      process.exit(1);
+    // Ensure V5 WhatsApp columns exist (TiDB Cloud requires individual ALTER TABLE statements)
+    const alterQueries = [
+      "ALTER TABLE chat_messages ADD COLUMN status ENUM('SENT', 'DELIVERED', 'READ', 'FAILED') NOT NULL DEFAULT 'SENT'",
+      "ALTER TABLE chat_messages ADD COLUMN delivered_at TIMESTAMP NULL DEFAULT NULL",
+      "ALTER TABLE chat_messages ADD COLUMN edited TINYINT(1) NOT NULL DEFAULT 0",
+      "ALTER TABLE chat_messages ADD COLUMN edited_at TIMESTAMP NULL DEFAULT NULL",
+      "ALTER TABLE chat_messages ADD COLUMN is_forwarded TINYINT(1) NOT NULL DEFAULT 0",
+      "ALTER TABLE chat_messages ADD COLUMN deleted_for_everyone TINYINT(1) NOT NULL DEFAULT 0",
+      "ALTER TABLE users ADD COLUMN is_online TINYINT(1) NOT NULL DEFAULT 0",
+      "ALTER TABLE users ADD COLUMN last_seen TIMESTAMP NULL DEFAULT NULL"
+    ];
+
+    for (const q of alterQueries) {
+      try {
+        await connection.query(q);
+      } catch (e) { /* Column may already exist */ }
     }
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS message_reactions (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        message_id BIGINT UNSIGNED NOT NULL,
+        user_id BIGINT UNSIGNED NOT NULL,
+        reaction VARCHAR(32) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_msg_user_react (message_id, user_id),
+        CONSTRAINT fk_react_msg FOREIGN KEY (message_id) REFERENCES chat_messages(id) ON DELETE CASCADE,
+        CONSTRAINT fk_react_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS user_deleted_messages (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        message_id BIGINT UNSIGNED NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_user_del_msg (user_id, message_id),
+        CONSTRAINT fk_del_usr FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_del_msg FOREIGN KEY (message_id) REFERENCES chat_messages(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS user_chat_settings (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        room_id BIGINT UNSIGNED NOT NULL,
+        is_pinned TINYINT(1) NOT NULL DEFAULT 0,
+        is_muted TINYINT(1) NOT NULL DEFAULT 0,
+        is_archived TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_user_room_stg (user_id, room_id),
+        CONSTRAINT fk_stg_usr FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_stg_room FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS starred_messages (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        message_id BIGINT UNSIGNED NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_usr_star_msg (user_id, message_id),
+        CONSTRAINT fk_star_usr FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_star_msg FOREIGN KEY (message_id) REFERENCES chat_messages(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS user_deleted_chats (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        room_id BIGINT UNSIGNED NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_usr_del_room (user_id, room_id),
+        CONSTRAINT fk_del_room_usr FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_del_room_chat FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
 
     await connection.end();
 
