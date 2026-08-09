@@ -9,26 +9,27 @@ const userManagement = require('../controllers/admin/userManagement');
 const reportsController = require('../controllers/admin/reportsController');
 const { otpRateLimiter, authAttemptRateLimiter } = require('../middleware/rateLimiter');
 const {
+  validateCreateGroupPayload,
   validatePaymentStatusPayload,
   validateSendOtpPayload,
   validateVerifyOtpPayload,
 } = require('../middleware/validators');
 
 // Using the new Manage Group separate controller page
-router.post('/groups/createGroup', authenticateToken, manageGroupController.createGroup);
+router.post('/groups/createGroup', authenticateToken, requireAdmin, validateCreateGroupPayload, manageGroupController.createGroup);
 router.get('/groups/getGroups', authenticateToken, manageGroupController.getGroups);
 
 // Group Info internals
-router.post('/groups/updateGroup', authenticateToken, groupManagement.updateGroup);
-router.post('/groups/renameGroup', authenticateToken, groupManagement.renameGroup);
+router.post('/groups/updateGroup', authenticateToken, requireAdmin, groupManagement.updateGroup);
+router.post('/groups/renameGroup', authenticateToken, requireAdmin, groupManagement.renameGroup);
 
-router.post('/groups/addMembers', authenticateToken, groupManagement.addGroupMembers);
+router.post('/groups/addMembers', authenticateToken, requireAdmin, groupManagement.addGroupMembers);
 router.get('/groups/getMembers', authenticateToken, groupManagement.getGroupMembers);
-router.post('/groups/removeMembers', authenticateToken, groupManagement.removeGroupMembers);
-router.post('/groups/activate', authenticateToken, groupManagement.activateGroup);
-router.post('/groups/delete', authenticateToken, groupManagement.deleteGroup);
-router.post('/groups/saveMonthlyDetails', authenticateToken, groupManagement.saveGroupMonthlyDetails);
-router.post('/groups/saveAuctionWinner', authenticateToken, groupManagement.saveAuctionWinner);
+router.post('/groups/removeMembers', authenticateToken, requireAdmin, groupManagement.removeGroupMembers);
+router.post('/groups/activate', authenticateToken, requireAdmin, groupManagement.activateGroup);
+router.post('/groups/delete', authenticateToken, requireAdmin, groupManagement.deleteGroup);
+router.post('/groups/saveMonthlyDetails', authenticateToken, requireAdmin, groupManagement.saveGroupMonthlyDetails);
+router.post('/groups/saveAuctionWinner', authenticateToken, requireAdmin, groupManagement.saveAuctionWinner);
 router.post('/groups/notifyAuctionMembers', authenticateToken, groupManagement.notifyAuctionMembers);
 router.get('/groups/getMonthlySnapshot', authenticateToken, groupManagement.getGroupMonthSnapshot);
 router.get('/groups/getCompletedAuctions', authenticateToken, groupManagement.getCompletedAuctions);

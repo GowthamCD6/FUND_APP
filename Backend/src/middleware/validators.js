@@ -3,6 +3,38 @@ const sanitizeString = (str) => {
   return str.replace(/[<>&'"]/g, '').trim();
 };
 
+const validateCreateGroupPayload = (req, res, next) => {
+  const { groupName, totalMembers, groupAmount, duration } = req.body;
+
+  const cleanName = sanitizeString(groupName);
+  const numMembers = Number(totalMembers);
+  const numAmount = Number(groupAmount);
+  const numDuration = Number(duration);
+
+  if (!cleanName || cleanName.length < 3 || cleanName.length > 60) {
+    return res.status(400).json({ success: false, message: 'Group name must be between 3 and 60 characters' });
+  }
+
+  if (!Number.isInteger(numMembers) || numMembers < 2 || numMembers > 500) {
+    return res.status(400).json({ success: false, message: 'Total members must be an integer between 2 and 500' });
+  }
+
+  if (!Number.isFinite(numAmount) || numAmount <= 0) {
+    return res.status(400).json({ success: false, message: 'Group amount must be a positive number' });
+  }
+
+  if (!Number.isInteger(numDuration) || numDuration < 1 || numDuration > 120) {
+    return res.status(400).json({ success: false, message: 'Duration must be an integer between 1 and 120 months' });
+  }
+
+  req.body.groupName = cleanName;
+  req.body.totalMembers = numMembers;
+  req.body.groupAmount = numAmount;
+  req.body.duration = numDuration;
+
+  next();
+};
+
 const validatePaymentStatusPayload = (req, res, next) => {
   const { groupId, userId, month, year, status } = req.body;
 
@@ -96,6 +128,7 @@ const validateVerifyOtpPayload = (req, res, next) => {
 };
 
 module.exports = {
+  validateCreateGroupPayload,
   validatePaymentStatusPayload,
   validateSendOtpPayload,
   validateVerifyOtpPayload,

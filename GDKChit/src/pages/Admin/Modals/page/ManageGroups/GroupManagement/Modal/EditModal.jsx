@@ -34,16 +34,22 @@ const EditModal = ({
   useEffect(() => {
     if (initialData) {
       setEditGroupData({
-        groupName: initialData.groupName || '',
-        totalAmount: initialData.totalAmount || initialData.monthlyAmount || '',
-        numberOfUsers: initialData.numberOfUsers || '',
-        createdDate: initialData.createdDate || ''
+        groupName: initialData.groupName || initialData.name || '',
+        totalAmount: (initialData.groupAmount || initialData.totalAmount || initialData.monthlyAmount || '').toString(),
+        numberOfUsers: (initialData.numberOfUsers || initialData.totalMembers || '').toString(),
+        createdDate: initialData.createdDate || initialData.startDate || '',
       });
     }
   }, [initialData]);
 
   const handleEditGroupChange = (field, value) => {
-    setEditGroupData(prev => ({ ...prev, [field]: value }));
+    let cleanValue = value;
+    if (['totalAmount', 'numberOfUsers'].includes(field)) {
+      cleanValue = value.replace(/[^0-9]/g, '');
+    } else if (field === 'groupName') {
+      cleanValue = value.replace(/[<>&'"]/g, '');
+    }
+    setEditGroupData(prev => ({ ...prev, [field]: cleanValue }));
     if (editGroupErrors[field]) {
       setEditGroupErrors(prev => ({ ...prev, [field]: null }));
     }
@@ -55,7 +61,7 @@ const EditModal = ({
       newErrors.groupName = 'Group name is required';
     }
     if (!editGroupData.totalAmount || parseFloat(editGroupData.totalAmount) <= 0) {
-      newErrors.totalAmount = 'Please enter a valid monthly amount';
+      newErrors.totalAmount = 'Please enter a valid total amount';
     }
     if (!editGroupData.numberOfUsers || parseInt(editGroupData.numberOfUsers) <= 0) {
       newErrors.numberOfUsers = 'Please enter a valid number of users';
@@ -105,14 +111,14 @@ const EditModal = ({
     setShowCreatedDatePicker(true);
   };
 
-  const onAndroidDateChange = (event, selectedDate) => {
+  const onAndroidDateChange = (event, eventDate) => {
     if (event.type === 'dismissed') {
       setShowCreatedDatePicker(false);
       return;
     }
-    const date = selectedDate || selectedDate;
+    const finalDate = eventDate || selectedDate;
     setShowCreatedDatePicker(false);
-    handleEditGroupChange('createdDate', formatDate(date));
+    handleEditGroupChange('createdDate', formatDate(finalDate));
   };
 
   const onIOSDateChange = (_event, selectedDate) => {

@@ -5,9 +5,12 @@ import { reset as resetNavigation } from '../utils/navigation';
 
 class ApiService {
   constructor() {
-    this.baseURL = API_URL;
     this.accessToken = null;
     this.refreshToken = null;
+  }
+
+  get baseURL() {
+    return API_URL;
   }
 
   // Set tokens

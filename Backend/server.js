@@ -647,7 +647,7 @@ function startAuction(data, adminClientId) {
   console.log(`🎯 Auction started: ${auctionId}`);
 }
 
-function placeBid(data, clientId) {
+async function placeBid(data, clientId) {
   const { groupId, amount, userId, userName, timestamp } = data;
   const auctionId = `auction-${groupId}`;
   const auction = auctionSessions.get(auctionId);
@@ -661,6 +661,27 @@ function placeBid(data, clientId) {
       }));
     }
     return;
+  }
+
+  // Strict Rule: Check if user has ALREADY won an auction in a previous cycle for this group
+  try {
+    const [existingWins] = await db.promise().query(
+      `SELECT id FROM group_auction_winners WHERE group_id = ? AND (winner_user_id = ? OR LOWER(winner_name) = LOWER(?)) AND deleted_at IS NULL LIMIT 1`,
+      [groupId, userId, userName]
+    );
+
+    if (existingWins && existingWins.length > 0) {
+      const client = clientSessions.get(clientId);
+      if (client?.ws) {
+        client.ws.send(JSON.stringify({
+          type: 'error',
+          data: { message: 'STRICT RULE: You have ALREADY won an auction in a previous cycle for this group and cannot participate again.' }
+        }));
+      }
+      return;
+    }
+  } catch (err) {
+    console.error('Error checking past auction winner in placeBid:', err);
   }
 
   // Get current lowest bid

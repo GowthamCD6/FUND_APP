@@ -592,19 +592,30 @@ exports.saveAuctionWinner = async (req, res) => {
             [groupIdNum, collectionPeriodStr]
         );
 
-        // Prevent a member from winning multiple times in the same group (reverse auction rules)
-        if (winnerUserId) {
-            const [[alreadyWon]] = await connection.query(
-                'SELECT collection_period FROM group_auction_winners WHERE group_id = ? AND winner_user_id = ? AND collection_period != ? AND deleted_at IS NULL LIMIT 1',
-                [groupIdNum, Number(winnerUserId), collectionPeriodStr]
-            );
-            if (alreadyWon) {
-                connection.release();
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'This member has already won the auction in another cycle/month for this group' 
-                });
-            }
+        // Prevent a member from winning multiple times in the same group (strict reverse auction rules)
+        const cleanPhone = (chitWinnerMemberId || '').trim();
+        const cleanName = (chitWinnerName || '').trim();
+
+        const [alreadyWonRows] = await connection.query(
+            `SELECT collection_period FROM group_auction_winners 
+             WHERE group_id = ? 
+               AND collection_period != ? 
+               AND deleted_at IS NULL 
+               AND (
+                   (winner_user_id IS NOT NULL AND winner_user_id = ?) 
+                   OR (winner_member_phone = ? AND winner_member_phone != '') 
+                   OR (LOWER(winner_name) = LOWER(?))
+               ) 
+             LIMIT 1`,
+            [groupIdNum, collectionPeriodStr, winnerUserId ? Number(winnerUserId) : -1, cleanPhone, cleanName]
+        );
+
+        if (alreadyWonRows && alreadyWonRows.length > 0) {
+            connection.release();
+            return res.status(400).json({ 
+                success: false, 
+                message: `Member "${cleanName}" has ALREADY won an auction in a previous cycle for this group and cannot win again.` 
+            });
         }
 
         await connection.query(

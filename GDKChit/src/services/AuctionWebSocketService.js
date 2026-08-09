@@ -3,13 +3,16 @@ import { API_URL } from '../utils/env';
 class AuctionWebSocketService {
   constructor() {
     this.ws = null;
-    this.url = API_URL.replace('http', 'ws') + '/auction';
     this.listeners = {};
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 3000;
     this.pingInterval = null;
     this.isManuallyClosed = false;
+  }
+
+  get url() {
+    return API_URL.replace('http', 'ws') + '/auction';
   }
 
   // Connect to WebSocket

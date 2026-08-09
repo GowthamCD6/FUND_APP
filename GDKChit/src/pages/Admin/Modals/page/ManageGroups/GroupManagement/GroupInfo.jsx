@@ -64,6 +64,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
 
   const getPeriodFromOffset = useCallback((offset) => {
     const date = new Date();
+    date.setDate(1); // Set to 1st of month to prevent 31st day overflow
     date.setMonth(date.getMonth() + offset);
     return {
       month: date.getMonth(),
@@ -237,7 +238,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
       Alert.alert('Success', 'Group information updated successfully');
     } catch (error) {
       console.error('Error updating group:', error);
-      Alert.alert('Error', 'Failed to update group. Please try again.');
+      Alert.alert('Error', error?.message || 'Failed to update group. Please try again.');
     }
   };
 
@@ -880,6 +881,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
         onClose={() => setShowAuctionModal(false)}
         groupMembers={memberMappings}
         groupId={formData.groupId || group.id}
+        pastWinners={monthlyData.filter(m => m.hasWinner && m.winner).map(m => m.winner)}
         initialWinnerData={{
           chitWinnerName: formData.chitWinnerName,
           chitWinnerMemberId: formData.chitWinnerMemberId,

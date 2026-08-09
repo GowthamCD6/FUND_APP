@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,15 +10,69 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../../../../../../services/ApiService';
 import Header from '../../../../../../../components/HeaderComponent/Header';
 
-// Define the maximum number of members
-const MAX_MEMBERS = 20;
+const SkeletonBox = ({ width, height, borderRadius = 6, style }) => {
+  const animatedValue = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 0.85,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0.3,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: '#CBD5E1',
+          opacity: animatedValue,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+const MemberRowSkeleton = () => (
+  <View style={styles.memberCard}>
+    <View style={styles.selectedMemberContainer}>
+      <View style={styles.selectedMemberInfo}>
+        <SkeletonBox width={40} height={40} borderRadius={20} />
+        <View style={[styles.selectedMemberText, { gap: 6 }]}>
+          <SkeletonBox width={140} height={16} borderRadius={4} />
+          <SkeletonBox width={100} height={12} borderRadius={4} />
+        </View>
+      </View>
+      <SkeletonBox width={24} height={24} borderRadius={12} />
+    </View>
+  </View>
+);
 
 const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }) => {
+  // Dynamic max members capacity from group definition
+  const maxGroupMembers = Number(group?.totalMembers || group?.total_members || group?.numberOfUsers || 20);
+
   // Sample members data
   const [allMembers, setAllMembers] = useState([]);
 
@@ -26,6 +80,9 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
   const [showMemberPicker, setShowMemberPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]); // Track selected members in picker
+
+  // Track loading state for content skeleton loader
+  const [isLoading, setIsLoading] = useState(true);
 
   // Track if changes have been made to enable/disable Save button
   const [hasChanges, setHasChanges] = useState(false);
@@ -35,6 +92,7 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
     if (visible && group) {
       // When the modal opens, fetch current members for the group from backend
       const fetchGroupMembers = async () => {
+        setIsLoading(true);
         try {
           const groupIdNum = getGroupDbId();
           if (!groupIdNum) return;
@@ -45,7 +103,7 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
             return;
           }
           const mappings = (json.members || []).map(m => ({
-            id: m.mappingId || (Date.now() + Math.random()),
+            id: m.mappingId || m.userId || `mem_${m.userId}`,
             memberId: m.userId,
             name: m.name || m.nickname || 'Unnamed',
             phone: m.phone || 'N/A',
@@ -55,6 +113,8 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
           setHasChanges(false);
         } catch (err) {
           console.error('Error fetching group members:', err);
+        } finally {
+          setIsLoading(false);
         }
       };
       fetchGroupMembers();
@@ -114,10 +174,10 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
     const membersPresentCount = memberMappings.filter(m => m.memberId).length;
 
     // Check if the group has reached the maximum number of members
-    if (membersPresentCount >= MAX_MEMBERS) {
+    if (membersPresentCount >= maxGroupMembers) {
       Alert.alert(
         'Group Full',
-        `This group has reached the maximum of ${MAX_MEMBERS} members.`,
+        `This group has reached the maximum of ${maxGroupMembers} members.`,
       );
       return;
     }
@@ -180,11 +240,10 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
         ).length;
         const totalAfterAdd = currentMembersCount + prev.length + 1;
 
-        if (totalAfterAdd > MAX_MEMBERS) {
+        if (totalAfterAdd > maxGroupMembers) {
           Alert.alert(
             'Limit Reached',
-            `You can only add ${MAX_MEMBERS - currentMembersCount - prev.length
-            } more member(s).`,
+            `You can only add ${Math.max(0, maxGroupMembers - currentMembersCount - prev.length)} more member(s).`,
           );
           return prev;
         }
@@ -276,7 +335,7 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
   const selectAllFiltered = () => {
     const filteredMembers = getFilteredMembers();
     const currentMembersCount = memberMappings.filter(m => m.memberId).length;
-    const availableSlots = MAX_MEMBERS - currentMembersCount;
+    const availableSlots = maxGroupMembers - currentMembersCount;
 
     if (filteredMembers.length > availableSlots) {
       Alert.alert(
@@ -295,8 +354,8 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
 
   // Calculate the actual number of members present in the group
   const membersPresentCount = memberMappings.filter(m => m.memberId).length;
-  const availableSlotsCount = MAX_MEMBERS - membersPresentCount;
-  const isAddMemberButtonDisabled = membersPresentCount >= MAX_MEMBERS;
+  const availableSlotsCount = Math.max(0, maxGroupMembers - membersPresentCount);
+  const isAddMemberButtonDisabled = membersPresentCount >= maxGroupMembers;
 
   return (
     <Modal
@@ -354,40 +413,49 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
 
         {/* Members List */}
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {memberMappings
-            .filter(m => m.memberId)
-            .map(member => (
-              <View key={member.id} style={styles.memberCard}>
-                <View style={styles.selectedMemberContainer}>
-                  <View style={styles.selectedMemberInfo}>
-                    <View style={styles.selectedMemberIcon}>
+          {isLoading ? (
+            <>
+              <MemberRowSkeleton />
+              <MemberRowSkeleton />
+              <MemberRowSkeleton />
+              <MemberRowSkeleton />
+            </>
+          ) : (
+            memberMappings
+              .filter(m => m.memberId)
+              .map(member => (
+                <View key={member.id} style={styles.memberCard}>
+                  <View style={styles.selectedMemberContainer}>
+                    <View style={styles.selectedMemberInfo}>
+                      <View style={styles.selectedMemberIcon}>
+                        <MaterialCommunityIcons
+                          name="account-check"
+                          size={20}
+                          color="#6B46C1"
+                        />
+                      </View>
+                      <View style={styles.selectedMemberText}>
+                        <Text style={styles.selectedMemberName}>
+                          {member.name}
+                        </Text>
+                        <Text style={styles.selectedMemberPhone}>
+                          Phone: {member.phone}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => removeMemberMapping(member.memberId)}
+                      style={styles.removeButton}>
                       <MaterialCommunityIcons
-                        name="account-check"
+                        name="delete"
                         size={20}
-                        color="#6B46C1"
+                        color="#EF4444"
                       />
-                    </View>
-                    <View style={styles.selectedMemberText}>
-                      <Text style={styles.selectedMemberName}>
-                        {member.name}
-                      </Text>
-                      <Text style={styles.selectedMemberPhone}>
-                        Phone: {member.phone}
-                      </Text>
-                    </View>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => removeMemberMapping(member.memberId)}
-                    style={styles.removeButton}>
-                    <MaterialCommunityIcons
-                      name="delete"
-                      size={20}
-                      color="#EF4444"
-                    />
-                  </TouchableOpacity>
                 </View>
-              </View>
-            ))}
+              ))
+          )}
 
           <TouchableOpacity
             onPress={addMultipleMembers}
@@ -410,9 +478,9 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
             </Text>
           </TouchableOpacity>
 
-          {membersPresentCount === MAX_MEMBERS && (
+          {membersPresentCount >= maxGroupMembers && (
             <Text style={styles.groupLimitReachedText}>
-              This group has reached its maximum of {MAX_MEMBERS} members.
+              This group has reached its maximum of {maxGroupMembers} members.
             </Text>
           )}
         </ScrollView>
