@@ -12,10 +12,62 @@ import {
   KeyboardAvoidingView,
   Alert,
   StatusBar,
+  Animated,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../../../../services/ApiService';
 import Header from '../../../../../components/HeaderComponent/Header';
+
+const SkeletonBox = ({ width, height, borderRadius = 6, style }) => {
+  const animatedValue = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 0.85,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0.3,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: '#CBD5E1',
+          opacity: animatedValue,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+const UserRowSkeleton = () => (
+  <View style={[customStyles.userCard, { paddingVertical: 14 }]}>
+    <View style={customStyles.userInfo}>
+      <SkeletonBox width={40} height={40} borderRadius={20} />
+      <View style={{ marginLeft: 12, gap: 6 }}>
+        <SkeletonBox width={140} height={16} borderRadius={4} />
+        <SkeletonBox width={100} height={12} borderRadius={4} />
+      </View>
+    </View>
+    <SkeletonBox width={20} height={20} borderRadius={10} />
+  </View>
+);
 
 const ManageU = ({onBack}) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,23 +82,25 @@ const ManageU = ({onBack}) => {
   const [editedNickname, setEditedNickname] = useState('');
   const [editedDateOfYear, setEditedDateOfYear] = useState('');
   const [menuPosition, setMenuPosition] = useState({top: 0, right: 0});
+  const [isLoading, setIsLoading] = useState(true);
   const menuButtonRefs = useRef({});
 
-  // Sample users data
-  // Initialize as empty array to avoid `undefined` errors when filtering
   const [users, setUsers] = useState([]);
 
   const fetchUsers = async() => {
+    setIsLoading(true);
     try{
       const response = await ApiService.makeRequest('/admin/users/getAllUsers',{
         method: 'GET',
       });
       const data = await response.json();
       if(data.success){
-        setUsers(data.data);
+        setUsers(data.data || []);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -76,7 +130,6 @@ const ManageU = ({onBack}) => {
   // Handlers
   const handleMenuPress = (user, buttonRef) => {
     setSelectedUser(user);
-    // measure may not be available immediately; guard it
     const refCurrent = buttonRef && buttonRef.current ? buttonRef.current : null;
     if (refCurrent && typeof refCurrent.measure === 'function') {
       refCurrent.measure((_x, _y, _width, _height, pageX, pageY) => {
@@ -87,7 +140,6 @@ const ManageU = ({onBack}) => {
         setShowMenu(true);
       });
     } else {
-      // fallback position if measure isn't available
       setMenuPosition({top: 120, right: Platform.OS === 'ios' ? 16 : 24});
       setShowMenu(true);
     }
@@ -115,27 +167,56 @@ const ManageU = ({onBack}) => {
     setShowViewModal(true);
   };
 
-  const confirmEdit = () => {
-    setUsers(
-      users.map(user =>
-        user.id === selectedUser.id
-          ? {
-              ...user,
-              name: editedName,
-              phone: editedPhone,
-              type: editedType,
-              nickname: editedNickname,
-              dateOfBirth: `${editedDateOfYear}-01-01`,
-            }
-          : user,
-      ),
-    );
-    setShowEditModal(false);
+  const confirmEdit = async () => {
+    if (!selectedUser?.id) return;
+    if (!editedPhone || editedPhone.trim().length !== 10) {
+      Alert.alert('Validation Error', 'Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    try {
+      const response = await ApiService.makeRequest('/admin/users/updateUser', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          name: editedName.trim(),
+          phone: editedPhone.trim(),
+          type: editedType,
+          nickname: editedNickname.trim(),
+          yearOfBirth: editedDateOfYear.trim(),
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setUsers(
+          users.map(user =>
+            user.id === selectedUser.id
+              ? {
+                  ...user,
+                  name: editedName.trim(),
+                  phone: editedPhone.trim(),
+                  type: editedType === 'admin' ? 'Admin' : 'User',
+                  nickname: editedNickname.trim(),
+                  dateOfBirth: editedDateOfYear.trim() ? `${editedDateOfYear.trim()}-01-01` : user.dateOfBirth,
+                }
+              : user,
+          ),
+        );
+        Alert.alert('Success', 'User updated successfully');
+        setShowEditModal(false);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      Alert.alert('Error', 'An error occurred while updating the user');
+    }
   };
 
   const confirmDelete = async () => {
     if (!selectedUser?.id) return;
-    
+
     try {
       const response = await ApiService.makeRequest('/admin/users/deleteUser', {
         method: 'POST',
@@ -189,7 +270,15 @@ const ManageU = ({onBack}) => {
       <ScrollView
         style={customStyles.content}
         showsVerticalScrollIndicator={false}>
-        {filteredUsers.length > 0 ? (
+        {isLoading ? (
+          <>
+            <UserRowSkeleton />
+            <UserRowSkeleton />
+            <UserRowSkeleton />
+            <UserRowSkeleton />
+            <UserRowSkeleton />
+          </>
+        ) : filteredUsers.length > 0 ? (
           filteredUsers.map(user => {
             const buttonRef =
               menuButtonRefs.current[user.id] ||
@@ -336,7 +425,7 @@ const ManageU = ({onBack}) => {
                 <TextInput
                   style={styles.textInput}
                   value={editedName}
-                  onChangeText={setEditedName}
+                  onChangeText={(val) => setEditedName(val.replace(/[<>&'"]/g, ''))}
                   placeholder="Enter full name"
                   placeholderTextColor="#9CA3AF"
                 />
@@ -356,9 +445,10 @@ const ManageU = ({onBack}) => {
                 <TextInput
                   style={styles.textInput}
                   value={editedPhone}
-                  onChangeText={setEditedPhone}
+                  onChangeText={(val) => setEditedPhone(val.replace(/[^0-9]/g, ''))}
                   keyboardType="phone-pad"
-                  placeholder="Enter phone number"
+                  maxLength={10}
+                  placeholder="Enter 10-digit phone number"
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
@@ -498,7 +588,7 @@ const ManageU = ({onBack}) => {
             </View>
             <View style={customStyles.modalHeaderSeparator} />
             
-            <ScrollView style={customStyles.modalContent}>
+            <ScrollView style={customStyles.modalContent} contentContainerStyle={{ paddingBottom: 24 }}>
               {/* Full Name */}
               <View style={customStyles.inputGroup}>
                 <View style={customStyles.labelContainer}>
@@ -550,7 +640,7 @@ const ManageU = ({onBack}) => {
                 </View>
               </View>
 
-              {/* Birth Year */}
+              {/* Birth Year / Date of Birth */}
               <View style={customStyles.inputGroup}>
                 <View style={customStyles.labelContainer}>
                   <MaterialCommunityIcons
@@ -558,12 +648,12 @@ const ManageU = ({onBack}) => {
                     size={20}
                     color="#000000"
                   />
-                  <Text style={styles.inputLabel}>Birth Year</Text>
+                  <Text style={styles.inputLabel}>Date of Birth / Year</Text>
                 </View>
                 <View style={customStyles.viewDataContainer}>
                   <Text style={customStyles.viewDataText}>
-                    {selectedUser?.dateOfBirth
-                      ? selectedUser.dateOfBirth.substring(0, 4)
+                    {selectedUser?.dateOfBirth && selectedUser.dateOfBirth !== 'N/A'
+                      ? selectedUser.dateOfBirth.split('T')[0]
                       : 'N/A'}
                   </Text>
                 </View>
@@ -581,13 +671,15 @@ const ManageU = ({onBack}) => {
                 </View>
                 <View style={customStyles.viewDataContainer}>
                   <Text style={customStyles.viewDataText}>
-                    {selectedUser?.joinedDate}
+                    {selectedUser?.joinedDate && selectedUser.joinedDate !== 'N/A'
+                      ? selectedUser.joinedDate.split('T')[0]
+                      : 'N/A'}
                   </Text>
                 </View>
               </View>
 
               {/* Contributed Groups */}
-              <View style={customStyles.inputGroup}>
+              <View style={[customStyles.inputGroup, { marginBottom: 24 }]}>
                 <View style={customStyles.labelContainer}>
                   <MaterialCommunityIcons
                     name="account-group-outline"
@@ -596,7 +688,7 @@ const ManageU = ({onBack}) => {
                   />
                   <Text style={styles.inputLabel}>Contributed Groups</Text>
                 </View>
-                <View style={[customStyles.viewDataContainer, { minHeight: 60, paddingVertical: 10 }]}>
+                <View style={[customStyles.viewDataContainer, { minHeight: 60, paddingVertical: 12 }]}>
                   <Text style={[customStyles.viewDataText, { lineHeight: 22 }]}>
                     {selectedUser?.contributedGroups || 'None'}
                   </Text>

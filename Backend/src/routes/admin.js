@@ -37,10 +37,11 @@ router.get('/groups/getPendingAuctionWinner', authenticateToken, groupManagement
 router.get('/dashboard-overview', authenticateToken, groupManagement.getDashboardOverview);
 router.get('/notifications', authenticateToken, groupManagement.getAdminNotifications);
 
-router.post('/users/addUser', authenticateToken, userManagement.addUser);
+router.post('/users/addUser', authenticateToken, requireAdmin, userManagement.addUser);
 router.get('/users/getAllUsers', authenticateToken, userManagement.getAllUsers);
 router.get('/users/locations', authenticateToken, userManagement.getUserLocations);
-router.post('/users/deleteUser', authenticateToken, userManagement.deleteUser);
+router.post('/users/updateUser', authenticateToken, requireAdmin, userManagement.updateUser);
+router.post('/users/deleteUser', authenticateToken, requireAdmin, userManagement.deleteUser);
 router.post('/users/updatePassword', authenticateToken, userManagement.updatePassword);
 router.post('/users/resetPassword', authenticateToken, userManagement.resetPassword);
 router.get('/users/:userId/passwordDetails', authenticateToken, userManagement.getUserPasswordDetails);

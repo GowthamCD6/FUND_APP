@@ -25,40 +25,28 @@ export default function AddUser({ onBack }) {
   const [submitting, setSubmitting] = useState(false);
 
   // Helpers
-  const validatePhoneNumber = (phone) => /^[0-9]{10}$/.test(phone.replace(/\s/g, ''));
+  const validatePhoneNumber = (phone) => /^[0-9]{10}$/.test((phone || '').trim());
   const validateYear = (year) => {
     const currentYear = new Date().getFullYear();
-    const yearNum = parseInt(year);
+    const yearNum = parseInt(year, 10);
     return /^\d{4}$/.test(year) && yearNum >= 1900 && yearNum <= currentYear;
   };
 
-  const formatPhoneNumber = (text) => {
-    const cleaned = text.replace(/\D/g, '').slice(0, 10);
-    if (cleaned.length <= 3) return cleaned;
-    if (cleaned.length <= 6) return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
-    // return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
-    return text;
-  };
-
-  const formatYear = (text) => {
-    return text.replace(/\D/g, '').slice(0, 4);
-  };
-
-  // Handlers
   const handleNameChange = (text) => {
-    setFormData((s) => ({ ...s, name: text }));
+    const clean = text.replace(/[<>&'"]/g, '');
+    setFormData((s) => ({ ...s, name: clean }));
     if (errors.name) setErrors((e) => ({ ...e, name: '' }));
   };
 
   const handlePhoneChange = (text) => {
-    const formatted = text;
-    setFormData((s) => ({ ...s, phoneNumber: text }));
+    const clean = text.replace(/[^0-9]/g, '').slice(0, 10);
+    setFormData((s) => ({ ...s, phoneNumber: clean }));
     if (errors.phoneNumber) setErrors((e) => ({ ...e, phoneNumber: '' }));
   };
 
   const handleYearChange = (text) => {
-    const formatted = formatYear(text);
-    setFormData((s) => ({ ...s, yearOfBirth: formatted }));
+    const clean = text.replace(/[^0-9]/g, '').slice(0, 4);
+    setFormData((s) => ({ ...s, yearOfBirth: clean }));
     if (errors.yearOfBirth) setErrors((e) => ({ ...e, yearOfBirth: '' }));
   };
 
@@ -70,9 +58,10 @@ export default function AddUser({ onBack }) {
     else if (!validatePhoneNumber(formData.phoneNumber))
       newErrors.phoneNumber = 'Enter a valid 10-digit phone number';
 
+    const currentYr = new Date().getFullYear();
     if (!formData.yearOfBirth) newErrors.yearOfBirth = 'Year of birth is required';
     else if (!validateYear(formData.yearOfBirth))
-      newErrors.yearOfBirth = 'Enter a valid year (1900-2025)';
+      newErrors.yearOfBirth = `Enter a valid year (1900-${currentYr})`;
 
     if (Object.keys(newErrors).length) {
       setErrors(newErrors);
@@ -97,15 +86,19 @@ export default function AddUser({ onBack }) {
       }
 
       if (!response.ok || !result?.success) {
-        throw new Error(result?.message || 'Failed to create group');
+        throw new Error(result?.message || 'Failed to add user');
       }
+
       Alert.alert(
         'Success',
-        `User added!\n\nName: ${formData.name}\nPhone: ${formData.phoneNumber}\nYear of Birth: ${formData.yearOfBirth}\nRole: ${formData.role}`
+        `User added successfully!\n\nName: ${formData.name}\nPhone: ${formData.phoneNumber}\nYear of Birth: ${formData.yearOfBirth}\nRole: ${formData.role === 'admin' ? 'Admin' : 'User'}`
       );
       setFormData({ name: '', phoneNumber: '', yearOfBirth: '', role: 'user' });
       setErrors({});
       onBack();
+    } catch (err) {
+      console.error('Error adding user:', err);
+      Alert.alert('Error', err?.message || 'Failed to add user. Please try again.');
     } finally {
       setSubmitting(false);
     }
