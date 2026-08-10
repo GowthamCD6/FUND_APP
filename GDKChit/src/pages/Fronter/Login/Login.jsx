@@ -106,9 +106,10 @@ const Login = () => {
                 await AsyncStorage.setItem("userId", String(user.id));
                 
                 // Navigate to home page based on role
+                const isPlatformAdmin = String(user.role || '').toLowerCase() === 'admin';
                 navigation.reset({
                     index: 0, 
-                    routes: [{ name: "TabRouter", params: { role: user.role } }],
+                    routes: [{ name: isPlatformAdmin ? "AdminTabs" : "TabRouter", params: { role: user.role } }],
                 });
             }
         } catch (error) {

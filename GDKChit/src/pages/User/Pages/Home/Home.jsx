@@ -14,6 +14,7 @@ import {
   Easing,
   Linking,
   Alert,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -228,6 +229,21 @@ const Home = () => {
   const handleOpenNotifications = async () => {
     setShowNotifications(true);
   };
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('OPEN_NOTIFICATIONS', () => {
+      setShowNotifications(true);
+    });
+    const scrollSub = DeviceEventEmitter.addListener('SCROLL_HOME', (y) => {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTo({ y: y, animated: true });
+      }
+    });
+    return () => {
+      sub.remove();
+      scrollSub.remove();
+    };
+  }, []);
 
   const triggerRangoliAnimation = useCallback(() => {
     goldenFade.setValue(0);
@@ -971,6 +987,7 @@ const Home = () => {
         transparent={false}
         visible={showAllPlans}
         onRequestClose={() => setShowAllPlans(false)}
+        statusBarTranslucent={true}
       >
         <ChitPlans
           onClose={() => setShowAllPlans(false)}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Platform, DeviceEventEmitter } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import MoreModal from '../../../pages/User/Modals/More';
 import AdminTab, { ADMIN_PHONE, ADMIN_PASSWORD } from '../ATab/AdminTab';
+import UserManual from '../../../pages/User/manual/usermanule';
 
 const withSafe = (Component) => {
   return (props) => {
@@ -64,12 +65,28 @@ const CustomTabBarButton = ({ children, onPress }) => (
   </TouchableOpacity>
 );
 
-
-
 const UserTabs = () => {
   const insets = useSafeAreaInsets();
   const [showMoreModal, setShowMoreModal] = useState(false);
   const [preselectedGroup, setPreselectedGroup] = useState(null);
+  const [manualVisible, setManualVisible] = useState(false);
+  const [manualKey, setManualKey] = useState(1);
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('TRIGGER_USER_MANUAL', () => {
+      setManualKey((prev) => prev + 1);
+      setManualVisible(true);
+    });
+
+    const moreSub = DeviceEventEmitter.addListener('OPEN_MORE_MODAL', () => {
+      setShowMoreModal(true);
+    });
+
+    return () => {
+      subscription.remove();
+      moreSub.remove();
+    };
+  }, []);
 
   const handleCloseMoreModal = () => {
     setShowMoreModal(false);
@@ -192,6 +209,12 @@ const UserTabs = () => {
       </Tab.Navigator>
 
       <MoreModal visible={showMoreModal} onClose={handleCloseMoreModal} selectedGroup={preselectedGroup} />
+      <UserManual
+        key={manualKey}
+        visible={manualVisible}
+        forceShow={manualVisible}
+        onClose={() => setManualVisible(false)}
+      />
     </>
   );
 };

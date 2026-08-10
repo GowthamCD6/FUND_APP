@@ -9,6 +9,7 @@ import {
   StatusBar,
   Alert,
   Image,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -22,6 +23,7 @@ import RateModal from './Modals/Rate';
 import { Animated, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { navigate as navigateRef } from '../../../../utils/navigation';
 import ApiService from '../../../../services/ApiService';
 import { useAuth } from '../../../../utils/AuthContext';
 import { useLanguage } from '../../../../utils/LanguageContext';
@@ -37,6 +39,16 @@ const Profile = () => {
   const [imageError, setImageError] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const navigation = useNavigation();
+  const profileScrollViewRef = useRef(null);
+
+  useEffect(() => {
+    const scrollSub = DeviceEventEmitter.addListener('SCROLL_PROFILE', (y) => {
+      if (profileScrollViewRef.current) {
+        profileScrollViewRef.current.scrollTo({ y: y, animated: true });
+      }
+    });
+    return () => scrollSub.remove();
+  }, []);
 
   const getProfileImageUrl = (img) => {
     if (!img) return null;
@@ -102,6 +114,7 @@ const Profile = () => {
         />
 
         <ScrollView
+          ref={profileScrollViewRef}
           style={styles.content}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
@@ -303,6 +316,35 @@ const Profile = () => {
                     color="#CCCCCC"
                   />
                 </View>
+              </TouchableOpacity>
+              <View style={styles.customDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  try {
+                    navigateRef('UserTabs', { screen: 'Home' });
+                  } catch (e) {
+                    navigation.navigate('Home');
+                  }
+                  setTimeout(() => {
+                    DeviceEventEmitter.emit('TRIGGER_USER_MANUAL');
+                  }, 150);
+                }}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="book-open-page-variant-outline"
+                    size={22}
+                    color="#6B46C1"
+                  />
+                  <Text style={[styles.menuItemText, { color: '#6B46C1', fontWeight: '600' }, language === 'ta' && { fontSize: 14 }]}>
+                    {t('App Feature Guide')}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#6B46C1"
+                />
               </TouchableOpacity>
             </View>
           </View>
