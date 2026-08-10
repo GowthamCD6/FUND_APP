@@ -85,6 +85,8 @@ const AccountD = ({ onBack }) => {
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 
+	const [isSaving, setIsSaving] = useState(false);
+
 	const loadProfile = async (showLoader = false) => {
 		try {
 			if (showLoader) setLoading(true);
@@ -152,7 +154,7 @@ const AccountD = ({ onBack }) => {
 		} catch (error) {
 			if (error.message !== 'User cancelled image selection') {
 				console.error('Image picker error:', error);
-				Alert.alert('Error', 'Unable to pick and crop image from gallery.', [{ text: 'OK' }]);
+				Alert.alert(t('Error'), 'Unable to pick and crop image from gallery.', [{ text: t('OK') }]);
 			}
 		}
 	};
@@ -206,54 +208,59 @@ const AccountD = ({ onBack }) => {
 	const validateForm = () => {
 		const newErrors = {};
 		
-		if (!formData.name.trim()) newErrors.name = 'Name is required';
+		if (!formData.name.trim()) newErrors.name = t('Name is required');
 		if (!formData.email.trim()) {
-			newErrors.email = 'Email is required';
-		} else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-			newErrors.email = 'Please enter a valid email';
+			newErrors.email = t('Email is required');
+		} else if (!/\S+@\S+\.\S+/.test(formData.email.trim())) {
+			newErrors.email = t('Please enter a valid email');
 		}
-		if (!formData.dateOfBirth.trim()) newErrors.dateOfBirth = 'Date of birth is required';
-		if (!formData.streetAddress.trim()) newErrors.streetAddress = 'Street address is required';
-		if (!formData.city.trim()) newErrors.city = 'City is required';
-		if (!formData.state.trim()) newErrors.state = 'State is required';
+		if (!formData.dateOfBirth.trim()) newErrors.dateOfBirth = t('Date of birth is required');
+		if (!formData.streetAddress.trim()) newErrors.streetAddress = t('Street address is required');
+		if (!formData.city.trim()) newErrors.city = t('City is required');
+		if (!formData.state.trim()) newErrors.state = t('State is required');
 
 		setErrors(newErrors);
 		return Object.keys(newErrors).length === 0;
 	};
 
-	const handleSave = () => {
-		if (validateForm()) {
-			ApiService.updateProfile({
-				name: formData.name,
-				email: formData.email,
-				dateOfBirth: formData.dateOfBirth,
-				streetAddress: formData.streetAddress,
-				city: formData.city,
-				state: formData.state,
-				userImage: formData.userImage,
-			})
-				.then((response) => {
-					if (response.success) {
-						Alert.alert(
-							'Success',
-							'Account details saved successfully!',
-						[{ text: 'OK', onPress: () => navigation.goBack() }]
-					);
-					return;
-				}
+	const handleSave = async () => {
+		if (isSaving) return;
 
-					Alert.alert('Error', response.message || 'Failed to save account details.', [{ text: 'OK' }]);
-				})
-				.catch((error) => {
-					console.error('Profile update error:', error);
-					Alert.alert('Error', error.message || 'Failed to save account details.', [{ text: 'OK' }]);
-				});
-		} else {
+		if (!validateForm()) {
 			Alert.alert(
-				'Error',
-				'Please fill in all required fields correctly.',
-				[{ text: 'OK' }]
+				t('Error'),
+				t('Please fill in all required fields correctly.'),
+				[{ text: t('OK') }]
 			);
+			return;
+		}
+
+		setIsSaving(true);
+		try {
+			const response = await ApiService.updateProfile({
+				name: formData.name.trim(),
+				email: formData.email.trim(),
+				dateOfBirth: formData.dateOfBirth,
+				streetAddress: formData.streetAddress.trim(),
+				city: formData.city.trim(),
+				state: formData.state.trim(),
+				userImage: formData.userImage,
+			});
+
+			if (response.success) {
+				Alert.alert(
+					t('Success'),
+					t('Account details saved successfully!'),
+					[{ text: t('OK'), onPress: () => navigation.goBack() }]
+				);
+			} else {
+				Alert.alert(t('Error'), response.message || t('Failed to save account details.'), [{ text: t('OK') }]);
+			}
+		} catch (error) {
+			console.error('Profile update error:', error);
+			Alert.alert(t('Error'), error.message || t('Failed to save account details.'), [{ text: t('OK') }]);
+		} finally {
+			setIsSaving(false);
 		}
 	};
 
@@ -599,9 +606,20 @@ const AccountD = ({ onBack }) => {
 					</View>
 
 					{/* Save Button */}
-					<TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-						<MaterialCommunityIcons name="content-save" size={20} color="#FFF" />
-						<Text style={[styles.saveButtonText, language === 'ta' && { fontSize: 14 }]}>{t('Save Changes')}</Text>
+					<TouchableOpacity
+						style={[styles.saveButton, isSaving && { opacity: 0.7 }]}
+						onPress={handleSave}
+						disabled={isSaving}
+						activeOpacity={0.8}
+					>
+						{isSaving ? (
+							<ActivityIndicator size="small" color="#FFFFFF" />
+						) : (
+							<>
+								<MaterialCommunityIcons name="content-save" size={20} color="#FFF" />
+								<Text style={[styles.saveButtonText, language === 'ta' && { fontSize: 14 }]}>{t('Save Changes')}</Text>
+							</>
+						)}
 					</TouchableOpacity>
 				</View>
 			</ScrollView>

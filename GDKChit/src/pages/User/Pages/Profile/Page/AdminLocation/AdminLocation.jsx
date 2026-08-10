@@ -102,6 +102,8 @@ const AdminLocation = ({ navigation }) => {
   }, []);
 
   const handleAddAdmin = async () => {
+    if (loading) return;
+
     if (!newAdminName.trim() || !newAdminLocation.trim() || !newAdminLatitude.trim() || !newAdminLongitude.trim()) {
       Alert.alert('Validation Error', 'Please enter admin name, location, latitude, and longitude');
       return;

@@ -19,10 +19,12 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import LottieView from 'lottie-react-native';
 import ApiService from '../../../../../../services/ApiService';
 import Header from '../../../../../../components/HeaderComponent/Header';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
 const OTPRequests = ({ navigation }) => {
+  const { t, language } = useLanguage();
   const [otpRequests, setOtpRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -106,11 +108,11 @@ const OTPRequests = ({ navigation }) => {
         
         if (verifiedOTP) {
           Alert.alert(
-            "Verification Complete 🎉",
-            "Your OTP has been verified successfully by admin.",
+            t("Verification Complete 🎉"),
+            t("Your OTP has been verified successfully by admin."),
             [
               {
-                text: "View Portfolio",
+                text: t("View Portfolio"),
                 onPress: () => navigation.navigate('Portfolio')
               }
             ]
@@ -193,7 +195,7 @@ const OTPRequests = ({ navigation }) => {
       return (
         <View style={styles.timerContainerExpired}>
           <MaterialCommunityIcons name="clock-alert-outline" size={14} color="#EF4444" />
-          <Text style={styles.timerExpired}>Expired</Text>
+          <Text style={[styles.timerExpired, language === 'ta' && { fontSize: 11 }]}>{t('Expired')}</Text>
         </View>
       );
     }
@@ -259,8 +261,8 @@ const OTPRequests = ({ navigation }) => {
             ]}
           >
             <View style={styles.otpLabelRow}>
-              <Text style={styles.otpLabel}>
-                {isVerified ? 'VERIFIED CODE' : isExpired ? 'EXPIRED CODE' : 'ACTIVE OTP CODE'}
+              <Text style={[styles.otpLabel, language === 'ta' && { fontSize: 10 }]}>
+                {isVerified ? t('VERIFIED CODE') : isExpired ? t('EXPIRED CODE') : t('ACTIVE OTP CODE')}
               </Text>
               <TouchableOpacity
                 style={styles.cardCopyIconBtn}
@@ -281,8 +283,8 @@ const OTPRequests = ({ navigation }) => {
             </View>
 
             {!isExpired && !isVerified && (
-              <Text style={styles.otpHint}>
-                Tap copy or share below to verify with admin
+              <Text style={[styles.otpHint, language === 'ta' && { fontSize: 11 }]}>
+                {t('Tap copy or share below to verify with admin')}
               </Text>
             )}
           </View>
@@ -295,7 +297,7 @@ const OTPRequests = ({ navigation }) => {
             onPress={() => handleCopyOTP(otp.otpCode)}
           >
             <MaterialCommunityIcons name="content-copy" size={16} color="#6B46C1" />
-            <Text style={styles.actionBtnSecondaryText}>Copy OTP</Text>
+            <Text style={[styles.actionBtnSecondaryText, language === 'ta' && { fontSize: 13 }]}>{t('Copy OTP')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -303,7 +305,7 @@ const OTPRequests = ({ navigation }) => {
             onPress={() => handleShareOTP(otp)}
           >
             <MaterialCommunityIcons name="share-variant" size={16} color="#FFFFFF" />
-            <Text style={styles.actionBtnPrimaryText}>Share Code</Text>
+            <Text style={[styles.actionBtnPrimaryText, language === 'ta' && { fontSize: 13 }]}>{t('Share Code')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -342,12 +344,13 @@ const OTPRequests = ({ navigation }) => {
     return (
       <View style={styles.container}>
         <Header 
-          title="OTP Management"
+          title={t("OTP Requests")}
           onBack={() => navigation.goBack()}
+          showBackButton={true}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6B46C1" />
-          <Text style={styles.loadingText}>Fetching OTP requests...</Text>
+          <Text style={[styles.loadingText, language === 'ta' && { fontSize: 14 }]}>{t("Fetching OTP requests...")}</Text>
         </View>
       </View>
     );
@@ -356,8 +359,9 @@ const OTPRequests = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header 
-        title="OTP Management"
+        title={t("OTP Requests")}
         onBack={() => navigation.goBack()}
+        showBackButton={true}
       />
 
       {/* Info Advice Banner */}

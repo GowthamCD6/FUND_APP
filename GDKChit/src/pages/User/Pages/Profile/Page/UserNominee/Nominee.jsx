@@ -10,6 +10,7 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +28,24 @@ const Nominee = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (isModalVisible) {
+        setIsModalVisible(false);
+        return true;
+      }
+      if (onBack) {
+        onBack();
+        return true;
+      }
+      navigation.goBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, [isModalVisible, onBack, navigation]);
 
   const relationships = [
     'Father',
@@ -73,17 +92,17 @@ const Nominee = ({ onBack }) => {
     const nextErrors = {};
 
     if (!nomineeName.trim()) {
-      nextErrors.name = 'Nominee name is required';
+      nextErrors.name = t('Nominee name is required');
     }
 
     if (!nomineePhone.trim()) {
-      nextErrors.phone = 'Nominee phone is required';
+      nextErrors.phone = t('Nominee phone is required');
     } else if (!/^\d{10,15}$/.test(nomineePhone.trim())) {
-      nextErrors.phone = 'Enter a valid phone number';
+      nextErrors.phone = t('Enter a valid phone number');
     }
 
     if (!selectedRelationship.trim()) {
-      nextErrors.relationship = 'Relationship is required';
+      nextErrors.relationship = t('Relationship is required');
     }
 
     setErrors(nextErrors);
@@ -91,8 +110,10 @@ const Nominee = ({ onBack }) => {
   };
 
   const handleSave = async () => {
+    if (saving) return;
+
     if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fill all nominee details correctly.');
+      Alert.alert(t('Validation Error'), t('Please fill all nominee details correctly.'));
       return;
     }
 
@@ -105,16 +126,16 @@ const Nominee = ({ onBack }) => {
       });
 
       if (response.success) {
-        Alert.alert('Success', 'Nominee details saved successfully.', [
-          { text: 'OK', onPress: () => navigation.goBack() },
+        Alert.alert(t('Success'), t('Nominee details saved successfully.'), [
+          { text: t('OK'), onPress: () => (onBack ? onBack() : navigation.goBack()) },
         ]);
         return;
       }
 
-      Alert.alert('Error', response.message || 'Failed to save nominee details.');
+      Alert.alert(t('Error'), response.message || t('Failed to save nominee details.'));
     } catch (error) {
       console.error('Save nominee error:', error);
-      Alert.alert('Error', error.message || 'Failed to save nominee details.');
+      Alert.alert(t('Error'), error.message || t('Failed to save nominee details.'));
     } finally {
       setSaving(false);
     }
@@ -122,7 +143,7 @@ const Nominee = ({ onBack }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Add Nominee" onBack={() => navigation.goBack()} />
+      <Header title={t('Add Nominee')} onBack={() => (onBack ? onBack() : navigation.goBack())} showBackButton={true} />
       {/* Content */}
       <View style={styles.content}>
         {loading ? (
