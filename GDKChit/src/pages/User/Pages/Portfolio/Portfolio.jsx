@@ -112,26 +112,28 @@ const ChitfundPortfolio = ({ navigation }) => {
 
   // Function to transform Portfolio data to GroupCard format
   const transformGroupData = (group) => {
+    if (!group) return {};
     return {
       id: group.id,
-      name: group.groupName,
-      status: group.paymentStatus,
-      totalMembers: group.totalMembers,
-      currentMembers: group.currentMembers,
-      monthlyAmount: group.monthlyContribution,
-      completedCycles: group.currentMonth,
-      totalCycles: group.totalMonths,
+      name: String(group.groupName || 'Chit Group'),
+      status: group.paymentStatus || 'pending',
+      totalMembers: Number(group.totalMembers) || 0,
+      currentMembers: Number(group.currentMembers) || 0,
+      monthlyAmount: Number(group.monthlyContribution) || 0,
+      completedCycles: Number(group.currentMonth) || 0,
+      totalCycles: Number(group.totalMonths) || 0,
       nextDueDate: group.estimatedPayDate || 'N/A',
-      completedDate: group.estimatedPayDate,
-      totalAmount: group.investmentAmount,
-      groupId: group.groupId,
-      startDate: group.startDate,
-      collectedAmount: group.groupCollectedAmount || 0,
-      userPaidAmount: group.totalPaid || 0,
+      completedDate: group.estimatedPayDate || 'N/A',
+      totalAmount: Number(group.investmentAmount) || 0,
+      groupId: String(group.groupId || `GRP-${group.id}`),
+      startDate: group.startDate || null,
+      collectedAmount: Number(group.groupCollectedAmount) || 0,
+      userPaidAmount: Number(group.totalPaid) || 0,
     };
   };
 
   const handleViewGroupDetails = (group) => {
+    setSelectedGroupId(group.id);
     setSelectedModalGroup(group);
     setModalVisible(true);
   };
@@ -141,125 +143,93 @@ const ChitfundPortfolio = ({ navigation }) => {
     setSelectedModalGroup(null);
   };
 
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Header title="Portfolio" onBack={() => navigation?.goBack()} />
-        <View style={styles.loadingContainer}>
-          <View style={styles.loadingContent}>
-            <ActivityIndicator size="large" color="#6B46C1" />
-            <Text style={[styles.loadingText, language === 'ta' && { fontSize: 16 }]}>{t('Loading your portfolio...')}</Text>
-            <Text style={[styles.loadingSubtext, language === 'ta' && { fontSize: 13 }]}>{t('Please wait while we fetch your investment details')}</Text>
-          </View>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Header title="Portfolio" onBack={() => navigation?.goBack()} />
-        <View style={styles.errorContainer}>
-          <View style={styles.errorContent}>
-            <MaterialCommunityIcons name="wifi-off" size={64} color="#DC2626" />
-            <Text style={[styles.errorTitle, language === 'ta' && { fontSize: 18 }]}>{t('Unable to Load Portfolio')}</Text>
-            <Text style={styles.errorMessage}>{error}</Text>
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={fetchPortfolio}
-            >
-              <MaterialCommunityIcons name="refresh" size={20} color="#FFFFFF" />
-              <Text style={[styles.retryButtonText, language === 'ta' && { fontSize: 14 }]}>{t('Try Again')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (chitGroups.length === 0) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Header title="Portfolio" onBack={() => navigation?.goBack()} />
-        <View style={styles.emptyPortfolioContainer}>
-          <View style={styles.emptyPortfolioContent}>
-            <MaterialCommunityIcons name="briefcase-outline" size={72} color="#D1D5DB" />
-            <Text style={[styles.emptyPortfolioTitle, language === 'ta' && { fontSize: 18 }]}>{t('No Portfolio Data')}</Text>
-            <Text style={[styles.emptyPortfolioMessage, language === 'ta' && { fontSize: 14 }]}>{t("You haven't joined any chit groups yet")}</Text>
-            <TouchableOpacity
-              style={styles.exploreButton}
-              onPress={() => navigation?.navigate('Home')}
-            >
-              <Text style={[styles.exploreButtonText, language === 'ta' && { fontSize: 14 }]}>{t('Explore Groups')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const CardSkeleton = () => (
+    <View style={styles.skeletonCard}>
+      <View style={styles.skeletonHeader}>
+        <View style={styles.skeletonTitle} />
+        <View style={styles.skeletonBadge} />
+      </View>
+      <View style={styles.skeletonRow}>
+        <View style={styles.skeletonTextLeft} />
+        <View style={styles.skeletonTextRight} />
+      </View>
+      <View style={styles.skeletonRow}>
+        <View style={styles.skeletonTextLeft} />
+        <View style={styles.skeletonTextRight} />
+      </View>
+      <View style={styles.skeletonProgress} />
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <Header
-        title="Portfolio"
+        title={t('Portfolio')}
         onBack={() => navigation?.goBack()}
+        showBackButton={true}
       />
 
-      {/* FIXED HEADER - Above the divider */}
+      {/* FIXED HEADER - Summary & Selection Chips (Static Shell) */}
       <View style={styles.fixedHeader}>
-        {/* NEW SUMMARY SECTION */}
+        {/* SUMMARY SECTION */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 12 }]}>{t('Summary')}</Text>
           <View style={styles.summaryContainer}>
             {/* Total Amount Invested Card */}
             <View style={styles.summaryCard}>
               <Text style={[styles.cardLabel, language === 'ta' && { fontSize: 12 }]}>{t('Total Paid Amount')}</Text>
-              <Text style={styles.cardValue}>{formatCurrency(totalAmountInvested)}</Text>
+              <Text style={styles.cardValue}>
+                {isLoading ? '...' : formatCurrency(totalAmountInvested)}
+              </Text>
             </View>
 
             {/* Selected Group Card */}
             <View style={styles.summaryCard}>
-              <Text style={[styles.cardLabel, language === 'ta' && { fontSize: 12 }]}>
+              <Text style={[styles.cardLabel, language === 'ta' && { fontSize: 12 }]} numberOfLines={1}>
                 {selectedGroup ? selectedGroup.groupName : t('Select a Group')}
               </Text>
               <Text style={styles.cardValue}>
-                {formatCurrency(amountPaidInSelectedGroup)}
+                {isLoading ? '...' : formatCurrency(amountPaidInSelectedGroup)}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* VIEW GROUP SELECTOR */}
+        {/* VIEW GROUP SELECTOR CHIPS */}
         <View style={styles.section}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {chitGroups.map(group => (
-              <TouchableOpacity
-                key={group.id}
-                style={[
-                  styles.selectorChip,
-                  selectedGroupId === group.id && styles.selectorChipActive
-                ]}
-                onPress={() => setSelectedGroupId(group.id)}
-              >
-                <Text style={[
-                  styles.selectorChipText,
-                  selectedGroupId === group.id && styles.selectorChipTextActive
-                ]}>
-                  {group.groupName} ({formatCurrency(group.investmentAmount)})
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          {chitGroups.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {chitGroups.map(group => (
+                <TouchableOpacity
+                  key={group.id}
+                  style={[
+                    styles.selectorChip,
+                    selectedGroupId === group.id && styles.selectorChipActive
+                  ]}
+                  onPress={() => setSelectedGroupId(group.id)}
+                >
+                  <Text style={[
+                    styles.selectorChipText,
+                    selectedGroupId === group.id && styles.selectorChipTextActive
+                  ]}>
+                    {group.groupName} ({formatCurrency(group.investmentAmount)})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={[styles.cardLabel, { fontSize: 12, color: '#9CA3AF' }]}>
+              {isLoading ? t('Loading your portfolio...') : t('No Portfolio Data')}
+            </Text>
+          )}
 
-          {/* Divider below group amount values */}
+          {/* Divider below group selector */}
           <View style={styles.groupSelectorDivider} />
         </View>
       </View>
 
-      {/* SCROLLABLE CONTENT - Below the divider */}
+      {/* SCROLLABLE CONTENT - Group Tabs & Dynamic Backend List */}
       <ScrollView style={styles.scrollableContent} showsVerticalScrollIndicator={false}>
-        {/* View Group title below the divider */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle1, language === 'ta' && { fontSize: 12 }]}>{t('View Group')}</Text>
 
@@ -299,9 +269,28 @@ const ChitfundPortfolio = ({ navigation }) => {
           </View>
         </View>
 
-        {/* --- CHIT GROUP CARDS USING REUSABLE COMPONENT --- */}
+        {/* INLINE CARD CONTENT LOADING SKELETON & GROUPS */}
         <View style={styles.section}>
-          {currentGroups.length > 0 ? (
+          {isLoading ? (
+            <View style={{ marginTop: 4 }}>
+              <CardSkeleton />
+              <CardSkeleton />
+            </View>
+          ) : error ? (
+            <View style={[styles.emptyState, { paddingTop: 30, paddingBottom: 30 }]}>
+              <MaterialCommunityIcons name="wifi-off" size={48} color="#DC2626" />
+              <Text style={[styles.emptyStateText, { color: '#DC2626', marginTop: 10 }, language === 'ta' && { fontSize: 16 }]}>
+                {t('Unable to Load Portfolio')}
+              </Text>
+              <Text style={styles.emptyStateSubtext}>{error}</Text>
+              <TouchableOpacity
+                style={[styles.selectorChip, styles.selectorChipActive, { marginTop: 12, paddingHorizontal: 20 }]}
+                onPress={fetchPortfolio}
+              >
+                <Text style={styles.selectorChipTextActive}>{t('Try Again')}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : currentGroups.length > 0 ? (
             currentGroups.map((group) => (
               <GroupCard
                 key={group.id}

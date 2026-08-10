@@ -140,13 +140,28 @@ exports.joinGroup = async (req, res) => {
 };
 
 exports.getGroupMonthlyInfo = async (req, res) => {
-  const userId = req.user.userId || req.user.id;
+  const userId = req.user ? (req.user.userId || req.user.id) : null;
   let rawGroupId = req.params.groupId;
-  if (rawGroupId && rawGroupId.startsWith('GRP-')) {
-    rawGroupId = rawGroupId.split('-')[1];
+
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: Invalid user credentials' });
+  }
+
+  if (rawGroupId && String(rawGroupId).startsWith('GRP-')) {
+    rawGroupId = String(rawGroupId).split('-')[1];
   }
 
   try {
+    // Verify user is a member of the requested group (IDOR Prevention)
+    const [membership] = await db.promise().query(
+      `SELECT id FROM user_grouping WHERE user_id = ? AND group_id = ?`,
+      [userId, rawGroupId]
+    );
+
+    if (membership.length === 0) {
+      return res.status(403).json({ success: false, message: 'Forbidden: You are not a member of this group' });
+    }
+
     const [payments] = await db.promise().query(
       `SELECT MONTH(collection_period) - 1 AS month, YEAR(collection_period) AS year, amount, status, due_date, paid_date, receipt_number 
        FROM monthly_collections 

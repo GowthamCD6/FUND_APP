@@ -339,6 +339,46 @@ const ta = {
   // ===== Password Management =====
   'Password Management': 'கடவுச்சொல் நிர்வாகம்',
   'View and manage user passwords': 'பயனர் கடவுச்சொற்களைப் பார்க்கவும் நிர்வகிக்கவும்',
+
+  // ===== Portfolio =====
+  'Portfolio': 'போர்ட்ஃபோலியோ',
+  'Summary': 'சுருக்கம்',
+  'Total Paid Amount': 'மொத்த செலுத்திய தொகை',
+  'Select a Group': 'குழுவைத் தேர்ந்தெடுக்கவும்',
+  'View Group': 'குழுவைப் பார்க்கவும்',
+  'Active Groups': 'செயலில் உள்ள குழுக்கள்',
+  'Completed Groups': 'முடிவுற்ற குழுக்கள்',
+  'Loading your portfolio...': 'உங்கள் போர்ட்ஃபோலியோ ஏற்றப்படுகிறது...',
+  'Please wait while we fetch your investment details': 'முதலீட்டு விவரங்கள் பெறப்படும் வரை காத்திருக்கவும்',
+  'Unable to Load Portfolio': 'போர்ட்ஃபோலியோவை ஏற்ற முடியவில்லை',
+  'No Portfolio Data': 'போர்ட்ஃபோலியோ தரவு இல்லை',
+  "You haven't joined any chit groups yet": 'நீங்கள் இன்னும் எந்த சீட்டு குழுவிலும் சேரவில்லை',
+  'Explore Groups': 'குழுக்களை ஆராயுங்கள்',
+  'No active groups found': 'செயலில் உள்ள குழுக்கள் எதுவும் இல்லை',
+  'No completed groups found': 'முடிவுற்ற குழுக்கள் எதுவும் இல்லை',
+  'Join a chit group to start your investment journey': 'முதலீட்டு பயணத்தைத் தொடங்க சீட்டு குழுவில் இணையுங்கள்',
+  'Complete your active groups to see them here': 'முடிவுற்ற குழுக்களை இங்கு பார்க்கவும்',
+
+  // ===== Group Card Details / Info =====
+  'Chit Group Details': 'சீட்டு குழு விவரங்கள்',
+  'Viewing Month': 'பார்க்கும் மாதம்',
+  '(Current)': '(தற்போதைய)',
+  'Payment Status': 'கட்டண நிலை',
+  'Payment Breakdown': 'கட்டண விவரம்',
+  'Amount to be Paid This Month': 'இந்த மாதம் செலுத்த வேண்டிய தொகை',
+  'Chit Auction Winner': 'சீட்டு ஏல வெற்றியாளர்',
+  'Winner Name': 'வெற்றியாளர் பெயர்',
+  'Amount Taken': 'எடுத்த தொகை',
+  'Auction Date': 'ஏல நாள்',
+  'Pay Now': 'இப்போது செலுத்து',
+  'Contact Admin': 'நிர்வாகியைத் தொடர்பு கொள்ளவும்',
+  'Previous': 'முந்தைய',
+  'Next': 'அடுத்த',
+  'Paid on': 'செலுத்தப்பட்ட நாள்',
+  'days left': 'நாட்கள் எஞ்சியுள்ளன',
+  'days out': 'நாட்கள் கடந்துவிட்டன',
+  'Due by ': 'கடைசி நாள் ',
+  'Was due by ': 'கடைசி நாள் முடிந்தது ',
 };
 
 export default ta;
