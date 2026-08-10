@@ -9,16 +9,19 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../components/HeaderComponent/Header';
 import ChitCard from './ChitCard';
 import ApiService from '../../../../../services/ApiService';
+import { useLanguage } from '../../../../../utils/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
 const GroupCards = ({ onBack, onSelectGroup }) => {
+  const { t, language } = useLanguage();
   const [showChitCard, setShowChitCard] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [userGroups, setUserGroups] = useState([]);
@@ -30,6 +33,20 @@ const GroupCards = ({ onBack, onSelectGroup }) => {
     fetchPortfolio();
   }, []);
 
+  useEffect(() => {
+    const onBackPress = () => {
+      if (showChitCard) {
+        handleBackFromChitCard();
+        return true;
+      }
+      onBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, [showChitCard, onBack]);
+
   const fetchPortfolio = async () => {
     try {
       setLoading(true);
@@ -38,11 +55,11 @@ const GroupCards = ({ onBack, onSelectGroup }) => {
       if (response.success && response.data) {
         setUserGroups(response.data);
       } else {
-        setError('Failed to fetch groups');
+        setError(t('Failed to fetch groups'));
       }
     } catch (err) {
       console.error('Error fetching portfolio:', err);
-      setError(err.message || 'Error fetching groups');
+      setError(err.message || t('Error fetching groups'));
     } finally {
       setLoading(false);
     }
@@ -66,91 +83,101 @@ const GroupCards = ({ onBack, onSelectGroup }) => {
     return <ChitCard selectedGroup={selectedGroup} onBack={handleBackFromChitCard} />;
   }
 
-  const renderGroupCard = ({ item }) => (
-    <TouchableOpacity
-      style={styles.groupListCard}
-      onPress={() => handleGroupSelect(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.groupListCardHeader}>
-        <Text style={styles.groupListCardName}>{item.groupName}</Text>
-        <View style={[
-          styles.groupListStatusBadge,
-          ['completed', 'paid'].includes(item.paymentStatus) ? styles.statusCompleted : styles.statusPending
-        ]}>
-          <Text style={[
-            styles.groupListStatusText,
-            ['completed', 'paid'].includes(item.paymentStatus) ? styles.statusCompletedText : styles.statusPendingText
+  const renderGroupCard = ({ item }) => {
+    const currMonth = Number(item.currentMonth) || 0;
+    const totMonths = Number(item.totalMonths) || 1;
+    const progressPercent = Math.min(100, Math.max(0, (currMonth / totMonths) * 100));
+    const isPaid = ['completed', 'paid'].includes(item.paymentStatus);
+
+    return (
+      <TouchableOpacity
+        style={styles.groupListCard}
+        onPress={() => handleGroupSelect(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.groupListCardHeader}>
+          <Text style={styles.groupListCardName} numberOfLines={1}>{item.groupName || 'Group'}</Text>
+          <View style={[
+            styles.groupListStatusBadge,
+            isPaid ? styles.statusCompleted : styles.statusPending
           ]}>
-            {['completed', 'paid'].includes(item.paymentStatus) ? 'PAID' : 'PENDING'}
+            <Text style={[
+              styles.groupListStatusText,
+              isPaid ? styles.statusCompletedText : styles.statusPendingText
+            ]}>
+              {isPaid ? t('PAID') : t('PENDING')}
+            </Text>
+          </View>
+        </View>
+        
+        <Text style={styles.groupListCardId}>ID: {item.id}</Text>
+        
+        <View style={styles.groupListCardInfo}>
+          <Text style={[styles.currentMonthText, language === 'ta' && { fontSize: 12 }]}>
+            {t('Current Month')}: {currMonth}
           </Text>
         </View>
-      </View>
-      
-      <Text style={styles.groupListCardId}>ID: {item.id}</Text>
-      
-      <View style={styles.groupListCardInfo}>
-        <Text style={styles.currentMonthText}>Current Month: {item.currentMonth}</Text>
-      </View>
 
-      <View style={styles.groupListProgressSection}>
-        <View style={styles.groupListProgressBar}>
-          <View 
-            style={[
-              styles.groupListProgressFill, 
-              { width: `${(item.currentMonth / item.totalMonths) * 100}%` }
-            ]} 
-          />
+        <View style={styles.groupListProgressSection}>
+          <View style={styles.groupListProgressBar}>
+            <View 
+              style={[
+                styles.groupListProgressFill, 
+                { width: `${progressPercent}%` }
+              ]} 
+            />
+          </View>
+          <Text style={styles.groupListProgressText}>
+            {currMonth}/{totMonths} {t('months')}
+          </Text>
         </View>
-        <Text style={styles.groupListProgressText}>
-          {item.currentMonth}/{item.totalMonths} months
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaProvider>
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Header 
-          title="My Group"
+          title={t('My Group')}
           onBack={onBack}
+          showBackButton={true}
         />
 
         <View style={styles.groupListContainer}>
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#6B46C1" />
-              <Text style={styles.loadingText}>Loading groups...</Text>
+              <Text style={[styles.loadingText, language === 'ta' && { fontSize: 14 }]}>{t('Loading groups...')}</Text>
             </View>
           ) : userGroups.length === 0 ? (
             <View style={styles.emptyContainer}>
               <MaterialCommunityIcons name="account-group-outline" size={48} color="#9CA3AF" />
-              <Text style={styles.emptyText}>No group card present</Text>
-              <Text style={styles.emptySubText}>Join a chit group to start your investment journey</Text>
+              <Text style={[styles.emptyText, language === 'ta' && { fontSize: 15 }]}>{t('No group card present')}</Text>
+              <Text style={[styles.emptySubText, language === 'ta' && { fontSize: 13 }]}>{t('Join a chit group to start your investment journey')}</Text>
             </View>
           ) : (
             <>
               {/* Summary Stats */}
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryTitle}>Portfolio Summary</Text>
+                <Text style={[styles.summaryTitle, language === 'ta' && { fontSize: 16 }]}>{t('Portfolio Summary')}</Text>
                 <View style={styles.summaryStats}>
                   <View style={styles.summaryStatItem}>
                     <Text style={styles.summaryStatValue}>{userGroups.length}</Text>
-                    <Text style={styles.summaryStatLabel}>Total Groups</Text>
+                    <Text style={[styles.summaryStatLabel, language === 'ta' && { fontSize: 11 }]}>{t('Total Groups')}</Text>
                   </View>
                   <View style={styles.summaryStatItem}>
                     <Text style={styles.summaryStatValue}>
                       {userGroups.filter(g => ['completed', 'paid'].includes(g.paymentStatus)).length}
                     </Text>
-                    <Text style={styles.summaryStatLabel}>Paid</Text>
+                    <Text style={[styles.summaryStatLabel, language === 'ta' && { fontSize: 11 }]}>{t('Paid')}</Text>
                   </View>
                   <View style={styles.summaryStatItem}>
                     <Text style={styles.summaryStatValue}>
                       {userGroups.filter(g => g.paymentStatus === 'pending').length}
                     </Text>
-                    <Text style={styles.summaryStatLabel}>Pending</Text>
+                    <Text style={[styles.summaryStatLabel, language === 'ta' && { fontSize: 11 }]}>{t('Pending')}</Text>
                   </View>
                 </View>
               </View>

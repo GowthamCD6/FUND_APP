@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
+import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform, BackHandler } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Join from './Pages/JoinGroup/JoinGroup';
 import GroupCards from './Pages/ChitGroupCard/GroupCards';
 import Auction from './Pages/Auction/Auction';
 import Finance from './Pages/Finance/Finance';
+
+import Header from '../../../components/HeaderComponent/Header';
+import { useLanguage } from '../../../utils/LanguageContext';
 
 const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) => {
   const [showJoinPage, setShowJoinPage] = useState(false);
@@ -12,6 +15,7 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
   const [showAuction, setShowAuction] = useState(false);
   const [showFinance, setShowFinance] = useState(false);
   const [joinGroupCode, setJoinGroupCode] = useState('');
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     if (selectedGroup) {
@@ -25,6 +29,35 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
       setShowJoinPage(true);
     }
   }, [initialGroupCode]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (!visible) return false;
+
+      if (showJoinPage) {
+        handleJoinBack();
+        return true;
+      }
+      if (showGroupCard) {
+        handleGroupCardBack();
+        return true;
+      }
+      if (showAuction) {
+        handleAuctionBack();
+        return true;
+      }
+      if (showFinance) {
+        handleFinanceBack();
+        return true;
+      }
+      // On main MoreModal menu
+      onClose();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, [visible, showJoinPage, showGroupCard, showAuction, showFinance]);
 
   const handleJoinPress = () => {
     setJoinGroupCode('');
@@ -75,7 +108,7 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
         animationType="slide"
         transparent={false}
         visible={visible}
-        onRequestClose={handleModalClose}
+        onRequestClose={handleJoinBack}
       >
         <Join onBack={handleJoinBack} initialGroupCode={joinGroupCode} />
       </Modal>
@@ -88,7 +121,7 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
         animationType="slide"
         transparent={false}
         visible={visible}
-        onRequestClose={handleModalClose}
+        onRequestClose={handleGroupCardBack}
       >
         <GroupCards onBack={handleGroupCardBack} />
       </Modal>
@@ -101,7 +134,7 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
         animationType="slide"
         transparent={false}
         visible={visible}
-        onRequestClose={handleModalClose}
+        onRequestClose={handleAuctionBack}
       >
         <Auction onClose={handleAuctionBack} selectedGroupId={selectedGroup?.id} selectedGroupType={selectedGroup?.type} />
       </Modal>
@@ -114,7 +147,7 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
         animationType="slide"
         transparent={false}
         visible={visible}
-        onRequestClose={handleModalClose}
+        onRequestClose={handleFinanceBack}
       >
         <Finance selectedGroup={selectedGroup} onBack={handleFinanceBack} />
       </Modal>
@@ -134,27 +167,31 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
           <View style={styles.menuList}>
             <MenuItem
               icon={<MaterialCommunityIcons name="account-group" size={26} color="#6B46C1" />}
-              title="Join the Group"
-              description="Enter the group code to join the group"
+              title={t('Join the Group')}
+              description={t('Enter the group code to join the group')}
               onPress={handleJoinPress}
+              language={language}
             />
             <MenuItem
               icon={<MaterialCommunityIcons name="credit-card" size={26} color="#6B46C1" />}
-              title="Group card"
-              description="View and confirm the pay details"
+              title={t('Group card')}
+              description={t('View and confirm the pay details')}
               onPress={handleGroupCardPress}
+              language={language}
             />
             <MenuItem
               icon={<MaterialCommunityIcons name="gavel" size={26} color="#6B46C1" />}
-              title="Auction"
-              description="Participate in chit auction bidding"
+              title={t('Auction')}
+              description={t('Participate in chit auction bidding')}
               onPress={handleAuctionPress}
+              language={language}
             />
             <MenuItem
               icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#6B46C1" />}
-              title="Finance"
-              description="Contribute and earn extra interest"
+              title={t('Finance')}
+              description={t('Contribute and earn extra interest')}
               onPress={handleFinancePress}
+              language={language}
             />
           </View>
           {/* X Button */}
@@ -167,7 +204,7 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
   );
 };
 
-const MenuItem = ({ icon, title, description, onPress }) => (
+const MenuItem = ({ icon, title, description, onPress, language }) => (
   <TouchableOpacity style={styles.menuItemRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
     <View style={styles.menuIconWrap}>
       <View style={styles.menuIconCircle}>
@@ -175,8 +212,8 @@ const MenuItem = ({ icon, title, description, onPress }) => (
       </View>
     </View>
     <View style={styles.menuTextWrap}>
-      <Text style={styles.menuTitle}>{title}</Text>
-      <Text style={styles.menuDesc}>{description}</Text>
+      <Text style={[styles.menuTitle, language === 'ta' && { fontSize: 15 }]}>{title}</Text>
+      <Text style={[styles.menuDesc, language === 'ta' && { fontSize: 12 }]}>{description}</Text>
     </View>
   </TouchableOpacity>
 );

@@ -15,11 +15,13 @@ import {
   StyleSheet,
   Modal,
   Linking,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets, SafeAreaProvider } from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from './FinanceStyle';
+import { useLanguage } from '../../../../../utils/LanguageContext';
 
 const Icon = ({ name, size = 24, color = '#000' }) => {
   return <MaterialCommunityIcons name={name} size={size} color={color} />;
@@ -69,6 +71,7 @@ const headerStyles = StyleSheet.create({
 const { width } = Dimensions.get('window');
 
 const Finance = ({ selectedGroup, onBack }) => {
+  const { t, language } = useLanguage();
   const insets = useSafeAreaInsets();
   const [expandedFAQ, setExpandedFAQ] = useState(null);
   const [planModal, setPlanModal] = useState({ visible: false, title: '', message: '', color: '#7C3AED', icon: 'help-circle' });
@@ -77,6 +80,27 @@ const Finance = ({ selectedGroup, onBack }) => {
 
   const [applyForm, setApplyForm] = useState({ visible: false, title: '', color: '', icon: '' });
   const [formData, setFormData] = useState({ name: '', phone: '', amount: '' });
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (applyForm.visible) {
+        setApplyForm({ visible: false, title: '', color: '', icon: '' });
+        return true;
+      }
+      if (planModal.visible) {
+        setPlanModal({ visible: false, title: '', message: '', color: '#7C3AED', icon: 'help-circle' });
+        return true;
+      }
+      if (onBack) {
+        onBack();
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, [applyForm.visible, planModal.visible, onBack]);
 
   const toggleFAQ = (index) => {
     setExpandedFAQ(expandedFAQ === index ? null : index);
@@ -88,7 +112,7 @@ const Finance = ({ selectedGroup, onBack }) => {
   };
 
   const handleTalkToExpert = () => {
-    Alert.alert('Expert Support', 'Connecting you with our finance expert...');
+    Alert.alert(t('Expert Support'), t('Connecting you with our finance expert...'));
   };
 
   const handleScroll = (event) => {
@@ -137,9 +161,9 @@ const Finance = ({ selectedGroup, onBack }) => {
               </TouchableOpacity>
             )}
 
-            <Text style={[styles.heroTitle, { fontSize: 28, lineHeight: 34, textAlign: 'center' }]}>Smart Finance</Text>
+            <Text style={[styles.heroTitle, { fontSize: 28, lineHeight: 34, textAlign: 'center' }, language === 'ta' && { fontSize: 24 }]}>{t('Smart Finance')}</Text>
 
-            <Text style={[styles.heroDesc, { fontSize: 13, marginBottom: 16, textAlign: 'center' }]}>Quick loans • No paperwork</Text>
+            <Text style={[styles.heroDesc, { fontSize: 13, marginBottom: 16, textAlign: 'center' }]}>{t('Quick loans • No paperwork')}</Text>
 
             <View style={{ alignItems: 'center', marginTop: -50, marginBottom: -40 }}>
               <LottieView

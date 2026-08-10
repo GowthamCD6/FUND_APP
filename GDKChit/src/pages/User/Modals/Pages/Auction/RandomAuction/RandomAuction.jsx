@@ -14,6 +14,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuctionWebSocketService from '../../../../../../services/AuctionWebSocketService';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +59,7 @@ const RandomAuction = ({
   onAuctionStatusChange,
   onAmountChange,
 }) => {
+  const { t, language } = useLanguage();
   const [diceValue, setDiceValue] = useState(1);
   const [isDiceRolling, setIsDiceRolling] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -114,8 +116,8 @@ const RandomAuction = ({
   }, [selectedGroup]);
 
   const joinDraw = async () => {
-    if (hasJoined) {
-      Alert.alert('Already Joined', 'You have already joined this lucky draw. Wait for the admin to roll the dice!');
+    if (hasJoined || isDiceRolling) {
+      Alert.alert(t('Already Joined'), t('You have already joined this lucky draw. Wait for the admin to roll the dice!'));
       return;
     }
     try {
@@ -128,7 +130,7 @@ const RandomAuction = ({
     }
     setHasJoined(true);
     if (onAuctionStatusChange) onAuctionStatusChange(true);
-    Alert.alert('Joined Successfully!', 'You have joined the lucky draw. Wait for the admin to start the draw.');
+    Alert.alert(t('Joined Successfully!'), t('You have joined the lucky draw. Wait for the admin to start the draw.'));
   };
 
   const executeDiceRoll = (finalValue, duration, winner) => {
@@ -248,7 +250,7 @@ const RandomAuction = ({
 
   const renderParticipantsGrid = () => (
     <View style={styles.participantsCard}>
-      <Text style={styles.cardTitle}>Participants</Text>
+      <Text style={[styles.cardTitle, language === 'ta' && { fontSize: 16 }]}>{t('Participants')}</Text>
       <View style={styles.participantsGrid}>
         {participants.map((participant, index) => (
           <View key={participant.id} style={styles.participantCard}>
@@ -271,17 +273,17 @@ const RandomAuction = ({
     <View style={styles.tabContent}>
       <View style={styles.diceCard}>
         <View style={styles.diceTitleContainer}>
-          <Text style={styles.diceTitle}>Lucky Draw</Text>
+          <Text style={[styles.diceTitle, language === 'ta' && { fontSize: 16 }]}>{t('Lucky Draw')}</Text>
           <View style={styles.participantCountBadge}>
             <MaterialCommunityIcons name="account-multiple" size={14} color="#FFFFFF" />
-            <Text style={styles.participantCountText}>{participants.length} {participants.length === 1 ? 'Participant' : 'Participants'}</Text>
+            <Text style={styles.participantCountText}>{participants.length} {t('Participants')}</Text>
           </View>
         </View>
 
         {!isDiceRolling && !showResult && (
           <View style={styles.waitingBadge}>
             <MaterialCommunityIcons name="clock-outline" size={16} color="#6B46C1" />
-            <Text style={styles.waitingText}>Waiting for Admin to start the draw...</Text>
+            <Text style={[styles.waitingText, language === 'ta' && { fontSize: 11 }]}>{t('Waiting for Admin to start the draw...')}</Text>
           </View>
         )}
         

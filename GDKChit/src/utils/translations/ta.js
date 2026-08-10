@@ -379,6 +379,96 @@ const ta = {
   'days out': 'நாட்கள் கடந்துவிட்டன',
   'Due by ': 'கடைசி நாள் ',
   'Was due by ': 'கடைசி நாள் முடிந்தது ',
+
+  // ===== More Modal =====
+  'Join the Group': 'குழுவில் சேருங்கள்',
+  'Enter the group code to join the group': 'குழுவில் சேர குழு குறியீட்டை உள்ளிடவும்',
+  'Group card': 'குழு அட்டை',
+  'View and confirm the pay details': 'கட்டண விவரங்களைப் பார்க்கவும் உறுதிப்படுத்தவும்',
+  'Auction': 'ஏலம்',
+  'Participate in chit auction bidding': 'சீட்டு ஏலப் புள்ளியில் பங்கேற்கவும்',
+  'Finance': 'நிதி',
+  'Contribute and earn extra interest': 'பங்களித்து கூடுதல் வட்டியைப் பெறுங்கள்',
+
+  // ===== Join Group Modal =====
+  'Join Group': 'குழுவில் சேருங்கள்',
+  'Enter Group Code': 'குழு குறியீட்டை உள்ளிடவும்',
+  'Enter the group code shared by your administrator': 'உங்கள் நிர்வாகி பகிர்ந்த குழு குறியீட்டை உள்ளிடவும்',
+  'Joined Successfully! 🎉': 'வெற்றிகரமாக சேர்ந்தீர்கள்! 🎉',
+  'Group Full 😔': 'குழு முடிந்தது 😔',
+  'Already a Member ℹ️': 'ஏற்கனவே உறுப்பினர் ℹ️',
+  'Group Completed': 'குழு முடிவடைந்தது',
+  'Invalid Code ❌': 'தவறான குறியீடு ❌',
+  'Please enter a group code': 'தயவுசெய்து குழு குறியீட்டை உள்ளிடவும்',
+  'Contact the group admin for available slots.': 'கிடைக்கும் இடங்களுக்கு குழு நிர்வாகியைத் தொடர்பு கொள்ளவும்.',
+  'Done': 'முடிந்தது',
+  'Try Again': 'மீண்டும் முயற்சிக்கவும்',
+  'Joining Group...': 'குழுவில் சேருகிறது...',
+
+  // ===== Chit Card =====
+  'Chit Payment Details': 'சீட்டு கட்டண விவரங்கள்',
+  'Loading payment details...': 'கட்டண விவரங்கள் ஏற்றப்படுகின்றன...',
+  'Failed to fetch payment details': 'கட்டண விவரங்களைப் பெற முடியவில்லை',
+  'Error fetching payment details': 'கட்டண விவரங்களைப் பெறுவதில் பிழை',
+  'No payment data available': 'கட்டணத் தரவு எதுவும் இல்லை',
+  'Make Payment': 'கட்டணம் செலுத்துக',
+  'Download Statement': 'அறிக்கையைப் பதிவிறக்குக',
+
+  // ===== Group Cards Modal =====
+  'My Group': 'எனது குழுக்கள்',
+  'Loading groups...': 'குழுக்கள் ஏற்றப்படுகின்றன...',
+  'No group card present': 'குழு அட்டை எதுவும் இல்லை',
+  'Portfolio Summary': 'போர்ட்ஃபோலியோ சுருக்கம்',
+  'Total Groups': 'மொத்த குழுக்கள்',
+  'Paid': 'செலுத்தப்பட்டது',
+  'Pending': 'நிலுவையில்',
+  'Current Month': 'தற்போதைய மாதம்',
+  'months': 'மாதங்கள்',
+  'Failed to fetch groups': 'குழுக்களைப் பெற முடியவில்லை',
+  'Error fetching groups': 'குழுக்களைப் பெறுவதில் பிழை',
+
+  // ===== Auction Modal =====
+  'Live Chit Auction': 'நேரடி சீட்டு ஏலம்',
+  'Auction Not Held': 'ஏலம் நடைபெறவில்லை',
+  'Auction Not Active': 'ஏலம் செயல்படவில்லை',
+  'Auction Result': 'ஏல முடிவு',
+  'Lucky Winner!': 'அதிர்ஷ்ட வெற்றியாளர்!',
+  'Amount': 'தொகை',
+  'Dice Value': 'தாயக் கட்டை மதிப்பு',
+  'Close': 'மூடு',
+  'OK, Got it': 'சரி, புரிந்தது',
+
+  // ===== Betting Auction =====
+  'Time Remaining': 'எஞ்சிய நேரம்',
+  'Auction Ended': 'ஏலம் முடிந்தது',
+  'Lowest Bid': 'குறைந்தபட்ச புள்ளி',
+  'Your bid:': 'உங்கள் புள்ளி:',
+  'Place Your Bid': 'உங்கள் புள்ளியை இடவும்',
+  'Submit Bid': 'புள்ளியைச் சமர்ப்பி',
+  'Auction History': 'ஏல வரலாறு',
+  'No bids placed yet': 'இதுவரை புள்ளிகள் எதுவும் இடப்படவில்லை',
+  'Invalid Bid': 'தவறான புள்ளி',
+  'Please enter a valid bid amount': 'சரியான புள்ளி தொகையை உள்ளிடவும்',
+
+  // ===== Random Auction =====
+  'Lucky Draw': 'அதிர்ஷ்டக் குலுக்கல்',
+  'Participants': 'பங்கேற்பாளர்கள்',
+  'Waiting for Admin to start the draw...': 'நிர்வாகி குலுக்கலைத் தொடங்குவதற்காகக் காத்திருக்கிறது...',
+  'Already Joined': 'ஏற்கனவே சேர்ந்துவிட்டீர்கள்',
+  'You have already joined this lucky draw. Wait for the admin to roll the dice!': 'நீங்கள் ஏற்கனவே இந்த அதிர்ஷ்டக் குலுக்கலில் சேர்ந்துவிட்டீர்கள்.',
+  'Joined Successfully!': 'வெற்றிகரமாகச் சேர்ந்தீர்கள்!',
+  'You have joined the lucky draw. Wait for the admin to start the draw.': 'நீங்கள் அதிர்ஷ்டக் குலுக்கலில் சேர்ந்துவிட்டீர்கள்.',
+
+  // ===== Finance =====
+  'Smart Finance': 'ஸ்மார்ட் நிதி சேவைகள்',
+  'Quick loans • No paperwork': 'விரைவு கடன்கள் • காகிதப்பணி இல்லை',
+  'Apply Now': 'இப்போதே விண்ணப்பிக்கவும்',
+  'Expert Support': 'வல்லுனர் உதவி',
+  'Connecting you with our finance expert...': 'எங்கள் நிதி வல்லுனருடன் உங்களை இணைக்கிறது...',
+  'Full Name': 'முழு பெயர்',
+  'Phone Number': 'தொலைபேசி எண்',
+  'Amount Required': 'தேவையான தொகை',
+  'Submit Application': 'விண்ணப்பத்தைச் சமர்ப்பிக்கவும்',
 };
 
 export default ta;
