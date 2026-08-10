@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AuctionWebSocketService from '../../../../../../../services/AuctionWebSocketService';
+import { useLanguage } from '../../../../../../../utils/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -56,6 +57,7 @@ const RandomAuction = ({
   selectedGroup,
   onAuctionComplete,
 }) => {
+  const { t } = useLanguage();
   const [poolAmount, setPoolAmount] = useState(selectedGroup?.groupAmount?.toString() || '');
   const [diceValue, setDiceValue] = useState(1);
   const [isDiceRolling, setIsDiceRolling] = useState(false);
@@ -68,6 +70,13 @@ const RandomAuction = ({
   
   const currentX = useRef(0);
   const currentY = useRef(0);
+  const timersRef = useRef([]);
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(id => clearTimeout(id));
+    };
+  }, []);
 
   useEffect(() => {
     const handleUserJoined = (data) => {
@@ -98,15 +107,17 @@ const RandomAuction = ({
   const rollDice = () => {
     if (isDiceRolling) return;
     if (participants.length === 0) {
-      Alert.alert("Error", "No participants available for the random draw.");
+      Alert.alert("Error", t("No participants available for the random draw."));
       return;
     }
     if (!allJoined) {
-      Alert.alert("Waiting", "Please wait for all selected participants to join the auction.");
+      Alert.alert("Waiting", t("Please wait for all selected participants to join the auction."));
       return;
     }
-    if (!poolAmount || parseFloat(poolAmount) <= 0) {
-      Alert.alert("Error", "Please enter a valid pool amount.");
+
+    const parsedAmount = parseFloat(poolAmount);
+    if (!poolAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert("Error", t("Please enter a valid pool amount."));
       return;
     }
 
@@ -187,7 +198,7 @@ const RandomAuction = ({
     ]).start();
 
     // Use strict setTimeout to ensure modal only shows after exact duration
-    setTimeout(() => {
+    const t1 = setTimeout(() => {
       setDiceValue(finalValue);
       setShowResult(true);
       
@@ -197,7 +208,7 @@ const RandomAuction = ({
         Vibration.vibrate([0, 60, 30, 60]);
       }
       
-      setTimeout(() => {
+      const t2 = setTimeout(() => {
         setIsDiceRolling(false);
         if (onAuctionComplete && winner) {
           onAuctionComplete({
@@ -209,7 +220,9 @@ const RandomAuction = ({
           });
         }
       }, 500); 
+      timersRef.current.push(t2);
     }, 31000); 
+    timersRef.current.push(t1);
   };
 
   const rotateXInterpolate = animX.interpolate({
@@ -241,12 +254,12 @@ const RandomAuction = ({
 
   const renderParticipantsTable = () => (
     <View style={styles.participantsCard}>
-      <Text style={styles.cardTitle}>Participants</Text>
+      <Text style={styles.cardTitle}>{t('Participants')}</Text>
       <View style={styles.tableContainer}>
         <View style={styles.tableHeader}>
           <Text style={[styles.tableHeaderText, { flex: 0.2 }]}>No.</Text>
-          <Text style={[styles.tableHeaderText, { flex: 0.5 }]}>Participant</Text>
-          <Text style={[styles.tableHeaderText, { flex: 0.3, textAlign: 'right' }]}>Status</Text>
+          <Text style={[styles.tableHeaderText, { flex: 0.5 }]}>{t('Participant')}</Text>
+          <Text style={[styles.tableHeaderText, { flex: 0.3, textAlign: 'right' }]}>{t('Status')}</Text>
         </View>
         {participants.map((participant, index) => {
           const isJoined = joinedParticipants.has(participant.id.toString());
@@ -266,7 +279,7 @@ const RandomAuction = ({
               <View style={{ flex: 0.3, alignItems: 'flex-end', justifyContent: 'center' }}>
                 <View style={[styles.statusBadgeInline, isJoined ? {backgroundColor: '#D1FAE5'} : {backgroundColor: '#FEF3C7'}]}>
                   <Text style={[styles.statusBadgeTextInline, isJoined ? {color: '#065F46'} : {color: '#92400E'}]}>
-                    {isJoined ? 'Joined' : 'Pending'}
+                    {isJoined ? t('Joined') : t('Pending')}
                   </Text>
                 </View>
               </View>
@@ -281,16 +294,16 @@ const RandomAuction = ({
     <View style={styles.tabContent}>
       <View style={styles.diceCard}>
         <View style={styles.diceTitleContainer}>
-          <Text style={styles.diceTitle}>Lucky Draw</Text>
+          <Text style={styles.diceTitle}>{t('Lucky Draw')}</Text>
           <View style={styles.participantCountBadge}>
             <MaterialCommunityIcons name="account-multiple" size={14} color="#FFFFFF" />
-            <Text style={styles.participantCountText}>{participants.length} {participants.length === 1 ? 'Participant' : 'Participants'}</Text>
+            <Text style={styles.participantCountText}>{participants.length} {participants.length === 1 ? t('Participant') : t('Participants')}</Text>
           </View>
         </View>
         
         {!isDiceRolling && !showResult && (
           <View style={styles.poolAmountCard}>
-            <Text style={styles.poolAmountLabel}>Lucky Draw Pool Amount</Text>
+            <Text style={styles.poolAmountLabel}>{t('Lucky Draw Pool Amount')}</Text>
             <View style={styles.inputContainer}>
               <Text style={styles.currencySymbol}>₹</Text>
               <TextInput
@@ -330,7 +343,7 @@ const RandomAuction = ({
         
         {showResult && (
           <View style={styles.resultContainer}>
-            <Text style={styles.resultLabel}>Rolled:</Text>
+            <Text style={styles.resultLabel}>{t('Rolled:')}</Text>
             <View style={styles.resultValue}>
               <Text style={styles.resultNumber}>{diceValue}</Text>
             </View>
@@ -340,7 +353,7 @@ const RandomAuction = ({
         {isDiceRolling && (
           <View style={styles.rollingBadge}>
             <MaterialCommunityIcons name="timer-sand" size={18} color="#92400E" />
-            <Text style={styles.rollingText}>Rolling...</Text>
+            <Text style={styles.rollingText}>{t('Rolling...')}</Text>
           </View>
         )}
         
@@ -357,7 +370,7 @@ const RandomAuction = ({
               color="#FFFFFF" 
             />
             <Text style={styles.rollButtonText}>
-              {allJoined ? 'Roll Dice' : 'Waiting for Participants...'}
+              {allJoined ? t('Roll Dice') : t('Waiting for Participants...')}
             </Text>
           </TouchableOpacity>
         )}

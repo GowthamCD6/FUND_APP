@@ -74,6 +74,9 @@ const OTPNotificationBanner = () => {
 
   const checkPendingOtp = useCallback(async () => {
     try {
+      const token = await ApiService.getAccessToken();
+      if (!token) return;
+
       const res = await ApiService.getOTPRequests().catch(() => null);
       if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
         // Find the latest active (pending or viewed) OTP request that hasn't been dismissed in this session
@@ -116,11 +119,11 @@ const OTPNotificationBanner = () => {
     } catch (error) {
       // Silent catch for background polling
     }
-  }, [visible, dismissedIds, slideAnim, targetTop]);
+  }, [dismissedIds, targetTop]);
 
   useEffect(() => {
     checkPendingOtp();
-    const interval = setInterval(checkPendingOtp, 5000); // Poll every 5 seconds
+    const interval = setInterval(checkPendingOtp, 30000); // Reduced polling from 5s to 30s to prevent request flooding
     return () => clearInterval(interval);
   }, [checkPendingOtp]);
 

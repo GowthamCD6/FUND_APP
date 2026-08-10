@@ -439,6 +439,10 @@ exports.blockUser = async (req, res) => {
         return res.status(400).json({ success: false, message: 'User ID and block reason are required' });
     }
 
+    if (adminId && Number(userId) === Number(adminId)) {
+        return res.status(400).json({ success: false, message: 'Admins cannot block their own account' });
+    }
+
     try {
         const [result] = await db.promise().query(
             'UPDATE users SET is_active = 0, block_reason = ?, updated_by = ?, version = version + 1 WHERE id = ? AND deleted_at IS NULL',

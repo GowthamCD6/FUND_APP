@@ -22,8 +22,10 @@ import LottieView from 'lottie-react-native';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import Clipboard from '@react-native-clipboard/clipboard'; // Import Clipboard
 import ApiService from '../../../../../../services/ApiService';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const UserL = () => {
+  const { t } = useLanguage();
   const navigation = useNavigation();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ const UserL = () => {
 
     const intervalId = setInterval(() => {
       fetchUserLocations(false);
-    }, 5000); // Poll every 5 seconds
+    }, 25000); // Poll every 25 seconds to optimize server load
 
     return () => {
       isMounted = false;
@@ -88,12 +90,12 @@ const UserL = () => {
     };
   }, []);
 
-  // Memoized list for efficient search filtering
+  // Memoized list for efficient search filtering with defensive null checks
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return users;
     const q = searchQuery.toLowerCase();
     return users.filter(
-      u => u.name.toLowerCase().includes(q) || u.address.toLowerCase().includes(q),
+      u => (u.name || '').toLowerCase().includes(q) || (u.address || '').toLowerCase().includes(q),
     );
   }, [users, searchQuery]);
 
@@ -211,7 +213,7 @@ const UserL = () => {
         <MaterialCommunityIcons name="magnify" size={22} color="#6B7280" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search users..."
+          placeholder={t('Search user or location...')}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholderTextColor="#9CA3AF"
@@ -243,8 +245,9 @@ const UserL = () => {
   const renderUserList = () => (
     <View style={styles.container}>
       <Header 
-        title="User Locations"
+        title={t('User Location Map')}
         onBack={handleBackPress}
+        showBackButton={true}
       />
       <View style={styles.separator} />
       {renderSearchBar()}
@@ -253,7 +256,7 @@ const UserL = () => {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#0066FF" />
-            <Text style={styles.loadingText}>Loading user locations...</Text>
+            <Text style={styles.loadingText}>{t('Loading data...')}</Text>
           </View>
         ) : (
           <>
@@ -280,7 +283,7 @@ const UserL = () => {
               ListEmptyComponent={
                 <View style={styles.emptyState}>
                   <MaterialCommunityIcons name="map-marker-off" size={64} color="#D1D5DB" />
-                  <Text style={styles.emptyStateText}>No users found</Text>
+                  <Text style={styles.emptyStateText}>{t('No locations available')}</Text>
                 </View>
               }
             />
@@ -306,7 +309,7 @@ const UserL = () => {
           </View>
 
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Navigate to User</Text>
+            <Text style={styles.modalTitle}>{t('Start Navigation')}</Text>
             <Text style={styles.modalUserName}>{selectedUser?.name}</Text>
             <View style={styles.addressContainer}>
               <MaterialCommunityIcons name="map-marker" size={16} color="#6B7280" />
@@ -318,12 +321,12 @@ const UserL = () => {
             {selectedUser?.latitude && selectedUser?.longitude ? (
               <View style={styles.coordinatesBadge}>
                 <MaterialCommunityIcons name="crosshairs-gps" size={14} color="#10B981" />
-                <Text style={styles.coordinatesText}>Exact GPS Available</Text>
+                <Text style={styles.coordinatesText}>{t('Live Tracking')}</Text>
               </View>
             ) : (
               <View style={styles.warningBadge}>
                 <MaterialCommunityIcons name="information" size={14} color="#F59E0B" />
-                <Text style={styles.warningText}>Will open map search</Text>
+                <Text style={styles.warningText}>{t('Address')}</Text>
               </View>
             )}
           </View>
@@ -335,7 +338,7 @@ const UserL = () => {
             >
               <MaterialCommunityIcons name="navigation" size={24} color="#FFF" />
               <Text style={styles.startNavigationText}>
-                {selectedUser?.latitude && selectedUser?.longitude ? 'Start Navigation' : 'Search Location'}
+                {selectedUser?.latitude && selectedUser?.longitude ? t('Start Navigation') : t('Search user or location...')}
               </Text>
             </TouchableOpacity>
 
@@ -343,7 +346,7 @@ const UserL = () => {
               style={styles.cancelButton}
               onPress={() => setShowLocationModal(false)}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>

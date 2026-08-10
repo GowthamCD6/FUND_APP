@@ -8,19 +8,24 @@ import {
   FlatList,
   Dimensions,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useLanguage } from '../../../../../../../utils/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
 const MemberSelectingModal = ({
   visible,
+  loading = false,
   selectedGroup,
   selectedMembers,
   onClose,
   onMemberToggle,
   onProceed,
 }) => {
+  const { t } = useLanguage();
+
   const renderMemberItem = ({ item }) => {
     const isSelected = selectedMembers.some(m => m.id === item.id);
     return (
@@ -59,47 +64,54 @@ const MemberSelectingModal = ({
         <View style={styles.memberModalContainer}>
           <View style={styles.memberModalHeader}>
             <Text style={styles.memberModalTitle}>
-              Select Members - {selectedGroup?.name}
+              {t('Select Members')} - {selectedGroup?.name}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-              <MaterialCommunityIcons name="close" size={26} color="#FFFFFF" />
+              <MaterialCommunityIcons name="close" size={24} color="#4B5563" />
             </TouchableOpacity>
           </View>
 
           <View style={styles.memberCountBadge}>
             <Text style={styles.memberCountText}>
-              Selected: {selectedMembers.length}/
+              {t('Selected:')} {selectedMembers.length}/
               {selectedGroup?.members.length || 0}
             </Text>
           </View>
 
-          <FlatList
-            data={selectedGroup?.members || []}
-            renderItem={renderMemberItem}
-            keyExtractor={item => item.id}
-            style={styles.membersList}
-            contentContainerStyle={styles.memberListContent}
-            showsVerticalScrollIndicator={false}
-          />
+          {loading ? (
+            <View style={styles.modalLoadingContainer}>
+              <ActivityIndicator size="large" color="#6B46C1" />
+              <Text style={styles.modalLoadingText}>{t('Loading group members...')}</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={selectedGroup?.members || []}
+              renderItem={renderMemberItem}
+              keyExtractor={item => item.id}
+              style={styles.membersList}
+              contentContainerStyle={styles.memberListContent}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
 
           <View style={styles.memberModalFooter}>
             <TouchableOpacity
               style={styles.cancelModalButton}
               onPress={onClose}
             >
-              <Text style={styles.cancelModalButtonText}>Cancel</Text>
+              <Text style={styles.cancelModalButtonText}>{t('Cancel')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[
                 styles.proceedModalButton,
-                selectedMembers.length < 2 && styles.disabledButton,
+                (loading || selectedMembers.length < 2) && styles.disabledButton,
               ]}
               onPress={onProceed}
-              disabled={selectedMembers.length < 2}
+              disabled={loading || selectedMembers.length < 2}
             >
               <Text style={styles.proceedModalButtonText}>
-                Start Auction ({selectedMembers.length})
+                {t('Start Auction')} ({selectedMembers.length})
               </Text>
             </TouchableOpacity>
           </View>
@@ -283,6 +295,18 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  modalLoadingContainer: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalLoadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B46C1',
+    fontWeight: '500',
   },
 });
 

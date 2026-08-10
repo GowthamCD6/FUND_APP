@@ -1,6 +1,7 @@
 import ReactNativeBiometrics from 'react-native-biometrics';
 import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from './ApiService';
 
 // Initialize with allowDeviceCredentials to show PIN option in the same biometric modal
 const rnBiometrics = new ReactNativeBiometrics({ allowDeviceCredentials: true });
@@ -30,10 +31,23 @@ class BiometricService {
     try {
       console.log('BiometricService: Starting initialization...');
       
-      // Check if security is enabled
+      // Check if security is enabled locally
       const enabled = await AsyncStorage.getItem('securityEnabled');
-      this.isSecurityEnabled = enabled === 'true';
-      console.log('BiometricService: Security enabled from storage:', this.isSecurityEnabled);
+      let isEnabled = enabled === 'true';
+
+      // Attempt to sync from backend database user_preferences
+      try {
+        const prefRes = await ApiService.getUserPreferences();
+        if (prefRes && prefRes.success && prefRes.data && prefRes.data.securityEnabled !== undefined) {
+          isEnabled = Boolean(prefRes.data.securityEnabled);
+          await AsyncStorage.setItem('securityEnabled', isEnabled ? 'true' : 'false');
+        }
+      } catch (backendErr) {
+        console.log('BiometricService: Backend preferences offline or unauthenticated, using local setting:', backendErr.message);
+      }
+
+      this.isSecurityEnabled = isEnabled;
+      console.log('BiometricService: Security enabled resolved to:', this.isSecurityEnabled);
       
       // Session data is memory-only - always start unauthenticated
       this.isAuthenticated = false;
@@ -168,6 +182,10 @@ class BiometricService {
     }
   }
 
+  async isBiometricAvailable() {
+    return this.checkBiometricAvailability();
+  }
+
   async authenticate(reason = 'Authenticate to unlock app') {
     try {
       console.log('BiometricService: Starting authentication...');
@@ -221,6 +239,10 @@ class BiometricService {
     }
   }
 
+  async authenticateWithDeviceCredentials(reason = 'Unlock GDK Chit Fund with device credentials') {
+    return this.authenticate(reason);
+  }
+
   async enableSecurity() {
     try {
       await AsyncStorage.setItem('securityEnabled', 'true');
@@ -228,6 +250,13 @@ class BiometricService {
       this.isLocked = true; // Lock immediately when security is enabled
       this.setupAppStateListener();
       this.notifyListeners();
+
+      try {
+        await ApiService.updateUserPreferences({ securityEnabled: true });
+      } catch (backendErr) {
+        console.error('BiometricService: Failed to sync enabled security to backend:', backendErr);
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Enable security error:', error);
@@ -238,7 +267,6 @@ class BiometricService {
   async disableSecurity() {
     try {
       await AsyncStorage.setItem('securityEnabled', 'false');
-      // Session data is memory-only - no need to clear from storage
       
       this.isSecurityEnabled = false;
       this.isLocked = false;
@@ -253,6 +281,13 @@ class BiometricService {
       
       console.log('BiometricService: Security disabled and session data cleared');
       this.notifyListeners();
+
+      try {
+        await ApiService.updateUserPreferences({ securityEnabled: false });
+      } catch (backendErr) {
+        console.error('BiometricService: Failed to sync disabled security to backend:', backendErr);
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Disable security error:', error);

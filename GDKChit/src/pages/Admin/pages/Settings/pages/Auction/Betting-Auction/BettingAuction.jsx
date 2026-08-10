@@ -64,7 +64,6 @@ const AdminAuctionMonitor = ({
 
     return () => {
       unsubscribeRef.current.forEach(unsub => unsub?.());
-      AuctionWebSocketService.disconnect();
     };
   }, []);
 
@@ -209,12 +208,13 @@ const AdminAuctionMonitor = ({
   };
 
   const startAuction = () => {
-    if (!initialAmount || parseFloat(initialAmount) <= 0) {
-      Alert.alert('Error', 'Please set an initial amount before starting the auction.');
+    const parsedInitial = parseFloat(initialAmount);
+    if (!initialAmount || isNaN(parsedInitial) || parsedInitial <= 0) {
+      Alert.alert('Error', 'Please set a valid initial amount before starting the auction.');
       return;
     }
 
-    if (parseFloat(initialAmount) % 1000 !== 0) {
+    if (parsedInitial % 1000 !== 0) {
       Alert.alert('Error', 'Initial amount must be in multiples of ₹1,000');
       return;
     }

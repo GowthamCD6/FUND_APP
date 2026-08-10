@@ -209,8 +209,18 @@ class AuctionWebSocketService {
 
     // Return unsubscribe function
     return () => {
-      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+      this.off(event, callback);
     };
+  }
+
+  // Remove event listener
+  off(event, callback) {
+    if (!this.listeners[event]) return;
+    if (callback) {
+      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+    } else {
+      delete this.listeners[event];
+    }
   }
 
   // Emit event

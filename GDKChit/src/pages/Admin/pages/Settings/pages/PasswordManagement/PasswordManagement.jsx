@@ -21,8 +21,10 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const PasswordManagement = ({ onClose }) => {
+  const { t } = useLanguage();
   const navigation = useNavigation();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -89,7 +91,8 @@ const PasswordManagement = ({ onClose }) => {
   const fetchUserPasswordDetails = async (userId) => {
     try {
       setLoadingDetails(true);
-      const response = await ApiService.makeRequest(`/admin/users/${userId}/passwordDetails`, {
+      const cleanUserId = encodeURIComponent(String(userId).trim());
+      const response = await ApiService.makeRequest(`/admin/users/${cleanUserId}/passwordDetails`, {
         method: 'GET',
       });
 
@@ -109,13 +112,14 @@ const PasswordManagement = ({ onClose }) => {
   const filterUsers = () => {
     let filtered = users;
 
-    // Filter by search query
+    // Filter by search query with defensive null checks
     if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
         user =>
-          user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          user.phone.includes(searchQuery) ||
-          (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+          (user.name || '').toLowerCase().includes(q) ||
+          String(user.phone || '').includes(q) ||
+          (user.email && user.email.toLowerCase().includes(q))
       );
     }
 
@@ -162,6 +166,7 @@ const PasswordManagement = ({ onClose }) => {
   };
 
   const handleUpdatePassword = async () => {
+    if (isUpdating) return;
     if (!validatePassword()) {
       return;
     }
@@ -186,6 +191,7 @@ const PasswordManagement = ({ onClose }) => {
   };
 
   const updateUserPassword = async () => {
+    if (isUpdating) return;
     try {
       setIsUpdating(true);
 
@@ -214,6 +220,7 @@ const PasswordManagement = ({ onClose }) => {
   };
 
   const handleResetPassword = (user) => {
+    if (isUpdating) return;
     Alert.alert(
       'Reset Password',
       `Reset ${user.name}'s password to default (Year of Birth)?`,
@@ -234,6 +241,7 @@ const PasswordManagement = ({ onClose }) => {
   };
 
   const resetUserPassword = async (userId) => {
+    if (isUpdating) return;
     try {
       setIsUpdating(true);
 
@@ -315,8 +323,9 @@ const PasswordManagement = ({ onClose }) => {
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       <Header
-        title="Password Management"
+        title={t('Password Management')}
         onBack={() => navigation.goBack()}
+        showBackButton={true}
       />
 
       {/* Search Bar */}
@@ -325,7 +334,7 @@ const PasswordManagement = ({ onClose }) => {
           <MaterialCommunityIcons name="magnify" size={22} color="#6B7280" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by name, phone, or email..."
+            placeholder={t('Search users...')}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#9CA3AF"

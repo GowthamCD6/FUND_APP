@@ -33,8 +33,10 @@ import {
 } from '../../../../../../services/locationService';
 import { LOCATION_CONFIG, isGeocodingAvailable } from '../../../../../../config/locationConfig';
 import { useAuth } from '../../../../../../utils/AuthContext';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const MyLocation = ({ onBack, animatedValue }) => {
+  const { t } = useLanguage();
   const { user: authUser } = useAuth();
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationEnabled, setLocationEnabled] = useState(false);
@@ -174,6 +176,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
 
   // Main function to share house address - captures location when pressed
   const shareHouseAddress = async () => {
+    if (loading || savingLocation) return;
     try {
       setLoading(true);
       
@@ -202,10 +205,17 @@ const MyLocation = ({ onBack, animatedValue }) => {
       // Step 2: Get current location with fallback strategies
       console.log('Getting current location for address sharing...');
       const location = await getUserCurrentLocationWithFallback();
+
+      const lat = Number(location?.latitude);
+      const lng = Number(location?.longitude);
+
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        throw new Error('Invalid GPS coordinates received');
+      }
       
       const newLocation = {
-        latitude: location.latitude,
-        longitude: location.longitude,
+        latitude: lat,
+        longitude: lng,
         accuracy: location.accuracy,
         timestamp: location.timestamp || Date.now(),
       };
@@ -464,6 +474,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
 
   // Function to save location to database for admin navigation
   const saveLocationToDatabase = async () => {
+    if (savingLocation) return false;
     if (!currentLocation || !fullAddress) {
       Alert.alert('Error', 'Please capture your location first before saving.');
       return false;
@@ -544,7 +555,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
   return (
     <View style={styles.container}>
       <Header 
-        title="My Location"
+        title={t('My Location')}
         onBack={() => {
           console.log('Back button pressed in MyLocation');
           if (onBack) {
@@ -577,10 +588,10 @@ const MyLocation = ({ onBack, animatedValue }) => {
               <View style={styles.inputContainer}>
                 <View style={styles.labelContainer}>
                   <MaterialCommunityIcons name="map-marker" size={16} color="#6B7280" />
-                  <Text style={styles.inputLabel}>Share Your House Address</Text>
+                  <Text style={styles.inputLabel}>{t('Share Your House Address')}</Text>
                 </View>
                 <View style={styles.shareAddressCard}>
-                  <Text style={styles.shareAddressCardTitle}>Help us locate your house for better service delivery</Text>
+                  <Text style={styles.shareAddressCardTitle}>{t('Help us locate your house for better service delivery')}</Text>
                   <TouchableOpacity 
                     style={styles.shareAddressButton}
                     onPress={shareHouseAddress}
@@ -588,7 +599,7 @@ const MyLocation = ({ onBack, animatedValue }) => {
                   >
                     <MaterialCommunityIcons name="map-marker-plus" size={20} color="#ffffff" />
                     <Text style={styles.shareAddressButtonText}>
-                      {loading ? 'Getting Location...' : 'Share My Address'}
+                      {loading ? t('Getting Location...') : t('Share My Address')}
                     </Text>
                   </TouchableOpacity>
                 </View>

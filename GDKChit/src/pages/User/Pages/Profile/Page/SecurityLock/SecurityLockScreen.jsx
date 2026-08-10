@@ -38,7 +38,7 @@ const SecurityLockScreen = ({ onAuthenticationSuccess }) => {
 
   const checkBiometricAvailability = async () => {
     try {
-      const info = await BiometricService.isBiometricAvailable();
+      const info = await BiometricService.checkBiometricAvailability();
       setBiometricInfo(info);
     } catch (error) {
       console.error('Error checking biometric availability:', error);

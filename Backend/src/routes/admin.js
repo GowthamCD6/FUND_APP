@@ -17,14 +17,14 @@ const {
 
 // Using the new Manage Group separate controller page
 router.post('/groups/createGroup', authenticateToken, requireAdmin, validateCreateGroupPayload, manageGroupController.createGroup);
-router.get('/groups/getGroups', authenticateToken, manageGroupController.getGroups);
+router.get('/groups/getGroups', authenticateToken, requireAdmin, manageGroupController.getGroups);
 
 // Group Info internals
 router.post('/groups/updateGroup', authenticateToken, requireAdmin, groupManagement.updateGroup);
 router.post('/groups/renameGroup', authenticateToken, requireAdmin, groupManagement.renameGroup);
 
 router.post('/groups/addMembers', authenticateToken, requireAdmin, groupManagement.addGroupMembers);
-router.get('/groups/getMembers', authenticateToken, groupManagement.getGroupMembers);
+router.get('/groups/getMembers', authenticateToken, requireAdmin, groupManagement.getGroupMembers);
 router.post('/groups/removeMembers', authenticateToken, requireAdmin, groupManagement.removeGroupMembers);
 router.post('/groups/activate', authenticateToken, requireAdmin, groupManagement.activateGroup);
 router.post('/groups/delete', authenticateToken, requireAdmin, groupManagement.deleteGroup);
@@ -42,11 +42,11 @@ router.get('/users/getAllUsers', authenticateToken, userManagement.getAllUsers);
 router.get('/users/locations', authenticateToken, userManagement.getUserLocations);
 router.post('/users/updateUser', authenticateToken, requireAdmin, userManagement.updateUser);
 router.post('/users/deleteUser', authenticateToken, requireAdmin, userManagement.deleteUser);
-router.post('/users/updatePassword', authenticateToken, userManagement.updatePassword);
-router.post('/users/resetPassword', authenticateToken, userManagement.resetPassword);
-router.get('/users/:userId/passwordDetails', authenticateToken, userManagement.getUserPasswordDetails);
-router.post('/users/block', authenticateToken, userManagement.blockUser);
-router.post('/users/unblock', authenticateToken, userManagement.unblockUser);
+router.post('/users/updatePassword', authenticateToken, requireAdmin, userManagement.updatePassword);
+router.post('/users/resetPassword', authenticateToken, requireAdmin, userManagement.resetPassword);
+router.get('/users/:userId/passwordDetails', authenticateToken, requireAdmin, userManagement.getUserPasswordDetails);
+router.post('/users/block', authenticateToken, requireAdmin, userManagement.blockUser);
+router.post('/users/unblock', authenticateToken, requireAdmin, userManagement.unblockUser);
 
 router.get('/collections/getMemberHistory', authenticateToken, monthlyCollection.getMemberPaymentHistory);
 router.get('/collections/defaulters', authenticateToken, monthlyCollection.getGlobalDefaulters);

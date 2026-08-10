@@ -1,37 +1,54 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   StatusBar,
-  Platform
+  Platform,
+  BackHandler,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';;
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 import Header from '../../../../../../components/HeaderComponent/Header';
-import { useLanguage } from '../../../../../../utils/LanguageContext';
+import useLanguageStore from '../../../../../../store/useLanguageStore';
 
 const LanguageSettings = () => {
   const navigation = useNavigation();
-  const { language, setLanguage, t } = useLanguage();
+  const language = useLanguageStore((state) => state.userLanguage);
+  const setUserLanguage = useLanguageStore((state) => state.setUserLanguage);
+  const storeT = useLanguageStore((state) => state.t);
+  
+  const t = (text) => storeT(text, 'user');
+
+  // Handle hardware back button for Android devices
+  useEffect(() => {
+    const backAction = () => {
+      navigation.goBack();
+      return true;
+    };
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [navigation]);
 
   const handleSelectLanguage = (lang) => {
-    setLanguage(lang);
+    if (lang === 'en' || lang === 'ta') {
+      setUserLanguage(lang);
+    }
   };
 
   return (
     <View style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <Header
-        title="Language Settings"
+        title={t('Language Settings')}
         onBack={() => navigation.goBack()}
+        showBackButton={true}
       />
 
       <View style={styles.container}>
-        {/* Animation */}
+        {/* Lottie Animation */}
         <View style={styles.animationContainer}>
           <LottieView
             source={require('../../../../../../animation/language.json')}
@@ -43,7 +60,9 @@ const LanguageSettings = () => {
         </View>
 
         {/* Subtitle */}
-        <Text style={[styles.subtitle, language === 'ta' && { fontSize: 13 }]}>{t('Choose your preferred language')}</Text>
+        <Text style={[styles.subtitle, language === 'ta' && { fontSize: 13 }]}>
+          {t('Choose your preferred language')}
+        </Text>
 
         {/* English Option */}
         <TouchableOpacity
@@ -59,10 +78,12 @@ const LanguageSettings = () => {
               <Text style={styles.flagEmoji}>🇬🇧</Text>
             </View>
             <View style={styles.languageInfo}>
-              <Text style={[
-                styles.languageName,
-                language === 'en' && styles.languageNameActive,
-              ]}>
+              <Text
+                style={[
+                  styles.languageName,
+                  language === 'en' && styles.languageNameActive,
+                ]}
+              >
                 English
               </Text>
               <Text style={styles.languageNative}>English</Text>
@@ -94,16 +115,20 @@ const LanguageSettings = () => {
               <Text style={styles.flagEmoji}>🇮🇳</Text>
             </View>
             <View style={styles.languageInfo}>
-              <Text style={[
-                styles.languageName,
-                language === 'ta' && styles.languageNameActive,
-              ]}>
+              <Text
+                style={[
+                  styles.languageName,
+                  language === 'ta' && styles.languageNameActive,
+                ]}
+              >
                 தமிழ்
               </Text>
               <Text style={styles.languageNative}>Tamil</Text>
               {language === 'ta' && (
                 <View style={[styles.defaultBadge, { backgroundColor: '#FEF3C7' }]}>
-                  <Text style={[styles.defaultBadgeText, { color: '#D97706' }]}>{t('Selected')}</Text>
+                  <Text style={[styles.defaultBadgeText, { color: '#D97706' }]}>
+                    {t('Selected')}
+                  </Text>
                 </View>
               )}
             </View>
@@ -121,11 +146,9 @@ const LanguageSettings = () => {
           <Text style={styles.infoText}>
             {language === 'en'
               ? 'Changing the language will update all text throughout the app to the selected language.'
-              : 'மொழியை மாற்றுவது, தேர்ந்தெடுக்கப்பட்ட மொழிக்கு பயன்பாடு முழுவதும் அனைத்து உரையையும் புதுப்பிக்கும்.'
-            }
+              : 'மொழியை மாற்றுவது, தேர்ந்தெடுக்கப்பட்ட மொழிக்கு பயன்பாடு முழுவதும் அனைத்து உரையையும் புதுப்பிக்கும்.'}
           </Text>
         </View>
-
       </View>
     </View>
   );

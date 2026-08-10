@@ -54,8 +54,9 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
-    // Verify JWT token
+    // Verify JWT token and extract verified role from payload to prevent client-side userType spoofing
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const verifiedRole = (decoded.role && String(decoded.role).toLowerCase() === 'admin') ? 'admin' : (userType === 'admin' && String(decoded.role).toLowerCase() === 'admin' ? 'admin' : 'user');
     
     // Store client session
     const clientId = `${userId}-${Date.now()}`;
@@ -63,7 +64,7 @@ wss.on('connection', (ws, req) => {
       ws,
       userId,
       userName: decoded.name || `User ${userId}`,
-      userType,
+      userType: verifiedRole,
       timestamp: Date.now(),
     });
 
