@@ -229,7 +229,11 @@ const ChitfundPortfolio = ({ navigation }) => {
       </View>
 
       {/* SCROLLABLE CONTENT - Group Tabs & Dynamic Backend List */}
-      <ScrollView style={styles.scrollableContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollableContent}
+        contentContainerStyle={styles.scrollableContentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.section}>
           <Text style={[styles.sectionTitle1, language === 'ta' && { fontSize: 12 }]}>{t('View Group')}</Text>
 

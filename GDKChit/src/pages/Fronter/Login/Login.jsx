@@ -11,6 +11,8 @@ import {
     KeyboardAvoidingView,
     Animated,
     Platform,
+    BackHandler,
+    Modal,
 } from 'react-native';
 import styles from './Loginsty.jsx';
 import { TextInput } from 'react-native-paper';
@@ -39,12 +41,35 @@ const Login = () => {
     const [phoneError, setPhoneError] = useState('');
     const [passwordError, setPasswordError] = useState('');
 
+    // Error Modal states
+    const [errorModalVisible, setErrorModalVisible] = useState(false);
+    const [errorTitle, setErrorTitle] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+
     const passwordRef = useRef(null);
     
     // Animation values
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
     const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+    useEffect(() => {
+        const backAction = () => {
+            if (errorModalVisible) {
+                setErrorModalVisible(false);
+                return true;
+            }
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                navigation.navigate('Welcome');
+            }
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+        return () => backHandler.remove();
+    }, [errorModalVisible, navigation]);
 
     useEffect(() => {
         Animated.parallel([
@@ -65,7 +90,13 @@ const Login = () => {
                 useNativeDriver: true,
             }),
         ]).start();
-    }, []);
+    }, [fadeAnim, slideAnim, scaleAnim]);
+
+    const showErrorModal = (title, message) => {
+        setErrorTitle(title);
+        setErrorMessage(message);
+        setErrorModalVisible(true);
+    };
 
     const validatePhone = (text) => {
         setPhoneNumber(text);
@@ -78,23 +109,39 @@ const Login = () => {
 
     const validatePassword = (text) => {
         setPassword(text);
-        if (text && text.length < 0) {
-            setPasswordError('Password must be at least 6 characters');
+        if (text && text.length < 4) {
+            setPasswordError('Password must be at least 4 characters');
         } else {
             setPasswordError('');
         }
     };
 
     const handleLogin = async () => {
-        if (!phoneNumber || !password) {
-            Alert.alert("Missing Info", "Please enter all required fields.");
+        if (isLoading) return;
+
+        const cleanPhone = phoneNumber.trim();
+        const cleanPassword = password.trim();
+
+        if (!cleanPhone || !cleanPassword) {
+            showErrorModal(
+                "Missing Information ⚠️",
+                "Please enter both your registered mobile number and password to log in."
+            );
+            return;
+        }
+
+        if (cleanPhone.length < 10) {
+            showErrorModal(
+                "Invalid Mobile Number 📱",
+                "Mobile number must be at least 10 digits. Please check your mobile number and try again."
+            );
             return;
         }
 
         setLoading(true);
         
         try {
-            const response = await login(phoneNumber, password);
+            const response = await login(cleanPhone, cleanPassword);
             
             if (response.success) {
                 const user = response.data.user;
@@ -111,9 +158,18 @@ const Login = () => {
                     index: 0, 
                     routes: [{ name: isPlatformAdmin ? "AdminTabs" : "TabRouter", params: { role: user.role } }],
                 });
+            } else {
+                showErrorModal(
+                    "Invalid Credentials ❌",
+                    response.message || "The mobile number or password you entered is incorrect. Please check your details and try again."
+                );
             }
         } catch (error) {
-            Alert.alert("Login Failed", error.message || "Invalid phone or password.");
+            console.error('Login error:', error);
+            showErrorModal(
+                "Invalid Credentials ❌",
+                error.message || "The mobile number or password you entered is incorrect. Please check your details and try again."
+            );
         } finally {
             setLoading(false);
         }
@@ -224,13 +280,6 @@ const Login = () => {
                                     </Pressable>
                                 </View>
                                 {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-
-                                <TouchableOpacity 
-                                    onPress={() => navigation.navigate('ForgotPassword')}
-                                    style={styles.forgotPassword}
-                                >
-                                    <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                                </TouchableOpacity>
                             </View>
 
                             <View style={styles.lowercontainer}>
@@ -280,6 +329,31 @@ const Login = () => {
                         </Animated.View>
                     </ScrollView>
                 </KeyboardAvoidingView>
+
+                {/* Custom Error Dialog Modal */}
+                <Modal
+                    visible={errorModalVisible}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setErrorModalVisible(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <View style={styles.errorIconCircle}>
+                                <MaterialCommunityIcons name="alert-circle-outline" size={36} color="#DC2626" />
+                            </View>
+                            <Text style={styles.modalTitle}>{errorTitle}</Text>
+                            <Text style={styles.modalMessage}>{errorMessage}</Text>
+                            <TouchableOpacity
+                                style={styles.modalButton}
+                                onPress={() => setErrorModalVisible(false)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.modalButtonText}>Try Again</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
             </SafeAreaView>
         </TouchableWithoutFeedback>
     );
