@@ -23,6 +23,20 @@ import styles from './ChatListStyles';
 import ApiService from '../../../../../services/ApiService';
 import ChatScreen from '../ChatScreen/ChatScreen';
 
+const getAvatarUrl = (avatarPath) => {
+  if (!avatarPath || typeof avatarPath !== 'string') return null;
+  const trimmed = avatarPath.trim();
+  if (!trimmed || trimmed.length <= 4 || trimmed.includes('👤') || trimmed.includes('👥') || trimmed.includes('📢') || trimmed.includes('👨‍💻')) {
+    return null;
+  }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  const base = (ApiService.baseURL || 'http://localhost:5000').replace(/\/+$/, '').replace(/\/api\/?$/, '');
+  return `${base}${cleanPath}`;
+};
+
 const { width } = Dimensions.get('window');
 
 const ChatList = ({ navigation }) => {
@@ -585,10 +599,10 @@ const ChatList = ({ navigation }) => {
           {/* Avatar Section */}
           <View style={styles.chatAvatarContainer}>
             <View style={[styles.avatarCircle, isUnread && styles.avatarCircleUnread, { overflow: 'hidden' }]}>
-              {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('data:image')) ? (
-                <Image source={{ uri: item.avatar }} style={{ width: '100%', height: '100%' }} />
+              {getAvatarUrl(item.avatar) ? (
+                <Image source={{ uri: getAvatarUrl(item.avatar) }} style={{ width: '100%', height: '100%' }} />
               ) : (
-                <MaterialCommunityIcons name={item.isGroup ? "account-group" : "account"} size={30} color={isUnread ? "#FFFFFF" : "#7C3AED"} />
+                <MaterialCommunityIcons name={item.isGroup ? "account-group" : "account-circle"} size={30} color={isUnread ? "#FFFFFF" : "#7C3AED"} />
               )}
             </View>
             {item.isOnline && <View style={styles.onlineIndicator} />}

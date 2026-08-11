@@ -27,6 +27,7 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { pick, types } from '@react-native-documents/picker';
 import Geolocation from '@react-native-community/geolocation';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import Contacts from 'react-native-contacts';
 import styles from './ChatScreenStyle';
 import ApiService from '../../../../../services/ApiService';
 import { getUserCurrentLocationWithFallback, getStoredLocation, storeLocationLocally } from '../../../../../services/locationService';
@@ -77,6 +78,11 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [showShareContactModal, setShowShareContactModal] = useState(false);
   const [contactNameInput, setContactNameInput] = useState('');
   const [contactPhoneInput, setContactPhoneInput] = useState('');
+  const [showDeviceContactsModal, setShowDeviceContactsModal] = useState(false);
+  const [phoneContactsList, setPhoneContactsList] = useState([]);
+  const [contactSearchQuery, setContactSearchQuery] = useState('');
+  const recordingTimerRef = useRef(null);
+  const recordingSecondsRef = useRef(0);
 
   const handleMakeCall = (phoneNumber) => {
     if (!phoneNumber) {
@@ -157,7 +163,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               'Permission Denied',
               'Contacts permission is required to select a contact from your phone.',
               [
-                { text: 'Cancel', style: 'cancel' },
+                { text: 'Enter Manually', onPress: () => setShowShareContactModal(true) },
                 { text: 'Open Settings', onPress: () => Linking.openSettings() }
               ]
             );
@@ -166,38 +172,50 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         }
       }
 
-      const { ContactPickerModule } = NativeModules;
-      if (ContactPickerModule && ContactPickerModule.pickContact) {
-        const result = await ContactPickerModule.pickContact();
-        if (result && (result.name || result.number)) {
-          const name = result.name || 'Shared Contact';
-          const phone = result.number || '';
-          const payload = JSON.stringify({ name, phone });
-          sendDirectMessage(`[CONTACT_CARD]${payload}`);
-          setShowShareContactModal(false);
-        }
-      } else {
-        setContactNameInput('');
-        setContactPhoneInput('');
-        setShowShareContactModal(true);
-      }
-    } catch (err) {
-      if (err && String(err.message || err).includes('CANCELLED')) {
-        console.log('User cancelled contact selection');
-      } else {
-        console.log('Error picking contact:', err);
-        Alert.alert('Notice', 'Could not open contact picker. You can enter details manually.', [
-          {
-            text: 'Enter Manually',
-            onPress: () => {
-              setContactNameInput('');
-              setContactPhoneInput('');
-              setShowShareContactModal(true);
+      // Try opening native contact picker dialog
+      try {
+        if (Contacts && typeof Contacts.openContactSelection === 'function') {
+          const contact = await Contacts.openContactSelection();
+          if (contact) {
+            const name = [contact.givenName, contact.familyName].filter(Boolean).join(' ') || contact.displayName || 'Shared Contact';
+            const phoneNumbers = contact.phoneNumbers || [];
+            const phone = phoneNumbers.length > 0 ? (phoneNumbers[0].number || phoneNumbers[0].stringValue || '') : '';
+            
+            if (name || phone) {
+              const payload = JSON.stringify({ name, phone });
+              sendDirectMessage(`[CONTACT_CARD]${payload}`);
+              return;
             }
-          },
-          { text: 'Cancel', style: 'cancel' }
-        ]);
+          }
+        }
+      } catch (pickerErr) {
+        if (pickerErr && String(pickerErr.message || pickerErr).toLowerCase().includes('cancel')) {
+          console.log('User cancelled contact picker selection');
+          return;
+        }
+        console.log('Contacts.openContactSelection error:', pickerErr);
       }
+
+      // If native selection falls back or is unavailable, fetch all contacts to show in contact picker list modal
+      if (Contacts && typeof Contacts.getAll === 'function') {
+        const allContacts = await Contacts.getAll();
+        if (allContacts && allContacts.length > 0) {
+          setPhoneContactsList(allContacts);
+          setContactSearchQuery('');
+          setShowDeviceContactsModal(true);
+          return;
+        }
+      }
+
+      // Final fallback to manual input modal
+      setContactNameInput('');
+      setContactPhoneInput('');
+      setShowShareContactModal(true);
+    } catch (err) {
+      console.log('Error in handlePickNativeContact:', err);
+      setContactNameInput('');
+      setContactPhoneInput('');
+      setShowShareContactModal(true);
     }
   };
 
@@ -463,11 +481,12 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const startRecordingAudio = async () => {
     try {
       if (Platform.OS === 'android') {
-        const grants = await PermissionsAndroid.requestMultiple([
-          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-        ]);
+        const perms = [PermissionsAndroid.PERMISSIONS.RECORD_AUDIO];
+        if (Platform.Version < 33) {
+          perms.push(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE);
+          perms.push(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE);
+        }
+        const grants = await PermissionsAndroid.requestMultiple(perms);
         if (grants['android.permission.RECORD_AUDIO'] !== PermissionsAndroid.RESULTS.GRANTED) {
           Alert.alert('Permission Denied', 'Microphone permission is required to record audio.');
           return;
@@ -476,12 +495,23 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       setShowRecordModal(true);
       setIsRecordingAudio(true);
       setRecordTime('00:00');
+      recordingSecondsRef.current = 0;
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = setInterval(() => {
+        recordingSecondsRef.current += 1;
+        const m = Math.floor(recordingSecondsRef.current / 60);
+        const s = recordingSecondsRef.current % 60;
+        const formatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        setRecordTime(formatted);
+      }, 1000);
+
       await audioRecorderPlayer.startRecorder();
-      audioRecorderPlayer.addRecordBackListener((e) => {
-        setRecordTime(audioRecorderPlayer.mmssss(Math.floor(e.currentPosition)));
-      });
     } catch (e) {
       console.log('Error starting record:', e);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
       setIsRecordingAudio(false);
       setShowRecordModal(false);
       Alert.alert('Error', 'Could not start audio recorder');
@@ -490,8 +520,14 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
   const stopAndSendRecording = async () => {
     try {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
       const result = await audioRecorderPlayer.stopRecorder();
-      audioRecorderPlayer.removeRecordBackListener();
+      try {
+        audioRecorderPlayer.removeRecordBackListener();
+      } catch (err) {}
       setIsRecordingAudio(false);
       setShowRecordModal(false);
       if (result) {
@@ -499,6 +535,10 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       }
     } catch (e) {
       console.log('Error stopping record:', e);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
       setIsRecordingAudio(false);
       setShowRecordModal(false);
     }
@@ -506,8 +546,14 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
   const cancelRecordingAudio = async () => {
     try {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
       await audioRecorderPlayer.stopRecorder();
-      audioRecorderPlayer.removeRecordBackListener();
+      try {
+        audioRecorderPlayer.removeRecordBackListener();
+      } catch (err) {}
     } catch (e) { }
     setIsRecordingAudio(false);
     setShowRecordModal(false);
@@ -516,17 +562,19 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const uploadAndSendAudio = async (audioUri) => {
     try {
       setIsSending(true);
+      const cleanUri = audioUri.startsWith('file://') ? audioUri : `file://${audioUri}`;
+
       const formData = new FormData();
       formData.append('file', {
-        uri: audioUri.startsWith('file://') ? audioUri : `file://${audioUri}`,
+        uri: cleanUri,
         type: 'audio/m4a',
         name: `voice_${Date.now()}.m4a`,
       });
 
       const token = await ApiService.getAccessToken();
-      const baseUrl = (ApiService.baseURL || '').replace(/\/+$/, '');
+      const rawBase = (ApiService.baseURL || 'http://localhost:5000').replace(/\/+$/, '').replace(/\/api\/?$/, '');
 
-      const res = await fetch(`${baseUrl}/chats/upload-file`, {
+      let res = await fetch(`${rawBase}/api/chats/upload-file`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -534,11 +582,39 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         body: formData,
       });
 
-      const data = await res.json();
-      if (data.success && data.fileUrl) {
+      let data = await res.json();
+
+      // If FormData upload returned unsuccessful, try base64 fallback via fetch(cleanUri)
+      if (!data || !data.success) {
+        try {
+          const fileResp = await fetch(cleanUri);
+          const blob = await fileResp.blob();
+          const base64Data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+
+          if (base64Data) {
+            const res2 = await ApiService.makeRequest('/chats/upload', {
+              method: 'POST',
+              body: JSON.stringify({
+                fileBase64: base64Data,
+                fileName: `voice_${Date.now()}.m4a`
+              })
+            });
+            data = await res2.json();
+          }
+        } catch (fallbackErr) {
+          console.log('Base64 fallback failed:', fallbackErr);
+        }
+      }
+
+      if (data && data.success && data.fileUrl) {
         await sendDirectMessage(`Audio: Voice Note | ${data.fileUrl}`);
       } else {
-        Alert.alert('Error', data.message || 'Failed to upload audio');
+        Alert.alert('Error', (data && data.message) || 'Failed to upload audio');
       }
     } catch (e) {
       console.log('Error uploading audio:', e);
@@ -550,7 +626,18 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
   const handleTogglePlayAudio = async (url) => {
     try {
-      if (currentlyPlayingUrl === url) {
+      if (!url) {
+        Alert.alert('Notice', 'Audio URL not available');
+        return;
+      }
+      let fullUrl = url.trim();
+      if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://') && !fullUrl.startsWith('file://')) {
+        const base = (ApiService.baseURL || 'http://localhost:5000').replace(/\/+$/, '').replace(/\/api\/?$/, '');
+        const path = fullUrl.startsWith('/') ? fullUrl : `/${fullUrl}`;
+        fullUrl = `${base}${path}`;
+      }
+
+      if (currentlyPlayingUrl === fullUrl || currentlyPlayingUrl === url) {
         await audioRecorderPlayer.stopPlayer();
         audioRecorderPlayer.removePlayBackListener();
         setCurrentlyPlayingUrl(null);
@@ -560,8 +647,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         await audioRecorderPlayer.stopPlayer();
         audioRecorderPlayer.removePlayBackListener();
       }
-      setCurrentlyPlayingUrl(url);
-      await audioRecorderPlayer.startPlayer(url);
+      setCurrentlyPlayingUrl(fullUrl);
+      await audioRecorderPlayer.startPlayer(fullUrl);
       audioRecorderPlayer.addPlayBackListener((e) => {
         if (e.currentPosition >= e.duration && e.duration > 0) {
           audioRecorderPlayer.stopPlayer();
@@ -833,10 +920,15 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
   useEffect(() => {
     if (messages.length > 0 && !initialScrollDone.current) {
-      initialScrollDone.current = true;
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: false });
       }, 50);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 200);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 500);
     }
   }, [messages]);
 
@@ -1063,18 +1155,137 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   });
 
   // WhatsApp-style tick icons
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status, isLightCard = false) => {
     const s = String(status || '').toLowerCase();
+    const defaultColor = isLightCard ? "#9CA3AF" : "rgba(255,255,255,0.85)";
+    const blueColor = isLightCard ? "#3B82F6" : "#60D0FE";
     switch (s) {
       case 'read':
         // Double BLUE tick — recipient opened/read message
-        return <MaterialCommunityIcons name="check-all" size={15} color="#60D0FE" style={{ marginLeft: 3 }} />;
+        return <MaterialCommunityIcons name="check-all" size={16} color={blueColor} style={{ marginLeft: 3 }} />;
       case 'delivered':
+        // Double GREY / WHITE tick — sent and delivered to recipient
+        return <MaterialCommunityIcons name="check-all" size={16} color={defaultColor} style={{ marginLeft: 3 }} />;
       case 'sent':
       default:
-        // Double GREY tick — sent and delivered to recipient
-        return <MaterialCommunityIcons name="check-all" size={15} color="rgba(255,255,255,0.75)" style={{ marginLeft: 3 }} />;
+        // Single GREY / WHITE tick — sent to server
+        return <MaterialCommunityIcons name="check" size={15} color={defaultColor} style={{ marginLeft: 3 }} />;
     }
+  };
+
+  const renderDeviceContactsModal = () => {
+    const filtered = (phoneContactsList || []).filter(c => {
+      if (!contactSearchQuery.trim()) return true;
+      const fullName = [c.givenName, c.familyName, c.displayName].filter(Boolean).join(' ').toLowerCase();
+      const num = (c.phoneNumbers && c.phoneNumbers[0] ? c.phoneNumbers[0].number : '').toLowerCase();
+      const q = contactSearchQuery.trim().toLowerCase();
+      return fullName.includes(q) || num.includes(q);
+    });
+
+    return (
+      <Modal
+        visible={showDeviceContactsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDeviceContactsModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%', paddingTop: 16, paddingBottom: 30 }}>
+            {/* Handle bar */}
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' }} />
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#1F2937' }}>Select Phone Contact</Text>
+              <TouchableOpacity onPress={() => setShowDeviceContactsModal(false)}>
+                <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Search Input */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 12, paddingHorizontal: 12, height: 44 }}>
+                <MaterialCommunityIcons name="magnify" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="Search contacts by name or number..."
+                  placeholderTextColor="#9CA3AF"
+                  value={contactSearchQuery}
+                  onChangeText={setContactSearchQuery}
+                  style={{ flex: 1, fontSize: 14, color: '#1F2937' }}
+                />
+                {contactSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setContactSearchQuery('')}>
+                    <MaterialCommunityIcons name="close-circle" size={18} color="#9CA3AF" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Contacts List */}
+            <FlatList
+              data={filtered}
+              keyExtractor={(item, idx) => item.recordID || String(idx)}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+              renderItem={({ item }) => {
+                const name = [item.givenName, item.familyName].filter(Boolean).join(' ') || item.displayName || 'Contact';
+                const phone = item.phoneNumbers && item.phoneNumbers.length > 0 ? (item.phoneNumbers[0].number || item.phoneNumbers[0].stringValue || '') : '';
+                return (
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: '#F9FAFB',
+                      padding: 12,
+                      marginVertical: 4,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: '#E5E7EB',
+                    }}
+                    onPress={() => {
+                      setShowDeviceContactsModal(false);
+                      const payload = JSON.stringify({ name, phone });
+                      sendDirectMessage(`[CONTACT_CARD]${payload}`);
+                    }}
+                  >
+                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 1, borderColor: '#C084FC' }}>
+                      <Text style={{ color: '#7C3AED', fontWeight: '700', fontSize: 16 }}>
+                        {(name.charAt(0) || 'C').toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937' }}>{name}</Text>
+                      {phone ? (
+                        <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{phone}</Text>
+                      ) : (
+                        <Text style={{ fontSize: 12, color: '#9CA3AF', fontStyle: 'italic' }}>No phone number</Text>
+                      )}
+                    </View>
+                    <MaterialCommunityIcons name="send" size={20} color="#7C3AED" />
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={
+                <View style={{ padding: 30, alignItems: 'center' }}>
+                  <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No contacts found.</Text>
+                  <TouchableOpacity
+                    style={{ marginTop: 12, backgroundColor: '#7C3AED', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 }}
+                    onPress={() => {
+                      setShowDeviceContactsModal(false);
+                      setContactNameInput('');
+                      setContactPhoneInput('');
+                      setShowShareContactModal(true);
+                    }}
+                  >
+                    <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 13 }}>Enter Details Manually</Text>
+                  </TouchableOpacity>
+                </View>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
+    );
   };
 
   const renderMsgOptionsModal = () => {
@@ -1611,7 +1822,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                     <Text style={[styles.timestamp, { color: '#6B7280' }]}>
                       {formatTime(item.timestamp)}
                     </Text>
-                    {isUserMessage && getStatusIcon(item.status)}
+                    {isUserMessage && getStatusIcon(item.status, true)}
                   </View>
                 </View>
               );
@@ -1736,7 +1947,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
                     <Text style={{ fontSize: 10, color: '#9CA3AF' }}>
                       {formatTime(item.timestamp)}
                     </Text>
-                    {isUserMessage && getStatusIcon(item.status)}
+                    {isUserMessage && getStatusIcon(item.status, true)}
                   </View>
                 </View>
               );
@@ -1979,13 +2190,16 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             keyExtractor={(item, index) => (item && item.id ? String(item.id) : String(index))}
             contentContainerStyle={styles.messagesList}
             scrollEnabled={true}
+            initialNumToRender={filteredMessages.length || 30}
+            maxToRenderPerBatch={50}
+            windowSize={21}
             onLayout={() => {
-              if (!initialScrollDone.current) {
+              if (!initialScrollDone.current && filteredMessages.length > 0) {
                 flatListRef.current?.scrollToEnd({ animated: false });
               }
             }}
             onContentSizeChange={() => {
-              if (!initialScrollDone.current) {
+              if (!initialScrollDone.current && filteredMessages.length > 0) {
                 flatListRef.current?.scrollToEnd({ animated: false });
               }
             }}
@@ -2355,6 +2569,9 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Device Contacts Selection Modal */}
+      {renderDeviceContactsModal()}
 
       {/* Message options context sheet */}
       {renderMsgOptionsModal()}

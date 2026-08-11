@@ -3,6 +3,26 @@ const router = express.Router();
 const chatController = require('../controllers/chatController');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const uploadsDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadsDir);
+    },
+    filename: function (req, file, cb) {
+        const ext = path.extname(file.originalname) || '.m4a';
+        cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+    }
+});
+const upload = multer({ storage: storage });
+
 // All chat routes require authentication
 router.use(authenticateToken);
 
@@ -15,7 +35,8 @@ router.post('/delete', chatController.deleteMessage);
 router.post('/forward', chatController.forwardMessage);
 router.post('/privateRoom', chatController.getOrCreatePrivateRoom);
 router.post('/groups/updateAvatar', requireAdmin, chatController.updateGroupAvatar);
-router.post('/upload', chatController.uploadChatFile);
+router.post('/upload', upload.single('file'), chatController.uploadChatFile);
+router.post('/upload-file', upload.single('file'), chatController.uploadChatFile);
 
 // WhatsApp Feature Routes
 router.post('/groups/create', requireAdmin, chatController.createCustomGroup);

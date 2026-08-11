@@ -45,6 +45,7 @@ exports.getChats = async (req, res) => {
                     ANY_VALUE(g.group_name) as group_name,
                     ANY_VALUE(g.avatar) as group_avatar,
                     ANY_VALUE(u.name) as user_name,
+                    ANY_VALUE(up.user_image) as user_avatar,
                     ANY_VALUE(COALESCE(ucs.is_pinned, 0)) as is_pinned,
                     ANY_VALUE(COALESCE(ucs.is_muted, 0)) as is_muted,
                     ANY_VALUE(COALESCE(ucs.is_archived, 0)) as is_archived,
@@ -55,6 +56,7 @@ exports.getChats = async (req, res) => {
                 LEFT JOIN \`groups\` g ON cr.group_id = g.id
                 LEFT JOIN private_conversations pc ON cr.id = pc.room_id
                 LEFT JOIN users u ON u.id = CASE WHEN pc.user1 = ? THEN pc.user2 ELSE pc.user1 END
+                LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
                 LEFT JOIN chat_room_members crm ON cr.id = crm.room_id
                 LEFT JOIN user_chat_settings ucs ON cr.id = ucs.room_id AND ucs.user_id = ?
                 WHERE (
@@ -71,16 +73,16 @@ exports.getChats = async (req, res) => {
 
             const chats = rows.map(r => {
                 let name = '';
-                let avatar = '';
+                let avatar = null;
                 if (r.type === 'group_broadcast') {
                     name = r.group_name;
-                    avatar = r.group_avatar || '👥';
+                    avatar = r.group_avatar || null;
                 } else if (r.type === 'private') {
                     name = r.user_name || 'User Support';
-                    avatar = '👤';
+                    avatar = r.user_avatar || null;
                 } else {
                     name = r.room_name;
-                    avatar = r.room_avatar || (r.type === 'community' ? '📢' : '👥');
+                    avatar = r.room_avatar || null;
                 }
 
                 let lastMsg = r.lastMessage || 'No messages yet';
@@ -127,7 +129,8 @@ exports.getChats = async (req, res) => {
                     ANY_VALUE(cr.avatar) as room_avatar,
                     ANY_VALUE(g.group_name) as group_name,
                     ANY_VALUE(g.avatar) as group_avatar,
-                    'Admin Support' as user_name,
+                    ANY_VALUE(u.name) as user_name,
+                    ANY_VALUE(up.user_image) as user_avatar,
                     ANY_VALUE(COALESCE(ucs.is_pinned, 0)) as is_pinned,
                     ANY_VALUE(COALESCE(ucs.is_muted, 0)) as is_muted,
                     ANY_VALUE(COALESCE(ucs.is_archived, 0)) as is_archived,
@@ -138,6 +141,8 @@ exports.getChats = async (req, res) => {
                 LEFT JOIN \`groups\` g ON cr.group_id = g.id
                 LEFT JOIN user_grouping ug ON g.id = ug.group_id AND g.deleted_at IS NULL
                 LEFT JOIN private_conversations pc ON cr.id = pc.room_id
+                LEFT JOIN users u ON u.id = CASE WHEN pc.user1 = ? THEN pc.user2 ELSE pc.user1 END
+                LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
                 LEFT JOIN chat_room_members crm ON cr.id = crm.room_id
                 LEFT JOIN user_chat_settings ucs ON cr.id = ucs.room_id AND ucs.user_id = ?
                 WHERE (
@@ -150,20 +155,20 @@ exports.getChats = async (req, res) => {
                 GROUP BY cr.id
                 ORDER BY is_pinned DESC, timestamp DESC
             `;
-            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId, userId, userId, userId, userId]);
+            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId, userId, userId, userId, userId, userId]);
 
             const chats = rows.map(r => {
                 let name = '';
-                let avatar = '';
+                let avatar = null;
                 if (r.type === 'group_broadcast') {
                     name = r.group_name;
-                    avatar = r.group_avatar || '👥';
+                    avatar = r.group_avatar || null;
                 } else if (r.type === 'private') {
                     name = 'Admin Support';
-                    avatar = '👨‍💻';
+                    avatar = r.user_avatar || null;
                 } else {
                     name = r.room_name;
-                    avatar = r.room_avatar || (r.type === 'community' ? '📢' : '👥');
+                    avatar = r.room_avatar || null;
                 }
 
                 let lastMsg = r.lastMessage || 'No messages yet';
@@ -704,21 +709,87 @@ exports.getOrCreatePrivateRoom = async (req, res) => {
 // Update Group Avatar
 exports.updateGroupAvatar = async (req, res) => {
     try {
-        const { groupId, avatarBase64 } = req.body;
-        if (!groupId || !avatarBase64) {
+        const { groupId, roomId, id, avatarBase64, avatar } = req.body || {};
+        const targetGroupId = groupId || roomId || id;
+        let avatarInput = avatarBase64 || avatar;
+
+        if (!targetGroupId || !avatarInput) {
             return res.status(400).json({ success: false, message: 'groupId and avatarBase64 are required' });
         }
 
-        const [result] = await db.promise().query(
-            'UPDATE `groups` SET avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-            [avatarBase64, groupId]
-        );
+        let savedAvatarUrl = avatarInput;
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Group not found' });
+        // If avatarInput is base64, convert to file and save in /uploads directory
+        if (avatarInput.startsWith('data:image/') || avatarInput.length > 500) {
+            const matches = avatarInput.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+            let mimeType = 'image/jpeg';
+            let base64Data = avatarInput;
+
+            if (matches && matches.length === 3) {
+                mimeType = matches[1];
+                base64Data = matches[2];
+            }
+
+            let ext = 'jpg';
+            if (mimeType.includes('png')) ext = 'png';
+            else if (mimeType.includes('gif')) ext = 'gif';
+            else if (mimeType.includes('webp')) ext = 'webp';
+
+            const uploadsDir = path.join(__dirname, '../../uploads');
+            if (!fs.existsSync(uploadsDir)) {
+                fs.mkdirSync(uploadsDir, { recursive: true });
+            }
+
+            const fileName = `group_avatar_${Date.now()}_${Math.round(Math.random() * 1e6)}.${ext}`;
+            const filePath = path.join(uploadsDir, fileName);
+
+            fs.writeFileSync(filePath, base64Data, 'base64');
+            savedAvatarUrl = `${req.protocol}://${req.get('host')}/uploads/${fileName}`;
         }
 
-        return res.json({ success: true, message: 'Group avatar updated successfully' });
+        // 1. Try updating `groups` table
+        let groupUpdated = false;
+        try {
+            const [gResult] = await db.promise().query(
+                'UPDATE `groups` SET avatar = ? WHERE id = ?',
+                [savedAvatarUrl, targetGroupId]
+            );
+            if (gResult.affectedRows > 0) groupUpdated = true;
+        } catch (gErr) {
+            console.log('Update groups avatar notice:', gErr.message);
+        }
+
+        // 2. Try updating `chat_rooms` table
+        let roomUpdated = false;
+        try {
+            const [rResult] = await db.promise().query(
+                'UPDATE chat_rooms SET avatar = ? WHERE id = ?',
+                [savedAvatarUrl, targetGroupId]
+            );
+            if (rResult.affectedRows > 0) roomUpdated = true;
+        } catch (rErr) {
+            console.log('Update chat_rooms avatar notice:', rErr.message);
+        }
+
+        // 3. If targetGroupId is a chat_room whose group_id points to `groups`, update that group as well
+        try {
+            const [roomRows] = await db.promise().query('SELECT group_id FROM chat_rooms WHERE id = ?', [targetGroupId]);
+            if (roomRows.length > 0 && roomRows[0].group_id) {
+                const linkedGroupId = roomRows[0].group_id;
+                await db.promise().query('UPDATE `groups` SET avatar = ? WHERE id = ?', [savedAvatarUrl, linkedGroupId]);
+                groupUpdated = true;
+            }
+        } catch (linkedErr) {}
+
+        if (!groupUpdated && !roomUpdated) {
+            return res.status(404).json({ success: false, message: 'Group or community not found' });
+        }
+
+        return res.json({ 
+            success: true, 
+            message: 'Group avatar updated successfully',
+            avatarUrl: savedAvatarUrl 
+        });
     } catch (error) {
         console.error('Error in updateGroupAvatar:', error);
         return res.status(500).json({ success: false, message: 'Failed to update group avatar' });
@@ -1219,12 +1290,23 @@ exports.getContacts = async (req, res) => {
     }
 };
 
-// Upload chat file (base64 image or other media)
+// Upload chat file (base64 image or multipart file upload)
 exports.uploadChatFile = async (req, res) => {
     try {
-        const { fileBase64, fileName: clientFileName } = req.body;
+        // If uploaded via FormData (multer)
+        if (req.file) {
+            const fileName = req.file.filename;
+            const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${fileName}`;
+            return res.json({
+                success: true,
+                fileUrl,
+                fileName
+            });
+        }
+
+        const { fileBase64, fileName: clientFileName } = req.body || {};
         if (!fileBase64) {
-            return res.status(400).json({ success: false, message: 'fileBase64 is required' });
+            return res.status(400).json({ success: false, message: 'fileBase64 or file upload is required' });
         }
 
         // Clean up base64 header if it exists
@@ -1244,6 +1326,7 @@ exports.uploadChatFile = async (req, res) => {
         else if (mimeType.includes('gif')) ext = 'gif';
         else if (mimeType.includes('webp')) ext = 'webp';
         else if (mimeType.includes('pdf')) ext = 'pdf';
+        else if (mimeType.includes('audio') || mimeType.includes('m4a') || mimeType.includes('aac') || mimeType.includes('mp3') || mimeType.includes('ogg') || mimeType.includes('wav') || mimeType.includes('3gp')) ext = 'm4a';
 
         const uploadsDir = path.join(__dirname, '../../uploads');
         if (!fs.existsSync(uploadsDir)) {

@@ -91,7 +91,7 @@ exports.getAllUsers = async (req, res) => {
         const query = `
             SELECT 
                 u.id, u.name, u.nick_name, u.phone, u.mail, u.role, u.created_at, u.is_active, u.block_reason,
-                up.date_of_birth,
+                up.date_of_birth, up.user_image AS profile_image,
                 (
                     SELECT GROUP_CONCAT(g.group_name SEPARATOR ', ')
                     FROM user_grouping ug
@@ -111,6 +111,8 @@ exports.getAllUsers = async (req, res) => {
             phone: user.phone,
             email: user.mail,
             type: user.role,
+            avatar: user.profile_image,
+            profile_image: user.profile_image,
             joinedDate: formatDateString(user.created_at),
             dateOfBirth: user.date_of_birth ? formatDateString(user.date_of_birth) : 'N/A',
             contributedGroups: user.contributed_groups || 'None',

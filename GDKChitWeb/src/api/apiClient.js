@@ -2,9 +2,9 @@ let API_URL = import.meta.env.VITE_API_URL;
 if (!API_URL) {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    API_URL = `http://${hostname}:5000/api`;
+    API_URL = `http://10.150.251.73:5000/api`;
   } else {
-    API_URL = 'http://10.150.252.3:5000/api';
+    API_URL = 'http://10.150.251.73:5000/api';
   }
 }
 

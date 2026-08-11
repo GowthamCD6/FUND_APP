@@ -13,10 +13,23 @@ import {
   Alert,
   StatusBar,
   Animated,
+  Image,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../../../../services/ApiService';
 import Header from '../../../../../components/HeaderComponent/Header';
+
+const getAvatarUrl = (avatarPath) => {
+  if (!avatarPath || typeof avatarPath !== 'string') return null;
+  const trimmed = avatarPath.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  const base = (ApiService.baseURL || 'http://localhost:5000').replace(/\/+$/, '').replace(/\/api\/?$/, '');
+  return `${base}${cleanPath}`;
+};
 
 const SkeletonBox = ({ width, height, borderRadius = 6, style }) => {
   const animatedValue = useRef(new Animated.Value(0.3)).current;
@@ -295,13 +308,19 @@ const ManageU = ({onBack}) => {
                       {
                         backgroundColor:
                           userType === 'admin' ? '#EDE9FE' : '#DBEAFE',
+                        overflow: 'hidden',
                       },
                     ]}>
-                    <MaterialCommunityIcons
-                      name={userType === 'admin' ? 'shield-crown' : 'account-circle'}
-                      size={24}
-                      color={userType === 'admin' ? '#7C3AED' : '#3B82F6'}
-                    />
+                    {getAvatarUrl(user.profile_image || user.avatar) ? (
+                      <Image
+                        source={{ uri: getAvatarUrl(user.profile_image || user.avatar) }}
+                        style={{ width: 40, height: 40, borderRadius: 20 }}
+                      />
+                    ) : (
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: userType === 'admin' ? '#7C3AED' : '#3B82F6' }}>
+                        {displayName.charAt(0).toUpperCase()}
+                      </Text>
+                    )}
                   </View>
                   <View>
                     <Text style={customStyles.userName}>{displayName}</Text>
@@ -589,6 +608,43 @@ const ManageU = ({onBack}) => {
             <View style={customStyles.modalHeaderSeparator} />
             
             <ScrollView style={customStyles.modalContent} contentContainerStyle={{ paddingBottom: 24 }}>
+              {/* User Avatar Card Header */}
+              {selectedUser && (
+                <View style={{ alignItems: 'center', marginVertical: 14 }}>
+                  <View style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    backgroundColor: String(selectedUser?.type || '').toLowerCase() === 'admin' ? '#EDE9FE' : '#DBEAFE',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    overflow: 'hidden',
+                    borderWidth: 2,
+                    borderColor: String(selectedUser?.type || '').toLowerCase() === 'admin' ? '#7C3AED' : '#3B82F6',
+                    marginBottom: 8
+                  }}>
+                    {getAvatarUrl(selectedUser.profile_image || selectedUser.avatar) ? (
+                      <Image
+                        source={{ uri: getAvatarUrl(selectedUser.profile_image || selectedUser.avatar) }}
+                        style={{ width: 80, height: 80, borderRadius: 40 }}
+                      />
+                    ) : (
+                      <Text style={{ fontSize: 32, fontWeight: '800', color: String(selectedUser?.type || '').toLowerCase() === 'admin' ? '#7C3AED' : '#3B82F6' }}>
+                        {(selectedUser.name || selectedUser.nickname || 'U').charAt(0).toUpperCase()}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#1F2937' }}>
+                    {selectedUser.name || selectedUser.nickname || 'User'}
+                  </Text>
+                  <View style={{ backgroundColor: String(selectedUser?.type || '').toLowerCase() === 'admin' ? '#EDE9FE' : '#F3F4F6', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginTop: 4 }}>
+                    <Text style={{ color: String(selectedUser?.type || '').toLowerCase() === 'admin' ? '#7C3AED' : '#4B5563', fontSize: 12, fontWeight: '700' }}>
+                      {selectedUser?.type || 'User'}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               {/* Full Name */}
               <View style={customStyles.inputGroup}>
                 <View style={customStyles.labelContainer}>

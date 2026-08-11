@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Alert } from "react-native";
+import { StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaProvider, initialWindowMetrics, SafeAreaView } from "react-native-safe-area-context";
 import Router from "./src/components/Routes/Routes";
 import "react-native-get-random-values";
@@ -67,8 +67,8 @@ const AppContent = () => {
     console.log('App.jsx: Still loading...');
     return (
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <SafeAreaView style={[styles.container]}>
-          {/* You can add a loading spinner here if needed */}
+        <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#6B46C1' }]}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
         </SafeAreaView>
       </SafeAreaProvider>
     );

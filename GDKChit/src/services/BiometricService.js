@@ -35,9 +35,15 @@ class BiometricService {
       const enabled = await AsyncStorage.getItem('securityEnabled');
       let isEnabled = enabled === 'true';
 
-      // Attempt to sync from backend database user_preferences
+      // Attempt to sync from backend database user_preferences with 1500ms timeout
       try {
-        const prefRes = await ApiService.getUserPreferences();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Preferences timeout')), 1500)
+        );
+        const prefRes = await Promise.race([
+          ApiService.getUserPreferences(),
+          timeoutPromise
+        ]);
         if (prefRes && prefRes.success && prefRes.data && prefRes.data.securityEnabled !== undefined) {
           isEnabled = Boolean(prefRes.data.securityEnabled);
           await AsyncStorage.setItem('securityEnabled', isEnabled ? 'true' : 'false');
