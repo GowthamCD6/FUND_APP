@@ -22,8 +22,10 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
   }, [initialGroupCode]);
 
   const handleJoinGroup = async () => {
-    if (!groupCode.trim()) {
-      Alert.alert('Error', 'Please enter a group code');
+    if (loading) return;
+    const cleanCode = groupCode.trim();
+    if (!cleanCode) {
+      Alert.alert(t('Error'), t('Please enter a group code'));
       return;
     }
 
@@ -31,7 +33,7 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
     try {
       const response = await ApiService.makeRequest('/user/groups/join', {
         method: 'POST',
-        body: JSON.stringify({ groupCode: groupCode.trim() }),
+        body: JSON.stringify({ groupCode: cleanCode }),
       });
 
       const result = await response.json();
@@ -39,7 +41,7 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
       if (result.success) {
         setResultType('success');
         setResultData({
-          title: 'Joined Successfully! 🎉',
+          title: t('Joined Successfully! 🎉'),
           message: result.message,
           groupName: result.data?.groupName,
           groupAmount: result.data?.groupAmount,
@@ -50,11 +52,11 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
       } else {
         setResultType('error');
         const errorTitle =
-          result.errorType === 'GROUP_FULL' ? 'Group Full 😔' :
-          result.errorType === 'ALREADY_MEMBER' ? 'Already a Member ℹ️' :
-          result.errorType === 'GROUP_COMPLETED' ? 'Group Completed' :
-          result.errorType === 'INVALID_CODE' ? 'Invalid Code ❌' :
-          'Error';
+          result.errorType === 'GROUP_FULL' ? t('Group Full 😔') :
+          result.errorType === 'ALREADY_MEMBER' ? t('Already a Member ℹ️') :
+          result.errorType === 'GROUP_COMPLETED' ? t('Group Completed') :
+          result.errorType === 'INVALID_CODE' ? t('Invalid Code ❌') :
+          t('Error');
         setResultData({
           title: errorTitle,
           message: result.message,
@@ -64,7 +66,7 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
       setShowResultModal(true);
     } catch (error) {
       console.error('Error joining group:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      Alert.alert(t('Error'), t('Something went wrong. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -108,15 +110,15 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
           {/* Group Details (only for success) */}
           {resultType === 'success' && resultData?.groupName && (
             <View style={modalStyles.detailsCard}>
-              <DetailRow label="Group" value={resultData.groupName} />
+              <DetailRow label={t('Group')} value={resultData.groupName} />
               {resultData.groupAmount && (
-                <DetailRow label="Amount" value={`₹${Number(resultData.groupAmount).toLocaleString('en-IN')}`} />
+                <DetailRow label={t('Amount')} value={`₹${Number(resultData.groupAmount).toLocaleString('en-IN')}`} />
               )}
               {resultData.totalMembers && (
-                <DetailRow label="Members" value={`${resultData.currentMembers}/${resultData.totalMembers}`} />
+                <DetailRow label={t('Members')} value={`${resultData.currentMembers}/${resultData.totalMembers}`} />
               )}
               {resultData.duration && (
-                <DetailRow label="Duration" value={`${resultData.duration} months`} />
+                <DetailRow label={t('Duration')} value={`${resultData.duration} months`} />
               )}
             </View>
           )}
@@ -125,7 +127,7 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
           {resultType === 'error' && resultData?.errorType === 'GROUP_FULL' && (
             <View style={modalStyles.hintContainer}>
               <MaterialCommunityIcons name="information-outline" size={16} color="#6B7280" />
-              <Text style={modalStyles.hintText}>Contact the group admin for available slots.</Text>
+              <Text style={modalStyles.hintText}>{t('Contact the group admin for available slots.')}</Text>
             </View>
           )}
 
@@ -138,7 +140,7 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
             onPress={handleResultDismiss}
           >
             <Text style={modalStyles.dismissButtonText}>
-              {resultType === 'success' ? 'Done' : 'Try Again'}
+              {resultType === 'success' ? t('Done') : t('Try Again')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -150,8 +152,9 @@ const Join = ({ onBack, initialGroupCode = '' }) => {
     <SafeAreaProvider>
     <SafeAreaView style={styles.container}>
       <Header 
-        title="Join Group"
+        title={t('Join Group')}
         onBack={onBack}
+        showBackButton={true}
       />
       
       {/* Join Group Content */}

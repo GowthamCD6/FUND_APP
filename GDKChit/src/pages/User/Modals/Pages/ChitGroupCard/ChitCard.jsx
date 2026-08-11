@@ -12,33 +12,40 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../services/ApiService';
+import { useLanguage } from '../../../../../utils/LanguageContext';
 
 const ChitCard = ({ selectedGroup, onBack }) => {
+  const { t, language } = useLanguage();
   const [monthlyData, setMonthlyData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  if (!selectedGroup) return null;
-
   // Fetch monthly details from backend
   useEffect(() => {
-    fetchMonthlyDetails();
-  }, [selectedGroup.id]);
+    if (selectedGroup?.id) {
+      fetchMonthlyDetails();
+    } else {
+      setLoading(false);
+    }
+  }, [selectedGroup?.id]);
+
+  if (!selectedGroup) return null;
 
   const fetchMonthlyDetails = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await ApiService.getGroupMonthlyInfo(selectedGroup.id);
+      const cleanId = encodeURIComponent(String(selectedGroup.id).trim());
+      const response = await ApiService.getGroupMonthlyInfo(cleanId);
       if (response.success && response.data) {
         const formattedData = formatMonthlyData(response.data);
         setMonthlyData(formattedData);
       } else {
-        setError('Failed to fetch payment details');
+        setError(t('Failed to fetch payment details'));
       }
     } catch (err) {
       console.error('Error fetching monthly details:', err);
-      setError(err.message || 'Error fetching payment details');
+      setError(err.message || t('Error fetching payment details'));
     } finally {
       setLoading(false);
     }
@@ -97,11 +104,12 @@ const ChitCard = ({ selectedGroup, onBack }) => {
   };
 
   const formatCurrency = (amount) => {
+    if (amount == null || amount === '' || isNaN(Number(amount))) return '';
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(Number(amount));
   };
 
   const formatDateNumeric = (dateString, monthKey) => {
@@ -147,19 +155,20 @@ const ChitCard = ({ selectedGroup, onBack }) => {
       <Header 
         title={selectedGroup.groupName}
         onBack={onBack}
+        showBackButton={true}
       />
 
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6B46C1" />
-          <Text style={styles.loadingText}>Loading payment details...</Text>
+          <Text style={[styles.loadingText, language === 'ta' && { fontSize: 14 }]}>{t('Loading payment details...')}</Text>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
           <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#DC2626" />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchMonthlyDetails}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <Text style={styles.retryButtonText}>{t('Try Again')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -167,12 +176,12 @@ const ChitCard = ({ selectedGroup, onBack }) => {
 
           {/* Traditional Chit Details Table */}
           <View style={styles.chitDetailsCard}>
-            <Text style={styles.chitDetailsTitle}>Chit Payment Details</Text>
+            <Text style={[styles.chitDetailsTitle, language === 'ta' && { fontSize: 16 }]}>{t('Chit Payment Details')}</Text>
             
             {monthlyData.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <MaterialCommunityIcons name="folder-open-outline" size={48} color="#9CA3AF" />
-                <Text style={styles.emptyText}>No payment data available</Text>
+                <Text style={styles.emptyText}>{t('No payment data available')}</Text>
               </View>
             ) : (
               <View style={styles.tableContainer}>
@@ -223,12 +232,12 @@ const ChitCard = ({ selectedGroup, onBack }) => {
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.payButton}>
               <MaterialCommunityIcons name="credit-card" size={20} color="#FFFFFF" />
-              <Text style={styles.payButtonText}>Make Payment</Text>
+              <Text style={[styles.payButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Make Payment')}</Text>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.detailsButton} onPress={handleDownloadStatement}>
               <MaterialCommunityIcons name="download" size={20} color="#6B46C1" />
-              <Text style={styles.detailsButtonText}>Download Statement</Text>
+              <Text style={[styles.detailsButtonText, language === 'ta' && { fontSize: 13 }]}>{t('Download Statement')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

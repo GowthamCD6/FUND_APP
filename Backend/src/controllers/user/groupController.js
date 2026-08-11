@@ -11,8 +11,12 @@ const formatDateLocal = (dateStr) => {
 
 // Join Group by Group Code
 exports.joinGroup = async (req, res) => {
-  const userId = req.user.userId || req.user.id;
+  const userId = req.user ? (req.user.userId || req.user.id) : null;
   const { groupCode } = req.body;
+
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: User identification missing' });
+  }
 
   if (!groupCode || !groupCode.trim()) {
     return res.status(400).json({ success: false, message: 'Group code is required' });
@@ -24,9 +28,9 @@ exports.joinGroup = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // 1. Find the group by decrypting stored codes and matching
+    // 1. Find the group by decrypting stored codes and matching with ROW LOCKING
     const [allGroups] = await connection.query(
-      "SELECT id, group_code, group_name, total_members, current_members, group_amount, duration, status FROM `groups` WHERE deleted_at IS NULL"
+      "SELECT id, group_code, group_name, total_members, current_members, group_amount, duration, status FROM `groups` WHERE deleted_at IS NULL FOR UPDATE"
     );
 
     let matchedGroup = null;

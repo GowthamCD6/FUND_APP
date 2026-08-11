@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,21 +12,62 @@ import {
   ActivityIndicator,
   Modal,
   Dimensions,
+  Animated,
 } from 'react-native';
+
+const CardSkeleton = () => {
+  const animatedValue = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  return (
+    <Animated.View style={[styles.skeletonCard, { opacity: animatedValue }]}>
+      <View style={styles.skeletonHeader}>
+        <View style={styles.skeletonTitle} />
+        <View style={styles.skeletonBadge} />
+      </View>
+      <View style={styles.skeletonLineShort} />
+      <View style={styles.skeletonRow}>
+        <View style={styles.skeletonBox} />
+        <View style={styles.skeletonBox} />
+      </View>
+    </Animated.View>
+  );
+};
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BackHandler } from 'react-native';
 import GroupCard from '../../../../../components/GroupCard/GroupCard';
 import Header from '../../../../../components/HeaderComponent/Header';
 import BettingAuction from './BettingAuction/BettingAuction';
 import RandomAuction from './RandomAuction/RandomAuction';
 import ApiService from '../../../../../services/ApiService';
 import AuctionWebSocketService from '../../../../../services/AuctionWebSocketService';
+import { useLanguage } from '../../../../../utils/LanguageContext';
 
 const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupType }) => {
+  const { t, language } = useLanguage();
   const paramGroupId = route?.params?.groupId || selectedGroupId;
   const paramGroupType = route?.params?.auctionType || selectedGroupType;
 
@@ -45,6 +86,30 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
   useEffect(() => {
     fetchUserGroups();
   }, []);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (selectedGroup) {
+        setSelectedGroup(null);
+        setActiveTab('betting');
+        return true;
+      }
+      if (showNotActiveModal) {
+        setShowNotActiveModal(false);
+        setTargetGroupForModal(null);
+        return true;
+      }
+      if (showResultModal) {
+        setShowResultModal(false);
+        return true;
+      }
+      handleBackFromAuction();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, [selectedGroup, showNotActiveModal, showResultModal]);
 
   useEffect(() => {
     if (paramGroupId && userGroups.length > 0) {
@@ -97,9 +162,11 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
     setTargetGroupForModal(group);
     setLiveAmount(group.groupAmount || null);
 
+    const cleanGroupId = encodeURIComponent(String(group.id).trim());
+
     // Fetch members in background
     try {
-      const response = await ApiService.makeRequest(`/user/groups/getMembers?groupId=${group.id}`, { method: 'GET' });
+      const response = await ApiService.makeRequest(`/user/groups/getMembers?groupId=${cleanGroupId}`, { method: 'GET' });
       const data = await response.json();
       if (data && data.success && Array.isArray(data.members)) {
         const transformedMembers = data.members.map(member => ({
@@ -120,7 +187,7 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
     // Check if live auction is active for this group
     let active = false;
     try {
-      const resp = await ApiService.makeRequest(`/user/auctions/active?groupId=${group.id}`, { method: 'GET' });
+      const resp = await ApiService.makeRequest(`/user/auctions/active?groupId=${cleanGroupId}`, { method: 'GET' });
       const auctionData = await resp.json();
       if (auctionData && auctionData.success && auctionData.active) {
         active = true;
@@ -326,9 +393,15 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
   const renderGroupsList = () => {
     if (loadingGroups) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
-          <ActivityIndicator size="large" color="#6B46C1" />
-        </View>
+        <ScrollView 
+          style={styles.groupsContainer}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.groupsContent}
+        >
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </ScrollView>
       );
     }
     return (
@@ -770,6 +843,52 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     fontSize: 14,
     fontWeight: '600',
+  },
+
+  // Skeleton Styles
+  skeletonCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    elevation: 1,
+  },
+  skeletonHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  skeletonTitle: {
+    width: '45%',
+    height: 18,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 6,
+  },
+  skeletonBadge: {
+    width: 60,
+    height: 18,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 10,
+  },
+  skeletonLineShort: {
+    width: '30%',
+    height: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 4,
+    marginBottom: 14,
+  },
+  skeletonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  skeletonBox: {
+    flex: 1,
+    height: 48,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
   },
 });
 

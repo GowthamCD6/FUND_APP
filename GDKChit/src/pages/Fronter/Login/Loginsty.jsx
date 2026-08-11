@@ -4,15 +4,17 @@ const { height, width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#F8F9FD',
+    backgroundColor: '#FFFFFF',
     flex: 1,
   },
   keyboardAvoidingView: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   scrollContainer: {
     flexGrow: 1,
     minHeight: height * 0.9,
+    backgroundColor: '#FFFFFF',
   },
   contentContainer: {
     flex: 1,
@@ -207,6 +209,64 @@ const styles = StyleSheet.create({
     color: '#2842C4',
     fontWeight: '700',
     textDecorationLine: 'underline',
+  },
+
+  // Modal Dialog Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  errorIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#4B5563',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  modalButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#2842C4',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
 

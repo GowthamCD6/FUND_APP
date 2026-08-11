@@ -180,6 +180,8 @@ const MyLocation = ({ navigation }) => {
 
   // Main function to share house address - captures location when pressed
   const shareHouseAddress = async () => {
+    if (loading || savingLocation) return;
+
     try {
       setLoading(true);
 

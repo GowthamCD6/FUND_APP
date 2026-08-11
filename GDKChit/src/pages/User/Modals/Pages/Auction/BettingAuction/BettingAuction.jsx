@@ -13,6 +13,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuctionWebSocketService from '../../../../../../services/AuctionWebSocketService';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const BettingAuction = ({
   participants,
@@ -23,6 +24,7 @@ const BettingAuction = ({
   onAuctionStatusChange,
   onAmountChange,
 }) => {
+  const { t, language } = useLanguage();
   // All useState hooks MUST come first, before any other code
   const [bidAmount, setBidAmount] = useState('');
   const [timeRemaining, setTimeRemaining] = useState(300);
@@ -52,11 +54,12 @@ const BettingAuction = ({
   }, []);
 
   const formatCurrency = useCallback((amount) => {
+    if (amount == null || amount === '' || isNaN(Number(amount))) return '₹0';
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(Number(amount));
   }, []);
 
   const getCurrentLowestBid = useCallback(() => {
@@ -189,13 +192,15 @@ const BettingAuction = ({
   };
 
   const submitBid = useCallback(async () => {
+    if (isSubmittingBid) return;
+
     if (auctionStatus !== 'active') {
-      Alert.alert('Auction Ended', 'This auction has already concluded.');
+      Alert.alert(t('Auction Ended'), t('This auction has already concluded.'));
       return;
     }
 
     if (!bidAmount || parseFloat(bidAmount) <= 0) {
-      Alert.alert('Invalid Bid', 'Please enter a valid bid amount');
+      Alert.alert(t('Invalid Bid'), t('Please enter a valid bid amount'));
       return;
     }
 
@@ -203,12 +208,12 @@ const BettingAuction = ({
     const currentLowest = getCurrentLowestBid();
 
     if (newBid >= currentLowest) {
-      Alert.alert('Error', `Your bid must be lower than ${formatCurrency(currentLowest)}`);
+      Alert.alert(t('Error'), `${t('Your bid must be lower than')} ${formatCurrency(currentLowest)}`);
       return;
     }
 
     if (newBid % 100 !== 0) {
-      Alert.alert('Error', 'Bid amount must be in multiples of ₹100');
+      Alert.alert(t('Error'), t('Bid amount must be in multiples of ₹100'));
       return;
     }
 
@@ -226,11 +231,11 @@ const BettingAuction = ({
       setBidAmount('');
     } catch (error) {
       console.error('Failed to submit bid:', error);
-      Alert.alert('Error', 'Failed to place bid. Please try again.');
+      Alert.alert(t('Error'), t('Failed to place bid. Please try again.'));
     } finally {
       setIsSubmittingBid(false);
     }
-  }, [auctionStatus, bidAmount, getCurrentLowestBid, formatCurrency, selectedGroup]);
+  }, [auctionStatus, bidAmount, getCurrentLowestBid, formatCurrency, selectedGroup, isSubmittingBid, t]);
 
   const quickBid = useCallback((decrement) => {
     const newAmount = getCurrentLowestBid() - decrement;

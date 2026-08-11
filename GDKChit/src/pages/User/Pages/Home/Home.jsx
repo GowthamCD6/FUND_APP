@@ -25,9 +25,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import ChitPlans from '../Home/Chit Plans/ChitPlans';
 import ApiService from '../../../../services/ApiService';
 import styles from './Homesty';
+import { useLanguage } from '../../../../utils/LanguageContext';
 
-const t = (value) => value;
-const language = 'en';
 const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 47 : (StatusBar.currentHeight || 0);
 
 const iconMap = {
@@ -137,6 +136,7 @@ const initialIndex = plans.length; // Start from middle set
 
 const Home = () => {
   const navigation = useNavigation();
+  const { t, language } = useLanguage();
   const [userName, setUserName] = useState('User Name');
   const [totalInvested, setTotalInvested] = useState('');
   const [showAllPlans, setShowAllPlans] = useState(false);
@@ -280,6 +280,15 @@ const Home = () => {
       const storedName = await AsyncStorage.getItem('userName');
       if (storedName) {
         setUserName(storedName);
+      }
+
+      // Fetch user profile from ApiService.getProfile() for dynamic name updates
+      const profileRes = await ApiService.getProfile();
+      if (profileRes?.success && profileRes?.data?.user) {
+        const u = profileRes.data.user;
+        const name = u.name || u.username || storedName || 'User Name';
+        setUserName(name);
+        await AsyncStorage.setItem('userName', name);
       }
 
       // Fetch portfolio data for total investment sum

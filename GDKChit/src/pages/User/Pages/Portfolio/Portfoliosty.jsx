@@ -20,12 +20,14 @@ const styles = StyleSheet.create({
   scrollableContent: {
     flex: 1,
     paddingHorizontal: 16,
-    marginBottom: 90,
     paddingTop: 0,
+  },
+  scrollableContentContainer: {
+    paddingBottom: 65, // Reduced bottom space for cleaner layout above bottom tab limit
   },
   scrollView: {
     paddingHorizontal: 16,
-    marginBottom: 110, // Add bottom padding to prevent content hiding behind bottom tab navigation
+    paddingBottom: 65,
   },
   section: {
     marginTop: 18,

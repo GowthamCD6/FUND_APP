@@ -20,7 +20,7 @@ import LinkBA from './Page/LinkBankAccount/LinkBankAccount';
 import IdentityV from './Page/Verification/IdentityVerification';
 import ShareModal from './Modals/Share';
 import RateModal from './Modals/Rate';
-import { Animated, Dimensions } from 'react-native';
+import { Animated, Dimensions, BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { navigate as navigateRef } from '../../../../utils/navigation';
@@ -49,6 +49,24 @@ const Profile = () => {
     });
     return () => scrollSub.remove();
   }, []);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (showShareModal) {
+        setShowShareModal(false);
+        return true;
+      }
+      if (showRateModal) {
+        setShowRateModal(false);
+        return true;
+      }
+      navigation.navigate('Home');
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, [showShareModal, showRateModal, navigation]);
 
   const getProfileImageUrl = (img) => {
     if (!img) return null;
@@ -131,17 +149,30 @@ const Profile = () => {
     ? `${profileUser.role} account`
     : 'Chit Fund account';
 
-  const handleLogout = async () => {
-    try {
-      await AsyncStorage.clear();
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Welcome' }],
-      });
-    } catch (error) {
-      Alert.alert('Error', 'Failed to logout. Please try again.');
-      console.error('Logout error:', error);
-    }
+  const handleLogout = () => {
+    Alert.alert(
+      t('Logout'),
+      t('Are you sure you want to log out?'),
+      [
+        { text: t('Cancel'), style: 'cancel' },
+        {
+          text: t('Logout'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Welcome' }],
+              });
+            } catch (error) {
+              Alert.alert(t('Error'), t('Failed to logout. Please try again.'));
+              console.error('Logout error:', error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -151,7 +182,7 @@ const Profile = () => {
       <View style={{ flex: 1 }}>
         {/* Profile Content */}
         <Header
-          title="My Profile"
+          title={t('My Profile')}
           onBack={() => navigation.navigate('Home')}
         />
 
