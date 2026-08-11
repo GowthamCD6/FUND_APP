@@ -36,7 +36,11 @@ const getElapsedMonths = (startDateStr) => {
 };
 
 exports.getPortfolio = async (req, res) => {
-  const userId = req.user.userId || req.user.id;
+  const userId = req.user ? (req.user.userId || req.user.id) : null;
+
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: Invalid or missing user credentials' });
+  }
 
   try {
     const [rows] = await db.promise().query(

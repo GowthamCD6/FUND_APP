@@ -12,18 +12,16 @@ import {
   Dimensions,
   BackHandler
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';;
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 
 const HelpSupport = ({ navigation }) => {
   const [expandedFAQ, setExpandedFAQ] = useState(null);
 
-  // Handle hardware back button to navigate back to profile page
   useEffect(() => {
     const backAction = () => {
-      navigation.goBack(); // Navigate back to profile page
-      return true; // Prevent default back action
+      navigation.goBack();
+      return true;
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
@@ -72,7 +70,7 @@ const HelpSupport = ({ navigation }) => {
       question: "What if I miss a monthly payment?",
       questionTamil: "மாதாந்திர பணம் செலுத்த தவறினால் என்ன நடக்கும்?",
       answer: "The app will send reminder notifications before due dates. Late payments may incur penalty charges. Contact support through the app's chat feature if you face payment difficulties - we can discuss flexible options.",
-      answerTamil: "பயன்பாடு காலாவधிக்கு முன் நினைவூட்டல் அறிவிப்புகளை அனுப்பும். தாமதமான பணம் செலுத்துதல் அபராத கட்டணங்களை ஏற்படுத்தலாம்."
+      answerTamil: "பயன்பாடு காலாவதிக்கு முன் நினைவூட்டல் அறிவிப்புகளை அனுப்பும். தாமதமான பணம் செலுத்துதல் அபராத கட்டணங்களை ஏற்படுத்தலாம்."
     },
     {
       id: 7,
@@ -90,14 +88,12 @@ const HelpSupport = ({ navigation }) => {
     }
   ];
 
-
-
   const toggleFAQ = (id) => {
     setExpandedFAQ(expandedFAQ === id ? null : id);
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#6B46C1" />
 
       {/* Header */}
@@ -111,10 +107,7 @@ const HelpSupport = ({ navigation }) => {
           </View>
         </View>
       </View>
-
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-
-        {/* Hero Section with Gradient Background */}
         <View style={styles.heroSection}>
           <View style={styles.heroContent}>
             <View style={styles.heroIconContainer}>
@@ -364,7 +357,7 @@ const HelpSupport = ({ navigation }) => {
         </View>
 
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

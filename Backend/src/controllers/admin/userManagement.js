@@ -28,11 +28,13 @@ exports.addUser = async (req, res) => {
         const encryptAES = passwordEncryptAES(plainPassword);
         const finalHashedPassword = await bcrypt.hash(encryptAES, 12);
 
+        const normalizedRole = (role || 'user').toLowerCase() === 'admin' ? 'Admin' : 'User';
+
         const [result] = await db
             .promise()
             .query(
                 'INSERT INTO users (name, phone, password, role, created_by) VALUES (?, ?, ?, ?, ?)',
-                [name || null, phone, finalHashedPassword, role || 'User', adminId ? Number(adminId) : null]
+                [name || null, phone, finalHashedPassword, normalizedRole, adminId ? Number(adminId) : null]
             );
 
         if (result.affectedRows === 0) {
@@ -41,22 +43,45 @@ exports.addUser = async (req, res) => {
 
         const userId = result.insertId;
 
+        // Insert into user_profiles for date of birth tracking
+        try {
+            const dobDate = `${yob}-01-01`;
+            await db.promise().query(
+                `INSERT INTO user_profiles (user_id, name, date_of_birth, created_by)
+                 VALUES (?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE date_of_birth = VALUES(date_of_birth), name = VALUES(name)`,
+                [userId, name || 'User', dobDate, adminId ? Number(adminId) : null]
+            );
+        } catch (profileErr) {
+            console.error('Error inserting user_profile on addUser:', profileErr);
+        }
+
         // Log audit event
         await logAuditEvent(req, {
             actionType: 'INSERT',
             tableName: 'users',
             recordId: userId,
-            newValues: { name, phone, role }
+            newValues: { name, phone, role: normalizedRole }
         });
 
         // Auto-add new user to Global Community chat room
-        await addUserToGlobalCommunity(userId, role === 'Admin' ? 'Admin' : 'Member');
+        await addUserToGlobalCommunity(userId, normalizedRole === 'Admin' ? 'Admin' : 'Member');
 
-        return res.status(200).json({ success: true, message: 'User added to group' });
+        return res.status(200).json({ success: true, message: 'User added successfully' });
     } catch (error) {
         console.error('Error adding user:', error);
         return res.status(500).json({ success: false, message: 'Failed to add user' });
     }
+};
+
+const formatDateString = (dateVal) => {
+    if (!dateVal) return 'N/A';
+    const d = new Date(dateVal);
+    if (Number.isNaN(d.getTime())) return String(dateVal).split('T')[0] || 'N/A';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 };
 
 exports.getAllUsers = async (req, res) => {
@@ -66,6 +91,7 @@ exports.getAllUsers = async (req, res) => {
         const query = `
             SELECT 
                 u.id, u.name, u.nick_name, u.phone, u.mail, u.role, u.created_at, u.is_active, u.block_reason,
+                up.date_of_birth,
                 (
                     SELECT GROUP_CONCAT(g.group_name SEPARATOR ', ')
                     FROM user_grouping ug
@@ -73,6 +99,7 @@ exports.getAllUsers = async (req, res) => {
                     WHERE ug.user_id = u.id AND g.deleted_at IS NULL
                 ) AS contributed_groups
             FROM users u
+            LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
             WHERE u.deleted_at IS NULL
         `;
         const results = await db.promise().query(query);
@@ -84,8 +111,8 @@ exports.getAllUsers = async (req, res) => {
             phone: user.phone,
             email: user.mail,
             type: user.role,
-            joinedDate: user.created_at,
-            dateOfBirth: '00-00-0000',
+            joinedDate: formatDateString(user.created_at),
+            dateOfBirth: user.date_of_birth ? formatDateString(user.date_of_birth) : 'N/A',
             contributedGroups: user.contributed_groups || 'None',
             isActive: user.is_active,
             blockReason: user.block_reason
@@ -128,6 +155,79 @@ exports.deleteUser = async (req, res) => {
     } catch (error) {
         console.error('Error deleting user:', error);
         return res.status(500).json({ success: false, message: 'Failed to delete user' });
+    }
+};
+
+exports.updateUser = async (req, res) => {
+    const { userId, name, phone, type, nickname, dateOfBirth, yearOfBirth } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
+
+    const targetUserId = Number(userId);
+    if (Number.isNaN(targetUserId)) {
+        return res.status(400).json({ success: false, message: 'Invalid userId' });
+    }
+
+    try {
+        // Fetch old user details for audit log
+        const [[oldUser]] = await db.promise().query(
+            'SELECT name, nick_name, phone, role FROM users WHERE id = ? AND deleted_at IS NULL',
+            [targetUserId]
+        );
+
+        if (!oldUser) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const sql = `
+            UPDATE users
+            SET name = ?,
+                nick_name = ?,
+                phone = ?,
+                role = ?,
+                updated_by = ?,
+                version = version + 1
+            WHERE id = ? AND deleted_at IS NULL
+        `;
+
+        const roleVal = type ? (type.toLowerCase() === 'admin' ? 'Admin' : 'User') : oldUser.role;
+
+        const params = [
+            name !== undefined ? name : oldUser.name,
+            nickname !== undefined ? nickname : oldUser.nick_name,
+            phone !== undefined ? phone : oldUser.phone,
+            roleVal,
+            adminId ? Number(adminId) : null,
+            targetUserId,
+        ];
+
+        await db.promise().query(sql, params);
+
+        // Update user_profiles date_of_birth
+        const dobInput = dateOfBirth || yearOfBirth;
+        if (dobInput) {
+            const formattedDob = String(dobInput).length === 4 ? `${dobInput}-01-01` : String(dobInput);
+            await db.promise().query(`
+                INSERT INTO user_profiles (user_id, name, date_of_birth, created_by)
+                VALUES (?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    date_of_birth = VALUES(date_of_birth),
+                    name = VALUES(name),
+                    updated_at = NOW()
+            `, [targetUserId, name || oldUser.name || 'User', formattedDob, adminId ? Number(adminId) : null]);
+        }
+
+        await logAuditEvent(req, {
+            actionType: 'UPDATE_USER',
+            tableName: 'users',
+            recordId: targetUserId,
+            oldValues: oldUser,
+            newValues: { name, nickname, phone, type: roleVal }
+        });
+
+        return res.status(200).json({ success: true, message: 'User updated successfully' });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        return res.status(500).json({ success: false, message: 'Failed to update user' });
     }
 };
 
@@ -337,6 +437,10 @@ exports.blockUser = async (req, res) => {
 
     if (!userId || !reason) {
         return res.status(400).json({ success: false, message: 'User ID and block reason are required' });
+    }
+
+    if (adminId && Number(userId) === Number(adminId)) {
+        return res.status(400).json({ success: false, message: 'Admins cannot block their own account' });
     }
 
     try {

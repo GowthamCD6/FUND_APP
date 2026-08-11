@@ -19,10 +19,22 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LottieView from 'lottie-react-native';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const { height } = Dimensions.get('window');
 
+const escapeHtml = (str) => {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 const DataExport = () => {
+  const { t } = useLanguage();
   const navigation = useNavigation();
   const [exportType, setExportType] = useState('users'); // 'users' or 'groups'
   const [selectionMode, setSelectionMode] = useState('all'); // 'all' or 'specific'
@@ -99,6 +111,8 @@ const DataExport = () => {
   };
 
   const handleExport = async () => {
+    if (loadingType !== null) return;
+
     if (selectionMode === 'specific' && selectedIds.length === 0) {
       alert(`Please select at least one ${exportType.slice(0, -1)} to export.`);
       return;
@@ -121,7 +135,8 @@ const DataExport = () => {
           // Fetch deep data for specific groups (like members)
           const enrichedGroups = await Promise.all(baseGroups.map(async (g) => {
             try {
-              const res = await ApiService.makeRequest(`/admin/groups/getMembers?groupId=${g.id || g.groupId}`, { method: 'GET' }).then(r => r.json());
+              const cleanGroupId = encodeURIComponent(String(g.id || g.groupId).trim());
+              const res = await ApiService.makeRequest(`/admin/groups/getMembers?groupId=${cleanGroupId}`, { method: 'GET' }).then(r => r.json());
               if (res.success && res.members) {
                 const memberNames = res.members.map(m => m.name).join(' | ');
                 return { ...g, MembersList: memberNames };
@@ -251,25 +266,25 @@ const DataExport = () => {
           </head>
           <body>
             <div class="header">
-              <div class="title">${htmlTitle}</div>
+              <div class="title">${escapeHtml(htmlTitle)}</div>
               <div class="subtitle">GDK Chit Management System — Export details</div>
             </div>
             <table>
               <thead>
                 <tr>
-                  ${headers.map(h => `<th>${h}</th>`).join('')}
+                  ${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}
                 </tr>
               </thead>
               <tbody>
                 ${cleanedData.map(row => `
                   <tr>
-                    ${headers.map(h => `<td>${row[h]}</td>`).join('')}
+                    ${headers.map(h => `<td>${escapeHtml(row[h])}</td>`).join('')}
                   </tr>
                 `).join('')}
               </tbody>
             </table>
             <div class="footer">
-              Generated automatically on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString()}
+              Generated automatically on ${escapeHtml(new Date().toLocaleDateString('en-GB'))} at ${escapeHtml(new Date().toLocaleTimeString())}
             </div>
           </body>
         </html>
@@ -296,12 +311,15 @@ const DataExport = () => {
           UTI: 'com.adobe.pdf',
         });
       } else {
-        // Fallback to CSV string sharing using native Share API
-        const csvHeader = headers.join(',') + '\n';
+        // Fallback to CSV string sharing with CSV Formula Injection protection
+        const csvHeader = headers.map(h => escapeHtml(h)).join(',') + '\n';
         const csvRows = cleanedData.map(row => 
           headers.map(h => {
-            let val = row[h] || '';
-            val = String(val).replace(/"/g, '""');
+            let val = String(row[h] || '');
+            if (/^[=+\-@]/.test(val)) {
+              val = `'${val}`;
+            }
+            val = val.replace(/"/g, '""');
             if (val.includes(',') || val.includes('\n') || val.includes('"')) {
               val = `"${val}"`;
             }
@@ -358,7 +376,7 @@ const DataExport = () => {
   return (
     <View style={styles.container}>
       <Header 
-        title="Data Export"
+        title={t('Data Export')}
         onBack={() => {
           navigation.goBack();
         }}
@@ -373,14 +391,14 @@ const DataExport = () => {
             onPress={() => { setExportType('users'); setSelectedIds([]); setSearchQuery(''); }}
           >
             <MaterialCommunityIcons name="account-group" size={20} color={exportType === 'users' ? '#FFF' : '#6B7280'} />
-            <Text style={[styles.tabText, exportType === 'users' && styles.tabTextActive]}>Users Data</Text>
+            <Text style={[styles.tabText, exportType === 'users' && styles.tabTextActive]}>{t('Users Data')}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.tabButton, exportType === 'groups' && styles.tabButtonActive]}
             onPress={() => { setExportType('groups'); setSelectedIds([]); setSearchQuery(''); }}
           >
             <MaterialCommunityIcons name="view-grid" size={20} color={exportType === 'groups' ? '#FFF' : '#6B7280'} />
-            <Text style={[styles.tabText, exportType === 'groups' && styles.tabTextActive]}>Groups Data</Text>
+            <Text style={[styles.tabText, exportType === 'groups' && styles.tabTextActive]}>{t('Groups Data')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -406,7 +424,7 @@ const DataExport = () => {
               color={selectionMode === 'all' ? '#6B46C1' : '#9CA3AF'} 
             />
             <View style={styles.radioTextContainer}>
-              <Text style={styles.radioTitle}>Export All</Text>
+              <Text style={styles.radioTitle}>{t('Export All')}</Text>
               <Text style={styles.radioDesc}>Exports complete list of all {exportType}.</Text>
             </View>
           </TouchableOpacity>
@@ -421,7 +439,7 @@ const DataExport = () => {
               color={selectionMode === 'specific' ? '#6B46C1' : '#9CA3AF'} 
             />
             <View style={styles.radioTextContainer}>
-              <Text style={styles.radioTitle}>Export Specific</Text>
+              <Text style={styles.radioTitle}>{t('Export Specific')}</Text>
               <Text style={styles.radioDesc}>Select specific {exportType} to export detailed data.</Text>
             </View>
           </TouchableOpacity>
@@ -437,7 +455,7 @@ const DataExport = () => {
                 color="#6B46C1" 
               />
               <Text style={styles.selectionCardTitle}>
-                Selected {exportType.charAt(0).toUpperCase() + exportType.slice(1)}
+                {t('Selected:')} {exportType.charAt(0).toUpperCase() + exportType.slice(1)}
               </Text>
             </View>
 
@@ -475,7 +493,7 @@ const DataExport = () => {
             >
               <MaterialCommunityIcons name="filter-plus" size={18} color="#FFFFFF" />
               <Text style={styles.openModalButtonText}>
-                Select {exportType.charAt(0).toUpperCase() + exportType.slice(1)}
+                {t('Select Specific')} ({exportType})
               </Text>
             </TouchableOpacity>
           </View>
@@ -495,7 +513,7 @@ const DataExport = () => {
             <>
               <MaterialCommunityIcons name="export" size={20} color="#FFF" />
               <Text style={styles.exportButtonText}>
-                Generate & Export PDF
+                {t('Generate & Export PDF')}
               </Text>
             </>
           )}

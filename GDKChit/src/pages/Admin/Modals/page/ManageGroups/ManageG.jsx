@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   RefreshControl,
   Modal,
   Alert,
+  Animated,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './ManageGsty';
@@ -14,108 +15,73 @@ import GroupInfoAdmin from './GroupManagement/GroupInfo.jsx';
 import ApiService from '../../../../../services/ApiService';
 import Header from '../../../../../components/HeaderComponent/Header';
 
+const SkeletonBox = ({ width, height, borderRadius = 6, style }) => {
+  const animatedValue = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 0.85,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0.3,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: '#CBD5E1',
+          opacity: animatedValue,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+const GroupCardSkeleton = () => (
+  <View style={[styles.groupCard, { padding: 16 }]}>
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <SkeletonBox width={160} height={18} borderRadius={4} />
+      <SkeletonBox width={75} height={20} borderRadius={10} />
+    </View>
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+      <SkeletonBox width={110} height={14} borderRadius={4} />
+      <SkeletonBox width={110} height={14} borderRadius={4} />
+    </View>
+    <View style={{ gap: 6, marginBottom: 12 }}>
+      <SkeletonBox width="100%" height={8} borderRadius={4} />
+    </View>
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 8, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+      <SkeletonBox width={100} height={12} borderRadius={4} />
+      <SkeletonBox width={120} height={12} borderRadius={4} />
+    </View>
+  </View>
+);
+
 const ManageGroups = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('Active');
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [showGroupDetails, setShowGroupDetails] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
   const [longPressedGroup, setLongPressedGroup] = useState(null);
-
-  // Sample data - replace with actual API calls
-  const sampleGroups = [
-    {
-      id: 1,
-      name: 'Business Investment Group',
-      status: 'ctive',
-      totalMembers: 20,
-      currentMembers: 18,
-      completedCycles: 8,
-      totalCycles: 20,
-      monthlyAmount: 10000,
-      groupAmount: 200000,
-      startDate: '2024-01-15',
-      nextDueDate: '2024-11-15',
-      collectedAmount: 1600000,
-      remainingAmount: 400000,
-      groupCode: 'GRP001',
-      createdBy: 'Admin',
-      createdDate: '2024-01-10',
-    },
-    {
-      id: 2,
-      name: 'Family Savings Circle',
-      status: 'active',
-      totalMembers: 12,
-      currentMembers: 12,
-      completedCycles: 3,
-      totalCycles: 12,
-      monthlyAmount: 5000,
-      groupAmount: 60000,
-      startDate: '2024-08-01',
-      nextDueDate: '2024-11-01',
-      collectedAmount: 180000,
-      remainingAmount: 420000,
-      groupCode: 'GRP002',
-      createdBy: 'Admin',
-      createdDate: '2024-07-25',
-    },
-    {
-      id: 3,
-      name: 'Student Education Fund',
-      status: 'not-started',
-      totalMembers: 15,
-      currentMembers: 8,
-      completedCycles: 0,
-      totalCycles: 15,
-      monthlyAmount: 3000,
-      groupAmount: 45000,
-      startDate: '2024-12-01',
-      nextDueDate: null,
-      collectedAmount: 0,
-      remainingAmount: 675000,
-      groupCode: 'GRP003',
-      createdBy: 'Admin',
-      createdDate: '2024-10-01',
-    },
-    {
-      id: 4,
-      name: 'Women Empowerment Fund',
-      status: 'not-started',
-      totalMembers: 10,
-      currentMembers: 5,
-      completedCycles: 0,
-      totalCycles: 10,
-      monthlyAmount: 8000,
-      groupAmount: 80000,
-      startDate: '2024-12-15',
-      nextDueDate: null,
-      collectedAmount: 0,
-      remainingAmount: 800000,
-      groupCode: 'GRP004',
-      createdBy: 'Admin',
-      createdDate: '2024-10-05',
-    },
-    {
-      id: 5,
-      name: 'Retirement Planning Group',
-      status: 'active',
-      totalMembers: 25,
-      currentMembers: 25,
-      completedCycles: 12,
-      totalCycles: 25,
-      monthlyAmount: 15000,
-      groupAmount: 375000,
-      startDate: '2023-11-01',
-      nextDueDate: '2024-11-01',
-      collectedAmount: 4500000,
-      remainingAmount: 4875000,
-      groupCode: 'GRP005',
-      createdBy: 'Admin',
-      createdDate: '2023-10-20',
-    },
-  ];
 
   useEffect(() => {
     loadGroups();
@@ -142,14 +108,24 @@ const ManageGroups = ({ onBack }) => {
       const mapped = (result.data || result.groups || []).map(g => {
         const totalNum = Number(g.totalMembers || g.total_members) || 1;
         const totalAmount = Number(g.groupAmount || g.group_amount) || 0;
+        const completed = Number(g.completedCycles) || 0;
+
+        const rawStatus = String(g.status || '').toLowerCase().trim();
+        let status = 'Active';
+        if (rawStatus.includes('not started') || rawStatus === 'not-started') {
+          status = 'Not Started';
+        } else if (rawStatus === 'completed' || (completed > 0 && completed >= totalNum)) {
+          status = 'Completed';
+        }
+
         return {
           ...g,
           id: g.id,
           name: g.name || g.group_name || 'Untitled',
-          status: g.status === 'Not Started' || g.status === 'not started' || g.status === 'not-started' ? 'Not Started' : 'Active',
+          status,
           totalMembers: g.totalMembers !== undefined ? g.totalMembers : (g.total_members !== undefined ? g.total_members : 0),
           currentMembers: g.currentMembers !== undefined ? g.currentMembers : (g.current_members !== undefined ? g.current_members : 0),
-          completedCycles: g.completedCycles || 0,
+          completedCycles: completed,
           duration: g.duration || totalNum || 20,
           totalCycles: g.duration || totalNum || 20,
           monthlyAmount: g.monthly_amount || Math.round(totalAmount / (g.duration || totalNum)),
@@ -165,16 +141,17 @@ const ManageGroups = ({ onBack }) => {
       });
 
       setGroups(mapped);
-      console.log(mapped);
     } catch (error) {
       console.error('Error fetching groups:', error);
-      setGroups([]); // Fallback to sample data on error
+      setGroups([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    loadGroups();
+    await loadGroups();
     setRefreshing(false);
   };
 
@@ -188,6 +165,8 @@ const ManageGroups = ({ onBack }) => {
         return '#10B981';
       case 'Not Started':
         return '#F59E0B';
+      case 'Completed':
+        return '#3B82F6';
       default:
         return '#6B7280';
     }
@@ -199,27 +178,67 @@ const ManageGroups = ({ onBack }) => {
         return 'progress-clock';
       case 'Not Started':
         return 'clock-outline';
+      case 'Completed':
+        return 'check-decagram';
       default:
         return 'help-circle';
     }
   };
 
   const openGroupDetails = group => {
-    // console.log(group);
-
     setSelectedGroup(group);
     setShowGroupDetails(true);
   };
 
   const handleLongPress = group => {
-    if (group.status === 'Not Started') {
-      setLongPressedGroup(group);
-      setShowActionModal(true);
+    setLongPressedGroup(group);
+    setShowActionModal(true);
+  };
+
+  const executeActivation = async (groupId) => {
+    try {
+      const response = await ApiService.makeRequest('/admin/groups/activate', {
+        method: 'POST',
+        body: JSON.stringify({ groupId }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to activate group');
+      }
+
+      setGroups(prevGroups =>
+        prevGroups.map(g =>
+          g.id === groupId
+            ? { ...g, status: 'Active' }
+            : g
+        )
+      );
+
+      Alert.alert('Success', 'Group activated successfully');
+      setLongPressedGroup(null);
+    } catch (error) {
+      console.error('Error activating group:', error);
+      Alert.alert('Error', error?.message || 'Failed to activate group. Please try again later.');
     }
   };
 
   const handleActivateGroup = async () => {
     setShowActionModal(false);
+    if (!longPressedGroup) return;
+
+    if (longPressedGroup.currentMembers === 0) {
+      Alert.alert(
+        'Warning: Zero Members',
+        `"${longPressedGroup.name}" currently has 0 members enrolled. Are you sure you want to activate it?`,
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => setLongPressedGroup(null) },
+          { text: 'Activate Anyway', onPress: () => executeActivation(longPressedGroup.id) },
+        ]
+      );
+      return;
+    }
 
     Alert.alert(
       'Activate Group',
@@ -233,35 +252,7 @@ const ManageGroups = ({ onBack }) => {
         {
           text: 'Activate',
           style: 'default',
-          onPress: async () => {
-            try {
-              const response = await ApiService.makeRequest('/admin/groups/activate', {
-                method: 'POST',
-                body: JSON.stringify({ groupId: longPressedGroup.id }),
-              });
-
-              const result = await response.json();
-
-              if (!response.ok || !result.success) {
-                throw new Error(result.message || 'Failed to activate group');
-              }
-
-              // Update locally after successful backend confirmation
-              setGroups(prevGroups =>
-                prevGroups.map(g =>
-                  g.id === longPressedGroup.id
-                    ? { ...g, status: 'Active' }
-                    : g
-                )
-              );
-
-              Alert.alert('Success', 'Group activated successfully');
-              setLongPressedGroup(null);
-            } catch (error) {
-              console.error('Error activating group:', error);
-              Alert.alert('Error', error.message || 'Failed to activate group. Please try again later.');
-            }
-          },
+          onPress: () => executeActivation(longPressedGroup.id),
         },
       ]
     );
@@ -269,10 +260,20 @@ const ManageGroups = ({ onBack }) => {
 
   const handleDeleteGroup = async () => {
     setShowActionModal(false);
+    if (!longPressedGroup) return;
+
+    if (longPressedGroup.status === 'Active' && (longPressedGroup.collectedAmount > 0 || longPressedGroup.completedCycles > 0)) {
+      Alert.alert(
+        'Cannot Delete Active Group',
+        `"${longPressedGroup.name}" is currently active with ongoing payments or completed cycles. You cannot delete active financial groups directly.`
+      );
+      setLongPressedGroup(null);
+      return;
+    }
 
     Alert.alert(
-      'Delete Group',
-      `Are you sure you want to delete "${longPressedGroup.name}"? This action cannot be undone.`,
+      'Delete Group & Chat Room',
+      `Are you sure you want to delete "${longPressedGroup.name}"? Deleting this group will permanently remove it and its linked chat room for all members. This action cannot be undone.`,
       [
         {
           text: 'Cancel',
@@ -285,17 +286,16 @@ const ManageGroups = ({ onBack }) => {
           onPress: async () => {
             try {
               const response = await ApiService.makeRequest('/admin/groups/delete', {
-                method: 'POST', // Backend route maps to POST /groups/delete
+                method: 'POST',
                 body: JSON.stringify({ groupId: longPressedGroup.id }),
               });
 
               const result = await response.json();
 
               if (!response.ok || !result.success) {
-                throw new Error(result.message || 'Failed to delete group');
+                throw new Error(result?.message || 'Failed to delete group');
               }
 
-              // Update locally after successful backend confirmation
               setGroups(prevGroups =>
                 prevGroups.filter(g => g.id !== longPressedGroup.id)
               );
@@ -304,7 +304,7 @@ const ManageGroups = ({ onBack }) => {
               setLongPressedGroup(null);
             } catch (error) {
               console.error('Error deleting group:', error);
-              Alert.alert('Error', 'Failed to delete group. Please try again later.');
+              Alert.alert('Error', error?.message || 'Failed to delete group. Please try again later.');
             }
           },
         },
@@ -342,7 +342,7 @@ const ManageGroups = ({ onBack }) => {
         delayLongPress={500}
         activeOpacity={1}
         style={{ flex: 1 }}>
-        {/* Header with Group Name and Arrow */}
+        {/* Header with Group Name and Status */}
         <View style={styles.groupCardHeader}>
           <View style={styles.groupNameContainer}>
             <Text style={styles.groupName}>{item.name}</Text>
@@ -352,12 +352,12 @@ const ManageGroups = ({ onBack }) => {
                 { backgroundColor: getStatusColor(item.status) },
               ]}>
               <MaterialCommunityIcons
-                name="clock-outline"
+                name={getStatusIcon(item.status)}
                 size={10}
                 color="#FFFFFF"
               />
               <Text style={styles.statusText}>
-                {item.status === 'Not Started' ? 'NOT STARTED' : 'ACTIVE'}
+                {item.status.toUpperCase()}
               </Text>
             </View>
           </View>
@@ -399,8 +399,8 @@ const ManageGroups = ({ onBack }) => {
             </View>
           </View>
 
-          {/* Progress Section - Only for Active Groups */}
-          {item.status === 'Active' && (
+          {/* Progress Section - For Active & Completed Groups */}
+          {(item.status === 'Active' || item.status === 'Completed') && (
             <View style={styles.progressContainer}>
               <View style={styles.progressHeader}>
                 <Text style={styles.progressText}>
@@ -415,6 +415,7 @@ const ManageGroups = ({ onBack }) => {
                   style={[
                     styles.progressFill,
                     {
+                      backgroundColor: item.status === 'Completed' ? '#3B82F6' : '#10B981',
                       width: `${getProgressPercentage(
                         item.completedCycles,
                         item.totalCycles,
@@ -431,10 +432,12 @@ const ManageGroups = ({ onBack }) => {
             <Text style={styles.groupDate}>
               {item.status === 'Active'
                 ? `Next Due: ${formatDate(item.nextDueDate)}`
-                : `Start Date: ${formatDate(item.startDate)}`}
+                : item.status === 'Completed'
+                  ? `Completed On: ${formatDate(item.endDate || item.nextDueDate)}`
+                  : `Start Date: ${formatDate(item.startDate)}`}
             </Text>
             <Text style={styles.groupAmount}>
-              {item.status === 'Active'
+              {item.status === 'Active' || item.status === 'Completed'
                 ? `${formatCurrency(item.collectedAmount)} collected`
                 : `${formatCurrency(item.groupAmount)} total`}
             </Text>
@@ -447,7 +450,8 @@ const ManageGroups = ({ onBack }) => {
   const getTabCounts = () => {
     const active = groups.filter(g => g.status === 'Active').length;
     const notStarted = groups.filter(g => g.status === 'Not Started').length;
-    return { active, notStarted };
+    const completed = groups.filter(g => g.status === 'Completed').length;
+    return { active, notStarted, completed };
   };
 
   const tabCounts = getTabCounts();
@@ -460,6 +464,7 @@ const ManageGroups = ({ onBack }) => {
         onSave={data => {
           console.log('Group data updated:', data);
           setShowGroupDetails(false);
+          loadGroups();
         }}
       />
     );
@@ -480,7 +485,7 @@ const ManageGroups = ({ onBack }) => {
               styles.tabText,
               activeTab === 'Active' && styles.activeTabText,
             ]}>
-            Active Groups ({tabCounts.active})
+            Active ({tabCounts.active})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -494,36 +499,57 @@ const ManageGroups = ({ onBack }) => {
             Not Started ({tabCounts.notStarted})
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'Completed' && styles.activeTab]}
+          onPress={() => setActiveTab('Completed')}>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'Completed' && styles.activeTabText,
+            ]}>
+            Completed ({tabCounts.completed})
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Groups List */}
-      <FlatList
-        data={getFilteredGroups()}
-        renderItem={renderGroupCard}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons
-              name="account-group-outline"
-              size={80}
-              color="#D1D5DB"
-            />
-            <Text style={styles.emptyText}>
-              No {activeTab === 'Active' ? 'Active' : 'Pending'} groups found
-            </Text>
-            <Text style={styles.emptySubText}>
-              {activeTab === 'Active'
-                ? 'Create a new group to get started'
-                : 'Groups will appear here once created'}
-            </Text>
-          </View>
-        )}
-      />
+      {isLoading ? (
+        <View style={styles.listContainer}>
+          <GroupCardSkeleton />
+          <GroupCardSkeleton />
+          <GroupCardSkeleton />
+        </View>
+      ) : (
+        <FlatList
+          data={getFilteredGroups()}
+          renderItem={renderGroupCard}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons
+                name="account-group-outline"
+                size={80}
+                color="#D1D5DB"
+              />
+              <Text style={styles.emptyText}>
+                No {activeTab} groups found
+              </Text>
+              <Text style={styles.emptySubText}>
+                {activeTab === 'Active'
+                  ? 'Create a new group to get started'
+                  : activeTab === 'Completed'
+                    ? 'Completed groups will appear here'
+                    : 'Groups will appear here once created'}
+              </Text>
+            </View>
+          )}
+        />
+      )}
 
       {/* Action Modal */}
       <Modal
@@ -549,18 +575,22 @@ const ManageGroups = ({ onBack }) => {
               </Text>
             </View>
 
-            <TouchableOpacity
-              style={styles.modalActionButton}
-              onPress={handleActivateGroup}>
-              <MaterialCommunityIcons
-                name="play-circle"
-                size={24}
-                color="#10B981"
-              />
-              <Text style={styles.modalActionText}>Activate Group</Text>
-            </TouchableOpacity>
+            {longPressedGroup?.status === 'Not Started' && (
+              <>
+                <TouchableOpacity
+                  style={styles.modalActionButton}
+                  onPress={handleActivateGroup}>
+                  <MaterialCommunityIcons
+                    name="play-circle"
+                    size={24}
+                    color="#10B981"
+                  />
+                  <Text style={styles.modalActionText}>Activate Group</Text>
+                </TouchableOpacity>
 
-            <View style={styles.modalDivider} />
+                <View style={styles.modalDivider} />
+              </>
+            )}
 
             <TouchableOpacity
               style={styles.modalActionButton}
@@ -586,98 +616,6 @@ const ManageGroups = ({ onBack }) => {
           </View>
         </TouchableOpacity>
       </Modal>
-    </View>
-  );
-};
-
-// Group Details Page Component
-const GroupDetailsPage = ({ group, onBack }) => {
-  const formatDate = dateString => {
-    if (!dateString) return 'Not Set';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    });
-  };
-
-  const formatCurrency = amount => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const getStatusColor = status => {
-    switch (status) {
-      case 'Active':
-        return '#10B981';
-      case 'Not Started':
-        return '#F59E0B';
-      default:
-        return '#6B7280';
-    }
-  };
-
-  const getStatusIcon = status => {
-    switch (status) {
-      case 'Active':
-        return 'progress-clock';
-      case 'Not Started':
-        return 'clock-outline';
-      default:
-        return 'help-circle';
-    }
-  };
-
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <MaterialCommunityIcons
-              name="arrow-left"
-              size={24}
-              color="#212121"
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Group Details</Text>
-        </View>
-      </View>
-
-      {/* Content will be added based on your requirements */}
-      <View style={styles.detailsContainer}>
-        <Text style={styles.comingSoonText}>
-          Group details content will be added here. Please provide the content
-          structure you want to include.
-        </Text>
-
-        {/* Basic Group Info Preview */}
-        <View style={styles.previewCard}>
-          <Text style={styles.previewTitle}>{group.name}</Text>
-          <Text style={styles.previewCode}>#{group.groupCode}</Text>
-
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: getStatusColor(group.status) },
-            ]}>
-            <MaterialCommunityIcons
-              name={getStatusIcon(group.status)}
-              size={12}
-              color="#FFFFFF"
-            />
-            <Text style={styles.statusText}>
-              {group.status === 'not-started'
-                ? 'NOT STARTED'
-                : group.status.toUpperCase()}
-            </Text>
-          </View>
-        </View>
-      </View>
     </View>
   );
 };

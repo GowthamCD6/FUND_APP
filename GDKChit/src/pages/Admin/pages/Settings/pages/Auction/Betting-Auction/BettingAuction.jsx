@@ -64,7 +64,6 @@ const AdminAuctionMonitor = ({
 
     return () => {
       unsubscribeRef.current.forEach(unsub => unsub?.());
-      AuctionWebSocketService.disconnect();
     };
   }, []);
 
@@ -209,12 +208,13 @@ const AdminAuctionMonitor = ({
   };
 
   const startAuction = () => {
-    if (!initialAmount || parseFloat(initialAmount) <= 0) {
-      Alert.alert('Error', 'Please set an initial amount before starting the auction.');
+    const parsedInitial = parseFloat(initialAmount);
+    if (!initialAmount || isNaN(parsedInitial) || parsedInitial <= 0) {
+      Alert.alert('Error', 'Please set a valid initial amount before starting the auction.');
       return;
     }
 
-    if (parseFloat(initialAmount) % 1000 !== 0) {
+    if (parsedInitial % 1000 !== 0) {
       Alert.alert('Error', 'Initial amount must be in multiples of ₹1,000');
       return;
     }
@@ -431,28 +431,33 @@ const AdminAuctionMonitor = ({
           <Text style={styles.emptyText}>No bids placed yet</Text>
         </View>
       ) : (
-        <View>
+        <View style={styles.tableContainer}>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableHeaderText, { flex: 0.2 }]}>Rank</Text>
+            <Text style={[styles.tableHeaderText, { flex: 0.5 }]}>Participant</Text>
+            <Text style={[styles.tableHeaderText, { flex: 0.3, textAlign: 'right' }]}>Amount</Text>
+          </View>
           {participants
             .filter(p => p.bid > 0)
             .sort((a, b) => a.bid - b.bid)
             .map((participant, index) => (
-              <View key={participant.id} style={[styles.bidRow, index === 0 && styles.topBid]}>
-                <View style={styles.bidInfo}>
-                  <View style={[styles.avatar, index === 0 && styles.topAvatar]}>
-                    <Text style={styles.avatarText}>
+              <View key={participant.id} style={[styles.tableRow, index === 0 && styles.topTableRow]}>
+                <View style={{ flex: 0.2, justifyContent: 'center' }}>
+                  <View style={[styles.rankBadge, index === 0 && styles.topRankBadge]}>
+                    <Text style={[styles.rankBadgeText, index === 0 && styles.topRankBadgeText]}>#{index + 1}</Text>
+                  </View>
+                </View>
+                <View style={styles.tableCellUser}>
+                  <View style={[styles.smallAvatar, index === 0 && styles.topSmallAvatar]}>
+                    <Text style={styles.smallAvatarText}>
                       {participant.avatar || participant.name.substring(0, 2).toUpperCase()}
                     </Text>
                   </View>
-                  <View style={styles.bidDetails}>
-                    <Text style={styles.userName}>{participant.name}</Text>
-                    <Text style={styles.bidValue}>
-                      {formatCurrency(participant.bid)}
-                    </Text>
-                  </View>
+                  <Text style={styles.tableUserName} numberOfLines={1}>{participant.name}</Text>
                 </View>
-                <View style={[styles.rank, index === 0 && styles.topRank]}>
-                  <Text style={[styles.rankText, index === 0 && styles.topRankText]}>
-                    #{index + 1}
+                <View style={{ flex: 0.3, alignItems: 'flex-end', justifyContent: 'center' }}>
+                  <Text style={[styles.tableBidValue, index === 0 && styles.topTableBidValue]}>
+                    {formatCurrency(participant.bid)}
                   </Text>
                 </View>
               </View>
@@ -509,33 +514,34 @@ const AdminAuctionMonitor = ({
           <Text style={styles.emptyText}>Waiting for bids...</Text>
         </View>
       ) : (
-        <View>
+        <View style={styles.tableContainer}>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableHeaderText, { flex: 0.5 }]}>Bidder</Text>
+            <Text style={[styles.tableHeaderText, { flex: 0.25 }]}>Time</Text>
+            <Text style={[styles.tableHeaderText, { flex: 0.25, textAlign: 'right' }]}>Bid</Text>
+          </View>
           {activeBidders
             .sort((a, b) => a.amount - b.amount)
             .map((bidder, index) => (
-              <View key={bidder.userId} style={[styles.activeBidderRow, index === 0 && styles.topActiveBidder]}>
-                <View style={styles.bidderInfo}>
-                  <View style={[styles.activeBidderAvatar, index === 0 && styles.topActiveBidderAvatar]}>
-                    <Text style={styles.avatarText}>
+              <View key={bidder.userId} style={[styles.tableRow, index === 0 && styles.topActiveTableRow]}>
+                <View style={styles.tableCellUser}>
+                  <View style={[styles.smallAvatar, { backgroundColor: '#10B981' }, index === 0 && styles.topSmallAvatar]}>
+                    <Text style={styles.smallAvatarText}>
                       {bidder.userName.substring(0, 2).toUpperCase()}
                     </Text>
                   </View>
-                  <View style={styles.bidderDetails}>
-                    <Text style={styles.bidderName}>{bidder.userName}</Text>
-                    <Text style={styles.bidderTime}>
-                      {new Date(bidder.timestamp).toLocaleTimeString()}
-                    </Text>
-                  </View>
+                  <Text style={styles.tableUserName} numberOfLines={1}>{bidder.userName}</Text>
                 </View>
-                <View style={styles.bidderAmountContainer}>
-                  <Text style={[styles.bidderAmount, index === 0 && styles.topBidderAmount]}>
+                <View style={{ flex: 0.25, justifyContent: 'center' }}>
+                  <Text style={styles.tableTimeText}>
+                    {new Date(bidder.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </Text>
+                </View>
+                <View style={{ flex: 0.25, alignItems: 'flex-end', justifyContent: 'center', flexDirection: 'row', gap: 4 }}>
+                  <Text style={[styles.tableBidValue, { color: '#10B981' }, index === 0 && styles.topTableBidValue]}>
                     {formatCurrency(bidder.amount)}
                   </Text>
-                  {index === 0 && (
-                    <View style={styles.leadingBadge}>
-                      <MaterialCommunityIcons name="crown" size={14} color="#FFD700" />
-                    </View>
-                  )}
+                  {index === 0 && <MaterialCommunityIcons name="crown" size={14} color="#FFD700" style={{ marginTop: 2 }} />}
                 </View>
               </View>
             ))}
@@ -1115,6 +1121,109 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: 0.3,
+  },
+  
+  // Table UI
+  tableContainer: {
+    marginTop: 4,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    marginBottom: 8,
+  },
+  tableHeaderText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  topTableRow: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    marginHorizontal: -8,
+    borderBottomColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    marginBottom: 4,
+  },
+  topActiveTableRow: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    marginHorizontal: -8,
+    borderBottomColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    marginBottom: 4,
+  },
+  tableCellUser: {
+    flex: 0.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  smallAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#6B46C1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  topSmallAvatar: {
+    backgroundColor: '#F59E0B',
+  },
+  smallAvatarText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  tableUserName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+    flexShrink: 1,
+  },
+  tableBidValue: {
+    fontSize: 13,
+    color: '#6B46C1',
+    fontWeight: '700',
+  },
+  topTableBidValue: {
+    color: '#F59E0B',
+  },
+  tableTimeText: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  rankBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+  },
+  topRankBadge: {
+    backgroundColor: '#F59E0B',
+  },
+  rankBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  topRankBadgeText: {
+    color: '#FFFFFF',
   },
 });
 

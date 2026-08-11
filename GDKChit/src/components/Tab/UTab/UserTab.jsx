@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Platform, DeviceEventEmitter 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRef } from 'react';
 import styles from './UserTabsty';
 
 // Import actual page components
@@ -52,9 +53,9 @@ const MoreScreen = () => null; // Placeholder, modal will be shown instead
 
 const Tab = createBottomTabNavigator();
 
-// Custom Tab Bar Button for Center "More" Button
-const CustomTabBarButton = ({ children, onPress }) => (
+const CustomTabBarButton = ({ children, onPress, viewRef }) => (
   <TouchableOpacity
+    ref={viewRef}
     style={styles.customTabButton}
     onPress={onPress}
     activeOpacity={0.8}
@@ -71,6 +72,10 @@ const UserTabs = () => {
   const [preselectedGroup, setPreselectedGroup] = useState(null);
   const [manualVisible, setManualVisible] = useState(false);
   const [manualKey, setManualKey] = useState(1);
+  
+  const portfolioRef = useRef(null);
+  const plusRef = useRef(null);
+  const chatRef = useRef(null);
 
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('TRIGGER_USER_MANUAL', () => {
@@ -82,15 +87,45 @@ const UserTabs = () => {
       setShowMoreModal(true);
     });
 
+    const closeMoreSub = DeviceEventEmitter.addListener('CLOSE_MORE_MODAL', () => {
+      setShowMoreModal(false);
+      setPreselectedGroup(null);
+    });
+
+    const layoutSub = DeviceEventEmitter.addListener('REQUEST_TAB_LAYOUT', () => {
+      const layouts = {};
+      let count = 0;
+      
+      const measure = (ref, key) => {
+        if (ref.current) {
+          ref.current.measureInWindow((x, y, w, h) => {
+            if (w > 0 && h > 0) layouts[key] = { x, y, width: w, height: h };
+            count++;
+            if (count === 3) DeviceEventEmitter.emit('TAB_LAYOUT_MEASURED', layouts);
+          });
+        } else {
+          count++;
+          if (count === 3) DeviceEventEmitter.emit('TAB_LAYOUT_MEASURED', layouts);
+        }
+      };
+
+      measure(portfolioRef, 'portfolio_press');
+      measure(plusRef, 'plus_press');
+      measure(chatRef, 'chat_tab');
+    });
+
     return () => {
       subscription.remove();
       moreSub.remove();
+      closeMoreSub.remove();
+      layoutSub.remove();
     };
   }, []);
 
   const handleCloseMoreModal = () => {
     setShowMoreModal(false);
     setPreselectedGroup(null);
+    DeviceEventEmitter.emit('MORE_MODAL_CLOSED');
   };
 
   return (
@@ -136,7 +171,7 @@ const UserTabs = () => {
           component={PortfolioWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
-              <View style={styles.tabIconContainer}>
+              <View ref={portfolioRef} style={styles.tabIconContainer}>
                 <MaterialCommunityIcons
                   name="briefcase"
                   size={24}
@@ -160,7 +195,7 @@ const UserTabs = () => {
               <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
             ),
             tabBarButton: (props) => (
-              <CustomTabBarButton {...props} onPress={() => setShowMoreModal(true)} />
+              <CustomTabBarButton viewRef={plusRef} {...props} onPress={() => setShowMoreModal(true)} />
             ),
           }}
         />
@@ -171,7 +206,7 @@ const UserTabs = () => {
           component={ChatListWithSafe}
           options={{
             tabBarIcon: ({ focused }) => (
-              <View style={styles.tabIconContainer}>
+              <View ref={chatRef} style={styles.tabIconContainer}>
                 <MaterialCommunityIcons
                   name="message"
                   size={24}

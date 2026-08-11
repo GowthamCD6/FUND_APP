@@ -140,13 +140,28 @@ exports.joinGroup = async (req, res) => {
 };
 
 exports.getGroupMonthlyInfo = async (req, res) => {
-  const userId = req.user.userId || req.user.id;
+  const userId = req.user ? (req.user.userId || req.user.id) : null;
   let rawGroupId = req.params.groupId;
-  if (rawGroupId && rawGroupId.startsWith('GRP-')) {
-    rawGroupId = rawGroupId.split('-')[1];
+
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: Invalid user credentials' });
+  }
+
+  if (rawGroupId && String(rawGroupId).startsWith('GRP-')) {
+    rawGroupId = String(rawGroupId).split('-')[1];
   }
 
   try {
+    // Verify user is a member of the requested group (IDOR Prevention)
+    const [membership] = await db.promise().query(
+      `SELECT id FROM user_grouping WHERE user_id = ? AND group_id = ?`,
+      [userId, rawGroupId]
+    );
+
+    if (membership.length === 0) {
+      return res.status(403).json({ success: false, message: 'Forbidden: You are not a member of this group' });
+    }
+
     const [payments] = await db.promise().query(
       `SELECT MONTH(collection_period) - 1 AS month, YEAR(collection_period) AS year, amount, status, due_date, paid_date, receipt_number 
        FROM monthly_collections 
@@ -263,5 +278,34 @@ exports.getGroupMonthlyInfo = async (req, res) => {
   } catch (error) {
     console.error('Error fetching group monthly info:', error);
     return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+exports.checkActiveAuction = async (req, res) => {
+  try {
+    const { groupId } = req.query;
+    if (!groupId) {
+      return res.status(400).json({ success: false, message: 'groupId is required' });
+    }
+    const [rows] = await db.promise().query(
+      "SELECT id, auction_type, initial_amount, duration, status FROM group_auctions WHERE group_id = ? AND status = 'active' LIMIT 1",
+      [groupId]
+    );
+    if (rows.length > 0) {
+      return res.json({
+        success: true,
+        active: true,
+        auction: rows[0]
+      });
+    } else {
+      return res.json({
+        success: true,
+        active: false,
+        auction: null
+      });
+    }
+  } catch (error) {
+    console.error('Error checking active auction status:', error);
+    return res.status(500).json({ success: false, message: 'Server error checking auction status' });
   }
 };

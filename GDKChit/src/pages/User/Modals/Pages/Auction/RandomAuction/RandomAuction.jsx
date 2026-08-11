@@ -56,6 +56,7 @@ const RandomAuction = ({
   selectedGroup,
   onAuctionComplete,
   onAuctionStatusChange,
+  onAmountChange,
 }) => {
   const [diceValue, setDiceValue] = useState(1);
   const [isDiceRolling, setIsDiceRolling] = useState(false);
@@ -92,9 +93,10 @@ const RandomAuction = ({
           await AuctionWebSocketService.connect(token, userId, 'user');
           
           unsubscribeDice = AuctionWebSocketService.on('dice_rolling', (data) => {
-            const { groupId, duration, finalValue, winner } = data;
+            const { groupId, duration, finalValue, winner, initialAmount } = data;
             if (groupId && selectedGroup && groupId.toString() === selectedGroup.id.toString()) {
               if (onAuctionStatusChange) onAuctionStatusChange(true);
+              if (initialAmount && onAmountChange) onAmountChange(initialAmount);
               executeDiceRoll(finalValue, Number(duration) || 30000, winner);
             }
           });

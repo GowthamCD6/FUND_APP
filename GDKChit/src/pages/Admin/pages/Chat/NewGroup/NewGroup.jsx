@@ -64,7 +64,7 @@ const NewGroup = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
       {/* Shared Header Component */}
@@ -176,7 +176,7 @@ const NewGroup = ({ navigation }) => {
       >
         <MaterialCommunityIcons name="check" size={28} color="#FFFFFF" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 };
 

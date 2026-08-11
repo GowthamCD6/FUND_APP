@@ -7,11 +7,9 @@ import {
   Switch,
   ScrollView,
   Platform,
-  StatusBar,
   Alert,
-  BackHandler
+  BackHandler,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';;
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -19,7 +17,6 @@ import BiometricService from '../../../../../../services/BiometricService';
 import LockInfo from './Lock-Info-Modal/LockInfo';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import { useLanguage } from '../../../../../../utils/LanguageContext';
-import ApiService from '../../../../../../services/ApiService';
 
 const SecurPermis = ({ onBack }) => {
   const navigation = useNavigation();
@@ -28,7 +25,7 @@ const SecurPermis = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
 
-  // Load security setting on component mount (Local + Backend sync)
+  // Load security setting on component mount
   useEffect(() => {
     loadSecuritySetting();
   }, []);
@@ -51,26 +48,8 @@ const SecurPermis = ({ onBack }) => {
 
   const loadSecuritySetting = async () => {
     try {
-      console.log('Loading security setting...');
       const state = BiometricService.getState();
       setSecurityEnabled(state.isSecurityEnabled);
-
-      // Sync from backend DB if logged in
-      const token = await ApiService.getAccessToken();
-      if (token) {
-        const res = await ApiService.getUserPreferences();
-        if (res?.success && res.data?.securityEnabled !== undefined) {
-          const dbSecurity = Boolean(res.data.securityEnabled);
-          if (dbSecurity !== state.isSecurityEnabled) {
-            if (dbSecurity) {
-              await BiometricService.enableSecurity();
-            } else {
-              await BiometricService.disableSecurity();
-            }
-            setSecurityEnabled(dbSecurity);
-          }
-        }
-      }
     } catch (error) {
       console.error('Error loading security setting:', error);
     } finally {
@@ -82,12 +61,7 @@ const SecurPermis = ({ onBack }) => {
     return await BiometricService.checkBiometricAvailability();
   };
 
-  const performAuthentication = async (promptMessage) => {
-    return await BiometricService.authenticate(promptMessage);
-  };
-
   const handleSecurityToggle = async (value) => {
-    // Check if authentication is available
     const authCheck = await checkAuthenticationAvailability();
 
     if (!authCheck.available) {
@@ -112,16 +86,15 @@ const SecurPermis = ({ onBack }) => {
     }
 
     if (value) {
-      // User trying to ENABLE security
+      const auth = await BiometricService.authenticate('Verify identity to enable app security lock');
+      if (!auth.success) {
+        return;
+      }
+
       const result = await BiometricService.enableSecurity();
 
       if (result.success) {
         setSecurityEnabled(true);
-        // Sync to backend DB
-        ApiService.updateUserPreferences({ securityEnabled: true }).catch(err => {
-          console.error('Error syncing security setting to backend:', err);
-        });
-
         Alert.alert(
           'Security Enabled',
           'App security has been successfully enabled. The app will now lock automatically when you switch to other apps or when the device is locked.',
@@ -131,7 +104,6 @@ const SecurPermis = ({ onBack }) => {
         Alert.alert('Failed to Enable Security', 'Unable to enable app security. Please try again.');
       }
     } else {
-      // User trying to DISABLE security
       Alert.alert(
         'Disable Security',
         'Are you sure you want to disable app security?',
@@ -141,15 +113,15 @@ const SecurPermis = ({ onBack }) => {
             text: 'Disable',
             style: 'destructive',
             onPress: async () => {
+              const auth = await BiometricService.authenticate('Verify identity to disable app security lock');
+              if (!auth.success) {
+                return;
+              }
+
               const result = await BiometricService.disableSecurity();
 
               if (result.success) {
                 setSecurityEnabled(false);
-                // Sync to backend DB
-                ApiService.updateUserPreferences({ securityEnabled: false }).catch(err => {
-                  console.error('Error syncing security setting to backend:', err);
-                });
-
                 Alert.alert(
                   'Security Disabled',
                   'App security has been disabled. The app will no longer require authentication.',
@@ -320,29 +292,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
-  },
-  infoCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#4B5563',
-    marginLeft: 12,
-    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   helpButton: {
     flexDirection: 'row',

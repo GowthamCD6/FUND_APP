@@ -20,8 +20,10 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../../../services/ApiService';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const BlockUserScreen = () => {
+  const { t } = useLanguage();
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('blocked');
@@ -31,6 +33,7 @@ const BlockUserScreen = () => {
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const backAction = () => {
@@ -75,23 +78,25 @@ const BlockUserScreen = () => {
   };
 
   const handleUnblock = userId => {
-    Alert.alert('Unblock User', 'Are you sure you want to unblock this user?', [
+    if (submitting) return;
+    Alert.alert(t('Unblock User'), t('Are you sure you want to unblock this user?'), [
       {
-        text: 'Cancel',
+        text: t('Cancel'),
         style: 'cancel',
       },
       {
-        text: 'Unblock',
+        text: t('Unblock'),
         style: 'destructive',
         onPress: async () => {
           try {
+            setSubmitting(true);
             const response = await ApiService.makeRequest('/admin/users/unblock', {
               method: 'POST',
               body: JSON.stringify({ userId }),
             });
             const data = await response.json();
             if (data.success) {
-              Alert.alert('Success', 'User has been unblocked');
+              Alert.alert('Success', t('User has been unblocked'));
               fetchUsers();
             } else {
               Alert.alert('Error', data.message || 'Failed to unblock user');
@@ -99,6 +104,8 @@ const BlockUserScreen = () => {
           } catch (error) {
             console.error('Error unblocking user:', error);
             Alert.alert('Error', 'Failed to unblock user. Please try again.');
+          } finally {
+            setSubmitting(false);
           }
         },
       },
@@ -112,22 +119,24 @@ const BlockUserScreen = () => {
   };
 
   const confirmBlock = async () => {
+    if (submitting) return;
     if (!blockReason.trim()) {
-      Alert.alert('Error', 'Please provide a reason for blocking');
+      Alert.alert('Error', t('Provide a reason for blocking'));
       return;
     }
 
     try {
+      setSubmitting(true);
       const response = await ApiService.makeRequest('/admin/users/block', {
         method: 'POST',
         body: JSON.stringify({
           userId: selectedUser.id,
-          reason: blockReason,
+          reason: blockReason.trim(),
         }),
       });
       const data = await response.json();
       if (data.success) {
-        Alert.alert('Success', 'User has been blocked');
+        Alert.alert('Success', t('User has been blocked'));
         setShowBlockModal(false);
         setBlockReason('');
         setSelectedUser(null);
@@ -138,6 +147,8 @@ const BlockUserScreen = () => {
     } catch (error) {
       console.error('Error blocking user:', error);
       Alert.alert('Error', 'Failed to block user. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -239,8 +250,9 @@ const BlockUserScreen = () => {
 
       {/* Header */}
       <Header
-        title="Block User Management"
+        title={t('Block User')}
         onBack={() => navigation.goBack()}
+        showBackButton={true}
       />
 
       {/* Tab Selector */}
@@ -256,7 +268,7 @@ const BlockUserScreen = () => {
                 activeTab === 'blocked' && styles.activeTabText,
               ]}
             >
-              Blocked ({blockedUsersList.length})
+              {t('Blocked Users')} ({blockedUsersList.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -269,7 +281,7 @@ const BlockUserScreen = () => {
                 activeTab === 'all' && styles.activeTabText,
               ]}
             >
-              All Users ({activeUsersList.length})
+              {t('All Users')} ({activeUsersList.length})
             </Text>
           </TouchableOpacity>
         </View>
@@ -281,7 +293,7 @@ const BlockUserScreen = () => {
           <MaterialCommunityIcons name="magnify" size={22} color="#6B7280" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search users..."
+            placeholder={t('Search users...')}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#9CA3AF"
@@ -302,7 +314,7 @@ const BlockUserScreen = () => {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0066FF" />
-          <Text style={styles.loadingText}>Loading users...</Text>
+          <Text style={styles.loadingText}>{t('Loading data...')}</Text>
         </View>
       ) : (
         <FlatList
@@ -348,7 +360,7 @@ const BlockUserScreen = () => {
                   color="#000000"
                 />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Block User</Text>
+              <Text style={styles.modalTitle}>{t('Block User')}</Text>
               <View style={{ width: 24 }} />
             </View>
             <View style={styles.modalHeaderSeparator} />
@@ -379,12 +391,12 @@ const BlockUserScreen = () => {
                     size={20}
                     color="#000000"
                   />
-                  <Text style={styles.inputLabel}>Reason for blocking</Text>
+                  <Text style={styles.inputLabel}>{t('Block Reason')}</Text>
                   <Text style={styles.requiredStar}>*</Text>
                 </View>
                 <TextInput
                   style={styles.textArea}
-                  placeholder="Enter reason for blocking this user..."
+                  placeholder={t('Enter reason...')}
                   value={blockReason}
                   onChangeText={setBlockReason}
                   multiline
@@ -397,15 +409,22 @@ const BlockUserScreen = () => {
 
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={styles.confirmBlockButton}
+                style={[styles.confirmBlockButton, submitting && { opacity: 0.6 }]}
                 onPress={confirmBlock}
+                disabled={submitting}
               >
-                <MaterialCommunityIcons
-                  name="account-cancel"
-                  size={20}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.buttonText}>Block User</Text>
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons
+                      name="account-cancel"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.buttonText}>{t('Confirm Block')}</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           </View>

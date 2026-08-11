@@ -57,7 +57,7 @@ const MoreModal = ({ visible, onClose }) => {
         animationType="slide"
         transparent={false}
         visible={visible}
-        onRequestClose={handleModalClose}
+        onRequestClose={handleCreateGroupBack}
       >
         <CreateGroup onBack={handleCreateGroupBack} />
       </Modal>
@@ -70,7 +70,7 @@ const MoreModal = ({ visible, onClose }) => {
         animationType="slide"
         transparent={false}
         visible={visible}
-        onRequestClose={handleModalClose}
+        onRequestClose={handleManageGroupsBack}
       >
         <ManageGroups onBack={handleManageGroupsBack} />
       </Modal>
@@ -83,7 +83,7 @@ const MoreModal = ({ visible, onClose }) => {
         animationType="slide"
         transparent={false}
         visible={visible}
-        onRequestClose={handleModalClose}
+        onRequestClose={handleAddUserBack}
       >
         <AddUser onBack={handleAddUserBack} />
       </Modal>
@@ -96,7 +96,7 @@ const MoreModal = ({ visible, onClose }) => {
         animationType="slide"
         transparent={false}
         visible={visible}
-        onRequestClose={handleModalClose}
+        onRequestClose={handleManageUserBack}
       >
         <ManageU onBack={handleManageUserBack} />
       </Modal>
@@ -104,49 +104,57 @@ const MoreModal = ({ visible, onClose }) => {
   }
 
   return (
-  <Modal
-    animationType="slide"
-    transparent={true}
-    visible={visible}
-    onRequestClose={onClose}
-  >
-    <View style={styles.overlay}>
-      <View style={styles.container}>
-        {/* Modal Content */}
-        <View style={styles.menuList}>
-          <MenuItem
-            icon={<MaterialCommunityIcons name="account-group-outline" size={26} color="#6B46C1" />}
-            title="Create Group"
-            description="Create a new chit fund group"
-            onPress={handleCreateGroupPress}
-          />
-          <MenuItem
-            icon={<MaterialCommunityIcons name="account-group" size={26} color="#6B46C1" />}
-            title="Manage Groups"
-            description="View, edit or manage existing groups"
-            onPress={handleManageGroupsPress}
-          />
-          <MenuItem
-            icon={<MaterialCommunityIcons name="account-cog" size={26} color="#6B46C1" />}
-            title="Manage User"
-            description="View or manage existing users"
-            onPress={handleManageUserPress}
-          />
-          <MenuItem
-            icon={<MaterialCommunityIcons name="account-plus" size={26} color="#6B46C1" />}
-            title="Add User"
-            description="Add a new user to the system"
-            onPress={handleAddUserPress}
-          />
-        </View>
-        {/* X Button */}
-        <TouchableOpacity style={styles.xButton} onPress={handleModalClose}>
-          <Text style={styles.xButtonText}>×</Text>
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity 
+        style={styles.overlay} 
+        activeOpacity={1} 
+        onPress={onClose}
+      >
+        <TouchableOpacity 
+          style={styles.container} 
+          activeOpacity={1} 
+          onPress={() => {}}
+        >
+          {/* Modal Content */}
+          <View style={styles.menuList}>
+            <MenuItem
+              icon={<MaterialCommunityIcons name="account-group-outline" size={26} color="#6B46C1" />}
+              title="Create Group"
+              description="Create a new chit fund group"
+              onPress={handleCreateGroupPress}
+            />
+            <MenuItem
+              icon={<MaterialCommunityIcons name="account-group" size={26} color="#6B46C1" />}
+              title="Manage Groups"
+              description="View, edit or manage existing groups"
+              onPress={handleManageGroupsPress}
+            />
+            <MenuItem
+              icon={<MaterialCommunityIcons name="account-cog" size={26} color="#6B46C1" />}
+              title="Manage User"
+              description="View or manage existing users"
+              onPress={handleManageUserPress}
+            />
+            <MenuItem
+              icon={<MaterialCommunityIcons name="account-plus" size={26} color="#6B46C1" />}
+              title="Add User"
+              description="Add a new user to the system"
+              onPress={handleAddUserPress}
+            />
+          </View>
+          {/* X Button */}
+          <TouchableOpacity style={styles.xButton} onPress={handleModalClose}>
+            <Text style={styles.xButtonText}>×</Text>
+          </TouchableOpacity>
         </TouchableOpacity>
-      </View>
-    </View>
-  </Modal>
-);
+      </TouchableOpacity>
+    </Modal>
+  );
 };
 
 const MenuItem = ({ icon, title, description, onPress }) => (

@@ -93,7 +93,12 @@ const SecurPermis = ({ onBack }) => {
     }
 
     if (value) {
-      // User trying to ENABLE security
+      // User trying to ENABLE security -> Verify biometric / PIN identity first
+      const auth = await BiometricService.authenticate('Verify identity to enable app security lock');
+      if (!auth.success) {
+        return;
+      }
+
       const result = await BiometricService.enableSecurity();
 
       if (result.success) {
@@ -107,7 +112,7 @@ const SecurPermis = ({ onBack }) => {
         Alert.alert('Failed to Enable Security', 'Unable to enable app security. Please try again.');
       }
     } else {
-      // User trying to DISABLE security
+      // User trying to DISABLE security -> Verify biometric / PIN identity first
       Alert.alert(
         'Disable Security',
         'Are you sure you want to disable app security?',
@@ -117,6 +122,11 @@ const SecurPermis = ({ onBack }) => {
             text: 'Disable',
             style: 'destructive',
             onPress: async () => {
+              const auth = await BiometricService.authenticate('Verify identity to disable app security lock');
+              if (!auth.success) {
+                return;
+              }
+
               const result = await BiometricService.disableSecurity();
               
               if (result.success) {

@@ -44,31 +44,50 @@ const CreateGroup = ({ onBack, navigation }) => {
     setGroupData(prev => ({ ...prev, groupId }));
   };
 
+  const sanitizeInput = (text) => {
+    if (typeof text !== 'string') return '';
+    return text.replace(/[<>&'"]/g, '');
+  };
+
   const handleInputChange = (field, value) => {
-    setGroupData(prev => ({ ...prev, [field]: value }));
+    let cleanedValue = value;
+    if (field === 'groupName') {
+      cleanedValue = sanitizeInput(value);
+    } else if (['totalMembers', 'duration', 'groupAmount'].includes(field)) {
+      cleanedValue = value.replace(/[^0-9]/g, '');
+    }
+    setGroupData(prev => ({ ...prev, [field]: cleanedValue }));
   };
 
   const validateForm = () => {
     const { groupName, totalMembers, groupAmount, duration, startDate } = groupData;
+    const cleanName = (groupName || '').trim();
+    const membersNum = parseInt(totalMembers, 10);
+    const amountNum = parseFloat(groupAmount);
+    const durationNum = parseInt(duration, 10);
 
-    if (!groupName.trim()) {
-      Alert.alert('Validation Error', 'Please enter group name');
+    if (!cleanName) {
+      Alert.alert('Validation Error', 'Please enter group name.');
       return false;
     }
-    if (!totalMembers || isNaN(totalMembers) || parseInt(totalMembers) < 2) {
-      Alert.alert('Validation Error', 'Total members must be at least 2');
+    if (cleanName.length < 3 || cleanName.length > 60) {
+      Alert.alert('Validation Error', 'Group name must be between 3 and 60 characters.');
       return false;
     }
-    if (!groupAmount || isNaN(groupAmount) || parseFloat(groupAmount) <= 0) {
-      Alert.alert('Validation Error', 'Please enter valid group amount');
+    if (!membersNum || isNaN(membersNum) || membersNum < 2 || membersNum > 500) {
+      Alert.alert('Validation Error', 'Total members must be between 2 and 500.');
       return false;
     }
-    if (!duration || isNaN(duration) || parseInt(duration) < 1) {
-      Alert.alert('Validation Error', 'Please enter valid duration in months');
+    if (!amountNum || isNaN(amountNum) || amountNum <= 0) {
+      Alert.alert('Validation Error', 'Please enter valid total group amount.');
+      return false;
+    }
+    if (!durationNum || isNaN(durationNum) || durationNum < 1 || durationNum > 120) {
+      Alert.alert('Validation Error', 'Duration must be between 1 and 120 months.');
       return false;
     }
     if (!startDate.trim()) {
-      Alert.alert('Validation Error', 'Please enter start date');
+      Alert.alert('Validation Error', 'Please select start date.');
       return false;
     }
 
@@ -130,10 +149,11 @@ const CreateGroup = ({ onBack, navigation }) => {
     try {
       const newGroup = {
         ...groupData,
+        groupName: groupData.groupName.trim(),
         groupCode: groupData.groupId,
-        totalMembers: parseInt(groupData.totalMembers),
+        totalMembers: parseInt(groupData.totalMembers, 10),
         groupAmount: parseFloat(groupData.groupAmount),
-        duration: parseInt(groupData.duration),
+        duration: parseInt(groupData.duration, 10),
         currentMembers: 0,
       };
 
@@ -164,8 +184,8 @@ const CreateGroup = ({ onBack, navigation }) => {
       setShowShareModal(true);
 
     } catch (error) {
-      Alert.alert('Error', 'Failed to create group. Please try again.');
       console.error('Error creating group:', error);
+      Alert.alert('Error', error?.message || 'Failed to create group. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -368,19 +388,19 @@ const CreateGroup = ({ onBack, navigation }) => {
               )}
 
               {/* Summary Card */}
-              {groupData.totalMembers && groupData.groupAmount && (
+              {Boolean(parseInt(groupData.totalMembers, 10)) && Boolean(parseFloat(groupData.groupAmount)) && (
                 <View style={styles.summaryCard}>
                   <Text style={styles.summaryTitle}>Group Summary</Text>
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Total Group Amount:</Text>
                     <Text style={styles.summaryValue}>
-                      ₹{parseFloat(groupData.groupAmount || 0).toLocaleString()}
+                      ₹{parseFloat(groupData.groupAmount || 0).toLocaleString('en-IN')}
                     </Text>
                   </View>
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Per Member Contribution:</Text>
                     <Text style={styles.summaryValue}>
-                      ₹{(parseFloat(groupData.groupAmount || 0) / parseInt(groupData.totalMembers || 1)).toLocaleString()}
+                      ₹{Math.round(parseFloat(groupData.groupAmount || 0) / Math.max(1, parseInt(groupData.totalMembers || 1, 10))).toLocaleString('en-IN')}
                     </Text>
                   </View>
                   <View style={styles.summaryRow}>

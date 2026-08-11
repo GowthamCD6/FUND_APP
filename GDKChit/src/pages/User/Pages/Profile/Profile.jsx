@@ -81,6 +81,48 @@ const Profile = () => {
     loadProfile();
   }, [authUser]);
 
+  const bankRef = useRef(null);
+  const langRef = useRef(null);
+  const locRef = useRef(null);
+
+  useEffect(() => {
+      const sub = DeviceEventEmitter.addListener('REQUEST_PROFILE_LAYOUT', () => {
+      const layouts = {};
+      let count = 0;
+      
+      const tryEmit = () => {
+        count++;
+        if (count === 3) DeviceEventEmitter.emit('PROFILE_LAYOUT_MEASURED', layouts);
+      };
+
+      const measure = (ref, key) => {
+        if (ref.current) {
+          let called = false;
+          ref.current.measureInWindow((x, y, w, h) => {
+            if (called) return;
+            called = true;
+            if (w > 0 && h > 0) layouts[key] = { x, y, width: w, height: h };
+            tryEmit();
+          });
+          // Fallback if measureInWindow fails to callback (e.g. element offscreen on Android)
+          setTimeout(() => {
+            if (!called) {
+              called = true;
+              tryEmit();
+            }
+          }, 300);
+        } else {
+          tryEmit();
+        }
+      };
+
+      measure(bankRef, 'profile_bank');
+      measure(langRef, 'profile_language');
+      measure(locRef, 'profile_location');
+    });
+    return () => sub.remove();
+  }, []);
+
   const displayName = profileUser?.username || profileUser?.name || 'User';
   const displayPhone = profileUser?.phone || 'No phone number';
   const profileInitial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
@@ -162,6 +204,7 @@ const Profile = () => {
                 />
               </TouchableOpacity>
               <TouchableOpacity
+                ref={bankRef}
                 style={[styles.menuItem, styles.menuItemBorder]}
                 onPress={() => navigation.navigate('LinkBA')}>
                 <View style={styles.menuItemLeft}>
@@ -278,6 +321,7 @@ const Profile = () => {
               </TouchableOpacity>
               <View style={styles.customDivider} />
               <TouchableOpacity
+                ref={locRef}
                 style={styles.menuItem}
                 onPress={() => navigation.navigate('UserAdminLocation')}>
                 <View style={styles.menuItemLeft}>
@@ -296,6 +340,7 @@ const Profile = () => {
               </TouchableOpacity>
               <View style={styles.customDivider} />
               <TouchableOpacity
+                ref={langRef}
                 style={styles.menuItem}
                 onPress={() => navigation.navigate('LanguageSettings')}>
                 <View style={styles.menuItemLeft}>

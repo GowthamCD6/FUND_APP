@@ -3,13 +3,16 @@ import { API_URL } from '../utils/env';
 class AuctionWebSocketService {
   constructor() {
     this.ws = null;
-    this.url = API_URL.replace('http', 'ws') + '/auction';
     this.listeners = {};
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 3000;
     this.pingInterval = null;
     this.isManuallyClosed = false;
+  }
+
+  get url() {
+    return API_URL.replace('http', 'ws') + '/auction';
   }
 
   // Connect to WebSocket
@@ -170,12 +173,13 @@ class AuctionWebSocketService {
   }
 
   // Roll dice
-  rollDice(groupId, duration, finalValue, winner) {
+  rollDice(groupId, duration, finalValue, winner, initialAmount = 0) {
     this.send('roll_dice', {
       groupId,
       duration,
       finalValue,
       winner,
+      initialAmount,
     });
   }
 
@@ -205,8 +209,18 @@ class AuctionWebSocketService {
 
     // Return unsubscribe function
     return () => {
-      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+      this.off(event, callback);
     };
+  }
+
+  // Remove event listener
+  off(event, callback) {
+    if (!this.listeners[event]) return;
+    if (callback) {
+      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+    } else {
+      delete this.listeners[event];
+    }
   }
 
   // Emit event

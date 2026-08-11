@@ -356,6 +356,27 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6B46C1",
   },
+  cardSelectingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.85)",
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  cardSelectingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B46C1",
+  },
 });
 
 export default styles;

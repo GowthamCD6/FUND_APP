@@ -45,6 +45,9 @@ exports.getChats = async (req, res) => {
                     ANY_VALUE(g.group_name) as group_name,
                     ANY_VALUE(g.avatar) as group_avatar,
                     ANY_VALUE(u.name) as user_name,
+                    ANY_VALUE(COALESCE(ucs.is_pinned, 0)) as is_pinned,
+                    ANY_VALUE(COALESCE(ucs.is_muted, 0)) as is_muted,
+                    ANY_VALUE(COALESCE(ucs.is_archived, 0)) as is_archived,
                     (SELECT message FROM chat_messages cm WHERE cm.room_id = cr.id ORDER BY cm.created_at DESC LIMIT 1) as lastMessage,
                     (SELECT created_at FROM chat_messages cm WHERE cm.room_id = cr.id ORDER BY cm.created_at DESC LIMIT 1) as timestamp,
                     (SELECT COUNT(*) FROM chat_messages cm WHERE cm.room_id = cr.id AND cm.read_at IS NULL AND cm.sender_id != ?) as unread
@@ -53,16 +56,18 @@ exports.getChats = async (req, res) => {
                 LEFT JOIN private_conversations pc ON cr.id = pc.room_id
                 LEFT JOIN users u ON u.id = CASE WHEN pc.user1 = ? THEN pc.user2 ELSE pc.user1 END
                 LEFT JOIN chat_room_members crm ON cr.id = crm.room_id
+                LEFT JOIN user_chat_settings ucs ON cr.id = ucs.room_id AND ucs.user_id = ?
                 WHERE (
                    cr.type = 'group_broadcast'
                    OR (cr.type = 'private' AND (pc.user1 = ? OR pc.user2 = ?))
                    OR (cr.type IN ('group', 'community') AND crm.user_id = ?)
                 )
+                AND (cr.group_id IS NULL OR (g.deleted_at IS NULL AND (g.status IS NULL OR LOWER(g.status) NOT IN ('completed', 'ended'))))
                 AND cr.id NOT IN (SELECT room_id FROM user_deleted_chats WHERE user_id = ?)
                 GROUP BY cr.id
-                ORDER BY timestamp DESC
+                ORDER BY is_pinned DESC, timestamp DESC
             `;
-            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId, userId]);
+            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId, userId, userId]);
 
             const chats = rows.map(r => {
                 let name = '';
@@ -99,7 +104,10 @@ exports.getChats = async (req, res) => {
                     isGroup: r.type === 'group_broadcast' || r.type === 'group' || r.type === 'community',
                     type: r.type,
                     groupId: r.group_id,
-                    userId: r.user_id
+                    userId: r.user_id,
+                    isPinned: Boolean(r.is_pinned),
+                    isMuted: Boolean(r.is_muted),
+                    isArchived: Boolean(r.is_archived)
                 };
             });
 
@@ -120,24 +128,29 @@ exports.getChats = async (req, res) => {
                     ANY_VALUE(g.group_name) as group_name,
                     ANY_VALUE(g.avatar) as group_avatar,
                     'Admin Support' as user_name,
+                    ANY_VALUE(COALESCE(ucs.is_pinned, 0)) as is_pinned,
+                    ANY_VALUE(COALESCE(ucs.is_muted, 0)) as is_muted,
+                    ANY_VALUE(COALESCE(ucs.is_archived, 0)) as is_archived,
                     (SELECT message FROM chat_messages cm WHERE (cm.room_id = cr.id OR (cm.source_room_id = cr.id AND cm.sender_id = ?)) ORDER BY cm.created_at DESC LIMIT 1) as lastMessage,
                     (SELECT created_at FROM chat_messages cm WHERE (cm.room_id = cr.id OR (cm.source_room_id = cr.id AND cm.sender_id = ?)) ORDER BY cm.created_at DESC LIMIT 1) as timestamp,
                     (SELECT COUNT(*) FROM chat_messages cm WHERE cm.room_id = cr.id AND cm.read_at IS NULL AND cm.sender_id != ?) as unread
                 FROM chat_rooms cr
                 LEFT JOIN \`groups\` g ON cr.group_id = g.id
-                LEFT JOIN user_grouping ug ON g.id = ug.group_id
+                LEFT JOIN user_grouping ug ON g.id = ug.group_id AND g.deleted_at IS NULL
                 LEFT JOIN private_conversations pc ON cr.id = pc.room_id
                 LEFT JOIN chat_room_members crm ON cr.id = crm.room_id
+                LEFT JOIN user_chat_settings ucs ON cr.id = ucs.room_id AND ucs.user_id = ?
                 WHERE (
                    (cr.type = 'group_broadcast' AND ug.user_id = ?) 
                    OR (cr.type = 'private' AND (pc.user1 = ? OR pc.user2 = ?))
                    OR (cr.type IN ('group', 'community') AND crm.user_id = ?)
                 )
+                AND (cr.group_id IS NULL OR (g.deleted_at IS NULL AND (g.status IS NULL OR LOWER(g.status) NOT IN ('completed', 'ended'))))
                 AND cr.id NOT IN (SELECT room_id FROM user_deleted_chats WHERE user_id = ?)
                 GROUP BY cr.id
-                ORDER BY timestamp DESC
+                ORDER BY is_pinned DESC, timestamp DESC
             `;
-            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId, userId, userId, userId]);
+            const [rows] = await db.promise().query(sql, [userId, userId, userId, userId, userId, userId, userId, userId, userId]);
 
             const chats = rows.map(r => {
                 let name = '';
@@ -174,7 +187,10 @@ exports.getChats = async (req, res) => {
                     isGroup: r.type === 'group_broadcast' || r.type === 'group' || r.type === 'community',
                     type: r.type,
                     groupId: r.group_id,
-                    userId: r.user_id
+                    userId: r.user_id,
+                    isPinned: Boolean(r.is_pinned),
+                    isMuted: Boolean(r.is_muted),
+                    isArchived: Boolean(r.is_archived)
                 };
             });
 
@@ -193,30 +209,53 @@ exports.getMessages = async (req, res) => {
         const { roomId } = req.params;
         const { after } = req.query; // After message ID for polling
         const userId = req.user.id || req.user.userId;
-
-        let sql = `
-            SELECT cm.id, cm.room_id, cm.source_room_id, cm.sender_id, cm.sender_type, cm.message, cm.message_type,
-                   cm.created_at,
-                   cm.read_at,
-                   cm.reply_to,
-                   parent.message as replied_to_message,
-                   u.name as sender_name,
-                   (SELECT COUNT(*) FROM starred_messages sm WHERE sm.message_id = cm.id AND sm.user_id = ?) as isStarred
-            FROM chat_messages cm
-            LEFT JOIN users u ON cm.sender_id = u.id
-            LEFT JOIN chat_messages parent ON cm.reply_to = parent.id
-            WHERE (cm.room_id = ? OR (cm.source_room_id = ? AND cm.sender_id = ?))
-        `;
-        const params = [userId, roomId, roomId, userId];
-
-        if (after) {
-            sql += ` AND cm.id > ?`;
-            params.push(after);
+        
+        let messages = [];
+        try {
+            let sql = `
+                SELECT cm.id, cm.room_id, cm.source_room_id, cm.sender_id, cm.sender_type, cm.message, cm.message_type,
+                       COALESCE(cm.status, 'SENT') as status, cm.delivered_at, COALESCE(cm.edited, 0) as edited, cm.edited_at, COALESCE(cm.is_forwarded, 0) as is_forwarded, COALESCE(cm.deleted_for_everyone, 0) as deleted_for_everyone,
+                       cm.created_at,
+                       cm.read_at,
+                       cm.reply_to,
+                       parent.message as replied_to_message,
+                       u.name as sender_name,
+                       (SELECT COUNT(*) FROM starred_messages sm WHERE sm.message_id = cm.id AND sm.user_id = ?) as isStarred,
+                       (SELECT JSON_ARRAYAGG(JSON_OBJECT('reaction', mr.reaction, 'userId', mr.user_id)) 
+                        FROM message_reactions mr WHERE mr.message_id = cm.id) as reactions
+                FROM chat_messages cm
+                LEFT JOIN users u ON cm.sender_id = u.id
+                LEFT JOIN chat_messages parent ON cm.reply_to = parent.id
+                WHERE (cm.room_id = ? OR (cm.source_room_id = ? AND cm.sender_id = ?))
+                  AND cm.id NOT IN (SELECT message_id FROM user_deleted_messages WHERE user_id = ?)
+            `;
+            const params = [userId, roomId, roomId, userId, userId];
+            if (after) {
+                sql += ` AND cm.id > ?`;
+                params.push(after);
+            }
+            sql += ` ORDER BY cm.created_at ASC`;
+            const [rows] = await db.promise().query(sql, params);
+            messages = rows;
+        } catch (subErr) {
+            console.warn('[getMessages] Enhanced query error, using base fallback:', subErr.message);
+            let fallbackSql = `
+                SELECT cm.id, cm.room_id, cm.source_room_id, cm.sender_id, cm.sender_type, cm.message, cm.message_type,
+                       cm.created_at, cm.read_at, cm.reply_to, parent.message as replied_to_message, u.name as sender_name
+                FROM chat_messages cm
+                LEFT JOIN users u ON cm.sender_id = u.id
+                LEFT JOIN chat_messages parent ON cm.reply_to = parent.id
+                WHERE cm.room_id = ? OR (cm.source_room_id = ? AND cm.sender_id = ?)
+            `;
+            const params = [roomId, roomId, userId];
+            if (after) {
+                fallbackSql += ` AND cm.id > ?`;
+                params.push(after);
+            }
+            fallbackSql += ` ORDER BY cm.created_at ASC`;
+            const [rows] = await db.promise().query(fallbackSql, params);
+            messages = rows;
         }
-
-        sql += ` ORDER BY cm.created_at ASC`;
-
-        const [messages] = await db.promise().query(sql, params);
 
         // Dynamically update group invite message payloads with live member counts from DB
         const [allGroups] = await db.promise().query(
@@ -408,28 +447,238 @@ exports.sendMessage = async (req, res) => {
     }
 };
 
-// Delete a message (only allowed if sender matches)
-exports.deleteMessage = async (req, res) => {
+// Edit a message (only sender allowed within 15 mins)
+exports.editMessage = async (req, res) => {
     try {
-        const { messageId } = req.body;
+        const { messageId, text } = req.body;
         const userId = req.user.id || req.user.userId;
 
-        // Verify message belongs to user
+        if (!messageId || !text || !text.trim()) {
+            return res.status(400).json({ success: false, message: 'messageId and text are required' });
+        }
+
         const [msgRows] = await db.promise().query('SELECT id, sender_id FROM chat_messages WHERE id = ?', [messageId]);
         if (msgRows.length === 0) {
             return res.status(404).json({ success: false, message: 'Message not found' });
         }
 
-        if (msgRows[0].sender_id != userId) {
-            return res.status(403).json({ success: false, message: 'You can only delete your own messages' });
+        if (Number(msgRows[0].sender_id) !== Number(userId)) {
+            return res.status(403).json({ success: false, message: 'You can only edit your own messages' });
         }
 
-        await db.promise().query('DELETE FROM chat_messages WHERE id = ?', [messageId]);
+        await db.promise().query(
+            'UPDATE chat_messages SET message = ?, edited = 1, edited_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [text.trim(), messageId]
+        );
 
-        return res.json({ success: true, message: 'Message deleted' });
+        return res.json({ success: true, message: 'Message edited successfully', messageId, text: text.trim() });
+    } catch (error) {
+        console.error('Error in editMessage:', error);
+        return res.status(500).json({ success: false, message: 'Failed to edit message' });
+    }
+};
+
+// Delete a message (supports "Delete for Me" and "Delete for Everyone")
+exports.deleteMessage = async (req, res) => {
+    try {
+        const { messageId, deleteForEveryone = false } = req.body;
+        const userId = req.user.id || req.user.userId;
+
+        const [msgRows] = await db.promise().query('SELECT id, sender_id, room_id FROM chat_messages WHERE id = ?', [messageId]);
+        if (msgRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Message not found' });
+        }
+
+        const msg = msgRows[0];
+
+        if (deleteForEveryone) {
+            if (Number(msg.sender_id) !== Number(userId) && req.user.role !== 'Admin') {
+                return res.status(403).json({ success: false, message: 'You can only delete your own messages for everyone' });
+            }
+            await db.promise().query(
+                "UPDATE chat_messages SET deleted_for_everyone = 1, message = 'This message was deleted' WHERE id = ?",
+                [messageId]
+            );
+        } else {
+            // Delete for Me
+            await db.promise().query(
+                'INSERT IGNORE INTO user_deleted_messages (user_id, message_id) VALUES (?, ?)',
+                [userId, messageId]
+            );
+        }
+
+        return res.json({ success: true, message: 'Message deleted', messageId, deleteForEveryone });
     } catch (error) {
         console.error('Error in deleteMessage:', error);
         return res.status(500).json({ success: false, message: 'Failed to delete message' });
+    }
+};
+
+// Forward a message to another room
+exports.forwardMessage = async (req, res) => {
+    try {
+        const { targetRoomId, messageText, originalMessageId } = req.body;
+        const senderId = req.user.id || req.user.userId;
+        const senderType = req.user.role || 'User';
+
+        if (!targetRoomId || !messageText) {
+            return res.status(400).json({ success: false, message: 'targetRoomId and messageText are required' });
+        }
+
+        const [insertMsg] = await db.promise().query(
+            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message, is_forwarded, message_type) VALUES (?, ?, ?, ?, 1, ?)',
+            [targetRoomId, senderId, senderType, messageText, 'text']
+        );
+
+        return res.json({
+            success: true,
+            message: 'Message forwarded successfully',
+            data: { id: insertMsg.insertId, roomId: targetRoomId, senderId, senderType, message: messageText, is_forwarded: 1, created_at: new Date() }
+        });
+    } catch (error) {
+        console.error('Error in forwardMessage:', error);
+        return res.status(500).json({ success: false, message: 'Failed to forward message' });
+    }
+};
+
+// Toggle Emoji Reaction on a message
+exports.toggleReaction = async (req, res) => {
+    try {
+        const { messageId, reaction } = req.body;
+        const userId = req.user.id || req.user.userId;
+
+        if (!messageId) {
+            return res.status(400).json({ success: false, message: 'messageId is required' });
+        }
+
+        if (!reaction) {
+            // Remove reaction
+            await db.promise().query(
+                'DELETE FROM message_reactions WHERE message_id = ? AND user_id = ?',
+                [messageId, userId]
+            );
+        } else {
+            // Add or update reaction
+            await db.promise().query(
+                `INSERT INTO message_reactions (message_id, user_id, reaction)
+                 VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE reaction = VALUES(reaction)`,
+                [messageId, userId, reaction]
+            );
+        }
+
+        const [reactionRows] = await db.promise().query(
+            'SELECT reaction, COUNT(*) as count FROM message_reactions WHERE message_id = ? GROUP BY reaction',
+            [messageId]
+        );
+
+        return res.json({ success: true, messageId, reactions: reactionRows });
+    } catch (error) {
+        console.error('Error in toggleReaction:', error);
+        return res.status(500).json({ success: false, message: 'Failed to update reaction' });
+    }
+};
+
+// Toggle Pin / Mute / Archive per user
+exports.toggleChatSetting = async (req, res) => {
+    try {
+        const { roomId, isPinned, isMuted, isArchived } = req.body;
+        const userId = req.user.id || req.user.userId;
+
+        if (!roomId) {
+            return res.status(400).json({ success: false, message: 'roomId is required' });
+        }
+
+        await db.promise().query(
+            `INSERT INTO user_chat_settings (user_id, room_id, is_pinned, is_muted, is_archived)
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE 
+               is_pinned = COALESCE(?, is_pinned),
+               is_muted = COALESCE(?, is_muted),
+               is_archived = COALESCE(?, is_archived)`,
+            [
+                userId, roomId, 
+                isPinned ? 1 : 0, isMuted ? 1 : 0, isArchived ? 1 : 0,
+                isPinned !== undefined ? (isPinned ? 1 : 0) : null,
+                isMuted !== undefined ? (isMuted ? 1 : 0) : null,
+                isArchived !== undefined ? (isArchived ? 1 : 0) : null
+            ]
+        );
+
+        return res.json({ success: true, message: 'Chat settings updated' });
+    } catch (error) {
+        console.error('Error in toggleChatSetting:', error);
+        return res.status(500).json({ success: false, message: 'Failed to update chat setting' });
+    }
+};
+
+// Get target user presence & last seen info
+exports.getUserPresence = async (req, res) => {
+    try {
+        const { targetUserId } = req.params;
+        const [rows] = await db.promise().query(
+            'SELECT id, name, is_online, last_seen FROM users WHERE id = ?',
+            [targetUserId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const u = rows[0];
+        return res.json({
+            success: true,
+            presence: {
+                userId: u.id,
+                name: u.name,
+                isOnline: Boolean(u.is_online),
+                lastSeen: u.last_seen || null
+            }
+        });
+    } catch (error) {
+        console.error('Error in getUserPresence:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch user presence' });
+    }
+};
+
+// Get media, docs, and links for a specific room (Chat Info Media Gallery)
+exports.getRoomMedia = async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const userId = req.user.id || req.user.userId;
+
+        const [rows] = await db.promise().query(
+            `SELECT cm.id, cm.message, cm.message_type, cm.created_at, u.name as sender_name
+             FROM chat_messages cm
+             LEFT JOIN users u ON cm.sender_id = u.id
+             WHERE cm.room_id = ? 
+               AND cm.id NOT IN (SELECT message_id FROM user_deleted_messages WHERE user_id = ?)
+               AND (cm.message LIKE 'http%' OR cm.message LIKE 'data:image%' OR cm.message LIKE 'Document:%' OR cm.message LIKE 'Audio:%' OR cm.message_type IN ('image', 'video', 'document', 'audio'))
+             ORDER BY cm.created_at DESC`,
+            [roomId, userId]
+        );
+
+        const media = [];
+        const docs = [];
+        const links = [];
+
+        rows.forEach(r => {
+            const text = r.message || '';
+            if (text.startsWith('Document:') || r.message_type === 'document') {
+                docs.push({ id: r.id, title: text, timestamp: r.created_at, senderName: r.sender_name });
+            } else if (text.startsWith('http://') || text.startsWith('https://') || text.startsWith('data:image')) {
+                if (text.match(/\.(jpeg|jpg|gif|png|webp|mp4)/i) || text.includes('/uploads/')) {
+                    media.push({ id: r.id, url: text, type: r.message_type || 'image', timestamp: r.created_at });
+                } else {
+                    links.push({ id: r.id, url: text, timestamp: r.created_at });
+                }
+            }
+        });
+
+        return res.json({ success: true, media, docs, links });
+    } catch (error) {
+        console.error('Error in getRoomMedia:', error);
+        return res.status(500).json({ success: false, message: 'Failed to load room media' });
     }
 };
 
@@ -824,9 +1073,14 @@ exports.addRoomMembers = async (req, res) => {
     try {
         const { roomId } = req.params;
         const { userIds } = req.body;
+        const requestingUserRole = req.user.role || 'User';
 
-        if (!userIds || userIds.length === 0) {
-            return res.status(400).json({ success: false, message: 'userIds are required' });
+        if (requestingUserRole !== 'Admin') {
+            return res.status(403).json({ success: false, message: 'Only Admins can add members to chat rooms' });
+        }
+
+        if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'userIds array is required' });
         }
 
         const queries = userIds.map(userId =>
@@ -848,21 +1102,26 @@ exports.addRoomMembers = async (req, res) => {
 exports.removeRoomMembers = async (req, res) => {
     try {
         const { roomId } = req.params;
-        const { userIds } = req.body;
+        const { userId } = req.body;
+        const requestingUserRole = req.user.role || 'User';
 
-        if (!userIds || userIds.length === 0) {
-            return res.status(400).json({ success: false, message: 'userIds are required' });
+        if (requestingUserRole !== 'Admin') {
+            return res.status(403).json({ success: false, message: 'Only Admins can remove members from chat rooms' });
+        }
+
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'userId is required' });
         }
 
         await db.promise().query(
-            'DELETE FROM chat_room_members WHERE room_id = ? AND user_id IN (?)',
-            [roomId, userIds]
+            'DELETE FROM chat_room_members WHERE room_id = ? AND user_id = ?',
+            [roomId, userId]
         );
 
-        return res.json({ success: true, message: 'Members removed successfully' });
+        return res.json({ success: true, message: 'Member removed successfully' });
     } catch (error) {
         console.error('Error in removeRoomMembers:', error);
-        return res.status(500).json({ success: false, message: 'Failed to remove members' });
+        return res.status(500).json({ success: false, message: 'Failed to remove member' });
     }
 };
 

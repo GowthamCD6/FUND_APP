@@ -21,6 +21,7 @@ import ApiService from '../../../../../../services/ApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuctionWebSocketService from '../../../../../../services/AuctionWebSocketService';
 import { useAuth } from '../../../../../../utils/AuthContext';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 import BettingAuction from './Betting-Auction/BettingAuction';
 import RandomAuction from './Random-Auction/RandomAuction';
 import MemberSelectingModal from './MemberSelecting/MemberSelectingModal';
@@ -28,6 +29,7 @@ import MemberSelectingModal from './MemberSelecting/MemberSelectingModal';
 const { width, height } = Dimensions.get('window');
 
 const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
+  const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
   const stackNavigation = useNavigation();
   const navigation = propNavigation || stackNavigation;
@@ -49,6 +51,8 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
   // Backend state
   const [groups, setGroups] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(true);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [selectingGroupId, setSelectingGroupId] = useState(null);
   const [savingWinner, setSavingWinner] = useState(false);
 
   // Fetch groups and connect WebSocket on component mount
@@ -72,7 +76,9 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
     }
 
     return () => {
-      // Don't disconnect here because child components might still use it
+      // Offload specific event listeners to prevent duplicate listener buildup while keeping connection alive
+      AuctionWebSocketService.off('auction_created_alert');
+      AuctionWebSocketService.off('new_bid');
     };
   }, [isAuthenticated]);
 
@@ -123,7 +129,9 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
   // Fetch group members when group is selected
   const fetchGroupMembers = async (groupId) => {
     try {
-      const response = await ApiService.makeRequest(`/admin/groups/getMembers?groupId=${groupId}`, { method: 'GET' });
+      setLoadingMembers(true);
+      const cleanGroupId = encodeURIComponent(String(groupId).trim());
+      const response = await ApiService.makeRequest(`/admin/groups/getMembers?groupId=${cleanGroupId}`, { method: 'GET' });
       const data = await response.json();
       
       if (data && data.success && Array.isArray(data.members)) {
@@ -144,41 +152,47 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
     } catch (error) {
       console.error('Error fetching group members:', error);
       Alert.alert('Error', 'Failed to fetch group members');
+    } finally {
+      setLoadingMembers(false);
     }
   };
 
-  // Save auction winner to backend
+  // Send auction winner to GroupInfo via event
   const saveAuctionWinnerToBackend = async (winner) => {
+    if (savingWinner) return;
+    if (!winner || !winner.name || !selectedGroup?.id) {
+      Alert.alert('Error', 'Invalid winner selection data');
+      return;
+    }
+
     try {
       setSavingWinner(true);
+      
       const payload = {
         groupId: selectedGroup.id,
-        month: new Date().getMonth(),
-        year: new Date().getFullYear(),
-        chitWinnerName: winner.name,
-        chitWinnerMemberId: winner.phone || '',
+        chitWinnerName: String(winner.name).trim(),
+        chitWinnerMemberId: String(winner.phone || winner.id || '').trim(),
         amountTaken: (winner.bid !== undefined && winner.bid > 0)
           ? winner.bid
           : (auctionResult?.amount !== undefined ? auctionResult.amount : selectedGroup.groupAmount),
-        datePicked: new Date().toISOString(),
-        winnerUserId: winner.id,
+        datePicked: new Date().toISOString().split('T')[0],
       };
-      const response = await ApiService.makeRequest('/admin/groups/saveAuctionWinner', { 
-        method: 'POST', 
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
       
-      if (data && data.success) {
-        Alert.alert('Success', `${winner.name} has been declared as the winner!`);
-        setShowResultModal(false);
-        resetAuction();
-      } else {
-        Alert.alert('Error', data?.message || 'Failed to save auction winner');
-      }
+      // Emit event so GroupInfo can catch it and populate the modal
+      import('react-native').then(({ DeviceEventEmitter }) => {
+        DeviceEventEmitter.emit('auctionWinnerSelected', payload);
+      });
+
+      Alert.alert('Success', `${winner.name} has been selected!`);
+      setShowResultModal(false);
+      resetAuction();
+      
+      // Go back to the ManageGroups screen where GroupInfo is
+      navigation.goBack();
+      
     } catch (error) {
-      console.error('Error saving auction winner:', error);
-      Alert.alert('Error', 'Failed to save auction winner');
+      console.error('Error sending auction winner:', error);
+      Alert.alert('Error', 'Failed to process auction winner');
     } finally {
       setSavingWinner(false);
     }
@@ -194,16 +208,16 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
   };
 
   // Action handlers
-  const selectGroup = (group) => {
+  const selectGroup = async (group) => {
+    setSelectingGroupId(group.id);
     setSelectedGroup(group);
     setSelectedMembers([]);
     setParticipants([]);
-    if (group.members && group.members.length > 0) {
-      setShowMemberModal(true);
-    } else {
-      fetchGroupMembers(group.id);
-      setShowMemberModal(true);
+    setShowMemberModal(true);
+    if (!group.members || group.members.length === 0) {
+      await fetchGroupMembers(group.id);
     }
+    setSelectingGroupId(null);
   };
 
   const handleGroupCardPress = (group) => {
@@ -328,7 +342,7 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
     if (loadingGroups) {
       return (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Loading groups...</Text>
+          <Text style={styles.sectionTitle}>{t('Loading groups...')}</Text>
           <ActivityIndicator size="large" color="#6B46C1" style={{ marginTop: 20 }} />
         </View>
       );
@@ -338,19 +352,29 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
     
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Select Group for {activeTab === 'betting' ? 'Betting' : 'Random'} Auction</Text>
+        <Text style={styles.sectionTitle}>
+          {activeTab === 'betting' ? t('Select Group for Betting Auction') : t('Select Group for Random Auction')}
+        </Text>
         {activeGroups.length === 0 ? (
-          <Text style={styles.emptyText}>No active groups available</Text>
+          <Text style={styles.emptyText}>{t('No active groups available')}</Text>
         ) : (
           <FlatList
             data={activeGroups}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
-              <GroupCard 
-                group={item}
-                onPress={handleGroupCardPress}
-                onArrowPress={handleGroupCardPress}
-              />
+              <View style={{ position: 'relative' }}>
+                <GroupCard 
+                  group={item}
+                  onPress={handleGroupCardPress}
+                  onArrowPress={handleGroupCardPress}
+                />
+                {selectingGroupId === item.id && (
+                  <View style={styles.cardSelectingOverlay}>
+                    <ActivityIndicator size="small" color="#6B46C1" />
+                    <Text style={styles.cardSelectingText}>{t('Selecting...')}</Text>
+                  </View>
+                )}
+              </View>
             )}
             scrollEnabled={false}
             contentContainerStyle={styles.groupListContainer}
@@ -570,6 +594,7 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
       
       <MemberSelectingModal
         visible={showMemberModal}
+        loading={loadingMembers}
         selectedGroup={selectedGroup}
         selectedMembers={selectedMembers}
         onClose={() => setShowMemberModal(false)}

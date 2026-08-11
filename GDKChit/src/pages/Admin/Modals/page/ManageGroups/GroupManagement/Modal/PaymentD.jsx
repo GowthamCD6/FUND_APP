@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
   const [paymentFormData, setPaymentFormData] = useState({
@@ -36,7 +37,11 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
   }, [visible, initialPaymentData]);
 
   const handleInputChange = (field, value) => {
-    setPaymentFormData(prev => ({ ...prev, [field]: value }));
+    let cleanValue = value;
+    if (['currentMonthAmount', 'elathThalupadi', 'commission'].includes(field)) {
+      cleanValue = value.replace(/[^0-9]/g, '');
+    }
+    setPaymentFormData(prev => ({ ...prev, [field]: cleanValue }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
     }
@@ -45,8 +50,16 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!paymentFormData.currentMonthAmount || parseFloat(paymentFormData.currentMonthAmount) <= 0) {
+    const monthly = parseFloat(paymentFormData.currentMonthAmount || '0');
+    const discount = parseFloat(paymentFormData.elathThalupadi || '0');
+    const commission = parseFloat(paymentFormData.commission || '0');
+
+    if (!paymentFormData.currentMonthAmount || monthly <= 0) {
       newErrors.currentMonthAmount = 'Please enter a valid monthly amount';
+    }
+
+    if (discount + commission > monthly) {
+      newErrors.elathThalupadi = 'Discount + Commission cannot exceed Monthly Amount';
     }
 
     setErrors(newErrors);
@@ -64,6 +77,7 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
   const formatDateForInput = (date) => {
     if (!date) return '';
     const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -73,6 +87,7 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
   const formatDateForDisplay = (dateString) => {
     if (!dateString) return 'Select Date';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Select Date';
     return date.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
@@ -80,14 +95,48 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
     });
   };
 
+  const parseStringDate = (value) => {
+    try {
+      if (!value) return new Date();
+      if (value.includes('/')) {
+        const [dd, mm, yyyy] = value.split('/').map(Number);
+        if (!dd || !mm || !yyyy) return new Date();
+        return new Date(yyyy, mm - 1, dd);
+      }
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? new Date() : d;
+    } catch {
+      return new Date();
+    }
+  };
+
   const openDatePicker = () => {
-    setSelectedDate(paymentFormData.deadlineDate ? new Date(paymentFormData.deadlineDate) : new Date());
+    setSelectedDate(parseStringDate(paymentFormData.deadlineDate));
     setShowDatePicker(true);
   };
 
-  const handleDateSelect = () => {
-    const formattedDate = formatDateForInput(selectedDate);
-    handleInputChange('deadlineDate', formattedDate);
+  const onAndroidDateChange = (event, selectedDateVal) => {
+    if (event.type === 'dismissed') {
+      setShowDatePicker(false);
+      return;
+    }
+    const finalDate = selectedDateVal || selectedDate;
+    setShowDatePicker(false);
+    handleInputChange('deadlineDate', formatDateForInput(finalDate));
+  };
+
+  const onIOSDateChange = (_event, selectedDateVal) => {
+    if (selectedDateVal) {
+      setSelectedDate(selectedDateVal);
+    }
+  };
+
+  const confirmIOSDate = () => {
+    handleInputChange('deadlineDate', formatDateForInput(selectedDate));
+    setShowDatePicker(false);
+  };
+
+  const cancelIOSDate = () => {
     setShowDatePicker(false);
   };
 
@@ -210,101 +259,38 @@ const PaymentD = ({ visible, onClose, initialPaymentData, onSave }) => {
         </View>
       </Modal>
 
-      {/* Date Picker Modal */}
+      {/* Native Date Picker */}
       {showDatePicker && (
-        <Modal
-          visible={showDatePicker}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowDatePicker(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.datePickerModal}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Deadline Date</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.datePickerContent}>
-                <View style={styles.datePickerControls}>
-                  <TouchableOpacity
-                    style={styles.dateButton}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(newDate.getDate() - 1);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <MaterialCommunityIcons name="chevron-left" size={24} color="#6B46C1" />
+        Platform.OS === 'ios' ? (
+          <Modal transparent animationType="fade" visible={showDatePicker}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.iosPickerContainer}>
+                <View style={styles.iosPickerHeader}>
+                  <TouchableOpacity onPress={cancelIOSDate} style={styles.iosPickerButton}>
+                    <Text style={styles.iosPickerButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <View style={styles.dateDisplay}>
-                    <Text style={styles.selectedDateText}>
-                      {selectedDate.toLocaleDateString('en-IN', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.dateButton}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(newDate.getDate() + 1);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <MaterialCommunityIcons name="chevron-right" size={24} color="#6B46C1" />
+                  <Text style={styles.iosPickerTitle}>Select Deadline Date</Text>
+                  <TouchableOpacity onPress={confirmIOSDate} style={styles.iosPickerButton}>
+                    <Text style={[styles.iosPickerButtonText, { color: '#6B46C1' }]}>Done</Text>
                   </TouchableOpacity>
                 </View>
-                <View style={styles.quickDateButtons}>
-                  <TouchableOpacity
-                    style={styles.quickDateBtn}
-                    onPress={() => setSelectedDate(new Date())}
-                  >
-                    <Text style={styles.quickDateText}>Today</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.quickDateBtn}
-                    onPress={() => {
-                      const nextWeek = new Date();
-                      nextWeek.setDate(nextWeek.getDate() + 7);
-                      setSelectedDate(nextWeek);
-                    }}
-                  >
-                    <Text style={styles.quickDateText}>+7 Days</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.quickDateBtn}
-                    onPress={() => {
-                      const next15 = new Date();
-                      next15.setDate(next15.getDate() + 15);
-                      setSelectedDate(next15);
-                    }}
-                  >
-                    <Text style={styles.quickDateText}>+15 Days</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View style={styles.datePickerActions}>
-                <TouchableOpacity
-                  style={styles.cancelDateButton}
-                  onPress={() => setShowDatePicker(false)}
-                >
-                  <Text style={styles.cancelDateText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.selectDateButton}
-                  onPress={handleDateSelect}
-                >
-                  <Text style={styles.selectDateText}>Select Date</Text>
-                </TouchableOpacity>
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="spinner"
+                  onChange={onIOSDateChange}
+                />
               </View>
             </View>
-          </View>
-        </Modal>
+          </Modal>
+        ) : (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display="default"
+            onChange={onAndroidDateChange}
+          />
+        )
       )}
     </>
   );
@@ -522,35 +508,36 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#6B7280',
   },
-  datePickerActions: {
+  iosPickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '90%',
+    maxWidth: 360,
+    paddingBottom: 16,
+    overflow: 'hidden',
+  },
+  iosPickerHeader: {
     flexDirection: 'row',
-    padding: 20,
-    paddingTop: 0,
-    gap: 12,
-  },
-  cancelDateButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  cancelDateText: {
+  iosPickerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#111827',
   },
-  selectDateButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#6B46C1',
-    borderRadius: 8,
-    alignItems: 'center',
+  iosPickerButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  selectDateText: {
-    fontSize: 16,
+  iosPickerButtonText: {
+    fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#6B7280',
   },
 });
 

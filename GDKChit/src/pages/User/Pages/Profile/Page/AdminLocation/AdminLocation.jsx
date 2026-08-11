@@ -248,7 +248,7 @@ const AdminLocation = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header
         title="Admin Locations"
         onBack={() => navigation.goBack()}
@@ -426,7 +426,7 @@ const AdminLocation = ({ navigation }) => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 

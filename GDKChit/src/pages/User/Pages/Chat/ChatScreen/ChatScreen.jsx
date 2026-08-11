@@ -69,7 +69,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinModalCode, setJoinModalCode] = useState('');
-  const audioRecorderPlayer = useRef(new AudioRecorderPlayer()).current;
+  const audioRecorderPlayer = useRef(typeof AudioRecorderPlayer === 'function' ? new AudioRecorderPlayer() : AudioRecorderPlayer).current;
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const [recordTime, setRecordTime] = useState('00:00');
   const [showRecordModal, setShowRecordModal] = useState(false);
@@ -266,6 +266,30 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     }, 100);
 
     try {
+      // 1. Always persist message to backend MySQL database via REST API
+      const response = await ApiService.makeRequest('/chats/send', {
+        method: 'POST',
+        body: JSON.stringify({
+          roomId: chatId,
+          message: newMessage.text,
+          replyTo: activeReply?.id || null
+        }),
+      });
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === tempId ? {
+              ...msg,
+              id: data.data.id,
+              status: 'delivered'
+            } : msg
+          )
+        );
+      }
+
+      // 2. Broadcast via WebSocket if socket is open
       if (ws && ws.readyState === 1) {
         ws.send(JSON.stringify({
           type: 'send_message',
@@ -275,42 +299,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             replyTo: activeReply?.id || null
           }
         }));
-
-        // Optimistically set to delivered
-        setTimeout(() => {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === tempId ? { ...msg, status: 'delivered' } : msg
-            )
-          );
-          setIsSending(false);
-        }, 300);
-      } else {
-        // Fallback to HTTP if WS is down
-        const response = await ApiService.makeRequest('/chats/send', {
-          method: 'POST',
-          body: JSON.stringify({
-            roomId: chatId,
-            message: newMessage.text,
-            replyTo: activeReply?.id || null
-          }),
-        });
-        const data = await response.json();
-
-        if (data.success) {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === tempId ? {
-                ...msg,
-                id: data.data.id,
-                status: 'read',
-                isRead: true
-              } : msg
-            )
-          );
-        }
-        setIsSending(false);
       }
+      setIsSending(false);
     } catch (error) {
       console.error('Error sending message:', error);
       setIsSending(false);
@@ -835,11 +825,19 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     };
   }, [ws, chatId, chatAvatar]);
 
+  const initialScrollDone = useRef(false);
+
   useEffect(() => {
-    // Scroll to bottom when messages change
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    initialScrollDone.current = false;
+  }, [chatId]);
+
+  useEffect(() => {
+    if (messages.length > 0 && !initialScrollDone.current) {
+      initialScrollDone.current = true;
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 50);
+    }
   }, [messages]);
 
   const handleSendMessage = () => {
@@ -1058,27 +1056,24 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   };
 
   // Filter messages by search query (forced rebuild)
-  const filteredMessages = searchQuery.trim()
-    ? messages.filter(msg =>
-      msg.text.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    : messages;
+  const filteredMessages = (messages || []).filter(msg => {
+    if (!msg) return false;
+    if (!searchQuery.trim()) return true;
+    return msg.text ? String(msg.text).toLowerCase().includes(searchQuery.trim().toLowerCase()) : false;
+  });
 
   // WhatsApp-style tick icons
   const getStatusIcon = (status) => {
-    switch (status) {
-      case 'sent':
-        // Single grey tick — sent but not delivered/read
-        return <MaterialCommunityIcons name="check" size={14} color="rgba(255,255,255,0.6)" />;
-      case 'delivered':
-        // Double grey tick — delivered but not read
-        return <MaterialCommunityIcons name="check-all" size={14} color="rgba(255,255,255,0.6)" />;
+    const s = String(status || '').toLowerCase();
+    switch (s) {
       case 'read':
-        // Double BLUE tick — recipient has seen the message
-        return <MaterialCommunityIcons name="check-all" size={14} color="#60D0FE" />;
+        // Double BLUE tick — recipient opened/read message
+        return <MaterialCommunityIcons name="check-all" size={15} color="#60D0FE" style={{ marginLeft: 3 }} />;
+      case 'delivered':
+      case 'sent':
       default:
-        // Clock icon while sending
-        return <MaterialCommunityIcons name="clock-outline" size={12} color="rgba(255,255,255,0.5)" />;
+        // Double GREY tick — sent and delivered to recipient
+        return <MaterialCommunityIcons name="check-all" size={15} color="rgba(255,255,255,0.75)" style={{ marginLeft: 3 }} />;
     }
   };
 
@@ -1300,8 +1295,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
               <MaterialCommunityIcons name="download" size={22} color="#FFFFFF" />
             </TouchableOpacity>
           </SafeAreaView>
-
-          <Image
+            <Image
             source={{ uri: viewerImageUri }}
             style={{ width: Dimensions.get('window').width, height: Dimensions.get('window').height * 0.75 }}
             resizeMode="contain"
@@ -1312,10 +1306,11 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   };
 
   const renderMessage = ({ item, index }) => {
+    if (!item) return null;
     const isUserMessage = item.sender === 'user';
-    const showDateSeparator = shouldShowDateSeparator(item, messages[index - 1]);
-    const isGrouped = shouldGroupWithPrevious(item, messages[index - 1]);
-    const nextMsg = messages[index + 1];
+    const showDateSeparator = shouldShowDateSeparator(item, filteredMessages[index - 1]);
+    const isGrouped = shouldGroupWithPrevious(item, filteredMessages[index - 1]);
+    const nextMsg = filteredMessages[index + 1];
     const isLastInGroup = !shouldGroupWithPrevious(nextMsg, item);
     const isImg = isImageContent(item.text);
 
@@ -1879,7 +1874,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           <TouchableOpacity style={styles.profileSection} onPress={() => { if (isGroup) handleOpenGroupInfo(); }} activeOpacity={isGroup ? 0.7 : 1}>
             <View style={styles.avatarWithStatus}>
               <View style={styles.profileAvatar}>
-                {chatAvatar && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
+                {chatAvatar && typeof chatAvatar === 'string' && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
                   <Image source={{ uri: chatAvatar }} style={{ width: 48, height: 48, borderRadius: 24 }} />
                 ) : (
                   <MaterialCommunityIcons name={isGroup ? "account-group" : "account"} size={30} color="#7C3AED" />
@@ -1980,11 +1975,23 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
           <FlatList
             ref={flatListRef}
             data={filteredMessages}
-            renderItem={({ item, index }) => renderMessage({ item, index: filteredMessages.indexOf(item) })}
-            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item, index }) => renderMessage({ item, index })}
+            keyExtractor={(item, index) => (item && item.id ? String(item.id) : String(index))}
             contentContainerStyle={styles.messagesList}
             scrollEnabled={true}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onLayout={() => {
+              if (!initialScrollDone.current) {
+                flatListRef.current?.scrollToEnd({ animated: false });
+              }
+            }}
+            onContentSizeChange={() => {
+              if (!initialScrollDone.current) {
+                flatListRef.current?.scrollToEnd({ animated: false });
+              }
+            }}
+            onScrollBeginDrag={() => {
+              initialScrollDone.current = true;
+            }}
             scrollEventThrottle={16}
           />
         ) : searchActive && searchQuery.length > 0 ? (
@@ -2176,7 +2183,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             {/* Top Section (Hero Header) */}
             <View style={styles.groupInfoHeaderSection}>
               <View style={styles.groupInfoAvatarContainer}>
-                {chatAvatar && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
+                {chatAvatar && typeof chatAvatar === 'string' && (chatAvatar.startsWith('http') || chatAvatar.startsWith('data:image')) ? (
                   <Image source={{ uri: chatAvatar }} style={{ width: 110, height: 110, borderRadius: 55 }} />
                 ) : (
                   <View style={{ width: 110, height: 110, borderRadius: 55, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center' }}>

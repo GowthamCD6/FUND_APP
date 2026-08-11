@@ -52,7 +52,9 @@ const GroupCardInfo = ({ onClose, group }) => {
     const fetchMonthlyInfo = async () => {
       try {
         setLoading(true);
-        const result = await ApiService.getGroupMonthlyInfo(group.id || groupInfo.groupId);
+        const targetId = group?.id || groupInfo.groupId;
+        const cleanGroupId = encodeURIComponent(String(targetId).trim());
+        const result = await ApiService.getGroupMonthlyInfo(cleanGroupId);
         if (result?.success && result?.data) {
           setMonthlyData(result.data);
         }
@@ -67,7 +69,7 @@ const GroupCardInfo = ({ onClose, group }) => {
     } else {
       setLoading(false);
     }
-  }, [groupInfo.groupId]);
+  }, [groupInfo.groupId, group?.id]);
 
   const monthData = monthlyData[monthKey] || {
     status: 'pending',
@@ -86,20 +88,21 @@ const GroupCardInfo = ({ onClose, group }) => {
   const effectiveDueDate = monthData.dueDate || null;
 
   const formatCurrency = (amount) => {
-    if (amount == null || amount === '' || isNaN(amount)) return 'nil';
-    return `₹${amount.toLocaleString('en-IN')}`;
+    if (amount == null || amount === '' || isNaN(Number(amount))) return 'nil';
+    const num = Number(amount);
+    return `₹${num.toLocaleString('en-IN')}`;
   };
 
   const displayNil = (value) => {
-    if (value == null || value === '') return 'nil';
+    if (value == null || value === '' || value === 'N/A') return 'nil';
     return String(value);
   };
 
   const getAmountToPay = () => {
-    if (monthData.paymentAmount != null && !isNaN(monthData.paymentAmount)) {
+    if (monthData.paymentAmount != null && !isNaN(Number(monthData.paymentAmount))) {
       return monthData.paymentAmount;
     }
-    if (monthData.netAmount != null && !isNaN(monthData.netAmount)) {
+    if (monthData.netAmount != null && !isNaN(Number(monthData.netAmount))) {
       return monthData.netAmount;
     }
     return null;
@@ -151,7 +154,7 @@ const GroupCardInfo = ({ onClose, group }) => {
   return (
     <SafeAreaView style={styles.container}>
       <Header
-        title="Chit Group Details"
+        title={t('Chit Group Details')}
         onBack={onClose}
         showBackButton={true}
       />

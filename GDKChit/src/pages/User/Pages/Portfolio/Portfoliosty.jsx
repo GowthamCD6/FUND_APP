@@ -502,6 +502,58 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'System',
   },
+
+  // --- CARD SKELETON LOADING STYLES ---
+  skeletonCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  skeletonHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  skeletonTitle: {
+    width: '45%',
+    height: 18,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 6,
+  },
+  skeletonBadge: {
+    width: '25%',
+    height: 18,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 12,
+  },
+  skeletonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  skeletonTextLeft: {
+    width: '35%',
+    height: 14,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 4,
+  },
+  skeletonTextRight: {
+    width: '30%',
+    height: 14,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 4,
+  },
+  skeletonProgress: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 4,
+    marginTop: 4,
+  },
 });
 
 export default styles;

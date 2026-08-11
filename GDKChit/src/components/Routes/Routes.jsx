@@ -32,6 +32,7 @@ import UserHelpSupport from "../../pages/User/Pages/Profile/Page/HelpAndSupport/
 import UserMyLocation from "../../pages/User/Pages/Profile/Page/MyLocation/MyLocation";
 import UserAdminLocation from "../../pages/User/Pages/Profile/Page/AdminLocation/AdminLocation";
 import LanguageSettings from "../../pages/User/Pages/Profile/Page/LanguageSettings/LanguageSettings";
+import AdminLanguageSettings from "../../pages/Admin/pages/Settings/pages/LanguageSettings/LanguageSettings";
 import OTPRequests from "../../pages/User/Pages/Profile/Page/OTPRequests/OTPRequests";
 import OTPNotificationBanner from "../OTPNotificationBanner/OTPNotificationBanner";
 
@@ -79,7 +80,7 @@ const Routes = () => {
                 translucent={true}
             />
             <View style={{ flex: 1, backgroundColor: '#1A0C38' }}>
-                <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false, animation: 'fade', animationDuration: 400 }}>
+                <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
 
                     <Stack.Screen name="Splash" component={SplashScreen} />
                     <Stack.Screen name="Welcome" component={withSafe(Welcome)} />
@@ -117,6 +118,7 @@ const Routes = () => {
                     <Stack.Screen name="UserMyLocation" component={withSafe(UserMyLocation)} />
                     <Stack.Screen name="UserAdminLocation" component={withSafe(UserAdminLocation)} />
                     <Stack.Screen name="LanguageSettings" component={withSafe(LanguageSettings)} />
+                    <Stack.Screen name="AdminLanguageSettings" component={withSafe(AdminLanguageSettings)} />
                     <Stack.Screen name="OTPRequests" component={withSafe(OTPRequests)} />
                 </Stack.Navigator>
                 <OTPNotificationBanner />

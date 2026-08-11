@@ -548,7 +548,7 @@ const MyLocation = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header
         title="My Location"
         onBack={() => {
@@ -737,7 +737,7 @@ const MyLocation = ({ navigation }) => {
         visible={showShareLocationInfo}
         onClose={() => setShowShareLocationInfo(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

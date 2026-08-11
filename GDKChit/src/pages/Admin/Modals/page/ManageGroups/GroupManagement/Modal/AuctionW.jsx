@@ -9,9 +9,13 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import ApiService from '../../../../../../../services/ApiService';
 
-const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = [] }) => {
+const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = [], groupId, pastWinners = [] }) => {
+  const navigation = useNavigation();
   const [formData, setFormData] = useState({
     chitWinnerName: '',
     chitWinnerMemberId: '',
@@ -21,6 +25,7 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
   const [errors, setErrors] = useState({});
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [fetchedPastWinners, setFetchedPastWinners] = useState([]);
   const autoFilledPhoneRef = useRef('');
 
   const normalizeText = (value) => (value || '').toString().trim().replace(/\s+/g, ' ').toLowerCase();
@@ -48,6 +53,25 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
     return includesMatch || null;
   };
 
+  const fetchCompletedAuctions = async () => {
+    if (!groupId) return;
+    try {
+      const response = await ApiService.makeRequest(`/admin/groups/getCompletedAuctions?groupId=${groupId}`, { method: 'GET' });
+      const result = await response.json();
+      if (result && result.success && Array.isArray(result.data)) {
+        setFetchedPastWinners(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching completed auctions:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (visible && groupId) {
+      fetchCompletedAuctions();
+    }
+  }, [visible, groupId]);
+
   useEffect(() => {
     if (initialWinnerData) {
       setFormData({
@@ -63,8 +87,29 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
         amountTaken: '',
         datePicked: '',
       });
+      
+      if (visible && groupId) {
+        fetchPendingAuction();
+      }
     }
-  }, [initialWinnerData, visible]);
+  }, [initialWinnerData, visible, groupId]);
+
+  const fetchPendingAuction = async () => {
+    try {
+      const response = await ApiService.makeRequest(`/admin/groups/getPendingAuctionWinner?groupId=${groupId}`, { method: 'GET' });
+      const result = await response.json();
+      if (result && result.success && result.data) {
+        setFormData({
+          chitWinnerName: result.data.chitWinnerName || '',
+          chitWinnerMemberId: result.data.chitWinnerMemberId || '',
+          amountTaken: result.data.amountTaken?.toString() || '',
+          datePicked: result.data.datePicked?.split('T')[0] || '',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching pending auction:', error);
+    }
+  };
 
   useEffect(() => {
     if (!visible || !formData.chitWinnerName.trim() || groupMembers.length === 0) {
@@ -72,13 +117,14 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
     }
 
     const matchedMember = findBestMemberMatch(formData.chitWinnerName);
+    const targetMemberId = matchedMember ? String(matchedMember.id || matchedMember.phone || '') : '';
 
-    if (matchedMember?.phone && matchedMember.phone !== formData.chitWinnerMemberId) {
+    if (targetMemberId && targetMemberId !== formData.chitWinnerMemberId && !autoFilledPhoneRef.current) {
       setFormData((prev) => ({
         ...prev,
-        chitWinnerMemberId: matchedMember.phone,
+        chitWinnerMemberId: targetMemberId,
       }));
-      autoFilledPhoneRef.current = matchedMember.phone;
+      autoFilledPhoneRef.current = targetMemberId;
       if (errors.chitWinnerMemberId) {
         setErrors((prev) => ({
           ...prev,
@@ -87,50 +133,48 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
       }
       return;
     }
-
-    if (!matchedMember && formData.chitWinnerMemberId === autoFilledPhoneRef.current) {
-      setFormData((prev) => ({
-        ...prev,
-        chitWinnerMemberId: '',
-      }));
-      autoFilledPhoneRef.current = '';
-    }
   }, [errors.chitWinnerMemberId, formData.chitWinnerMemberId, formData.chitWinnerName, groupMembers, visible]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    let cleanValue = value;
+    if (field === 'amountTaken') {
+      cleanValue = value.replace(/[^0-9]/g, '');
+    }
+    setFormData(prev => ({ ...prev, [field]: cleanValue }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
     }
 
     if (field === 'chitWinnerName') {
-      const matchedMember = findBestMemberMatch(value);
+      const matchedMember = findBestMemberMatch(cleanValue);
+      const targetMemberId = matchedMember ? String(matchedMember.id || matchedMember.phone || '') : '';
 
-      if (matchedMember?.phone) {
+      if (targetMemberId) {
         setFormData((prev) => ({
           ...prev,
-          chitWinnerName: value,
-          chitWinnerMemberId: matchedMember.phone,
+          chitWinnerName: cleanValue,
+          chitWinnerMemberId: targetMemberId,
         }));
-        autoFilledPhoneRef.current = matchedMember.phone;
-        if (errors.chitWinnerMemberId) {
-          setErrors((prev) => ({
-            ...prev,
-            chitWinnerMemberId: null,
-          }));
-        }
-        return;
-      }
-
-      if (formData.chitWinnerMemberId === autoFilledPhoneRef.current) {
-        setFormData((prev) => ({
-          ...prev,
-          chitWinnerName: value,
-          chitWinnerMemberId: '',
-        }));
-        autoFilledPhoneRef.current = '';
+        autoFilledPhoneRef.current = targetMemberId;
       }
     }
+  };
+
+  const isUserAlreadyWon = (name, memberId) => {
+    const normName = normalizeText(name);
+    const normId = normalizeText(memberId);
+
+    const allPast = [...pastWinners, ...fetchedPastWinners];
+
+    return allPast.some(winner => {
+      const pastName = normalizeText(winner.name || winner.chitWinnerName || winner.winner_name);
+      const pastId = normalizeText(winner.memberId || winner.chitWinnerMemberId || winner.winner_member_phone || winner.winner_user_id);
+
+      const nameMatch = normName && pastName && normName === pastName;
+      const idMatch = normId && pastId && normId === pastId;
+
+      return nameMatch || idMatch;
+    });
   };
 
   const validateForm = () => {
@@ -140,15 +184,20 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
       newErrors.chitWinnerName = 'Winner name is required';
     }
     if (!formData.chitWinnerMemberId || formData.chitWinnerMemberId.trim() === '') {
-      newErrors.chitWinnerMemberId = 'Member ID is required';
-    } else if (!/^\d{10}$/.test(formData.chitWinnerMemberId)) {
-      newErrors.chitWinnerMemberId = 'Please enter a valid 10-digit phone number';
+      newErrors.chitWinnerMemberId = 'Member ID or phone is required';
+    } else if (!/^\d{1,12}$/.test(formData.chitWinnerMemberId.trim())) {
+      newErrors.chitWinnerMemberId = 'Please enter a valid numeric Member ID or phone number';
     }
     if (!formData.amountTaken || parseFloat(formData.amountTaken) <= 0) {
       newErrors.amountTaken = 'Please enter a valid amount taken';
     }
     if (!formData.datePicked || formData.datePicked.trim() === '') {
       newErrors.datePicked = 'Auction date is required';
+    }
+
+    // Strict Rule: Prevent members who have already won from winning again
+    if (isUserAlreadyWon(formData.chitWinnerName, formData.chitWinnerMemberId)) {
+      newErrors.chitWinnerName = 'STRICT RULE: This member has ALREADY won a chit auction in a previous cycle for this group and cannot win again.';
     }
 
     setErrors(newErrors);
@@ -159,13 +208,14 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
     if (validateForm()) {
       onSave(formData);
     } else {
-      Alert.alert('Validation Error', 'Please fill all required fields correctly.');
+      Alert.alert('Validation Error', errors.chitWinnerName || 'Please fill all required fields correctly.');
     }
   };
 
   const formatDateForInput = (date) => {
     if (!date) return '';
     const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -175,6 +225,7 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
   const formatDateForDisplay = (dateString) => {
     if (!dateString) return 'Select Date';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Select Date';
     return date.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
@@ -183,13 +234,33 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
   };
 
   const openDatePicker = () => {
-    setSelectedDate(formData.datePicked ? new Date(formData.datePicked) : new Date());
+    const parsed = formData.datePicked ? new Date(formData.datePicked) : new Date();
+    setSelectedDate(isNaN(parsed.getTime()) ? new Date() : parsed);
     setShowDatePicker(true);
   };
 
-  const handleDateSelect = () => {
-    const formattedDate = formatDateForInput(selectedDate);
-    handleInputChange('datePicked', formattedDate);
+  const onAndroidDateChange = (event, selectedDateVal) => {
+    if (event.type === 'dismissed') {
+      setShowDatePicker(false);
+      return;
+    }
+    const finalDate = selectedDateVal || selectedDate;
+    setShowDatePicker(false);
+    handleInputChange('datePicked', formatDateForInput(finalDate));
+  };
+
+  const onIOSDateChange = (_event, selectedDateVal) => {
+    if (selectedDateVal) {
+      setSelectedDate(selectedDateVal);
+    }
+  };
+
+  const confirmIOSDate = () => {
+    handleInputChange('datePicked', formatDateForInput(selectedDate));
+    setShowDatePicker(false);
+  };
+
+  const cancelIOSDate = () => {
     setShowDatePicker(false);
   };
 
@@ -284,94 +355,54 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
               <Text style={styles.saveButtonText}>Save</Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity 
+            style={styles.liveAuctionButton} 
+            onPress={() => {
+              onClose();
+              navigation.navigate('AuctionSettings');
+            }}
+          >
+            <MaterialCommunityIcons name="gavel" size={20} color="#FFFFFF" />
+            <Text style={styles.liveAuctionButtonText}>Go to Live Auction</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Internal Date Picker Modal */}
+      {/* Native Date Picker */}
       {showDatePicker && (
-        <Modal
-          visible={showDatePicker}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowDatePicker(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.datePickerModal}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Auction Date</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <MaterialCommunityIcons name="close" size={24} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.datePickerContent}>
-                <View style={styles.datePickerControls}>
-                  <TouchableOpacity
-                    style={styles.dateButton}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(newDate.getDate() - 1);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <MaterialCommunityIcons name="chevron-left" size={24} color="#6B46C1" />
+        Platform.OS === 'ios' ? (
+          <Modal transparent animationType="fade" visible={showDatePicker}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.iosPickerContainer}>
+                <View style={styles.iosPickerHeader}>
+                  <TouchableOpacity onPress={cancelIOSDate} style={styles.iosPickerButton}>
+                    <Text style={styles.iosPickerButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <View style={styles.dateDisplay}>
-                    <Text style={styles.selectedDateText}>
-                      {selectedDate.toLocaleDateString('en-IN', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.dateButton}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(newDate.getDate() + 1);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <MaterialCommunityIcons name="chevron-right" size={24} color="#6B46C1" />
+                  <Text style={styles.iosPickerTitle}>Select Auction Date</Text>
+                  <TouchableOpacity onPress={confirmIOSDate} style={styles.iosPickerButton}>
+                    <Text style={[styles.iosPickerButtonText, { color: '#6B46C1' }]}>Done</Text>
                   </TouchableOpacity>
                 </View>
-                <View style={styles.quickDateButtons}>
-                  <TouchableOpacity
-                    style={styles.quickDateBtn}
-                    onPress={() => setSelectedDate(new Date())}
-                  >
-                    <Text style={styles.quickDateText}>Today</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.quickDateBtn}
-                    onPress={() => {
-                      const yesterday = new Date();
-                      yesterday.setDate(yesterday.getDate() - 1);
-                      setSelectedDate(yesterday);
-                    }}
-                  >
-                    <Text style={styles.quickDateText}>Yesterday</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View style={styles.datePickerActions}>
-                <TouchableOpacity
-                  style={styles.cancelDateButton}
-                  onPress={() => setShowDatePicker(false)}
-                >
-                  <Text style={styles.cancelDateText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.selectDateButton}
-                  onPress={handleDateSelect}
-                >
-                  <Text style={styles.selectDateText}>Select Date</Text>
-                </TouchableOpacity>
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="spinner"
+                  maximumDate={new Date()}
+                  onChange={onIOSDateChange}
+                />
               </View>
             </View>
-          </View>
-        </Modal>
+          </Modal>
+        ) : (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display="default"
+            maximumDate={new Date()}
+            onChange={onAndroidDateChange}
+          />
+        )
       )}
     </Modal>
   );
@@ -512,6 +543,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  liveAuctionButton: {
+    backgroundColor: '#10B981', // Emerald green color
+    paddingVertical: 14,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    marginTop: -5,
+  },
+  liveAuctionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
 
   // Date Picker Specific Styles
   datePickerModal: {
@@ -576,35 +624,36 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#6B7280',
   },
-  datePickerActions: {
+  iosPickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '90%',
+    maxWidth: 360,
+    paddingBottom: 16,
+    overflow: 'hidden',
+  },
+  iosPickerHeader: {
     flexDirection: 'row',
-    padding: 20,
-    paddingTop: 0,
-    gap: 12,
-  },
-  cancelDateButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  cancelDateText: {
+  iosPickerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#111827',
   },
-  selectDateButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#6B46C1',
-    borderRadius: 8,
-    alignItems: 'center',
+  iosPickerButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  selectDateText: {
-    fontSize: 16,
+  iosPickerButtonText: {
+    fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#6B7280',
   },
 });
 

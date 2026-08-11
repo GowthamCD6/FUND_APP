@@ -283,13 +283,61 @@ exports.getGroupMemberPayments = async (req, res) => {
     const defaultDueDate = buildDefaultDueDate(year, month);
     const monthConfiguredAmount = Number(monthDetails?.monthly_amount || monthlyAmount);
 
+    const duration = Math.max(1, toSafeNumber(groupRow.duration, 1));
+    const startDate = groupRow.start_date ? new Date(groupRow.start_date) : new Date();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
     const members = memberRows.map((member) => {
       const userId = Number(member.id);
-      const paymentHistory = historyByUser.get(userId) || [];
-      
-      const computedOverdueStatus = isPaymentOverdue(paymentHistory, month, year);
-      
-      const currentPayment = paymentHistory.find((entry) => entry.month === month && entry.year === year) || {
+      const existingHistory = historyByUser.get(userId) || [];
+
+      // Generate complete list of months for group cycle up to current month
+      const fullHistory = [];
+
+      for (let idx = 0; idx < duration; idx++) {
+        const cycleDate = new Date(startDate.getFullYear(), startDate.getMonth() + idx, 1);
+        const cMonth = cycleDate.getMonth();
+        const cYear = cycleDate.getFullYear();
+
+        if (cYear > currentYear || (cYear === currentYear && cMonth > currentMonth)) {
+          break;
+        }
+
+        const found = existingHistory.find((entry) => Number(entry.month) === cMonth && Number(entry.year) === cYear);
+
+        if (found) {
+          fullHistory.push(found);
+        } else {
+          const isPast = cYear < currentYear || (cYear === currentYear && cMonth < currentMonth);
+          const defaultDue = buildDefaultDueDate(cYear, cMonth);
+          const status = isPast ? 'overdue' : 'pending';
+
+          fullHistory.push({
+            id: null,
+            month: cMonth,
+            year: cYear,
+            collection_period: `${cYear}-${String(cMonth + 1).padStart(2, '0')}-01`,
+            amount: monthConfiguredAmount,
+            status,
+            monthName: monthNameFromNumber(cMonth, cYear),
+            dueDate: defaultDue,
+            paidDate: null,
+            receiptNumber: null,
+            notes: null,
+          });
+        }
+      }
+
+      fullHistory.sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return b.month - a.month;
+      });
+
+      const computedOverdueStatus = isPaymentOverdue(fullHistory, month, year);
+
+      const currentPayment = fullHistory.find((entry) => entry.month === month && entry.year === year) || {
         id: null,
         month,
         year,
@@ -312,7 +360,7 @@ exports.getGroupMemberPayments = async (req, res) => {
         name: member.name,
         phone: member.phone,
         currentPayment,
-        paymentHistory,
+        paymentHistory: fullHistory,
         isOverdue: computedOverdueStatus,
       };
     });

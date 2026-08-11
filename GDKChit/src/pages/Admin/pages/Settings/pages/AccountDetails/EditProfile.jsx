@@ -3,10 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInp
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import Header from '../../../../../../components/HeaderComponent/Header';
 import { useNavigation } from '@react-navigation/native';
 import ApiService from '../../../../../../services/ApiService';
+import { API_URL } from '../../../../../../utils/env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SOUTH_INDIAN_STATES = [
   'Tamil Nadu',
@@ -74,12 +76,23 @@ const EditProfile = ({ onBack }) => {
 		userImage: '',
 	});
 
+	const [imageError, setImageError] = useState(false);
 	const [errors, setErrors] = useState({});
 	const [stateModalVisible, setStateModalVisible] = useState(false);
 	const [cityModalVisible, setCityModalVisible] = useState(false);
 	const [showDatePicker, setShowDatePicker] = useState(false);
 	const [selectedDate, setSelectedDate] = useState(new Date());
 	const [loading, setLoading] = useState(true);
+
+	const getProfileImageUrl = (img) => {
+		if (!img || typeof img !== 'string') return null;
+		const trimmed = img.trim();
+		if (!trimmed) return null;
+		if (trimmed.startsWith('http') || trimmed.startsWith('data:')) return trimmed;
+		const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+		const baseUrl = (API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+		return `${baseUrl}${cleanPath}`;
+	};
 
 	// Handle hardware back button to navigate back to settings page
 	useEffect(() => {
@@ -109,6 +122,7 @@ const EditProfile = ({ onBack }) => {
 						dateOfBirth: parsedDate ? formatDateForSave(parsedDate) : '',
 						streetAddress: profile.streetAddress || '',
 						city: profile.city || '',
+						state: profile.state || '',
 						phone: user.phone || '',
 						userImage: profile.userImage || '',
 					}));
@@ -128,6 +142,9 @@ const EditProfile = ({ onBack }) => {
 	}, []);
 
 	const handleInputChange = (field, value) => {
+		if (field === 'userImage') {
+			setImageError(false);
+		}
 		setFormData(prev => ({
 			...prev,
 			[field]: value
@@ -140,26 +157,67 @@ const EditProfile = ({ onBack }) => {
 		}
 	};
 
-	const handlePickProfileImage = async () => {
-		try {
-			const result = await launchImageLibrary({
-				mediaType: 'photo',
-				selectionLimit: 1,
-				quality: 0.8,
-			});
-
-			if (result.didCancel || !result.assets || result.assets.length === 0) {
-				return;
-			}
-
-			const selectedImage = result.assets[0]?.uri || '';
-			if (selectedImage) {
-				handleInputChange('userImage', selectedImage);
-			}
-		} catch (error) {
-			console.error('Image picker error:', error);
-			Alert.alert('Error', 'Unable to pick image from gallery.', [{ text: 'OK' }]);
-		}
+	const handlePickProfileImage = () => {
+		Alert.alert(
+			'Select Profile Photo',
+			'Choose an option to upload your profile picture',
+			[
+				{
+					text: 'Camera',
+					onPress: async () => {
+						try {
+							const result = await launchCamera({
+								mediaType: 'photo',
+								includeBase64: true,
+								quality: 0.7,
+								maxWidth: 800,
+								maxHeight: 800,
+							});
+							if (result.didCancel || !result.assets || result.assets.length === 0) return;
+							const asset = result.assets[0];
+							let base64Img = asset.base64
+								? `data:${asset.type || 'image/jpeg'};base64,${asset.base64}`
+								: asset.uri;
+							if (base64Img && (base64Img.startsWith('file://') || base64Img.startsWith('content://'))) {
+								base64Img = await getBase64FromUri(base64Img);
+							}
+							handleInputChange('userImage', base64Img);
+						} catch (err) {
+							console.error('Camera error:', err);
+							Alert.alert('Error', 'Unable to capture photo.');
+						}
+					},
+				},
+				{
+					text: 'Choose from Gallery',
+					onPress: async () => {
+						try {
+							const result = await launchImageLibrary({
+								mediaType: 'photo',
+								includeBase64: true,
+								selectionLimit: 1,
+								quality: 0.7,
+								maxWidth: 800,
+								maxHeight: 800,
+							});
+							if (result.didCancel || !result.assets || result.assets.length === 0) return;
+							const asset = result.assets[0];
+							let base64Img = asset.base64
+								? `data:${asset.type || 'image/jpeg'};base64,${asset.base64}`
+								: asset.uri;
+							if (base64Img && (base64Img.startsWith('file://') || base64Img.startsWith('content://'))) {
+								base64Img = await getBase64FromUri(base64Img);
+							}
+							handleInputChange('userImage', base64Img);
+						} catch (err) {
+							console.error('Gallery error:', err);
+							Alert.alert('Error', 'Unable to pick image from gallery.');
+						}
+					},
+				},
+				{ text: 'Cancel', style: 'cancel' },
+			]
+		);
 	};
 
 	const openDatePicker = () => {
@@ -202,33 +260,65 @@ const EditProfile = ({ onBack }) => {
 		return Object.keys(newErrors).length === 0;
 	};
 
-	const handleSave = () => {
-		if (validateForm()) {
-			ApiService.updateProfile({
-				name: formData.name,
-				email: formData.email,
-				dateOfBirth: formData.dateOfBirth,
-				streetAddress: formData.streetAddress,
-				city: formData.city,
-				state: formData.state,
-				userImage: formData.userImage,
-			})
-				.then((response) => {
-					if (response.success) {
-						Alert.alert(
-							'Success',
-							'Profile updated successfully!',
-							[{ text: 'OK', onPress: () => navigation.goBack() }]
-						);
-						return;
-					}
+	const getBase64FromUri = async (uri) => {
+		if (!uri || typeof uri !== 'string') return '';
+		if (uri.startsWith('data:') || uri.startsWith('http')) return uri;
+		try {
+			const res = await fetch(uri);
+			const blob = await res.blob();
+			return new Promise((resolve) => {
+				const reader = new FileReader();
+				reader.onloadend = () => resolve(reader.result || uri);
+				reader.onerror = () => resolve(uri);
+				reader.readAsDataURL(blob);
+			});
+		} catch (e) {
+			return uri;
+		}
+	};
 
-					Alert.alert('Error', response.message || 'Failed to save profile details.', [{ text: 'OK' }]);
-				})
-				.catch((error) => {
-					console.error('Profile update error:', error);
-					Alert.alert('Error', error.message || 'Failed to save profile details.', [{ text: 'OK' }]);
+	const handleSave = async () => {
+		if (validateForm()) {
+			setLoading(true);
+			try {
+				let imageToSend = formData.userImage;
+				if (imageToSend && imageToSend.startsWith('file://')) {
+					imageToSend = await getBase64FromUri(imageToSend);
+				}
+
+				const response = await ApiService.updateProfile({
+					name: formData.name,
+					email: formData.email,
+					dateOfBirth: formData.dateOfBirth,
+					streetAddress: formData.streetAddress,
+					city: formData.city,
+					state: formData.state,
+					userImage: imageToSend,
 				});
+
+				setLoading(false);
+				if (response.success) {
+					const savedImage = response.data?.profile?.userImage || response.data?.userImage || imageToSend;
+					if (savedImage) {
+						await AsyncStorage.setItem('userImage', savedImage);
+					}
+					if (formData.name) {
+						await AsyncStorage.setItem('userName', formData.name);
+					}
+					Alert.alert(
+						'Success',
+						'Profile updated successfully!',
+						[{ text: 'OK', onPress: () => navigation.goBack() }]
+					);
+					return;
+				}
+
+				Alert.alert('Error', response.message || 'Failed to save profile details.', [{ text: 'OK' }]);
+			} catch (error) {
+				setLoading(false);
+				console.error('Profile update error:', error);
+				Alert.alert('Error', error.message || 'Failed to save profile details.', [{ text: 'OK' }]);
+			}
 		} else {
 			Alert.alert(
 				'Error',
@@ -303,11 +393,17 @@ const EditProfile = ({ onBack }) => {
 					)}
 
 					<View style={styles.imagePreviewContainer}>
-						{formData.userImage ? (
-							<Image source={{ uri: formData.userImage }} style={styles.imagePreview} />
+						{formData.userImage && getProfileImageUrl(formData.userImage) && !imageError ? (
+							<Image
+								source={{ uri: getProfileImageUrl(formData.userImage) }}
+								style={styles.imagePreview}
+								onError={() => setImageError(true)}
+							/>
 						) : (
 							<View style={styles.imagePlaceholder}>
-								<MaterialCommunityIcons name="account" size={34} color="#FFFFFF" />
+								<Text style={styles.initialText}>
+									{(formData.name || 'A').charAt(0).toUpperCase()}
+								</Text>
 							</View>
 						)}
 						<Text style={styles.imagePreviewText}>Profile Image</Text>
@@ -589,6 +685,11 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 		marginBottom: 12,
+	},
+	initialText: {
+		fontSize: 36,
+		fontWeight: 'bold',
+		color: '#FFFFFF',
 	},
 	imagePreviewText: {
 		fontSize: 14,

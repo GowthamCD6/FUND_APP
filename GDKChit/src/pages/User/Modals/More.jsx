@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
+import { Modal, View, StyleSheet, TouchableOpacity, Text, Platform, DeviceEventEmitter } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Join from './Pages/JoinGroup/JoinGroup';
 import GroupCards from './Pages/ChitGroupCard/GroupCards';
 import Auction from './Pages/Auction/Auction';
 import Finance from './Pages/Finance/Finance';
+import { useRef } from 'react';
 
 const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) => {
   const [showJoinPage, setShowJoinPage] = useState(false);
@@ -25,6 +26,47 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
       setShowJoinPage(true);
     }
   }, [initialGroupCode]);
+
+  const itemRefs = useRef([]);
+  const closeBtnRef = useRef(null);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('REQUEST_MORE_LAYOUT', () => {
+      const layouts = {};
+      let count = 0;
+      
+      const measure = (index, key) => {
+        if (itemRefs.current[index]) {
+          itemRefs.current[index].measureInWindow((x, y, w, h) => {
+            if (w > 0 && h > 0) layouts[key] = { x, y, width: w, height: h };
+            count++;
+            if (count === 5) DeviceEventEmitter.emit('MORE_LAYOUT_MEASURED', layouts);
+          });
+        } else {
+          count++;
+          if (count === 5) DeviceEventEmitter.emit('MORE_LAYOUT_MEASURED', layouts);
+        }
+      };
+
+      measure(0, 'plus_join');
+      measure(1, 'plus_group_card');
+      measure(2, 'plus_auction');
+      measure(3, 'plus_finance');
+
+      if (closeBtnRef.current) {
+        closeBtnRef.current.measureInWindow((x, y, w, h) => {
+          if (w > 0 && h > 0) layouts['plus_close'] = { x, y, width: w, height: h };
+          count++;
+          if (count === 5) DeviceEventEmitter.emit('MORE_LAYOUT_MEASURED', layouts);
+        });
+      } else {
+        count++;
+        if (count === 5) DeviceEventEmitter.emit('MORE_LAYOUT_MEASURED', layouts);
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
 
   const handleJoinPress = () => {
     setJoinGroupCode('');
@@ -133,24 +175,28 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
           {/* Modal Content */}
           <View style={styles.menuList}>
             <MenuItem
+              viewRef={(el) => itemRefs.current[0] = el}
               icon={<MaterialCommunityIcons name="account-group" size={26} color="#6B46C1" />}
               title="Join the Group"
               description="Enter the group code to join the group"
               onPress={handleJoinPress}
             />
             <MenuItem
+              viewRef={(el) => itemRefs.current[1] = el}
               icon={<MaterialCommunityIcons name="credit-card" size={26} color="#6B46C1" />}
               title="Group card"
               description="View and confirm the pay details"
               onPress={handleGroupCardPress}
             />
             <MenuItem
+              viewRef={(el) => itemRefs.current[2] = el}
               icon={<MaterialCommunityIcons name="gavel" size={26} color="#6B46C1" />}
               title="Auction"
               description="Participate in chit auction bidding"
               onPress={handleAuctionPress}
             />
             <MenuItem
+              viewRef={(el) => itemRefs.current[3] = el}
               icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#6B46C1" />}
               title="Finance"
               description="Contribute and earn extra interest"
@@ -158,7 +204,7 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
             />
           </View>
           {/* X Button */}
-          <TouchableOpacity style={styles.xButton} onPress={handleModalClose}>
+          <TouchableOpacity ref={closeBtnRef} style={styles.xButton} onPress={handleModalClose}>
             <Text style={styles.xButtonText}>×</Text>
           </TouchableOpacity>
         </View>
@@ -167,8 +213,8 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
   );
 };
 
-const MenuItem = ({ icon, title, description, onPress }) => (
-  <TouchableOpacity style={styles.menuItemRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
+const MenuItem = ({ icon, title, description, onPress, viewRef }) => (
+  <TouchableOpacity ref={viewRef} style={styles.menuItemRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
     <View style={styles.menuIconWrap}>
       <View style={styles.menuIconCircle}>
         {icon}

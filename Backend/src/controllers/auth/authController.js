@@ -171,7 +171,8 @@ exports.refreshToken = async (req, res) => {
       userId: user.id,
       username: user.name,
       email: user.email,
-      fullName: user.full_name
+      fullName: user.full_name,
+      role: user.role
     };
 
     const accessToken = generateToken(tokenPayload);
