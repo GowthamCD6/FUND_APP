@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const multer = require('multer');
 const chatController = require('../controllers/chatController');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
-const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
 
 const uploadsDir = path.join(__dirname, '../../uploads');

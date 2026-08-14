@@ -45,12 +45,12 @@ const AdminDataExport = props => {
 
 const withSafe = (Component, bgColor = '#ffffffff') => {
     return (props) => (
-        <SafeAreaView 
-            style={{ 
-                flex: 1, 
+        <SafeAreaView
+            style={{
+                flex: 1,
                 backgroundColor: bgColor,
-                paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
-            }} 
+                paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0
+            }}
             edges={Platform.OS === 'android' ? ['left', 'right'] : ['top', 'left', 'right']}
         >
             <Component {...props} />

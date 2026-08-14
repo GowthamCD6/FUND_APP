@@ -14,6 +14,7 @@ import {
   Easing,
   Linking,
   Alert,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -156,6 +157,123 @@ const Home = () => {
     },
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notifBtnRef = useRef(null);
+  const notifModalRef = useRef(null);
+  const plansSectionRef = useRef(null);
+  const socialSectionRef = useRef(null);
+  const notifCrossRef = useRef(null);
+
+  const measureNotifBtn = useCallback(() => {
+    if (notifBtnRef.current) {
+      notifBtnRef.current.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) {
+          DeviceEventEmitter.emit('NOTIF_LAYOUT_MEASURED', { x, y, width: w, height: h });
+        }
+      });
+    }
+  }, []);
+
+  const measureNotifModal = useCallback(() => {
+    if (notifModalRef.current) {
+      notifModalRef.current.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) {
+          DeviceEventEmitter.emit('NOTIF_MODAL_MEASURED', { x, y, width: w, height: h });
+        }
+      });
+    }
+  }, []);
+
+  const measureNotifCrossBtn = useCallback(() => {
+    if (notifCrossRef.current) {
+      notifCrossRef.current.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) {
+          DeviceEventEmitter.emit('NOTIF_CROSS_LAYOUT_MEASURED', { x, y, width: w, height: h });
+        }
+      });
+    }
+  }, []);
+
+  const measurePlansSection = useCallback(() => {
+    if (plansSectionRef.current) {
+      plansSectionRef.current.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) {
+          DeviceEventEmitter.emit('PLANS_LAYOUT_MEASURED', { x, y, width: w, height: h });
+        }
+      });
+    }
+  }, []);
+
+  const measureSocialSection = useCallback(() => {
+    if (socialSectionRef.current) {
+      socialSectionRef.current.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) {
+          DeviceEventEmitter.emit('SOCIAL_LAYOUT_MEASURED', { x, y, width: w, height: h });
+        }
+      });
+    }
+  }, []);
+
+  const handleCloseNotificationsModal = useCallback(() => {
+    setShowNotifications(false);
+    DeviceEventEmitter.emit('NOTIFICATIONS_CLOSED');
+  }, []);
+
+  useEffect(() => {
+    const reqSub = DeviceEventEmitter.addListener('REQUEST_NOTIF_LAYOUT', () => {
+      measureNotifBtn();
+      setTimeout(measureNotifBtn, 100);
+      setTimeout(measureNotifBtn, 300);
+    });
+
+    const reqNotifModalSub = DeviceEventEmitter.addListener('REQUEST_NOTIF_MODAL_LAYOUT', () => {
+      measureNotifModal();
+      setTimeout(measureNotifModal, 200);
+      setTimeout(measureNotifModal, 500);
+    });
+
+    const reqNotifCrossSub = DeviceEventEmitter.addListener('REQUEST_NOTIF_CROSS_LAYOUT', () => {
+      measureNotifCrossBtn();
+      setTimeout(measureNotifCrossBtn, 200);
+      setTimeout(measureNotifCrossBtn, 500);
+    });
+
+    const reqPlansSub = DeviceEventEmitter.addListener('REQUEST_PLANS_LAYOUT', () => {
+      measurePlansSection();
+      setTimeout(measurePlansSection, 200);
+    });
+
+    const reqSocialSub = DeviceEventEmitter.addListener('REQUEST_SOCIAL_LAYOUT', () => {
+      measureSocialSection();
+      setTimeout(measureSocialSection, 200);
+      setTimeout(measureSocialSection, 500);
+      setTimeout(measureSocialSection, 800);
+    });
+
+    const stepSub = DeviceEventEmitter.addListener('USER_MANUAL_STEP_CHANGED', (data) => {
+      if (data?.stepId === 'notif_bell') {
+        measureNotifBtn();
+      }
+    });
+
+    const closeNotifTourSub = DeviceEventEmitter.addListener('CLOSE_NOTIFICATIONS_TOUR', () => {
+      handleCloseNotificationsModal();
+    });
+
+    const switchTabSub = DeviceEventEmitter.addListener('SWITCH_TAB', (tabName) => {
+      navigation.navigate(tabName);
+    });
+
+    return () => {
+      reqSub.remove();
+      reqNotifModalSub.remove();
+      reqNotifCrossSub.remove();
+      reqPlansSub.remove();
+      reqSocialSub.remove();
+      stepSub.remove();
+      closeNotifTourSub.remove();
+      switchTabSub.remove();
+    };
+  }, [measureNotifBtn, measureNotifModal, measurePlansSection, measureSocialSection, handleCloseNotificationsModal, navigation]);
 
   const fetchHomeData = useCallback(async () => {
     try {
@@ -231,12 +349,34 @@ const Home = () => {
   }, [scrollX, autoScrollVal]);
 
   const plansLayoutY = useRef(0);
+  const socialLayoutY = useRef(0);
 
   const goldenFade = useRef(new Animated.Value(0)).current;
 
   const handleOpenNotifications = async () => {
     setShowNotifications(true);
   };
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('OPEN_NOTIFICATIONS', () => {
+      setShowNotifications(true);
+    });
+    const scrollSub = DeviceEventEmitter.addListener('SCROLL_HOME', (y) => {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTo({ y: y, animated: true });
+      }
+    });
+    const scrollToSocialSub = DeviceEventEmitter.addListener('SCROLL_TO_SOCIAL', () => {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTo({ y: Math.max(socialLayoutY.current - 220, 0), animated: true });
+      }
+    });
+    return () => {
+      sub.remove();
+      scrollSub.remove();
+      scrollToSocialSub.remove();
+    };
+  }, []);
 
   const triggerRangoliAnimation = useCallback(() => {
     goldenFade.setValue(0);
@@ -644,7 +784,12 @@ const Home = () => {
                 <Icon name="currency-inr" size={14} color="#FDE68A" />
                 <Text style={styles.investmentAmount}>{totalInvested ? totalInvested : '0'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.notificationButton} onPress={handleOpenNotifications}>
+              <TouchableOpacity
+                ref={notifBtnRef}
+                style={styles.notificationButton}
+                onPress={handleOpenNotifications}
+                onLayout={measureNotifBtn}
+              >
                 <Icon name="bell-outline" size={20} color="#FFFFFF" />
                 {notifications.length > 0 && (
                   <View style={styles.notificationBadge}>
@@ -676,6 +821,7 @@ const Home = () => {
 
         {/* --- START: UPDATED PLANS SECTION --- */}
         <View
+          ref={plansSectionRef}
           style={styles.plansSection}
           onLayout={(event) => {
             plansLayoutY.current = event.nativeEvent.layout.y;
@@ -841,6 +987,15 @@ const Home = () => {
           </View>
         </View>
 
+        {/* Social Sections Wrapper (for tour measurement) */}
+        <View 
+          ref={socialSectionRef}
+          onLayout={(e) => {
+            if (e.nativeEvent.layout.y > 0) {
+              socialLayoutY.current = e.nativeEvent.layout.y;
+            }
+          }}
+        >
         {/* WhatsApp Community Section */}
         <View style={styles.whatsappContainer}>
           <Svg style={[StyleSheet.absoluteFill, { zIndex: -1, width: '100%', height: '100%' }]} width="100%" height="100%">
@@ -917,6 +1072,8 @@ const Home = () => {
           </TouchableOpacity>
         </View>
 
+        </View>{/* End Social Sections Wrapper */}
+
         {/* Insured Savings Card */}
         <View style={styles.insuranceContainer}>
           {/* Gradient Background */}
@@ -980,6 +1137,7 @@ const Home = () => {
         transparent={false}
         visible={showAllPlans}
         onRequestClose={() => setShowAllPlans(false)}
+        statusBarTranslucent={true}
       >
         <ChitPlans
           onClose={() => setShowAllPlans(false)}
@@ -987,18 +1145,29 @@ const Home = () => {
         />
       </Modal>
 
-      {/* Notifications Modal */}
       <Modal
         animationType="fade"
         transparent={true}
         visible={showNotifications}
-        onRequestClose={() => setShowNotifications(false)}
+        onRequestClose={handleCloseNotificationsModal}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ width: width * 0.9, maxHeight: '80%', backgroundColor: '#fff', borderRadius: 16, padding: 20 }}>
+          <View 
+            ref={notifModalRef}
+            onLayout={measureNotifModal}
+            style={{ width: width * 0.9, maxHeight: '80%', backgroundColor: '#fff', borderRadius: 16, padding: 20 }}
+          >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
               <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>{t('Notifications')}</Text>
-              <TouchableOpacity onPress={() => setShowNotifications(false)}>
+              <TouchableOpacity 
+                ref={notifCrossRef} 
+                onPress={handleCloseNotificationsModal}
+                onLayout={() => {
+                  if (showNotifications) {
+                    DeviceEventEmitter.emit('REQUEST_NOTIF_CROSS_LAYOUT');
+                  }
+                }}
+              >
                 <Icon name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>

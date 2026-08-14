@@ -174,7 +174,7 @@ const CreateGroup = ({ onBack, navigation }) => {
       if (!response.ok || !result?.success) {
         throw new Error(result?.message || 'Failed to create group');
       }
-      
+
       // Store created group data and show share modal
       setCreatedGroupData({
         id: result.data.id,
@@ -193,7 +193,7 @@ const CreateGroup = ({ onBack, navigation }) => {
 
   const handleShareToCommunity = async () => {
     if (!createdGroupData?.id) return;
-    
+
     setSharingToComm(true);
     try {
       const response = await ApiService.makeRequest('/chats/community/share-group', {
@@ -201,7 +201,7 @@ const CreateGroup = ({ onBack, navigation }) => {
         body: JSON.stringify({ groupId: createdGroupData.id }),
       });
       const result = await response.json();
-      
+
       if (result.success) {
         Alert.alert('Shared! 🎉', `Group code shared to GDK Community successfully!`);
       } else {
@@ -238,7 +238,7 @@ const CreateGroup = ({ onBack, navigation }) => {
           </View>
 
           <Text style={shareStyles.title}>Group Created! 🎉</Text>
-          
+
           <Text style={shareStyles.subtitle}>
             "{createdGroupData?.groupName}" has been created successfully.
           </Text>

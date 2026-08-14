@@ -7,10 +7,14 @@ import {
   StyleSheet,
   Dimensions,
   Animated,
+  ImageBackground,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../components/HeaderComponent/Header';
+
+const plansBG = require('../../../../../assets/UserHomePage/PlansBG.jpeg');
 
 // Helper to decide if a hex color is light or dark
 const isLightColor = (hex) => {
@@ -41,6 +45,7 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
       members: '20',
       color: '#FFD700',
       lightColor: '#FFF7CC',
+      gradientColors: ['#FFE57F', '#FFF0B3', '#FFF9E6'],
       description: 'Perfect for first-time investors and small businesses',
       idealFor: [
         'First-time investors',
@@ -64,6 +69,7 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
       members: '20',
       color: '#E5E4E2',
       lightColor: '#F5F5F4',
+      gradientColors: ['#D5D8DC', '#E5E8EC', '#F2F4F7'],
       description: 'Ideal for medium-term savings and expansion needs',
       idealFor: [
         'Business expansion',
@@ -87,6 +93,7 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
       members: '20',
       color: '#B9F2FF',
       lightColor: '#E0F8FF',
+      gradientColors: ['#80DEEA', '#B2EBF2', '#E0F7FA'],
       description: 'Great for substantial investments and long-term goals',
       idealFor: [
         'Property investment',
@@ -110,6 +117,7 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
       members: '20',
       color: '#DA70D6',
       lightColor: '#F5D4F5',
+      gradientColors: ['#E1BEE7', '#F3E5F5', '#FAEEFA'],
       description: 'Premium option for maximum returns and large projects',
       idealFor: [
         'Large investments',
@@ -153,301 +161,278 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
   const plan = plans[currentPlan];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Header
-        title="Chit Plans"
-        onBack={onClose}
-        showBackButton={true}
-        rightComponent={(
-          <View style={styles.pagination}>
-            {plans.map((_, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => scrollToPlan(index)}
-                style={[
-                  styles.paginationDot,
-                  currentPlan === index && styles.paginationDotActive,
-                ]}
-              />
-            ))}
-          </View>
-        )}
-      />
-
-      {/* Full Screen Plan Cards */}
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        decelerationRate="fast"
-        snapToInterval={SCREEN_WIDTH}
-        snapToAlignment="center"
-      >
-        {plans.map((planItem) => {
-          const lightBg = isLightColor(planItem.color);
-
-          // Hero text colors
-          const primaryTextColor = lightBg ? '#1F2937' : '#FFFFFF';
-          const secondaryTextColor = lightBg
-            ? 'rgba(31, 41, 55, 0.8)'
-            : 'rgba(255, 255, 255, 0.9)';
-
-          // Stats: always white cards with dark text
-          const statCardBg = '#FFFFFF';
-          const statValueColor = '#111827';
-          const statLabelColor = '#4B5563';
-
-          return (
-          <View key={planItem.id} style={styles.planContainer}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.planScrollContent}
-            >
-              {/* Plan Hero */}
-              <View style={[styles.heroCard, { backgroundColor: planItem.color }]}>
-                <View style={styles.planBadge}>
-                  <Text style={[styles.planBadgeText, { color: primaryTextColor }]}>
-                    Plan {planItem.id} of 4
-                  </Text>
-                </View>
-                <Text style={[styles.planName, { color: primaryTextColor }]}>
-                  {planItem.name}
-                </Text>
-                <Text style={[styles.planDescription, { color: secondaryTextColor }]}>
-                  {planItem.description}
-                </Text>
-                <Text style={[styles.planAmount, { color: primaryTextColor }]}>
-                  {planItem.amount}
-                </Text>
-                <Text style={[styles.planAmountLabel, { color: secondaryTextColor }]}>
-                  Total Chit Value
-                </Text>
-
-                {/* Quick Stats */}
-                <View style={styles.statsGrid}>
-                  <View style={[styles.statCard, { backgroundColor: statCardBg }]}>
-                    <Text style={[styles.statValue, { color: statValueColor }]}>
-                      {planItem.monthly}
-                    </Text>
-                    <Text style={[styles.statLabel, { color: statLabelColor }]}>
-                      Monthly
-                    </Text>
-                  </View>
-                  <View style={[styles.statCard, { backgroundColor: statCardBg }]}>
-                    <Text style={[styles.statValue, { color: statValueColor }]}>
-                      {planItem.duration}
-                    </Text>
-                    <Text style={[styles.statLabel, { color: statLabelColor }]}>
-                      Duration
-                    </Text>
-                  </View>
-                  <View style={[styles.statCard, { backgroundColor: statCardBg }]}>
-                    <Text style={[styles.statValue, { color: statValueColor }]}>
-                      {planItem.members}
-                    </Text>
-                    <Text style={[styles.statLabel, { color: statLabelColor }]}>
-                      Members
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Ideal For */}
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <MaterialCommunityIcons
-                    name="account-group"
-                    size={20}
-                    color={planItem.color}
-                  />
-                  <Text style={styles.cardTitle}>Ideal For</Text>
-                </View>
-                <View style={styles.idealForGrid}>
-                  {planItem.idealFor.map((item, i) => (
-                    <View key={i} style={styles.idealForItem}>
-                      <MaterialCommunityIcons
-                        name="check-circle"
-                        size={16}
-                        color={planItem.color}
-                      />
-                      <Text style={styles.idealForText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-
-              {/* Key Highlights */}
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <MaterialCommunityIcons
-                    name="star"
-                    size={20}
-                    color={planItem.color}
-                  />
-                  <Text style={styles.cardTitle}>Key Highlights</Text>
-                </View>
-                <View style={styles.highlightsContainer}>
-                  {planItem.highlights.map((highlight, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.highlightItem,
-                        { backgroundColor: planItem.lightColor },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.highlightIcon,
-                          { backgroundColor: planItem.color },
-                        ]}
-                      >
-                        <MaterialCommunityIcons
-                          name="check"
-                          size={14}
-                          color="#FFFFFF"
-                        />
+    <ImageBackground source={plansBG} style={styles.backgroundImage} resizeMode="cover">
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Full Screen Plan Cards */}
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          decelerationRate="fast"
+          snapToInterval={SCREEN_WIDTH}
+          snapToAlignment="center"
+        >
+          {plans.map((planItem) => {
+            return (
+              <View key={planItem.id} style={styles.planContainer}>
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.planScrollContent}
+                >
+                  <Header
+                    title="Chit Plans"
+                    onBack={onClose}
+                    showBackButton={true}
+                    headerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0, marginBottom: 8 }}
+                    titleStyle={{ color: '#FFFFFF' }}
+                    backIconFill="#FFFFFF"
+                    showDivider={false}
+                    rightComponent={(
+                      <View style={styles.pagination}>
+                        {plans.map((_, index) => (
+                          <TouchableOpacity
+                            key={index}
+                            onPress={() => scrollToPlan(index)}
+                            style={[
+                              styles.paginationDot,
+                              currentPlan === index && styles.paginationDotActive,
+                            ]}
+                          />
+                        ))}
                       </View>
-                      <Text style={styles.highlightText}>{highlight}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-
-              {/* Payment Breakdown */}
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <MaterialCommunityIcons
-                    name="clock-outline"
-                    size={20}
-                    color={planItem.color}
+                    )}
                   />
-                  <Text style={styles.cardTitle}>Payment Breakdown</Text>
-                </View>
-                <View style={styles.paymentBreakdown}>
-                  <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Monthly Contribution</Text>
-                    <Text style={styles.paymentValue}>{planItem.monthly}</Text>
+                  {/* Ultra Transparent Glass Main Card */}
+                  <View style={styles.singleMainCard}>
+                    {/* Plan Hero Header */}
+                    <View style={styles.heroSection}>
+                      <Text style={styles.planAmount}>
+                        {planItem.amount}
+                      </Text>
+                      <Text style={styles.planDescription}>
+                        {planItem.description}
+                      </Text>
+
+                      {/* Quick Stats */}
+                      <View style={styles.statsGrid}>
+                        <View style={styles.statCard}>
+                          <Text style={styles.statValue}>
+                            {planItem.monthly}
+                          </Text>
+                          <Text style={styles.statLabel}>
+                            Monthly
+                          </Text>
+                        </View>
+                        <View style={styles.statCard}>
+                          <Text style={styles.statValue}>
+                            {planItem.duration}
+                          </Text>
+                          <Text style={styles.statLabel}>
+                            Duration
+                          </Text>
+                        </View>
+                        <View style={styles.statCard}>
+                          <Text style={styles.statValue}>
+                            {planItem.members}
+                          </Text>
+                          <Text style={styles.statLabel}>
+                            Members
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Ideal For */}
+                    <View style={styles.sectionBlock}>
+                      <View style={styles.cardHeader}>
+                        <View style={styles.cardHeaderIconBg}>
+                          <MaterialCommunityIcons
+                            name="account-group"
+                            size={18}
+                            color="#FFD700"
+                          />
+                        </View>
+                        <Text style={styles.cardTitle}>Ideal For</Text>
+                      </View>
+                      <View style={styles.idealForGrid}>
+                        {planItem.idealFor.map((item, i) => (
+                          <View key={i} style={styles.idealForItem}>
+                            <MaterialCommunityIcons
+                              name="check-circle"
+                              size={16}
+                              color="#FFD700"
+                            />
+                            <Text style={styles.idealForText}>{item}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+
+                    {/* Key Highlights */}
+                    <View style={styles.sectionBlock}>
+                      <View style={styles.cardHeader}>
+                        <View style={styles.cardHeaderIconBg}>
+                          <MaterialCommunityIcons
+                            name="star"
+                            size={18}
+                            color="#FFD700"
+                          />
+                        </View>
+                        <Text style={styles.cardTitle}>Key Highlights</Text>
+                      </View>
+                      <View style={styles.highlightsContainer}>
+                        {planItem.highlights.map((highlight, i) => (
+                          <View
+                            key={i}
+                            style={styles.highlightItem}
+                          >
+                            <View style={styles.highlightIcon}>
+                              <MaterialCommunityIcons
+                                name="check"
+                                size={14}
+                                color="#111827"
+                              />
+                            </View>
+                            <Text style={styles.highlightText}>{highlight}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+
+                    {/* Payment Breakdown */}
+                    <View style={styles.sectionBlock}>
+                      <View style={styles.cardHeader}>
+                        <View style={styles.cardHeaderIconBg}>
+                          <MaterialCommunityIcons
+                            name="clock-outline"
+                            size={18}
+                            color="#FFD700"
+                          />
+                        </View>
+                        <Text style={styles.cardTitle}>Payment Breakdown</Text>
+                      </View>
+                      <View style={styles.paymentBreakdown}>
+                        <View style={styles.paymentRow}>
+                          <Text style={styles.paymentLabel}>Monthly Contribution</Text>
+                          <Text style={styles.paymentValue}>{planItem.monthly}</Text>
+                        </View>
+                        <View style={styles.paymentRow}>
+                          <Text style={styles.paymentLabel}>Total Months</Text>
+                          <Text style={styles.paymentValue}>
+                            {planItem.duration.split(' ')[0]}
+                          </Text>
+                        </View>
+                        <View style={styles.paymentRow}>
+                          <Text style={styles.paymentLabel}>Group Members</Text>
+                          <Text style={styles.paymentValue}>{planItem.members} People</Text>
+                        </View>
+                        <View style={styles.paymentRowHighlight}>
+                          <Text style={styles.paymentLabelBold}>
+                            Total Pool Amount
+                          </Text>
+                          <Text style={styles.paymentValueBold}>
+                            {planItem.amount}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Benefits */}
+                    <View style={[styles.sectionBlock, { marginBottom: 0 }]}>
+                      <View style={styles.cardHeader}>
+                        <View style={styles.cardHeaderIconBg}>
+                          <MaterialCommunityIcons
+                            name="shield-check"
+                            size={18}
+                            color="#FFD700"
+                          />
+                        </View>
+                        <Text style={styles.cardTitle}>Why This Plan?</Text>
+                      </View>
+                      <View style={styles.benefitsContainer}>
+                        <View style={styles.benefitItem}>
+                          <MaterialCommunityIcons
+                            name="check-circle"
+                            size={20}
+                            color="#10B981"
+                          />
+                          <View style={styles.benefitContent}>
+                            <Text style={styles.benefitTitle}>Safe & Regulated</Text>
+                            <Text style={styles.benefitDescription}>
+                              Complies with Chit Funds Act
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.benefitItem}>
+                          <MaterialCommunityIcons
+                            name="trending-up"
+                            size={20}
+                            color="#3B82F6"
+                          />
+                          <View style={styles.benefitContent}>
+                            <Text style={styles.benefitTitle}>Higher Returns</Text>
+                            <Text style={styles.benefitDescription}>
+                              Better than traditional savings
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.benefitItem}>
+                          <MaterialCommunityIcons
+                            name="account-multiple"
+                            size={20}
+                            color="#A855F7"
+                          />
+                          <View style={styles.benefitContent}>
+                            <Text style={styles.benefitTitle}>Community Trust</Text>
+                            <Text style={styles.benefitDescription}>
+                              Build relationships while investing
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
                   </View>
-                  <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Total Months</Text>
-                    <Text style={styles.paymentValue}>
-                      {planItem.duration.split(' ')[0]}
-                    </Text>
-                  </View>
-                  <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Group Members</Text>
-                    <Text style={styles.paymentValue}>{planItem.members} People</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.paymentRowHighlight,
-                      { backgroundColor: planItem.lightColor },
-                    ]}
-                  >
-                    <Text style={styles.paymentLabelBold}>
-                      Total Pool Amount
-                    </Text>
-                    <Text style={styles.paymentValueBold}>
-                      {planItem.amount}
-                    </Text>
-                  </View>
-                </View>
+                </ScrollView>
               </View>
+            );
+          })}
+        </ScrollView>
 
-              {/* Benefits */}
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <MaterialCommunityIcons
-                    name="shield-check"
-                    size={20}
-                    color={planItem.color}
-                  />
-                  <Text style={styles.cardTitle}>Why This Plan?</Text>
-                </View>
-                <View style={styles.benefitsContainer}>
-                  <View style={styles.benefitItem}>
-                    <MaterialCommunityIcons
-                      name="check-circle"
-                      size={20}
-                      color="#10B981"
-                    />
-                    <View style={styles.benefitContent}>
-                      <Text style={styles.benefitTitle}>Safe & Regulated</Text>
-                      <Text style={styles.benefitDescription}>
-                        Complies with Chit Funds Act
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.benefitItem}>
-                    <MaterialCommunityIcons
-                      name="trending-up"
-                      size={20}
-                      color="#3B82F6"
-                    />
-                    <View style={styles.benefitContent}>
-                      <Text style={styles.benefitTitle}>Higher Returns</Text>
-                      <Text style={styles.benefitDescription}>
-                        Better than traditional savings
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.benefitItem}>
-                    <MaterialCommunityIcons
-                      name="account-multiple"
-                      size={20}
-                      color="#8B5CF6"
-                    />
-                    <View style={styles.benefitContent}>
-                      <Text style={styles.benefitTitle}>Community Trust</Text>
-                      <Text style={styles.benefitDescription}>
-                        Build relationships while investing
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-
-              {/* CTA Button */}
-              <TouchableOpacity
-                style={[styles.ctaButton, { backgroundColor: planItem.color }]}
-              >
-                <Text style={styles.ctaButtonText}>
-                  Choose {planItem.name}
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        )})}
-      </ScrollView>
-
-      {/* Navigation Arrows */}
-      {currentPlan > 0 && (
-        <TouchableOpacity
-          style={[styles.navArrow, styles.navArrowLeft]}
-          onPress={() => scrollToPlan(currentPlan - 1)}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={24} color="#333" />
-        </TouchableOpacity>
-      )}
-      {currentPlan < plans.length - 1 && (
-        <TouchableOpacity
-          style={[styles.navArrow, styles.navArrowRight]}
-          onPress={() => scrollToPlan(currentPlan + 1)}
-        >
-          <MaterialCommunityIcons name="chevron-right" size={24} color="#333" />
-        </TouchableOpacity>
-      )}
-    </SafeAreaView>
+        {/* Navigation Arrows */}
+        {currentPlan > 0 && (
+          <TouchableOpacity
+            style={[styles.navArrow, styles.navArrowLeft]}
+            onPress={() => scrollToPlan(currentPlan - 1)}
+          >
+            <MaterialCommunityIcons name="chevron-left" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+        {currentPlan < plans.length - 1 && (
+          <TouchableOpacity
+            style={[styles.navArrow, styles.navArrowRight]}
+            onPress={() => scrollToPlan(currentPlan + 1)}
+          >
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+      </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
@@ -455,9 +440,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    backgroundColor: 'transparent',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -470,7 +453,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#FFFFFF',
   },
   pagination: {
     flexDirection: 'row',
@@ -480,22 +463,20 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-  durationRow: {
-    justifyContent: 'center',
-  },
-    backgroundColor: '#D1D5DB',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   paginationDotActive: {
     width: 24,
-    backgroundColor: '#6B46C1',
+    backgroundColor: '#FFD700',
   },
   planContainer: {
     width: SCREEN_WIDTH,
+    backgroundColor: 'transparent',
   },
   planScrollContent: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 10,
+    paddingTop: 12,
+    paddingBottom: 24,
   },
   durationCenter: {
     alignItems: 'center',
@@ -503,15 +484,29 @@ const styles = StyleSheet.create({
   durationValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#FFFFFF',
   },
   durationLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#E2E8F0',
     marginTop: 2,
   },
+  singleMainCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.12)', // Completely outline-free see-through main card
+    borderRadius: 26,
+    padding: 24,
+    paddingBottom: 24,
+    marginBottom: 16,
+  },
+  heroSection: {
+    marginBottom: 24,
+  },
+  sectionBlock: {
+    marginBottom: 24,
+  },
   heroCard: {
-    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 20,
     padding: 24,
     marginBottom: 16,
   },
@@ -536,21 +531,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   planDescription: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14.5,
+    fontWeight: '500',
+    color: '#E2E8F0',
     textAlign: 'center',
-    marginBottom: 20,
+    lineHeight: 22,
+    marginBottom: 24,
+    maxWidth: '92%',
+    alignSelf: 'center',
   },
   planAmount: {
-    fontSize: 38,
-    fontWeight: '700',
+    fontSize: 40,
+    fontWeight: '800',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
+    letterSpacing: -1,
   },
   planAmountLabel: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#E2E8F0',
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -562,45 +562,47 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 0,
     width: '30%',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   statValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
     marginBottom: 4,
     textAlign: 'center',
+    backgroundColor: 'transparent',
   },
   statLabel: {
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#E2E8F0',
     textAlign: 'center',
+    backgroundColor: 'transparent',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 20,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
+    gap: 12,
+    marginBottom: 18,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
   },
   idealForGrid: {
     flexDirection: 'row',
@@ -612,56 +614,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     width: '48%',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 12,
   },
   idealForText: {
-    fontSize: 13,
-    color: '#4B5563',
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#F1F5F9',
     flex: 1,
   },
   highlightsContainer: {
-    gap: 12,
+    gap: 14,
   },
   highlightItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 12,
-    borderRadius: 12,
+    gap: 14,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   highlightIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFD700',
   },
   highlightText: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#F1F5F9',
     flex: 1,
   },
   paymentBreakdown: {
-    gap: 12,
+    gap: 14,
   },
   paymentRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 16,
   },
   paymentLabel: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '500',
-    color: '#4B5563',
+    color: '#CBD5E1',
     flex: 1,
   },
   paymentValue: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#FFFFFF',
     textAlign: 'right',
   },
   paymentRowHighlight: {
@@ -669,48 +678,76 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
   paymentLabelBold: {
     fontSize: 15,
     fontWeight: '700',
+    color: '#FFFFFF',
   },
   paymentValueBold: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#FFD700',
   },
   benefitsContainer: {
-    gap: 16,
+    gap: 14,
   },
   benefitItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 14,
     padding: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#E5E7EB',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFD700',
   },
   benefitContent: {
     flex: 1,
   },
   benefitTitle: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 4,
+    color: '#FFFFFF',
+    marginBottom: 2,
   },
   benefitDescription: {
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: 12.5,
+    fontWeight: '500',
+    color: '#CBD5E1',
+    lineHeight: 18,
+  },
+  amountBadge: {
+    alignSelf: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  amountBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  cardHeaderIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   ctaButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
     padding: 18,
     borderRadius: 16,
-    alignItems: 'center',
     marginTop: 8,
   },
   ctaButtonText: {
@@ -721,17 +758,12 @@ const styles = StyleSheet.create({
   navArrow: {
     position: 'absolute',
     top: '50%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     width: 48,
     height: 48,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
   },
   navArrowLeft: {
     left: 16, 

@@ -428,47 +428,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Dropdown Menu Styles
-  dropdownOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-
-  dropdownMenu: {
-    position: 'absolute',
-    top: 60,
-    right: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 8,
-    minWidth: 180,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
-
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-
-  dropdownItemText: {
-    fontSize: 15,
-    color: '#374151',
-    fontWeight: '500',
-    marginLeft: 12,
-  },
-
-  dropdownDivider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 4,
-  },
-
   // Archived Row Styles
   archivedRow: {
     flexDirection: 'row',

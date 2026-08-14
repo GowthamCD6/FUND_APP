@@ -15,6 +15,7 @@ import {
   Animated,
   Modal,
   Alert,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -43,6 +44,10 @@ const ChatList = ({ navigation }) => {
   // ---- Refs (always first) ----
   const searchAnim = useRef(new Animated.Value(0)).current;
   const ws = useRef(null);
+  const firstItemRef = useRef(null);
+  const adminItemRef = useRef(null);
+  const flatListRef = useRef(null);
+  const isChatLayoutRequested = useRef(false);
 
   // ---- State ----
   const [chats, setChats] = useState([]);
@@ -251,6 +256,41 @@ const ChatList = ({ navigation }) => {
     return filtered;
   }, [chats, searchQuery, activeFilter, sortMode, pinnedChats, mutedChats, archivedChats]);
 
+  // ---- Layout Measurement for Tour ----
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('REQUEST_CHAT_LAYOUT', () => {
+      isChatLayoutRequested.current = true;
+      const adminIndex = filteredChats.findIndex(c => c.name === 'Admin Support' || c.isSupport);
+      
+      const measureTarget = () => {
+        const targetRef = adminItemRef.current || firstItemRef.current;
+        if (targetRef) {
+          targetRef.measureInWindow((x, y, w, h) => {
+            DeviceEventEmitter.emit('CHAT_LAYOUT_MEASURED', { x, y, width: w, height: h });
+          });
+        } else {
+          DeviceEventEmitter.emit('CHAT_LAYOUT_MEASURED', { x: 10, y: 190, width: Dimensions.get('window').width - 20, height: 85 });
+        }
+      };
+
+      if (adminIndex !== -1 && flatListRef.current) {
+        flatListRef.current.scrollToIndex({ index: adminIndex, animated: true, viewPosition: 0.5 });
+        setTimeout(measureTarget, 400);
+      } else {
+        measureTarget();
+      }
+    });
+
+    const stopSub = DeviceEventEmitter.addListener('STOP_CHAT_LAYOUT', () => {
+      isChatLayoutRequested.current = false;
+    });
+
+    return () => {
+      sub.remove();
+      stopSub.remove();
+    };
+  }, [filteredChats]);
+
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
   };
@@ -423,6 +463,17 @@ const ChatList = ({ navigation }) => {
     setShowOptionsModal(false);
   };
 
+  const handleScrollList = () => {
+    if (isChatLayoutRequested.current) {
+      const targetRef = adminItemRef.current || firstItemRef.current;
+      if (targetRef) {
+        targetRef.measureInWindow((x, y, w, h) => {
+          DeviceEventEmitter.emit('CHAT_LAYOUT_MEASURED', { x, y, width: w, height: h });
+        });
+      }
+    }
+  };
+
   const handleArchiveChat = async (chatId) => {
     let nextArchived;
     if (archivedChats.includes(chatId)) {
@@ -575,12 +626,19 @@ const ChatList = ({ navigation }) => {
     };
 
     return (
-      <Animated.View
-        style={{
-          opacity: 1,
-          transform: [{ scale: scaleAnim }],
+      <View
+        ref={el => {
+          if (index === 0) firstItemRef.current = el;
+          if (item.name === 'Admin Support' || item.isSupport) adminItemRef.current = el;
         }}
+        collapsable={false}
       >
+        <Animated.View
+          style={{
+            opacity: 1,
+            transform: [{ scale: scaleAnim }],
+          }}
+        >
         <TouchableOpacity
           style={[
             styles.chatItem,
@@ -648,7 +706,8 @@ const ChatList = ({ navigation }) => {
             </View>
           )}
         </TouchableOpacity>
-      </Animated.View>
+        </Animated.View>
+      </View>
     );
   };
 
@@ -668,9 +727,10 @@ const ChatList = ({ navigation }) => {
 
   const renderSkeletonList = () => (
     <View style={{ paddingVertical: 8 }}>
-      {[1, 2, 3, 4, 5, 6].map((key) => (
+      {[1, 2, 3, 4, 5, 6].map((key, index) => (
         <View
           key={key}
+          ref={index === 0 ? firstItemRef : null}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -814,10 +874,19 @@ const ChatList = ({ navigation }) => {
         renderSkeletonList()
       ) : filteredChats.length > 0 || archivedChats.length > 0 ? (
         <FlatList
+          ref={flatListRef}
           data={filteredChats}
           renderItem={renderChat}
           keyExtractor={(item) => item.id.toString()}
           scrollEnabled={true}
+          onScroll={handleScrollList}
+          scrollEventThrottle={16}
+          onScrollToIndexFailed={(info) => {
+            const wait = new Promise(resolve => setTimeout(resolve, 500));
+            wait.then(() => {
+              flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+            });
+          }}
           contentContainerStyle={styles.listContainer}
           ListHeaderComponent={
             archivedChats.length > 0 && activeFilter !== 'archived' ? (

@@ -9,6 +9,7 @@ import {
   StatusBar,
   Alert,
   Image,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -22,6 +23,7 @@ import RateModal from './Modals/Rate';
 import { Animated, Dimensions, BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { navigate as navigateRef } from '../../../../utils/navigation';
 import ApiService from '../../../../services/ApiService';
 import { useAuth } from '../../../../utils/AuthContext';
 import { useLanguage } from '../../../../utils/LanguageContext';
@@ -37,6 +39,16 @@ const Profile = () => {
   const [imageError, setImageError] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const navigation = useNavigation();
+  const profileScrollViewRef = useRef(null);
+
+  useEffect(() => {
+    const scrollSub = DeviceEventEmitter.addListener('SCROLL_PROFILE', (y) => {
+      if (profileScrollViewRef.current) {
+        profileScrollViewRef.current.scrollTo({ y: y, animated: true });
+      }
+    });
+    return () => scrollSub.remove();
+  }, []);
 
   useEffect(() => {
     const onBackPress = () => {
@@ -87,6 +99,48 @@ const Profile = () => {
     loadProfile();
   }, [authUser]);
 
+  const bankRef = useRef(null);
+  const langRef = useRef(null);
+  const locRef = useRef(null);
+
+  useEffect(() => {
+      const sub = DeviceEventEmitter.addListener('REQUEST_PROFILE_LAYOUT', () => {
+      const layouts = {};
+      let count = 0;
+      
+      const tryEmit = () => {
+        count++;
+        if (count === 3) DeviceEventEmitter.emit('PROFILE_LAYOUT_MEASURED', layouts);
+      };
+
+      const measure = (ref, key) => {
+        if (ref.current) {
+          let called = false;
+          ref.current.measureInWindow((x, y, w, h) => {
+            if (called) return;
+            called = true;
+            if (w > 0 && h > 0) layouts[key] = { x, y, width: w, height: h };
+            tryEmit();
+          });
+          // Fallback if measureInWindow fails to callback (e.g. element offscreen on Android)
+          setTimeout(() => {
+            if (!called) {
+              called = true;
+              tryEmit();
+            }
+          }, 300);
+        } else {
+          tryEmit();
+        }
+      };
+
+      measure(bankRef, 'profile_bank');
+      measure(langRef, 'profile_language');
+      measure(locRef, 'profile_location');
+    });
+    return () => sub.remove();
+  }, []);
+
   const displayName = profileUser?.username || profileUser?.name || 'User';
   const displayPhone = profileUser?.phone || 'No phone number';
   const profileInitial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
@@ -133,6 +187,7 @@ const Profile = () => {
         />
 
         <ScrollView
+          ref={profileScrollViewRef}
           style={styles.content}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
@@ -180,6 +235,7 @@ const Profile = () => {
                 />
               </TouchableOpacity>
               <TouchableOpacity
+                ref={bankRef}
                 style={[styles.menuItem, styles.menuItemBorder]}
                 onPress={() => navigation.navigate('LinkBA')}>
                 <View style={styles.menuItemLeft}>
@@ -296,6 +352,7 @@ const Profile = () => {
               </TouchableOpacity>
               <View style={styles.customDivider} />
               <TouchableOpacity
+                ref={locRef}
                 style={styles.menuItem}
                 onPress={() => navigation.navigate('UserAdminLocation')}>
                 <View style={styles.menuItemLeft}>
@@ -314,6 +371,7 @@ const Profile = () => {
               </TouchableOpacity>
               <View style={styles.customDivider} />
               <TouchableOpacity
+                ref={langRef}
                 style={styles.menuItem}
                 onPress={() => navigation.navigate('LanguageSettings')}>
                 <View style={styles.menuItemLeft}>
@@ -334,6 +392,35 @@ const Profile = () => {
                     color="#CCCCCC"
                   />
                 </View>
+              </TouchableOpacity>
+              <View style={styles.customDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  try {
+                    navigateRef('UserTabs', { screen: 'Home' });
+                  } catch (e) {
+                    navigation.navigate('Home');
+                  }
+                  setTimeout(() => {
+                    DeviceEventEmitter.emit('TRIGGER_USER_MANUAL');
+                  }, 150);
+                }}>
+                <View style={styles.menuItemLeft}>
+                  <MaterialCommunityIcons
+                    name="book-open-page-variant-outline"
+                    size={22}
+                    color="#6B46C1"
+                  />
+                  <Text style={[styles.menuItemText, { color: '#6B46C1', fontWeight: '600' }, language === 'ta' && { fontSize: 14 }]}>
+                    {t('App Feature Guide')}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#6B46C1"
+                />
               </TouchableOpacity>
             </View>
           </View>
