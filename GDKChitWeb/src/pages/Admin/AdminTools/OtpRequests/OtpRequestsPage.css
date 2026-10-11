@@ -1,8 +1,12 @@
 .orp-page {
-  padding: 8px 0 32px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .orp-header {

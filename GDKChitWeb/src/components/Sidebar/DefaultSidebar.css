@@ -688,7 +688,7 @@
 .admin-page-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 28px;
+  padding: 24px;
   background: #f8fafc;
 }
 

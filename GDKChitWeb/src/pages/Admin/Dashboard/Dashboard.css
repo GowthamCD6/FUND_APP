@@ -6,7 +6,7 @@
 .admin-dashboard-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;

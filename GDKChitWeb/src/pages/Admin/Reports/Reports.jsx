@@ -306,7 +306,7 @@ const Reports = () => {
               </button>
             </div>
           ) : filtered.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 220px)', padding: '40px 0', textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 340, padding: '32px 0', textAlign: 'center' }}>
               <LottieComponent 
                 animationData={noFileAnimation} 
                 loop={true} 

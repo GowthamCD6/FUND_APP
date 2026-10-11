@@ -6,10 +6,12 @@
 /* ─── Page Container ─── */
 .set-page {
   width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  gap: 20px;
+  box-sizing: border-box;
   animation: setFadeIn 0.35s ease-out;
 }
 

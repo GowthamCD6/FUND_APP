@@ -3,9 +3,9 @@
 .ul-page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   width: 100%;
-  max-width: 1400px;
+  max-width: 1440px;
   margin: 0 auto;
   box-sizing: border-box;
 }

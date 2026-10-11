@@ -19,11 +19,15 @@
 
 .chat-container {
   display: flex;
-  width: calc(100% + 48px);
-  height: calc(100vh - 69px);
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  height: calc(100vh - 118px);
   background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   overflow: hidden;
-  margin: -24px;
 }
 
 /* Sidebar Conversations List */

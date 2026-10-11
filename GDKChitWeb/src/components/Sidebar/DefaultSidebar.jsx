@@ -21,14 +21,7 @@ const ADMIN_NAV_GROUPS = [
     ]
   },
   {
-    title: 'FINANCIAL & AUDIT',
-    items: [
-      { id: 'reports', to: '/admin/reports', label: 'Reports & Collections', Icon: BarChart3 },
-      { id: 'defaulters', to: '/admin/defaulters', label: 'Overdue Tracker', Icon: AlertTriangle, badge: 'Risk', badgeType: 'warning' },
-    ]
-  },
-  {
-    title: 'CHIT POOL & AUCTIONS',
+    title: 'CHIT SCHEMES & AUCTIONS',
     items: [
       { id: 'manage-groups', to: '/admin/manage-groups', label: 'Manage Groups', Icon: Layers },
       { id: 'create-group', to: '/admin/create-group', label: 'Create New Plan', Icon: Plus },
@@ -36,11 +29,18 @@ const ADMIN_NAV_GROUPS = [
     ]
   },
   {
-    title: 'SUBSCRIBERS & KYC',
+    title: 'SUBSCRIBER DIRECTORY',
     items: [
       { id: 'manage-users', to: '/admin/manage-users', label: 'Manage Members', Icon: UserCog },
-      { id: 'user-locations', to: '/admin/user-locations', label: 'Member Locations', Icon: MapPin },
       { id: 'add-user', to: '/admin/admintool/add-user', label: 'Add Member', Icon: UserPlus },
+      { id: 'user-locations', to: '/admin/user-locations', label: 'Member Locations', Icon: MapPin },
+    ]
+  },
+  {
+    title: 'COLLECTIONS & AUDIT',
+    items: [
+      { id: 'reports', to: '/admin/reports', label: 'Reports & Collections', Icon: BarChart3 },
+      { id: 'defaulters', to: '/admin/defaulters', label: 'Overdue Tracker', Icon: AlertTriangle, badge: 'Risk', badgeType: 'warning' },
     ]
   },
   {
@@ -50,32 +50,41 @@ const ADMIN_NAV_GROUPS = [
     ]
   },
   {
-    title: 'ACCESS & SECURITY',
+    title: 'OPERATIONS & TOOLS',
     items: [
+      { id: 'actions', to: '/admin/admintool', label: 'Admin Tools & Logs', Icon: Zap, badge: 'Ops', badgeType: 'success' },
       { id: 'block-user', to: '/admin/block-user', label: 'Block / Unblock Users', Icon: Ban },
       { id: 'password-management', to: '/admin/password-management', label: 'Password Vault', Icon: Key },
     ]
   },
   {
-    title: 'SYSTEM CONFIGURATION',
+    title: 'SYSTEM PREFERENCES',
     items: [
       { id: 'settings', to: '/admin/settings', label: 'Application Settings', Icon: Settings },
-      { id: 'actions', to: '/admin/admintool', label: 'Admin Tools & Logs', Icon: Zap },
     ]
   }
 ];
 
 const USER_NAV_GROUPS = [
   {
-    title: '',
+    title: 'OVERVIEW',
     items: [
       { id: 'user-home', to: '/user/home', label: 'Home', Icon: LayoutDashboard, end: true },
     ]
   },
   {
-    title: 'MY PORTFOLIO',
+    title: 'MY CHIT POOLS',
+    items: [
+      { id: 'group-card', to: '/user/group-card', label: 'Member Chit Card', Icon: Landmark },
+      { id: 'join-group', to: '/user/join-group', label: 'Join Chit Group', Icon: Users },
+      { id: 'auction', to: '/user/auction', label: 'Live Reverse Auction', Icon: Gavel, badge: 'Live', badgeType: 'primary' },
+    ]
+  },
+  {
+    title: 'FINANCIAL STATEMENTS',
     items: [
       { id: 'portfolio', to: '/user/portfolio', label: 'Investments & Plans', Icon: BarChart3 },
+      { id: 'finance', to: '/user/finance', label: 'Financial Statements', Icon: Layers },
     ]
   },
   {
@@ -88,15 +97,6 @@ const USER_NAV_GROUPS = [
     title: 'MY ACCOUNT',
     items: [
       { id: 'profile', to: '/user/profile', label: 'Profile Settings', Icon: UserIcon },
-    ]
-  },
-  {
-    title: 'CHIT ACTIONS',
-    items: [
-      { id: 'join-group', to: '/user/join-group', label: 'Join the Group', Icon: Users },
-      { id: 'group-card', to: '/user/group-card', label: 'Group Card', Icon: Landmark },
-      { id: 'auction', to: '/user/auction', label: 'Auction', Icon: Gavel },
-      { id: 'finance', to: '/user/finance', label: 'Finance', Icon: Layers },
     ]
   }
 ];
