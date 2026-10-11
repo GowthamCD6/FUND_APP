@@ -109,44 +109,41 @@
   width: 100%;
   max-width: 420px;
   background: white;
-  padding: 40px;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  padding: 45px;
+  border-radius: 20px;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.08);
 }
 
 /* ================= HEADER ================= */
 
 .login-header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
 }
 
 .login-title {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   color: #0f172a;
-  margin-bottom: 6px;
-  letter-spacing: -0.01em;
+  margin-bottom: 8px;
 }
 
 .login-subtitle {
   font-size: 14px;
   color: #64748b;
-  line-height: 1.45;
 }
 
 /* ================= FORM ================= */
 
 .form-group {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .form-label {
   font-size: 13px;
   font-weight: 600;
   color: #0f172a;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   display: block;
 }
 
@@ -157,10 +154,10 @@
 
 .country-code {
   width: 70px;
-  padding: 11px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #f8fafc;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f1f5f9;
   font-weight: 600;
   color: #0f172a;
   text-align: center;
@@ -168,19 +165,19 @@
 
 .form-input {
   width: 100%;
-  padding: 11px 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  padding: 12px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
   font-size: 14px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: 0.3s;
   color: #0f172a;
   outline: none;
 }
 
 .form-input:focus,
 .country-code:focus {
-  border-color: #1e40af;
-  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.12);
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
 }
 
 /* ================= PASSWORD TOGGLE ================= */
@@ -201,29 +198,29 @@
 }
 
 .password-toggle:hover {
-  color: #1e40af;
+  color: #059669;
 }
 
 /* ================= BUTTON ================= */
 
 .sign-in-button {
   width: 100%;
-  padding: 12px;
+  padding: 15px;
   margin-top: 10px;
-  background: #1e40af;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-weight: 700;
   font-size: 15px;
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: 0.3s;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
 }
 
 .sign-in-button:hover {
-  background: #1d4ed8;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
 }
 
 .sign-in-button:disabled {
@@ -242,7 +239,7 @@
 }
 
 .footer-link {
-  color: #1e40af;
+  color: #059669;
   text-decoration: none;
   font-weight: 600;
 }

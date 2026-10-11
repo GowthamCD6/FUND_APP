@@ -1,12 +1,14 @@
-let API_URL = import.meta.env.VITE_API_URL;
-if (!API_URL) {
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    API_URL = `http://10.150.251.73:5000/api`;
-  } else {
-    API_URL = 'http://10.150.251.73:5000/api';
+const getApiUrl = () => {
+  if (typeof window !== 'undefined' && window.location.hostname) {
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return `http://${host}:5000/api`;
+    }
   }
-}
+  return import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+};
+
+const API_URL = getApiUrl();
 
 
 const tokenStore = {

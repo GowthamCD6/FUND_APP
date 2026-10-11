@@ -19,6 +19,10 @@ import BlockUser from '../pages/Admin/BlockUser/BlockUser.jsx';
 import PasswordManagement from '../pages/Admin/PasswordManagement/PasswordManagement.jsx';
 import Settings from '../pages/Admin/Settings/Settings.jsx';
 import Defaulters from '../pages/Admin/Defaulters/Defaulters.jsx';
+import DataExportPage from '../pages/Admin/AdminTools/DataExport/DataExportPage.jsx';
+import OtpRequestsPage from '../pages/Admin/AdminTools/OtpRequests/OtpRequestsPage.jsx';
+import AuctionSettingsPage from '../pages/Admin/AdminTools/AuctionSettings/AuctionSettingsPage.jsx';
+import OfficeLocationPage from '../pages/Admin/AdminTools/OfficeLocation/OfficeLocationPage.jsx';
 
 // ── User Pages ──
 import UserHome from '../pages/User/Home/Home.jsx';
@@ -120,8 +124,15 @@ const AppNavigation = () => {
         <Route path="admintool" element={<AdminTool />} />
         <Route path="admintool/create-group" element={<Navigate to="/admin/create-group" replace />} />
         <Route path="admintool/add-user" element={<AddUser />} />
+        <Route path="admintool/data-export" element={<DataExportPage />} />
+        <Route path="admintool/otp-requests" element={<OtpRequestsPage />} />
+        <Route path="admintool/auction-settings" element={<AuctionSettingsPage />} />
+        <Route path="admintool/office-location" element={<OfficeLocationPage />} />
         <Route path="admintool/manage-groups" element={<Navigate to="/admin/manage-groups" replace />} />
         <Route path="admintool/manage-users" element={<Navigate to="/admin/manage-users" replace />} />
+        <Route path="admintool/block-user" element={<Navigate to="/admin/block-user" replace />} />
+        <Route path="admintool/password-management" element={<Navigate to="/admin/password-management" replace />} />
+        <Route path="admintool/user-locations" element={<Navigate to="/admin/user-locations" replace />} />
       </Route>
 
       {/* ── User ── */}

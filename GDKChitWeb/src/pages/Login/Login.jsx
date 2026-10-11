@@ -6,13 +6,12 @@ import {
   Smartphone as RiSmartphoneLine, Phone as RiPhoneLine, Lock as RiLockLine, Key as RiKeyLine,
   Eye as RiEyeLine, EyeOff as RiEyeOffLine, AlertTriangle as RiAlertLine, Loader2 as RiLoader4Line,
   ArrowRight as RiArrowRightLine, Shield as RiShieldLine, CircleDollarSign as RiMoneyDollarCircleLine,
-  BarChart3 as RiBarChartLine, User as RiUserLine, ShieldCheck as RiShieldCheckLine
+  BarChart3 as RiBarChartLine,
 } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login, isAdminRole } = useAuth();
-  const [portalType, setPortalType] = useState('user'); // 'user' | 'admin'
   const [formState, setFormState] = useState({ phone: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,92 +48,21 @@ const Login = () => {
         <div className="hero-content">
           <div className="logo-section">
             <div className="logo">
-              <span style={{ fontSize: '26px', fontWeight: '800', color: '#1E40AF', letterSpacing: '-1px' }}>GDK</span>
+               <span style={{ fontSize: '26px', fontWeight: '800', color: '#059669', letterSpacing: '-1px' }}>GDK</span>
             </div>
           </div>
           <div className="company-name">GDK Chit Fund</div>
           <div className="hero-tagline">ஸ்ரீ பெரியநாயகி அம்மன் - Trusted Since 1999</div>
-
-          <div style={{ marginTop: '32px', textAlign: 'left', maxWidth: '420px' }}>
-            <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: '15px', lineHeight: 1.6 }}>
-              Welcome to the official Sri Periyanayagi Amman Chit Fund digital portal. Manage your chit groups, live reverse auctions, monthly passbooks, and micro-financing from anywhere.
-            </p>
-          </div>
         </div>
       </div>
 
       {/* Right Side - Login Form */}
       <div className="login-section">
         <div className="login-box">
-          {/* Portal Switcher Tabs */}
-          <div
-            style={{
-              display: 'flex',
-              background: '#f1f5f9',
-              borderRadius: '12px',
-              padding: '4px',
-              marginBottom: '24px',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => { setPortalType('user'); setError(''); }}
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: portalType === 'user' ? '#fff' : 'transparent',
-                color: portalType === 'user' ? '#2842C4' : '#64748b',
-                fontWeight: 700,
-                fontSize: '14px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                boxShadow: portalType === 'user' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <RiUserLine size={16} />
-              Member Portal
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setPortalType('admin'); setError(''); }}
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: portalType === 'admin' ? '#fff' : 'transparent',
-                color: portalType === 'admin' ? '#2842C4' : '#64748b',
-                fontWeight: 700,
-                fontSize: '14px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                boxShadow: portalType === 'admin' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <RiShieldCheckLine size={16} />
-              Admin Portal
-            </button>
-          </div>
-
           <div className="login-header">
-            <h2 className="login-title">
-              {portalType === 'user' ? 'Sign in to Member Portal' : 'Sign in to Admin Portal'}
-            </h2>
+            <h2 className="login-title">Sign in to Admin Portal</h2>
             <p className="login-subtitle">
-              {portalType === 'user'
-                ? 'Access your chit savings, live auctions, and passbook'
-                : 'Enter your credentials to access the admin dashboard'}
+              Enter your credentials to access the admin dashboard
             </p>
           </div>
 
@@ -194,12 +122,12 @@ const Login = () => {
             </div>
 
             <button type="submit" className="sign-in-button" disabled={loading}>
-              {loading ? 'Signing in...' : `Sign in as ${portalType === 'user' ? 'Member' : 'Admin'}`}
+              {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
           <div className="footer-text">
-            Having trouble? <a href="#" className="footer-link">Contact system administrator</a>
+            Having trouble? <a href="#" className="footer-link">Contact system admin</a>
           </div>
         </div>
       </div>
@@ -215,7 +143,7 @@ export const NotAuthorized = () => (
       <RiShieldLine size={48} color="#EF4444" style={{ margin: '0 auto 16px' }} />
       <h2 style={{ fontSize: '22px', fontWeight: 800, margin: '0 0 8px', color: '#111827' }}>Access Restricted</h2>
       <p style={{ color: '#6B7280', margin: '0 0 20px', fontSize: '14.5px' }}>This area requires administrative privileges.</p>
-      <Link to="/user/home" style={{ display: 'inline-block', padding: '11px 24px', background: '#2842C4', color: '#fff', borderRadius: '8px', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
+      <Link to="/user/home" style={{ display: 'inline-block', padding: '11px 24px', background: '#059669', color: '#fff', borderRadius: '8px', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
         Back to Member Portal
       </Link>
     </div>
@@ -227,7 +155,7 @@ export const NotFound = () => (
     <div className="panel" style={{ textAlign: 'center', padding: '40px 24px', maxWidth: '440px', margin: '60px auto', background: '#fff', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
       <h2 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 8px', color: '#111827' }}>Page Not Found</h2>
       <p style={{ color: '#6B7280', margin: '0 0 20px', fontSize: '14.5px' }}>The requested page could not be located.</p>
-      <Link to="/" style={{ display: 'inline-block', padding: '11px 24px', background: '#2842C4', color: '#fff', borderRadius: '8px', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
+      <Link to="/" style={{ display: 'inline-block', padding: '11px 24px', background: '#059669', color: '#fff', borderRadius: '8px', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
         Return to Home
       </Link>
     </div>

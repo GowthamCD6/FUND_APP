@@ -607,7 +607,28 @@ const Auction = () => {
           {loadingGroups ? (
             <div className="rn-list">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="gc-card skeleton-pulse" style={{ height: 220 }} />
+                <div key={i} className="gc-card skeleton-pulse" style={{ pointerEvents: 'none', height: 240 }}>
+                  <div className="gc-header" style={{ paddingBottom: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ width: '60%', height: 16, background: '#e2e8f0', borderRadius: 4, marginBottom: 8 }} />
+                      <div style={{ width: '30%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+                    </div>
+                    <div style={{ width: 34, height: 34, background: '#e2e8f0', borderRadius: 6 }} />
+                  </div>
+                  <div className="gc-content">
+                    <div className="gc-info-row" style={{ background: '#f8fafc', border: '1px solid #f1f5f9', padding: '10px 14px', borderRadius: 8, display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                      <div style={{ width: '40%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+                      <div style={{ width: '40%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+                    </div>
+                    <div className="gc-progress-wrap" style={{ marginBottom: 16 }}>
+                      <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3 }} />
+                    </div>
+                    <div className="gc-footer" style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14, display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ width: '35%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+                      <div style={{ width: '35%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           ) : filteredGroups.length === 0 ? (
@@ -841,9 +862,17 @@ const Auction = () => {
             {/* Members Picker Checklist */}
             <div style={{ flex: 1, overflowY: 'auto', marginBottom: 20 }}>
               {loadingMembers ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
-                  <RiLoader4Line size={28} className="spin-anim" style={{ margin: '0 auto 8px' }} />
-                  <p style={{ margin: 0, fontSize: 13 }}>Loading group members...</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 0' }}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="skeleton-pulse" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
+                      <div style={{ width: 18, height: 18, borderRadius: 4, background: '#e2e8f0' }} />
+                      <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#e2e8f0' }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ width: '55%', height: 13, background: '#e2e8f0', borderRadius: 4, marginBottom: 5 }} />
+                        <div style={{ width: '35%', height: 10, background: '#e2e8f0', borderRadius: 4 }} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : filteredMembers.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>

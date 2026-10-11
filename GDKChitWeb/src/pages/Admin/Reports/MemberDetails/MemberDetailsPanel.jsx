@@ -369,12 +369,22 @@ const MemberDetailsPanel = ({ group, apiMembers, loading, onClose }) => {
       </div>
 
       {/* ── Members List ── */}
-      <div className={loading || members.length === 0 ? "" : "rn-list"}>
+      <div className={members.length === 0 && !loading ? "" : "rn-list"}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
-            <RiLoader4Line size={36} color="var(--primary)" style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
-            <p style={{ margin: 0, fontSize: 15 }}>Loading members...</p>
-          </div>
+          <>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="md-card skeleton-pulse" style={{ pointerEvents: 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#e2e8f0', flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ width: 140, height: 16, background: '#e2e8f0', borderRadius: 4, marginBottom: 6 }} />
+                    <div style={{ width: 90, height: 12, background: '#e2e8f0', borderRadius: 4 }} />
+                  </div>
+                  <div style={{ width: 64, height: 24, background: '#e2e8f0', borderRadius: 12 }} />
+                </div>
+              </div>
+            ))}
+          </>
         ) : members.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
             <RiGroupLine size={56} color="var(--border)" style={{ marginBottom: 16 }} />

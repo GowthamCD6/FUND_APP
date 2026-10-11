@@ -130,7 +130,20 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
       
       <div className="chat-list-content">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '20px', color: 'var(--muted)' }}>Loading...</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '4px 0' }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton-pulse" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px' }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#e2e8f0', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <div style={{ width: '50%', height: 13, background: '#e2e8f0', borderRadius: 4 }} />
+                    <div style={{ width: 35, height: 10, background: '#e2e8f0', borderRadius: 4 }} />
+                  </div>
+                  <div style={{ width: '75%', height: 11, background: '#e2e8f0', borderRadius: 4 }} />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : filteredChats.length > 0 ? (
           filteredChats.map((chat) => (
             <div 
