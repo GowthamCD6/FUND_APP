@@ -8,8 +8,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    width: width,
-    height: height,
+    width: '100%',
+    height: '100%',
     zIndex: 9999,
   },
 

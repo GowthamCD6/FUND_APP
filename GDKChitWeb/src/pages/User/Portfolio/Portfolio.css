@@ -31,9 +31,9 @@
 }
 
 .pf-stat-card.primary {
-  background: linear-gradient(135deg, var(--primary), #5b21b6);
+  background: var(--primary);
   color: #ffffff;
-  border: none;
+  border: 1px solid var(--primary);
 }
 
 .pf-stat-card:hover {
@@ -57,7 +57,7 @@
 }
 
 .pf-stat-icon.group {
-  background: #F3F0F7;
+  background: #eff6ff;
   color: var(--primary);
 }
 

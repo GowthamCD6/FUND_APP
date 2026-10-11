@@ -6,14 +6,20 @@ import {
   User as RiUserLine, Phone as RiPhoneLine, ShieldCheck as RiShieldUserLine, Landmark as RiBankLine,
   FileLock as RiFileShieldLine, ChevronRight as RiArrowRightSLine, MapPin as RiMapPinLine, Map as RiMap2Line,
   Camera as RiInstagramLine, Play as RiYoutubeLine, MessageCircle as RiWhatsappLine, LogOut as RiLogoutBoxLine,
-  Star as RiStarLine, Share2 as RiShareLine, HelpCircle as RiQuestionLine, Link as RiLinkLine,
+  Star as RiStarLine, Share2 as RiShareLine, HelpCircle as RiQuestionLine, KeyRound, Globe, BookOpen,
 } from 'lucide-react';
+import RateModal from './Modals/RateModal.jsx';
+import ShareModal from './Modals/ShareModal.jsx';
+import UserManualModal from './Modals/UserManualModal.jsx';
 import './Profile.css';
 
 const Profile = () => {
   const { user, logout } = useAuth();
   const [profileData, setProfileData] = useState(null);
   const [profileImage, setProfileImage] = useState('');
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -40,19 +46,22 @@ const Profile = () => {
     { icon: RiBankLine, label: 'Linked Bank Account', color: '#2842C4', path: '/user/profile/link-bank-account' },
     { icon: RiShieldUserLine, label: 'Identity Verification', color: '#10B981', path: '/user/profile/identity-verification' },
     { icon: RiUserLine, label: 'Nominee Details', color: '#F59E0B', path: '/user/profile/nominee-details' },
+    { icon: KeyRound, label: 'Authorization OTP Requests', color: '#4F46E5', path: '/user/profile/otp-requests' },
   ];
 
   const ADVANCED = [
     { icon: RiFileShieldLine, label: 'Security & Permission', color: '#EF4444', path: '/user/profile/security-permission' },
     { icon: RiMapPinLine, label: 'My Location', color: '#6B46C1', path: '/user/profile/my-location' },
     { icon: RiMap2Line, label: 'Admin Location', color: '#2842C4', path: '/user/profile/admin-location' },
+    { icon: Globe, label: 'Language Settings', color: '#059669', path: '/user/profile/language-settings' },
+    { icon: BookOpen, label: 'App Feature Guide & Manual', color: '#6B46C1', onClick: () => setShowManualModal(true) },
   ];
 
   const GENERAL = [
     { icon: RiFileShieldLine, label: 'Privacy Policy', color: '#6B7280', path: '/user/profile/privacy-policy' },
     { icon: RiQuestionLine, label: 'Help & Support', color: '#6B7280', path: '/user/profile/help-support' },
-    { icon: RiShareLine, label: 'Share GDK Chit Fund', color: '#6B7280', onClick: () => alert('Share functionality coming soon!') },
-    { icon: RiStarLine, label: 'Rate GDK Chit Fund', color: '#F59E0B', onClick: () => alert('Rating functionality coming soon!') },
+    { icon: RiShareLine, label: 'Share GDK Chit Fund', color: '#6B7280', onClick: () => setShowShareModal(true) },
+    { icon: RiStarLine, label: 'Rate GDK Chit Fund', color: '#F59E0B', onClick: () => setShowRateModal(true) },
   ];
 
   const MenuItem = ({ icon: Icon, label, color, path, onClick }) => (
@@ -118,6 +127,11 @@ const Profile = () => {
         </button>
         <p className="prof-version">Version 3.1.4</p>
       </div>
+
+      {/* Modals */}
+      <RateModal isOpen={showRateModal} onClose={() => setShowRateModal(false)} />
+      <ShareModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
+      <UserManualModal isOpen={showManualModal} onClose={() => setShowManualModal(false)} />
     </div>
   );
 };

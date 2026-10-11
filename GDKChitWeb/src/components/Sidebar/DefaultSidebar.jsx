@@ -126,6 +126,8 @@ const PAGE_TITLES = {
   '/user/group-card': 'Group Card',
   '/user/auction': 'Auction',
   '/user/finance': 'Finance',
+  '/user/profile/otp-requests': 'OTP Requests',
+  '/user/profile/language-settings': 'Language Settings',
 };
 
 /* ─── LOCK SCREEN OVERLAY ─── */
@@ -463,7 +465,7 @@ const styles = {
     height: "100vh",
     backgroundColor: "#f9fafb",
     fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      '"Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
 
   /* ================= SIDEBAR ================= */

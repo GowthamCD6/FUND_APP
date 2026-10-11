@@ -221,7 +221,7 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
   );
 };
 
-const MenuItem = ({ icon, title, description, onPress, viewRef }) => (
+const MenuItem = ({ icon, title, description, onPress, viewRef, language }) => (
   <TouchableOpacity ref={viewRef} style={styles.menuItemRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
     <View style={styles.menuIconWrap}>
       <View style={styles.menuIconCircle}>

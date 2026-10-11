@@ -1,10 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext.jsx';
 import {
   ShieldCheck as RiShieldUserLine, Check as RiCheckLine, Clock as RiTimeLine,
   Users as RiGroupLine, CircleDollarSign as RiMoneyDollarCircleLine, ChevronRight as RiArrowRightSLine,
   Camera as RiInstagramLine, Play as RiYoutubeLine, MessageCircle as RiWhatsappLine,
-  Building2, TrendingUp, HandCoins
+  Building2, TrendingUp, HandCoins, User as RiUserLine
 } from 'lucide-react';
 import './Landing.css';
 import aboutFamilyImage from '../../assets/about-us-family.png';
@@ -33,6 +34,9 @@ const stats = [
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { user, status, isAdminRole } = useAuth();
+  const isAuthed = status === 'authed';
+  const isAdmin = isAdminRole(user?.role);
 
   return (
     <div className="landing">
@@ -46,7 +50,15 @@ const Landing = () => {
           <button className="land-nav-link" onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}>About</button>
           <button className="land-nav-link" onClick={() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' })}>Plans</button>
           <button className="land-nav-link" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Features</button>
-          <button className="land-login-btn" onClick={() => navigate('/login')}>Login / Register</button>
+          {isAuthed ? (
+            <button className="land-login-btn" onClick={() => navigate(isAdmin ? '/admin/dashboard' : '/user/home')}>
+              Open {isAdmin ? 'Admin' : 'Member'} Portal <RiArrowRightSLine size={16} />
+            </button>
+          ) : (
+            <button className="land-login-btn" onClick={() => navigate('/login')}>
+              Sign In <RiArrowRightSLine size={16} />
+            </button>
+          )}
         </div>
       </nav>
 
@@ -67,11 +79,14 @@ const Landing = () => {
             Join thousands of families in a secure, RBI-registered community. Maximize your savings with transparent auctions and guaranteed on-time payouts.
           </p>
           <div className="land-hero-btns">
-            <button className="land-cta-primary" onClick={() => navigate('/login')}>
-              Open an Account <RiArrowRightSLine size={18} />
+            <button className="land-cta-primary" onClick={() => navigate(isAuthed ? (isAdmin ? '/admin/dashboard' : '/user/home') : '/login')}>
+              Member Portal <RiArrowRightSLine size={18} />
             </button>
-            <button className="land-cta-secondary" onClick={() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' })}>
-              View Investment Plans
+            <button className="land-cta-secondary" onClick={() => navigate(isAuthed && isAdmin ? '/admin/dashboard' : '/login')}>
+              Admin Portal
+            </button>
+            <button className="land-cta-secondary" style={{ background: '#f1f5f9', color: '#334155' }} onClick={() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' })}>
+              View Plans
             </button>
           </div>
           <div className="land-hero-social-proof">

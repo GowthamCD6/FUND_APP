@@ -99,7 +99,8 @@ const Profile = () => {
     loadProfile();
   }, [authUser]);
 
-  const bankRef = useRef(null);
+  const nomineeRef = useRef(null);
+  const secRef = useRef(null);
   const langRef = useRef(null);
   const locRef = useRef(null);
 
@@ -110,7 +111,7 @@ const Profile = () => {
       
       const tryEmit = () => {
         count++;
-        if (count === 3) DeviceEventEmitter.emit('PROFILE_LAYOUT_MEASURED', layouts);
+        if (count === 4) DeviceEventEmitter.emit('PROFILE_LAYOUT_MEASURED', layouts);
       };
 
       const measure = (ref, key) => {
@@ -134,7 +135,8 @@ const Profile = () => {
         }
       };
 
-      measure(bankRef, 'profile_bank');
+      measure(nomineeRef, 'profile_nominee');
+      measure(secRef, 'profile_security');
       measure(langRef, 'profile_language');
       measure(locRef, 'profile_location');
     });
@@ -235,7 +237,6 @@ const Profile = () => {
                 />
               </TouchableOpacity>
               <TouchableOpacity
-                ref={bankRef}
                 style={[styles.menuItem, styles.menuItemBorder]}
                 onPress={() => navigation.navigate('LinkBA')}>
                 <View style={styles.menuItemLeft}>
@@ -274,6 +275,7 @@ const Profile = () => {
                 />
               </TouchableOpacity>
               <TouchableOpacity
+                ref={nomineeRef}
                 style={[styles.menuItem, styles.menuItemBorder]}
                 onPress={() => navigation.navigate('Nominee')}>
                 <View style={styles.menuItemLeft}>
@@ -314,6 +316,7 @@ const Profile = () => {
             <Text style={[styles.sectionTitle, language === 'ta' && { fontSize: 16 }]}>{t('Advanced Features')}</Text>
             <View style={styles.menuSection}>
               <TouchableOpacity
+                ref={secRef}
                 style={styles.menuItem}
                 onPress={() => navigation.navigate('SecurityPerm')}>
                 <View style={styles.menuItemLeft}>

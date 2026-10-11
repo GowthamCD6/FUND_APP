@@ -42,6 +42,8 @@ import MyLocation from '../pages/User/Profile/Pages/MyLocation.jsx';
 import AdminLocation from '../pages/User/Profile/Pages/AdminLocation.jsx';
 import PrivacyPolicy from '../pages/User/Profile/Pages/PrivacyPolicy.jsx';
 import HelpSupport from '../pages/User/Profile/Pages/HelpSupport.jsx';
+import OTPRequests from '../pages/User/Profile/Pages/OTPRequests.jsx';
+import LanguageSettings from '../pages/User/Profile/Pages/LanguageSettings.jsx';
 
 // ── Public Pages ──
 import Landing from '../pages/Landing/Landing.jsx';
@@ -149,6 +151,8 @@ const AppNavigation = () => {
         <Route path="profile/admin-location" element={<AdminLocation />} />
         <Route path="profile/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="profile/help-support" element={<HelpSupport />} />
+        <Route path="profile/otp-requests" element={<OTPRequests />} />
+        <Route path="profile/language-settings" element={<LanguageSettings />} />
       </Route>
 
       {/* ── 404 ── */}

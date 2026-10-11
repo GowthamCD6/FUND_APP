@@ -1,235 +1,332 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { makeRequest } from '../../../api/apiClient.js';
 import {
-  Bell as RiNotificationLine, ChevronRight as RiArrowRightSLine, ShieldCheck as RiShieldUserLine,
-  Check as RiCheckLine, Users as RiGroupLine, CircleDollarSign as RiMoneyDollarCircleLine,
-  Clock as RiTimeLine, X as RiCloseLine, AlertTriangle as RiAlertLine,
-  Camera as RiInstagramLine, Play as RiYoutubeLine, MessageCircle as RiWhatsappLine,
+  Bell, Landmark, Gavel, Coins, Users, ArrowRight,
+  TrendingUp, ShieldCheck, CheckCircle2, AlertCircle, Clock,
+  FileText, Calendar, X, RefreshCw
 } from 'lucide-react';
 import './Home.css';
 
-const plans = [
-  { id: 1, name: '1 Lakh Plan', badge: 'Popular', amount: '₹1,00,000', monthly: '₹5,000', duration: '20 Months', returnAmt: '₹95,000', color: '#FFD700' },
-  { id: 2, name: '2 Lakh Plan', badge: 'Best Value', amount: '₹2,00,000', monthly: '₹10,000', duration: '20 Months', returnAmt: '₹1,90,000', color: '#C0C0C0' },
-  { id: 3, name: '3 Lakh Plan', badge: 'Trending', amount: '₹3,00,000', monthly: '₹15,000', duration: '20 Months', returnAmt: '₹2,85,000', color: '#87CEEB' },
-  { id: 4, name: '5 Lakh Plan', badge: 'Premium', amount: '₹5,00,000', monthly: '₹25,000', duration: '20 Months', returnAmt: '₹4,75,000', color: '#DA70D6' },
-];
+const formatINR = (amt) =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(amt) || 0);
 
-const features = [
-  { title: 'RBI Registered', desc: 'Fully compliant with Reserve Bank of India regulations for chit funds', Icon: RiShieldUserLine, color: '#10B981', bg: '#ecfdf5' },
-  { title: 'Transparent Auctions', desc: 'Live monthly auctions with complete transparency and fair bidding', Icon: RiCheckLine, color: '#2842C4', bg: '#eff6ff' },
-  { title: 'Guaranteed Payouts', desc: 'On-time prize money disbursement with zero delays', Icon: RiMoneyDollarCircleLine, color: '#F59E0B', bg: '#fffbeb' },
-  { title: 'Digital Tracking', desc: 'Track your investments, payments and returns in real-time', Icon: RiTimeLine, color: '#6B46C1', bg: '#f5f3ff' },
-];
-
-const stats = [
-  { value: '500+', label: 'Active Members', Icon: RiGroupLine },
-  { value: '₹50Cr+', label: 'Funds Managed', Icon: RiMoneyDollarCircleLine },
-  { value: '25+', label: 'Years Legacy', Icon: RiTimeLine },
-  { value: '100%', label: 'Trust Score', Icon: RiShieldUserLine },
+const CHIT_SCHEMES = [
+  { id: 1, name: '₹1,00,000 Scheme', monthly: 5000, tenure: 20, maxDiv: '₹15,000', returnAmt: '₹95,000', category: 'Standard Plan' },
+  { id: 2, name: '₹2,00,000 Scheme', monthly: 10000, tenure: 20, maxDiv: '₹30,000', returnAmt: '₹1,90,000', category: 'Value Plan' },
+  { id: 3, name: '₹3,00,000 Scheme', monthly: 15000, tenure: 20, maxDiv: '₹45,000', returnAmt: '₹2,85,000', category: 'Growth Plan' },
+  { id: 4, name: '₹5,00,000 Scheme', monthly: 25000, tenure: 20, maxDiv: '₹75,000', returnAmt: '₹4,75,000', category: 'Commercial Plan' },
 ];
 
 const UserHome = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const [portfolio, setPortfolio] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [showNotif, setShowNotif] = useState(false);
-  const [activePlan, setActivePlan] = useState(0);
-  const carouselRef = useRef(null);
-  const timerRef = useRef(null);
+  const [loading, setLoading] = useState(true);
 
-  const displayName = user?.name || user?.username || 'User';
+  const displayName = user?.name || user?.username || 'Member';
 
-  // Fetch notifications
   useEffect(() => {
-    const fetchNotif = async () => {
+    const loadDashboard = async () => {
+      setLoading(true);
       try {
-        const res = await makeRequest('/user/notifications');
-        const data = await res.json();
-        if (data.success) setNotifications(data.data || []);
-      } catch (e) { /* silent */ }
+        // 1. Fetch user portfolio
+        const resPortfolio = await makeRequest('/user/portfolio');
+        const dataPort = await resPortfolio.json();
+        if (dataPort.success && Array.isArray(dataPort.data)) {
+          setPortfolio(dataPort.data);
+        }
+
+        // 2. Fetch notifications
+        const resNotif = await makeRequest('/user/notifications');
+        const dataNotif = await resNotif.json();
+        if (dataNotif.success && Array.isArray(dataNotif.data)) {
+          setNotifications(dataNotif.data);
+        }
+      } catch (e) {
+        console.error('Error loading dashboard:', e);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchNotif();
+
+    loadDashboard();
   }, []);
 
-  // Auto-scroll carousel
-  useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setActivePlan(prev => (prev + 1) % plans.length);
-    }, 4000);
-    return () => clearInterval(timerRef.current);
-  }, []);
-
-  useEffect(() => {
-    if (carouselRef.current) {
-      const card = carouselRef.current.children[activePlan];
-      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  }, [activePlan]);
-
-  const [selectedPlan, setSelectedPlan] = useState(null);
+  // Calculate totals
+  const totalContributed = portfolio.reduce((acc, g) => acc + (Number(g.totalPaid) || Number(g.groupCollectedAmount) || 0), 0);
+  const activeCount = portfolio.filter((g) => g.paymentStatus !== 'completed').length;
+  const nextGroup = portfolio[0];
+  const nextDue = nextGroup
+    ? formatINR(nextGroup.monthlyContribution || Math.round((Number(nextGroup.investmentAmount) || 100000) / 20))
+    : 'No Dues Pending';
 
   return (
     <div className="uh-page">
       {/* Header */}
       <div className="uh-header">
         <div>
-          <p className="uh-welcome">Welcome Back!</p>
-          <h2 className="uh-name">{displayName}</h2>
+          <span className="uh-welcome">Sri Periyanayagi Amman Chit Fund</span>
+          <h1 className="uh-name">Welcome back, {displayName}</h1>
         </div>
-        <button className="uh-notif-btn" onClick={() => setShowNotif(true)}>
-          <RiNotificationLine size={22} />
+
+        <button
+          className="uh-notif-btn"
+          onClick={() => setShowNotif(true)}
+          title="Notification Center"
+          aria-label="Notifications"
+        >
+          <Bell size={20} />
           {notifications.length > 0 && <span className="uh-notif-dot">{notifications.length}</span>}
         </button>
       </div>
 
-      {/* Company Branding */}
-      <div className="uh-brand-card">
-        <h2 className="uh-brand-tamil">ஸ்ரீ பெரியநாயகி அம்மன்</h2>
-        <p className="uh-brand-sub">CHITFUNDS</p>
-        <p className="uh-brand-tag">Trusted Since 1999</p>
-      </div>
-
-      {/* Hero Banner */}
-      <div className="uh-hero">
-        <div className="uh-hero-deco1" />
-        <div className="uh-hero-deco2" />
-        <h2 className="uh-hero-title">Grow Your Savings</h2>
-        <p className="uh-hero-sub">Join 500+ families in our trusted chit fund community</p>
-        <div className="uh-hero-pills">
-          <span className="uh-pill"><RiCheckLine size={12} color="#6B46C1" /> Up to 95% Returns</span>
-          <span className="uh-pill"><RiShieldUserLine size={12} color="#10B981" /> RBI Registered</span>
-        </div>
-        <button className="uh-hero-btn" onClick={() => document.getElementById('uh-plans')?.scrollIntoView({ behavior: 'smooth' })}>
-          Explore Plans <RiArrowRightSLine size={16} />
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="uh-stats-grid">
-        {stats.map((s, i) => (
-          <div key={i} className="uh-stat">
-            <s.Icon size={20} color="#6B46C1" />
-            <div className="uh-stat-val">{s.value}</div>
-            <div className="uh-stat-label">{s.label}</div>
+      {/* Account Overview Metrics */}
+      <div className="uh-metrics-grid">
+        <div className="uh-metric-card">
+          <div className="uh-metric-head">
+            <span className="uh-metric-label">Enrolled Chit Groups</span>
+            <div className="uh-metric-icon">
+              <Users size={18} />
+            </div>
           </div>
-        ))}
-      </div>
+          <div className="uh-metric-value">{activeCount} Active</div>
+          <p className="uh-metric-subtext">Total accounts: {portfolio.length}</p>
+        </div>
 
-      {/* Plans Carousel */}
-      <div id="uh-plans" className="uh-plans-section">
-        <div className="uh-plans-header">
-          <h3 className="uh-section-title">Popular Plans</h3>
-          <button className="uh-view-all" onClick={() => setSelectedPlan(plans[0])}>View All</button>
-        </div>
-        <div className="uh-carousel" ref={carouselRef}>
-          {plans.map((plan, i) => (
-            <div key={plan.id} className={`uh-plan-card ${activePlan === i ? 'active' : ''}`} onClick={() => setSelectedPlan(plan)}>
-              <div className="uh-plan-deco" style={{ background: plan.color }} />
-              <span className="uh-plan-badge" style={{ background: plan.color }}>{plan.badge}</span>
-              <h4 className="uh-plan-name">{plan.name}</h4>
-              <div className="uh-plan-amount" style={{ color: plan.color === '#C0C0C0' ? '#6B7280' : plan.color }}>{plan.amount}</div>
-              <p className="uh-plan-label">Total Value</p>
-              <p className="uh-plan-info">{plan.monthly}/month for {plan.duration}</p>
-              <div className="uh-plan-return">
-                <span className="uh-plan-return-label">Expected Return</span>
-                <span className="uh-plan-return-val">{plan.returnAmt}</span>
-              </div>
+        <div className="uh-metric-card">
+          <div className="uh-metric-head">
+            <span className="uh-metric-label">Total Amount Paid</span>
+            <div className="uh-metric-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
+              <TrendingUp size={18} />
             </div>
-          ))}
+          </div>
+          <div className="uh-metric-value" style={{ color: '#059669' }}>
+            {formatINR(totalContributed)}
+          </div>
+          <p className="uh-metric-subtext">Verified against official ledger</p>
         </div>
-        {/* Dots */}
-        <div className="uh-dots">
-          {plans.map((_, i) => (
-            <button key={i} className={`uh-dot ${activePlan === i ? 'active' : ''}`} onClick={() => setActivePlan(i)} />
-          ))}
-        </div>
-      </div>
 
-      {/* Features */}
-      <div className="uh-features">
-        <h3 className="uh-section-title">Why Choose Us?</h3>
-        <div className="uh-features-grid">
-          {features.map((f, i) => (
-            <div key={i} className="uh-feature-card">
-              <div className="uh-feature-icon" style={{ background: f.bg }}>
-                <f.Icon size={22} color={f.color} />
-              </div>
-              <div>
-                <h4 className="uh-feature-title">{f.title}</h4>
-                <p className="uh-feature-desc">{f.desc}</p>
-              </div>
+        <div className="uh-metric-card">
+          <div className="uh-metric-head">
+            <span className="uh-metric-label">Next Monthly Installment</span>
+            <div className="uh-metric-icon" style={{ background: '#fffbeb', color: '#d97706' }}>
+              <Clock size={18} />
             </div>
-          ))}
+          </div>
+          <div className="uh-metric-value">{nextDue}</div>
+          <p className="uh-metric-subtext">
+            {nextGroup ? nextGroup.groupName || 'Primary Group' : 'All accounts settled'}
+          </p>
+        </div>
+
+        <div className="uh-metric-card">
+          <div className="uh-metric-head">
+            <span className="uh-metric-label">Member Standing</span>
+            <div className="uh-metric-icon" style={{ background: '#eff6ff', color: '#1e40af' }}>
+              <ShieldCheck size={18} />
+            </div>
+          </div>
+          <div className="uh-metric-value" style={{ color: '#1e40af', fontSize: '20px' }}>
+            Active / Good
+          </div>
+          <p className="uh-metric-subtext">Eligible for monthly reverse auctions</p>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="uh-footer">
-        <div className="uh-footer-socials">
-          <button className="uh-social"><RiInstagramLine size={20} /></button>
-          <button className="uh-social"><RiYoutubeLine size={20} /></button>
-          <button className="uh-social"><RiWhatsappLine size={20} /></button>
+      {/* Chit Actions Grid */}
+      <div>
+        <h2 className="uh-section-title">
+          Chit Fund Operations
+        </h2>
+        <div className="uh-actions-grid">
+          <div className="uh-action-card" onClick={() => navigate('/user/join-group')}>
+            <div className="uh-action-icon" style={{ background: '#eff6ff', color: '#1e40af' }}>
+              <Users size={22} />
+            </div>
+            <div className="uh-action-body">
+              <h3 className="uh-action-title">Join a Chit Group</h3>
+              <p className="uh-action-desc">Enroll using your administrator invitation code or browse open groups.</p>
+            </div>
+            <ArrowRight size={18} color="var(--subtle)" style={{ alignSelf: 'center' }} />
+          </div>
+
+          <div className="uh-action-card" onClick={() => navigate('/user/group-card')}>
+            <div className="uh-action-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
+              <Landmark size={22} />
+            </div>
+            <div className="uh-action-body">
+              <h3 className="uh-action-title">Group Passbook & Ledger</h3>
+              <p className="uh-action-desc">Inspect your complete 20-month installments, dividend credits, and print statements.</p>
+            </div>
+            <ArrowRight size={18} color="var(--subtle)" style={{ alignSelf: 'center' }} />
+          </div>
+
+          <div className="uh-action-card" onClick={() => navigate('/user/auction')}>
+            <div className="uh-action-icon" style={{ background: '#fef2f2', color: '#dc2626' }}>
+              <Gavel size={22} />
+            </div>
+            <div className="uh-action-body">
+              <h3 className="uh-action-title">Live Reverse Auction</h3>
+              <p className="uh-action-desc">Enter the real-time bidding console to claim this month's prize money payout.</p>
+            </div>
+            <ArrowRight size={18} color="var(--subtle)" style={{ alignSelf: 'center' }} />
+          </div>
+
+          <div className="uh-action-card" onClick={() => navigate('/user/finance')}>
+            <div className="uh-action-icon" style={{ background: '#f5f3ff', color: '#6d28d9' }}>
+              <Coins size={22} />
+            </div>
+            <div className="uh-action-body">
+              <h3 className="uh-action-title">Smart Finance & Loans</h3>
+              <p className="uh-action-desc">Micro-credit options for shopkeeper daily cash flow and personal weekly needs.</p>
+            </div>
+            <ArrowRight size={18} color="var(--subtle)" style={{ alignSelf: 'center' }} />
+          </div>
         </div>
-        <p className="uh-copy">© 2025 ஸ்ரீ பெரியநாயகி அம்மன் ChitFunds. All rights reserved.</p>
       </div>
 
-      {/* Plan Detail Modal */}
-      {selectedPlan && (
-        <div className="uh-modal-backdrop" onClick={() => setSelectedPlan(null)}>
-          <div className="uh-modal" onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>{selectedPlan.name}</h3>
-              <button onClick={() => setSelectedPlan(null)} style={{ background: 'var(--surface2)', border: 'none', borderRadius: 8, width: 34, height: 34, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <RiCloseLine size={18} />
-              </button>
-            </div>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ fontSize: 42, fontWeight: 900, color: selectedPlan.color === '#C0C0C0' ? '#6B7280' : selectedPlan.color }}>{selectedPlan.amount}</div>
-              <p style={{ color: '#9ca3af', fontSize: 13, fontWeight: 600 }}>TOTAL VALUE</p>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-              {[
-                { label: 'Monthly', val: selectedPlan.monthly },
-                { label: 'Duration', val: selectedPlan.duration },
-                { label: 'Expected Return', val: selectedPlan.returnAmt },
-                { label: 'Members', val: '20 per group' },
-              ].map((item, i) => (
-                <div key={i} style={{ padding: 14, borderRadius: 12, background: '#f9fafb', border: '1px solid #f3f4f6' }}>
-                  <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>{item.label}</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{item.val}</div>
-                </div>
+      {/* Chit Schemes Catalog Table */}
+      <div className="uh-table-card">
+        <div className="uh-table-header">
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+              Official Chit Schemes Catalog
+            </h3>
+            <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--muted)' }}>
+              Standard 20-month cycles regulated under the Chit Funds Act
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate('/user/join-group')}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--radius)',
+              background: 'var(--primary)',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Join Scheme
+          </button>
+        </div>
+
+        <div className="uh-table-responsive">
+          <table className="uh-schemes-table">
+            <thead>
+              <tr>
+                <th>Scheme Name</th>
+                <th>Total Chit Value</th>
+                <th>Monthly Installment</th>
+                <th>Tenure</th>
+                <th>Est. Minimum Return</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CHIT_SCHEMES.map((scheme) => (
+                <tr key={scheme.id}>
+                  <td style={{ fontWeight: 600 }}>{scheme.name}</td>
+                  <td style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                    {formatINR(scheme.monthly * scheme.tenure)}
+                  </td>
+                  <td>{formatINR(scheme.monthly)} / month</td>
+                  <td>{scheme.tenure} Months</td>
+                  <td style={{ color: '#059669', fontWeight: 600 }}>{scheme.returnAmt}</td>
+                  <td>
+                    <button
+                      onClick={() => navigate('/user/join-group')}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--border)',
+                        background: 'var(--surface2)',
+                        color: 'var(--text)',
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Enroll Now
+                    </button>
+                  </td>
+                </tr>
               ))}
-            </div>
-            <button style={{ width: '100%', padding: 14, borderRadius: 12, background: 'linear-gradient(135deg, #2842C4, #1e33a8)', color: '#fff', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer' }}>
-              Contact Admin to Join
-            </button>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Institutional Guarantee Banner */}
+      <div className="uh-institution-banner">
+        <div className="uh-institution-info">
+          <h4>Sri Periyanayagi Amman Chit Funds</h4>
+          <p>Government Registered & Compliant • Serving Families Since 1999 • All auctions strictly audited</p>
+        </div>
+
+        <div className="uh-institution-badges">
+          <div className="uh-badge-item">
+            <ShieldCheck size={16} color="#059669" />
+            <span>Chit Funds Act Compliant</span>
+          </div>
+          <div className="uh-badge-item">
+            <CheckCircle2 size={16} color="#1e40af" />
+            <span>Guaranteed Payouts</span>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Notifications Modal */}
       {showNotif && (
         <div className="uh-modal-backdrop" onClick={() => setShowNotif(false)}>
-          <div className="uh-modal" onClick={e => e.stopPropagation()}>
+          <div className="uh-modal" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Notifications</h3>
-              <button onClick={() => setShowNotif(false)} style={{ background: 'var(--surface2)', border: 'none', borderRadius: 8, width: 34, height: 34, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <RiCloseLine size={18} />
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Notification Center</h3>
+              <button
+                onClick={() => setShowNotif(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--muted)',
+                }}
+              >
+                <X size={20} />
               </button>
             </div>
-            {notifications.length > 0 ? notifications.map((n, i) => (
-              <div key={i} style={{ padding: 14, borderRadius: 12, background: n.type === 'danger' ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${n.type === 'danger' ? '#FECACA' : '#FEF3C7'}`, marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <RiAlertLine size={16} color={n.type === 'danger' ? '#EF4444' : '#F59E0B'} />
-                  <span style={{ fontWeight: 600, color: n.type === 'danger' ? '#991B1B' : '#B45309' }}>{n.title}</span>
-                </div>
-                <p style={{ margin: 0, fontSize: 14, color: '#4B5563', lineHeight: 1.5 }}>{n.message}</p>
+
+            {notifications.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {notifications.map((n, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: 14,
+                      borderRadius: 'var(--radius)',
+                      background: 'var(--surface2)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>
+                      {n.title}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>
+                      {n.message}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )) : (
-              <div style={{ textAlign: 'center', padding: 32, color: '#9ca3af' }}>
-                <RiNotificationLine size={40} color="#d1d5db" />
-                <p style={{ marginTop: 12 }}>No new notifications</p>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--muted)' }}>
+                <Bell size={36} color="var(--subtle)" style={{ margin: '0 auto 10px' }} />
+                <p style={{ margin: 0, fontSize: 14 }}>No new notifications at this time.</p>
               </div>
             )}
           </div>

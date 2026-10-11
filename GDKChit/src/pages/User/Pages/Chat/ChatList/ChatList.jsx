@@ -47,7 +47,6 @@ const ChatList = ({ navigation }) => {
   const firstItemRef = useRef(null);
   const adminItemRef = useRef(null);
   const flatListRef = useRef(null);
-  const isChatLayoutRequested = useRef(false);
 
   // ---- State ----
   const [chats, setChats] = useState([]);
@@ -256,40 +255,7 @@ const ChatList = ({ navigation }) => {
     return filtered;
   }, [chats, searchQuery, activeFilter, sortMode, pinnedChats, mutedChats, archivedChats]);
 
-  // ---- Layout Measurement for Tour ----
-  useEffect(() => {
-    const sub = DeviceEventEmitter.addListener('REQUEST_CHAT_LAYOUT', () => {
-      isChatLayoutRequested.current = true;
-      const adminIndex = filteredChats.findIndex(c => c.name === 'Admin Support' || c.isSupport);
-      
-      const measureTarget = () => {
-        const targetRef = adminItemRef.current || firstItemRef.current;
-        if (targetRef) {
-          targetRef.measureInWindow((x, y, w, h) => {
-            DeviceEventEmitter.emit('CHAT_LAYOUT_MEASURED', { x, y, width: w, height: h });
-          });
-        } else {
-          DeviceEventEmitter.emit('CHAT_LAYOUT_MEASURED', { x: 10, y: 190, width: Dimensions.get('window').width - 20, height: 85 });
-        }
-      };
 
-      if (adminIndex !== -1 && flatListRef.current) {
-        flatListRef.current.scrollToIndex({ index: adminIndex, animated: true, viewPosition: 0.5 });
-        setTimeout(measureTarget, 400);
-      } else {
-        measureTarget();
-      }
-    });
-
-    const stopSub = DeviceEventEmitter.addListener('STOP_CHAT_LAYOUT', () => {
-      isChatLayoutRequested.current = false;
-    });
-
-    return () => {
-      sub.remove();
-      stopSub.remove();
-    };
-  }, [filteredChats]);
 
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
@@ -464,14 +430,7 @@ const ChatList = ({ navigation }) => {
   };
 
   const handleScrollList = () => {
-    if (isChatLayoutRequested.current) {
-      const targetRef = adminItemRef.current || firstItemRef.current;
-      if (targetRef) {
-        targetRef.measureInWindow((x, y, w, h) => {
-          DeviceEventEmitter.emit('CHAT_LAYOUT_MEASURED', { x, y, width: w, height: h });
-        });
-      }
-    }
+    // No-op
   };
 
   const handleArchiveChat = async (chatId) => {

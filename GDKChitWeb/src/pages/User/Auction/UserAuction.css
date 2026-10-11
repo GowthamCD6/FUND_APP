@@ -1,0 +1,338 @@
+/* ============================================================
+   LIVE REVERSE AUCTION CONSOLE — Clean Financial Trading UI
+   ============================================================ */
+
+.ua-container {
+  padding: 8px 0 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ua-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.ua-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.01em;
+}
+
+.ua-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.ua-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .ua-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Arena Card */
+.ua-arena-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.ua-arena-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ua-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.ua-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dc2626;
+}
+
+.ua-timer-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface2);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.ua-bid-focus {
+  padding: 32px 24px;
+  text-align: center;
+  background: #fbfcfe;
+  border-bottom: 1px solid var(--border);
+}
+
+.ua-bid-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.ua-bid-amount {
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.ua-bid-subinfo {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Bidding Controls */
+.ua-bidding-body {
+  padding: 24px;
+}
+
+.ua-quick-increments {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 600px) {
+  .ua-quick-increments {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.ua-inc-btn {
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+
+.ua-inc-btn:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.ua-bid-form {
+  display: flex;
+  gap: 10px;
+}
+
+.ua-bid-input-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ua-input-prefix {
+  position: absolute;
+  left: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ua-bid-input {
+  width: 100%;
+  padding: 12px 14px 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+}
+
+.ua-bid-input:focus {
+  border-color: var(--primary);
+}
+
+.ua-btn-place-bid {
+  padding: 12px 24px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+
+.ua-btn-place-bid:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.ua-btn-place-bid:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Right Side: Bid Stream */
+.ua-stream-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+}
+
+.ua-stream-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ua-bids-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 440px;
+  overflow-y: auto;
+}
+
+.ua-bid-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--border);
+}
+
+.ua-bid-item.is-me {
+  border-left-color: #059669;
+  background: #f0fdf4;
+}
+
+.ua-bidder-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.ua-bidder-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ua-bidder-time {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ua-bid-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Waiting / Inactive Screen */
+.ua-waiting-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 48px 24px;
+  text-align: center;
+  max-width: 600px;
+  margin: 20px auto;
+}
+
+.ua-waiting-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+/* Winner Modal */
+.ua-winner-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.ua-winner-box {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  padding: 32px 28px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}

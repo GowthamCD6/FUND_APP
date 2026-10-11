@@ -321,7 +321,7 @@ const ChatScreen = ({ chat, onBack }) => {
                     <img src={chat.chatAvatar} alt="group avatar" className="group-info-avatar-img" />
                   ) : (
                     <div className="group-info-avatar-placeholder">
-                      <RiGroupLine size={60} color="#7C3AED" />
+                      <RiGroupLine size={60} color="#1E40AF" />
                     </div>
                   )}
                 </div>

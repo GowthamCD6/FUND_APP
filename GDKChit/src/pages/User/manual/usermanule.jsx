@@ -10,8 +10,10 @@ import {
   Dimensions,
   Platform,
   DeviceEventEmitter,
+  StyleSheet,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Svg, { Defs, Rect, Mask } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,9 +46,9 @@ const STEPS = [
     pressLabel: 'Tap the Bell',
     routeName: 'Home',
     homeScrollY: 0,
-    // cutout filled dynamically via NOTIF_LAYOUT_MEASURED
-    cutout: null,
-    textPosition: 'below', // text appears below the cutout
+    cutout: { x: W - 55, y: statusBarH + 15, w: 45, h: 45 },
+    isCircle: true,
+    textPosition: 'below',
   },
   {
     id: 'notif_reading',
@@ -70,6 +72,7 @@ const STEPS = [
     routeName: 'Home',
     // cutout: dynamic based on NOTIF_CROSS_LAYOUT_MEASURED
     cutout: null,
+    isCircle: true,
     textPosition: 'below',
   },
   {
@@ -130,6 +133,7 @@ const STEPS = [
     routeName: 'Home',
     homeScrollY: 0,
     cutout: null,
+    isCircle: true,
     textPosition: 'above',
     pointFromTop: true,
   },
@@ -186,6 +190,7 @@ const STEPS = [
     waitForPress: true, // User must press X to close the modal
     routeName: 'Home',
     cutout: null,
+    isCircle: true,
     textPosition: 'above',
   },
   {
@@ -208,19 +213,30 @@ const STEPS = [
     description: 'Tap here to chat with the official GDK Chit Funds Admin. Get instant support for your account!',
     waitForPress: false,
     routeName: 'Chat',
-    // Admin chat is dynamically measured
+    cutout: { x: 10, y: statusBarH + 10, w: W - 20, h: H * 0.6 },
+    textPosition: 'below',
+  },
+  {
+    id: 'profile_nominee',
+    title: 'Nominee Details',
+    icon: 'account-outline',
+    iconColor: '#8B5CF6',
+    description: 'Add or update your nominee details to secure your investments for your family!',
+    waitForPress: false,
+    routeName: 'Profile',
+    profileScrollY: 0,
     cutout: null,
     textPosition: 'below',
   },
   {
-    id: 'profile_bank',
-    title: 'Linked Bank Account',
-    icon: 'bank-outline',
-    iconColor: '#8B5CF6',
-    description: 'Connect & manage your verified bank account details for instant prize money payouts!',
+    id: 'profile_security',
+    title: 'Security & Permissions',
+    icon: 'shield-lock-outline',
+    iconColor: '#F59E0B',
+    description: 'Manage your app security settings and permissions from here.',
     waitForPress: false,
     routeName: 'Profile',
-    profileScrollY: 0,
+    profileScrollY: 180,
     cutout: null,
     textPosition: 'below',
   },
@@ -257,7 +273,7 @@ const STEPS = [
     waitForPress: false,
     routeName: 'Home',
     homeScrollY: 0,
-    cutout: { x: W * 0.1, y: H * 0.3, w: W * 0.8, h: H * 0.2 },
+    cutout: { x: 10, y: statusBarH + 10, w: W - 20, h: H * 0.65 },
     textPosition: 'below',
     isLast: true,
   },
@@ -284,6 +300,10 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
   const handBounce = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // Ref for the next button to measure its position
+  const nextButtonRef = useRef(null);
+  const hasAnimatedToNextBtn = useRef(false);
+
   // ─── Get active cutout for current step ───
   const getCutout = useCallback((stepIdx) => {
     const step = STEPS[stepIdx];
@@ -294,7 +314,7 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
       return dynamicCutouts[step.id];
     }
     
-    return step.cutout || { x: W * 0.1, y: H * 0.3, w: W * 0.8, h: H * 0.3 };
+    return step.cutout || { x: W / 2, y: H / 2, w: 0, h: 0 };
   }, [dynamicCutouts, insets.bottom]);
 
   // ─── Typewriter effect ───
@@ -321,6 +341,11 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
 
     return () => clearInterval(timer);
   }, [currentStep, isVisible, isNotifModalOpen]);
+
+  // Reset tracking ref on step change
+  useEffect(() => {
+    hasAnimatedToNextBtn.current = false;
+  }, [currentStep]);
 
   // ─── Animate hand from bottom/top to cutout center ───
   const animateHandTo = useCallback((cutout, shouldBounce = true, pointFromTop = false) => {
@@ -392,6 +417,12 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
 
     setCurrentStep(stepIdx);
 
+    // Hide hand initially for dynamic cutouts or Next button tracking steps
+    // This ensures synchronous layout events can safely call animateHandTo without being overwritten
+    if (!step.waitForPress || !step.cutout) {
+      hideHand();
+    }
+
     // Emit step change
     DeviceEventEmitter.emit('USER_MANUAL_STEP_CHANGED', {
       stepIndex: stepIdx,
@@ -429,9 +460,7 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
       DeviceEventEmitter.emit('REQUEST_MORE_LAYOUT');
     } else if (['portfolio_press', 'plus_press', 'chat_tab'].includes(step.id)) {
       DeviceEventEmitter.emit('REQUEST_TAB_LAYOUT');
-    } else if (step.id === 'chat_admin') {
-      DeviceEventEmitter.emit('REQUEST_CHAT_LAYOUT');
-    } else if (['profile_bank', 'profile_language', 'profile_location'].includes(step.id)) {
+    } else if (['profile_nominee', 'profile_security', 'profile_language', 'profile_location'].includes(step.id)) {
       setTimeout(() => DeviceEventEmitter.emit('REQUEST_PROFILE_LAYOUT'), 400);
     }
 
@@ -443,18 +472,11 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
     }).start();
 
     // Animate hand after a short delay (to allow navigation)
-    // Only animate here if it's a STATIC cutout. For dynamic cutouts, the event listener will call animateHandTo.
-    if (step.cutout) {
-      if (step.waitForPress) {
-        setTimeout(() => {
-          animateHandTo(step.cutout, true, step.pointFromTop);
-        }, 400);
-      } else {
-        animateHandTo(step.cutout, false, step.pointFromTop);
-      }
-    } else {
-      // Dynamic cutout - hide hand until layout listener fires
-      hideHand();
+    // Only animate here if it's a STATIC cutout and we are not tracking the Next button.
+    if (step.waitForPress && step.cutout) {
+      setTimeout(() => {
+        animateHandTo(step.cutout, true, step.pointFromTop);
+      }, 400);
     }
   }, [STEPS, navigation, fadeAnim, getCutout, animateHandTo, hideHand]);
 
@@ -539,11 +561,13 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
 
   // ─── Listen for dynamic layout measurements ───
   useEffect(() => {
+    const yOffset = Platform.OS === 'android' ? statusBarH : 0;
+
     const notifSub = DeviceEventEmitter.addListener('NOTIF_LAYOUT_MEASURED', ({ x, y, width: bw, height: bh }) => {
       const padding = 6;
       const cutout = {
         x: x - padding,
-        y: y - padding,
+        y: y + yOffset - padding,
         w: bw + padding * 2,
         h: bh + padding * 2,
       };
@@ -556,82 +580,76 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
     });
 
     const notifCrossSub = DeviceEventEmitter.addListener('NOTIF_CROSS_LAYOUT_MEASURED', ({ x, y, width: cw, height: ch }) => {
-      const cutout = { x: x - 10, y: y - 10, w: cw + 20, h: ch + 20 };
+      const cutout = { x: x - 10, y: y + yOffset - 10, w: cw + 20, h: ch + 20 };
       setDynamicCutouts(prev => ({ ...prev, notif_close: cutout }));
     });
 
     const notifModalSub = DeviceEventEmitter.addListener('NOTIF_MODAL_MEASURED', ({ x, y, width: mw, height: mh }) => {
       // Add a slight padding around the modal for the glowing border
-      const cutout = { x: x - 4, y: y - 4, w: mw + 8, h: mh + 8 };
+      const cutout = { x: x - 4, y: y + yOffset - 4, w: mw + 8, h: mh + 8 };
       setDynamicCutouts(prev => ({ ...prev, notif_reading: cutout }));
     });
 
     const plansSub = DeviceEventEmitter.addListener('PLANS_LAYOUT_MEASURED', ({ x, y, width: pw, height: ph }) => {
-      const cutout = { x: 0, y: y, w: W, h: Math.min(ph, H * 0.35) };
+      const cutout = { x: 0, y: y + yOffset, w: W, h: Math.min(ph, H * 0.35) };
       setDynamicCutouts(prev => ({ ...prev, chit_plans: cutout }));
     });
 
     const socialSub = DeviceEventEmitter.addListener('SOCIAL_LAYOUT_MEASURED', ({ x, y, width: sw, height: sh }) => {
       // Allow full height to cover both WhatsApp and Instagram completely
-      const cutout = { x: 5, y: y, w: W - 10, h: sh + 5 };
+      const cutout = { x: 5, y: y + yOffset, w: W - 10, h: sh + 5 };
       setDynamicCutouts(prev => ({ ...prev, community: cutout }));
 
       const step = STEPS[currentStep];
-      if (step?.id === 'community') {
-        animateHandTo(cutout, step.waitForPress, step.pointFromTop);
+      if (step?.id === 'community' && step.waitForPress) {
+        animateHandTo(cutout, true, step.pointFromTop);
       }
     });
 
     const moreLayoutSub = DeviceEventEmitter.addListener('MORE_LAYOUT_MEASURED', (layouts) => {
       const cutouts = {};
-      if (layouts.plus_join) cutouts.plus_join = { x: layouts.plus_join.x, y: layouts.plus_join.y, w: layouts.plus_join.width, h: layouts.plus_join.height };
-      if (layouts.plus_group_card) cutouts.plus_group_card = { x: layouts.plus_group_card.x, y: layouts.plus_group_card.y, w: layouts.plus_group_card.width, h: layouts.plus_group_card.height };
-      if (layouts.plus_auction) cutouts.plus_auction = { x: layouts.plus_auction.x, y: layouts.plus_auction.y, w: layouts.plus_auction.width, h: layouts.plus_auction.height };
-      if (layouts.plus_finance) cutouts.plus_finance = { x: layouts.plus_finance.x, y: layouts.plus_finance.y, w: layouts.plus_finance.width, h: layouts.plus_finance.height };
-      if (layouts.plus_close) cutouts.plus_close = { x: layouts.plus_close.x - 5, y: layouts.plus_close.y - 5, w: layouts.plus_close.width + 10, h: layouts.plus_close.height + 10 };
+      if (layouts.plus_join) cutouts.plus_join = { x: layouts.plus_join.x, y: layouts.plus_join.y + yOffset, w: layouts.plus_join.width, h: layouts.plus_join.height };
+      if (layouts.plus_group_card) cutouts.plus_group_card = { x: layouts.plus_group_card.x, y: layouts.plus_group_card.y + yOffset, w: layouts.plus_group_card.width, h: layouts.plus_group_card.height };
+      if (layouts.plus_auction) cutouts.plus_auction = { x: layouts.plus_auction.x, y: layouts.plus_auction.y + yOffset, w: layouts.plus_auction.width, h: layouts.plus_auction.height };
+      if (layouts.plus_finance) cutouts.plus_finance = { x: layouts.plus_finance.x, y: layouts.plus_finance.y + yOffset, w: layouts.plus_finance.width, h: layouts.plus_finance.height };
+      if (layouts.plus_close) cutouts.plus_close = { x: layouts.plus_close.x - 5, y: layouts.plus_close.y + yOffset - 5, w: layouts.plus_close.width + 10, h: layouts.plus_close.height + 10 };
       setDynamicCutouts(prev => ({ ...prev, ...cutouts }));
 
       const step = STEPS[currentStep];
-      if (['plus_join', 'plus_group_card', 'plus_auction', 'plus_finance', 'plus_close'].includes(step?.id) && cutouts[step.id]) {
-        animateHandTo(cutouts[step.id], step.waitForPress, step.pointFromTop);
+      if (['plus_join', 'plus_group_card', 'plus_auction', 'plus_finance', 'plus_close'].includes(step?.id) && cutouts[step.id] && step.waitForPress) {
+        animateHandTo(cutouts[step.id], true, step.pointFromTop);
       }
     });
 
     const profileLayoutSub = DeviceEventEmitter.addListener('PROFILE_LAYOUT_MEASURED', (layouts) => {
       const cutouts = {};
-      if (layouts.profile_bank) cutouts.profile_bank = { x: layouts.profile_bank.x, y: layouts.profile_bank.y, w: layouts.profile_bank.width, h: layouts.profile_bank.height };
-      if (layouts.profile_language) cutouts.profile_language = { x: layouts.profile_language.x, y: layouts.profile_language.y, w: layouts.profile_language.width, h: layouts.profile_language.height };
-      if (layouts.profile_location) cutouts.profile_location = { x: layouts.profile_location.x, y: layouts.profile_location.y, w: layouts.profile_location.width, h: layouts.profile_location.height };
+      if (layouts.profile_nominee) cutouts.profile_nominee = { x: layouts.profile_nominee.x, y: layouts.profile_nominee.y + yOffset, w: layouts.profile_nominee.width, h: layouts.profile_nominee.height };
+      if (layouts.profile_security) cutouts.profile_security = { x: layouts.profile_security.x, y: layouts.profile_security.y + yOffset, w: layouts.profile_security.width, h: layouts.profile_security.height };
+      if (layouts.profile_language) cutouts.profile_language = { x: layouts.profile_language.x, y: layouts.profile_language.y + yOffset, w: layouts.profile_language.width, h: layouts.profile_language.height };
+      if (layouts.profile_location) cutouts.profile_location = { x: layouts.profile_location.x, y: layouts.profile_location.y + yOffset, w: layouts.profile_location.width, h: layouts.profile_location.height };
       setDynamicCutouts(prev => ({ ...prev, ...cutouts }));
 
       const step = STEPS[currentStep];
-      if (['profile_bank', 'profile_language', 'profile_location'].includes(step?.id) && cutouts[step.id]) {
-        animateHandTo(cutouts[step.id], step.waitForPress, step.pointFromTop);
+      if (['profile_nominee', 'profile_security', 'profile_language', 'profile_location'].includes(step?.id) && cutouts[step.id] && step.waitForPress) {
+        animateHandTo(cutouts[step.id], true, step.pointFromTop);
       }
     });
 
     const tabLayoutSub = DeviceEventEmitter.addListener('TAB_LAYOUT_MEASURED', (layouts) => {
       const cutouts = {};
       const padding = 10;
-      if (layouts.portfolio_press) cutouts.portfolio_press = { x: layouts.portfolio_press.x - padding, y: layouts.portfolio_press.y - padding, w: layouts.portfolio_press.width + padding * 2, h: layouts.portfolio_press.height + padding * 2 };
-      if (layouts.plus_press) cutouts.plus_press = { x: layouts.plus_press.x - padding, y: layouts.plus_press.y - padding, w: layouts.plus_press.width + padding * 2, h: layouts.plus_press.height + padding * 2 };
-      if (layouts.chat_tab) cutouts.chat_tab = { x: layouts.chat_tab.x - padding, y: layouts.chat_tab.y - padding, w: layouts.chat_tab.width + padding * 2, h: layouts.chat_tab.height + padding * 2 };
+      if (layouts.portfolio_press) cutouts.portfolio_press = { x: layouts.portfolio_press.x - padding, y: layouts.portfolio_press.y + yOffset - padding, w: layouts.portfolio_press.width + padding * 2, h: layouts.portfolio_press.height + padding * 2 };
+      if (layouts.plus_press) cutouts.plus_press = { x: layouts.plus_press.x - padding, y: layouts.plus_press.y + yOffset - padding, w: layouts.plus_press.width + padding * 2, h: layouts.plus_press.height + padding * 2 };
+      if (layouts.chat_tab) cutouts.chat_tab = { x: layouts.chat_tab.x - padding, y: layouts.chat_tab.y + yOffset - padding, w: layouts.chat_tab.width + padding * 2, h: layouts.chat_tab.height + padding * 2 };
       setDynamicCutouts(prev => ({ ...prev, ...cutouts }));
 
       const currentId = STEPS[currentStep]?.id;
-      if (['portfolio_press', 'plus_press', 'chat_tab'].includes(currentId) && cutouts[currentId]) {
+      if (['portfolio_press', 'plus_press', 'chat_tab'].includes(currentId) && cutouts[currentId] && STEPS[currentStep]?.waitForPress) {
         animateHandTo(cutouts[currentId], true, STEPS[currentStep].pointFromTop);
       }
     });
 
-    const chatLayoutSub = DeviceEventEmitter.addListener('CHAT_LAYOUT_MEASURED', (layout) => {
-      const step = STEPS[currentStep];
-      if (step?.id === 'chat_admin') {
-        const cutout = { x: layout.x, y: layout.y, w: layout.width, h: layout.height };
-        setDynamicCutouts(prev => ({ ...prev, chat_admin: cutout }));
-        animateHandTo(cutout, step.waitForPress, step.pointFromTop);
-      }
-    });
+
 
     return () => {
       notifSub.remove();
@@ -642,7 +660,6 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
       moreLayoutSub.remove();
       profileLayoutSub.remove();
       tabLayoutSub.remove();
-      chatLayoutSub.remove();
     };
   }, [currentStep, isVisible, animateHandTo]);
 
@@ -755,49 +772,57 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
       visible={isVisible}
       animationType="fade"
       onRequestClose={handleComplete}
+      statusBarTranslucent={true}
     >
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <View style={styles.rootOverlay}>
-        {/* ─── DIM PANELS (4 rectangles around cutout) ─── */}
-        {/* Top panel */}
-        <View
-          style={[styles.dimPanel, {
-            top: 0, left: 0, right: 0,
-            height: Math.max(cutout.y, 0),
-          }]}
-        />
-        {/* Bottom panel */}
-        <View
-          style={[styles.dimPanel, {
-            top: cutout.y + cutout.h, left: 0, right: 0,
-            bottom: 0,
-          }]}
-        />
-        {/* Left panel */}
-        <View
-          style={[styles.dimPanel, {
-            top: cutout.y, left: 0,
-            width: Math.max(cutout.x, 0),
-            height: cutout.h,
-          }]}
-        />
-        {/* Right panel */}
-        <View
-          style={[styles.dimPanel, {
-            top: cutout.y, left: cutout.x + cutout.w,
-            right: 0,
-            height: cutout.h,
-          }]}
-        />
+        {/* ─── SVG DIM OVERLAY (True circular and rounded holes) ─── */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Svg width="100%" height="100%">
+            <Defs>
+              <Mask id="cutout-mask">
+                <Rect x="0" y="0" width="100%" height="100%" fill="white" />
+                {step?.isCircle ? (
+                  <Rect
+                    x={cutout.x + cutout.w / 2 - Math.max(cutout.w, cutout.h) / 2}
+                    y={cutout.y + cutout.h / 2 - Math.max(cutout.w, cutout.h) / 2}
+                    width={Math.max(cutout.w, cutout.h)}
+                    height={Math.max(cutout.w, cutout.h)}
+                    rx={Math.max(cutout.w, cutout.h) / 2}
+                    fill="black"
+                  />
+                ) : (
+                  <Rect
+                    x={cutout.x}
+                    y={cutout.y}
+                    width={cutout.w}
+                    height={cutout.h}
+                    rx={16}
+                    fill="black"
+                  />
+                )}
+              </Mask>
+            </Defs>
+            <Rect
+              x="0"
+              y="0"
+              width="100%"
+              height="100%"
+              fill="rgba(0, 0, 0, 0.78)"
+              mask="url(#cutout-mask)"
+            />
+          </Svg>
+        </View>
 
         {/* ─── CUTOUT BORDER (glowing frame) ─── */}
         <View
           style={[styles.cutoutWindow, {
-            left: cutout.x - 2.5,
-            top: cutout.y - 2.5,
-            width: cutout.w + 5,
-            height: cutout.h + 5,
+            width: step?.isCircle ? Math.max(cutout.w, cutout.h) + 5 : cutout.w + 5,
+            height: step?.isCircle ? Math.max(cutout.w, cutout.h) + 5 : cutout.h + 5,
+            left: step?.isCircle ? cutout.x + cutout.w / 2 - Math.max(cutout.w, cutout.h) / 2 - 2.5 : cutout.x - 2.5,
+            top: step?.isCircle ? cutout.y + cutout.h / 2 - Math.max(cutout.w, cutout.h) / 2 - 2.5 : cutout.y - 2.5,
+            borderRadius: step?.isCircle ? 999 : 16,
           }]}
         />
 
@@ -848,6 +873,33 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
               styles.textContainer,
               { top: textTop },
             ]}
+            onLayout={() => {
+              if (!STEPS[currentStep]?.waitForPress && nextButtonRef.current) {
+                setTimeout(() => {
+                  if (nextButtonRef.current) {
+                    nextButtonRef.current.measureInWindow((x, y, width, height) => {
+                      if (typeof x === 'number' && typeof y === 'number' && typeof width === 'number' && typeof height === 'number') {
+                        if (!hasAnimatedToNextBtn.current) {
+                          hasAnimatedToNextBtn.current = true;
+                          animateHandTo({ x, y, w: width, h: height }, true, false);
+                        } else {
+                          const targetX = x + width / 2 - 18;
+                          const targetY = y + height + 5;
+                          if (!isNaN(targetX) && !isNaN(targetY)) {
+                            Animated.spring(handPos, {
+                              toValue: { x: targetX, y: targetY },
+                              tension: 30,
+                              friction: 8,
+                              useNativeDriver: true,
+                            }).start();
+                          }
+                        }
+                      }
+                    });
+                  }
+                }, 50);
+              }
+            }}
           >
             {/* Title Row */}
             <View style={styles.titleRow}>
@@ -890,23 +942,25 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
 
               {/* Next / Explore App Button */}
               {showNextButton && (
-                <TouchableOpacity
-                  style={[
-                    styles.nextButton,
-                    { backgroundColor: step?.iconColor || '#6B46C1' },
-                  ]}
-                  onPress={isLast ? handleComplete : handleNext}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.nextButtonText}>
-                    {isLast ? 'Explore App' : 'Next Step'}
-                  </Text>
-                  <MaterialCommunityIcons
-                    name={isLast ? 'check' : 'arrow-right'}
-                    size={16}
-                    color="#FFFFFF"
-                  />
-                </TouchableOpacity>
+                <View ref={nextButtonRef} collapsable={false} style={{ alignSelf: 'flex-start' }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.nextButton,
+                      { backgroundColor: step?.iconColor || '#6B46C1' },
+                    ]}
+                    onPress={isLast ? handleComplete : handleNext}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.nextButtonText}>
+                      {isLast ? 'Explore App' : 'Next Step'}
+                    </Text>
+                    <MaterialCommunityIcons
+                      name={isLast ? 'check' : 'arrow-right'}
+                      size={16}
+                      color="#FFFFFF"
+                    />
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           </View>
