@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { makeRequest, safeJson } from '../../api/apiClient.js';
 import logoImg from '../../assets/logo.png';
 import './DefaultSidebar.css';
@@ -9,8 +10,9 @@ import {
   MessageSquare, Menu, LogOut, User as UserIcon, X, Loader2, Gavel,
   Settings, UserCog, MapPin, Plus, Ban, Key, Layers, Lock, Unlock,
   Landmark, ShieldCheck, Users, ShieldAlert, Map, FileText, HelpCircle,
-  Bell, Search, ChevronRight, UserPlus, Info, CheckCircle2, AlertCircle
+  Bell, Search, ChevronRight, UserPlus, Info, CheckCircle2, AlertCircle, Globe
 } from 'lucide-react';
+
 
 /* ── NAV GROUPS ── */
 const ADMIN_NAV_GROUPS = [
@@ -253,6 +255,7 @@ const LockScreenOverlay = ({ onUnlock }) => {
 
 const DefaultSidebar = () => {
   const { user, status, isAdminRole, logout } = useAuth();
+  const { language, changeLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -271,22 +274,37 @@ const DefaultSidebar = () => {
   const isAdmin = isAdminRole(user?.role);
   const rawNavGroups = isAdmin ? ADMIN_NAV_GROUPS : USER_NAV_GROUPS;
 
-  // Filter nav items by search query
+  // Filter nav items by search query and translate labels
   const navGroups = useMemo(() => {
-    if (!navSearch.trim()) return rawNavGroups;
     const query = navSearch.toLowerCase().trim();
     return rawNavGroups
-      .map(group => ({
-        ...group,
-        items: group.items.filter(item =>
-          item.label.toLowerCase().includes(query) ||
-          (item.badge && item.badge.toLowerCase().includes(query))
-        )
-      }))
-      .filter(group => group.items.length > 0);
-  }, [rawNavGroups, navSearch]);
+      .map(group => {
+        const translatedItems = group.items.map(item => ({
+          ...item,
+          displayLabel: t(item.label),
+          displayBadge: item.badge ? t(item.badge) : null
+        }));
 
-  const headerTitle = PAGE_TITLES[location.pathname] || (isAdmin ? 'GDK Administration' : 'GDK Member Portal');
+        const filtered = !query
+          ? translatedItems
+          : translatedItems.filter(item =>
+              item.displayLabel.toLowerCase().includes(query) ||
+              item.label.toLowerCase().includes(query) ||
+              (item.displayBadge && item.displayBadge.toLowerCase().includes(query))
+            );
+
+        return {
+          ...group,
+          displayTitle: t(group.title),
+          items: filtered
+        };
+      })
+      .filter(group => group.items.length > 0);
+  }, [rawNavGroups, navSearch, t]);
+
+  const rawHeaderTitle = PAGE_TITLES[location.pathname] || (isAdmin ? 'GDK Administration' : 'GDK Member Portal');
+  const headerTitle = t(rawHeaderTitle);
+
 
   // Load notifications for admin
   useEffect(() => {
@@ -352,11 +370,11 @@ const DefaultSidebar = () => {
           <div className="sidebar-nav-icon-wrap">
             <Icon size={18} strokeWidth={isActive ? 2.3 : 1.8} />
           </div>
-          <span className="sidebar-nav-label">{item.label}</span>
+          <span className="sidebar-nav-label">{item.displayLabel || item.label}</span>
         </div>
-        {item.badge && (
+        {(item.displayBadge || item.badge) && (
           <span className={`sidebar-badge sidebar-badge-${item.badgeType || 'primary'}`}>
-            {item.badge}
+            {item.displayBadge || item.badge}
           </span>
         )}
       </NavLink>
@@ -374,13 +392,13 @@ const DefaultSidebar = () => {
           <div className="sidebar-brand-text">
             <span className="sidebar-brand-title">GDK CHIT FUNDS</span>
             <span className="sidebar-brand-subtitle">
-              {isAdmin ? "Treasury & Control" : "Member Portal"}
+              {isAdmin ? t("Treasury & Operations Dashboard") : t("MEMBER PORTAL")}
             </span>
           </div>
         </NavLink>
-        <div className="sidebar-status-dot-wrap" title="System Live">
+        <div className="sidebar-status-dot-wrap" title={t("Live")}>
           <span className="sidebar-status-dot" />
-          <span>Live</span>
+          <span>{t("Live")}</span>
         </div>
       </div>
 
@@ -391,7 +409,7 @@ const DefaultSidebar = () => {
           <input
             type="text"
             className="sidebar-search-input"
-            placeholder="Quick filter menu..."
+            placeholder={t("Quick filter menu...")}
             value={navSearch}
             onChange={(e) => setNavSearch(e.target.value)}
           />
@@ -412,13 +430,15 @@ const DefaultSidebar = () => {
         <nav>
           {navGroups.map((group, i) => (
             <div key={i} className="sidebar-nav-group">
-              {group.title && <div className="sidebar-group-title">{group.title}</div>}
+              {(group.displayTitle || group.title) && (
+                <div className="sidebar-group-title">{group.displayTitle || group.title}</div>
+              )}
               {group.items.map(renderNavItem)}
             </div>
           ))}
           {navGroups.length === 0 && (
             <div style={{ padding: '24px 12px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
-              No matches for "{navSearch}"
+              {t('No matches for')} "{navSearch}"
             </div>
           )}
         </nav>
@@ -616,13 +636,38 @@ const DefaultSidebar = () => {
               </>
             )}
 
+            {/* LANGUAGE SWITCH BUTTON */}
+            <button
+              type="button"
+              className="admin-notif-btn"
+              onClick={() => changeLanguage(language === 'en' ? 'ta' : 'en')}
+              title={language === 'en' ? 'Switch to தமிழ் (Tamil)' : 'Switch to English'}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '0 10px',
+                width: 'auto',
+                fontWeight: 600,
+                fontSize: 12.5,
+              }}
+            >
+              <Globe size={15} color="#2563eb" />
+              <span>{language === 'en' ? 'தமிழ்' : 'ENG'}</span>
+            </button>
+
             {/* PROFILE CHIP */}
-            <div className="admin-topbar-profile">
+            <div
+              className="admin-topbar-profile"
+              onClick={() => navigate(isAdmin ? '/admin/settings' : '/user/profile')}
+              style={{ cursor: 'pointer' }}
+              title={t('Profile Settings')}
+            >
               <div className="admin-topbar-avatar">
                 {(user?.name || user?.username || 'A').charAt(0).toUpperCase()}
               </div>
               <span className="admin-topbar-user-name">
-                {user?.name || user?.username || (isAdmin ? "Admin" : "Member")}
+                {user?.name || user?.username || (isAdmin ? t("Admin") : t("Member"))}
               </span>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { makeRequest } from '../../../../api/apiClient.js';
+import { useLanguage } from '../../../../context/LanguageContext.jsx';
 import { Languages, X, Check, Globe } from 'lucide-react';
 import './ProfileModals.css';
 
@@ -23,38 +23,25 @@ const LANGUAGES = [
 ];
 
 const LanguageModal = ({ isOpen, onClose, onLanguageChanged }) => {
-  const [selectedLang, setSelectedLang] = useState('en');
-  const [saving, setSaving] = useState(false);
+  const { language, changeLanguage, t } = useLanguage();
+  const [selectedLang, setSelectedLang] = useState(language);
 
   useEffect(() => {
     if (!isOpen) return;
-    const stored = localStorage.getItem('app_language') || 'en';
-    setSelectedLang(stored);
-  }, [isOpen]);
+    setSelectedLang(language);
+  }, [isOpen, language]);
 
   const handleSelect = async (code) => {
     setSelectedLang(code);
-    setSaving(true);
-    localStorage.setItem('app_language', code);
+    await changeLanguage(code);
 
-    // Save to user preferences if logged in
-    try {
-      await makeRequest('/user/preferences', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language: code })
-      });
-    } catch (e) {
-      // Non-blocking preference sync
-    }
-
-    setSaving(false);
     if (onLanguageChanged) {
       onLanguageChanged(code);
     }
   };
 
   if (!isOpen) return null;
+
 
   return (
     <div className="prof-modal-backdrop" onClick={onClose}>

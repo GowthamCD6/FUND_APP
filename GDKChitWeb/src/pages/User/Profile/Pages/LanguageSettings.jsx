@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Globe, ArrowLeft, Check, Sparkles } from 'lucide-react';
+import { useLanguage } from '../../../../context/LanguageContext.jsx';
 import './ProfilePages.css';
 
 const LanguageSettings = () => {
   const navigate = useNavigate();
-  const [selectedLang, setSelectedLang] = useState(
-    localStorage.getItem('app_language') || 'en'
-  );
+  const { language, changeLanguage, t } = useLanguage();
+  const [selectedLang, setSelectedLang] = useState(language);
   const [saved, setSaved] = useState(false);
 
   const handleSelect = (lang) => {
     setSelectedLang(lang);
-    localStorage.setItem('app_language', lang);
+    changeLanguage(lang);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
 
   return (
     <div className="pp-container">

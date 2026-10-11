@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext.jsx';
+import { useLanguage } from '../../../context/LanguageContext.jsx';
 import { makeRequest } from '../../../api/apiClient.js';
+
 import {
   Bell, Landmark, Gavel, Coins, Users, ArrowRight,
   TrendingUp, ShieldCheck, CheckCircle2, AlertCircle, Clock,
@@ -167,6 +169,7 @@ const ALL_CHIT_PLANS = [
 const UserHome = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language, changeLanguage, t } = useLanguage();
 
   // State
   const [portfolio, setPortfolio] = useState([]);
@@ -261,8 +264,7 @@ const UserHome = () => {
 
   // Handle language switch
   const handleLanguageChange = (lang) => {
-    setCurrentLang(lang);
-    localStorage.setItem('app_language', lang);
+    changeLanguage(lang);
     setLangToast(true);
     setTimeout(() => {
       setLangToast(false);
@@ -279,7 +281,7 @@ const UserHome = () => {
             <Sparkles size={13} />
             <span>ஸ்ரீ பெரியநாயகி அம்மன் CHIT FUNDS • Est. 1999</span>
           </div>
-          <h1 className="uh-name">Welcome back, {displayName}</h1>
+          <h1 className="uh-name">{t('Welcome Back!')} {displayName}</h1>
         </div>
 
         <div className="uh-header-actions">
@@ -290,7 +292,7 @@ const UserHome = () => {
             title="Inspect your Chit Portfolio"
           >
             <div>
-              <div className="uh-portfolio-pill-label">Total Invested</div>
+              <div className="uh-portfolio-pill-label">{t('Total Amount Invested')}</div>
               <div className="uh-portfolio-pill-value">{formatINR(totalPaid)}</div>
             </div>
             <ArrowRight size={16} color="var(--primary)" />
@@ -300,7 +302,7 @@ const UserHome = () => {
           <button
             className="uh-notif-btn"
             onClick={() => setShowNotifModal(true)}
-            title="Notifications & Alerts"
+            title={t('Notifications')}
             aria-label="Notifications"
           >
             <Bell size={20} />
@@ -315,21 +317,21 @@ const UserHome = () => {
       <div className="uh-metrics-grid">
         <div className="uh-metric-card" onClick={() => navigate('/user/group-card')} style={{ cursor: 'pointer' }}>
           <div className="uh-metric-head">
-            <span className="uh-metric-label">Enrolled Groups</span>
+            <span className="uh-metric-label">{t('Active Groups')}</span>
             <div className="uh-metric-icon">
               <Users size={18} />
             </div>
           </div>
-          <div className="uh-metric-value">{activeCount} Active</div>
+          <div className="uh-metric-value">{activeCount} {t('active')}</div>
           <p className="uh-metric-subtext">
-            <span>Total accounts: {portfolio.length}</span>
+            <span>{t('Total Groups')}: {portfolio.length}</span>
             <ChevronRight size={14} style={{ marginLeft: 'auto' }} />
           </p>
         </div>
 
         <div className="uh-metric-card">
           <div className="uh-metric-head">
-            <span className="uh-metric-label">Verified Contributions</span>
+            <span className="uh-metric-label">{t('Total Paid Amount')}</span>
             <div className="uh-metric-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
               <TrendingUp size={18} />
             </div>
@@ -339,35 +341,35 @@ const UserHome = () => {
           </div>
           <p className="uh-metric-subtext">
             <CheckCircle2 size={13} color="#059669" />
-            <span>Audited & verified against ledger</span>
+            <span>{t('Audited & verified against ledger')}</span>
           </p>
         </div>
 
         <div className="uh-metric-card">
           <div className="uh-metric-head">
-            <span className="uh-metric-label">Next Installment</span>
+            <span className="uh-metric-label">{t('Next Due:')}</span>
             <div className="uh-metric-icon" style={{ background: '#fffbeb', color: '#d97706' }}>
               <Clock size={18} />
             </div>
           </div>
           <div className="uh-metric-value">{nextDue}</div>
           <p className="uh-metric-subtext">
-            {primaryGroup ? primaryGroup.groupName || 'Primary Group' : 'All accounts settled'}
+            {primaryGroup ? primaryGroup.groupName || t('Primary Group') : t('All accounts settled')}
           </p>
         </div>
 
         <div className="uh-metric-card">
           <div className="uh-metric-head">
-            <span className="uh-metric-label">Member Standing</span>
+            <span className="uh-metric-label">{t('Member Standing')}</span>
             <div className="uh-metric-icon" style={{ background: '#eff6ff', color: '#1e40af' }}>
               <ShieldCheck size={18} />
             </div>
           </div>
           <div className="uh-metric-value" style={{ color: '#1e40af', fontSize: '20px' }}>
-            Verified / Eligible
+            {t('Verified / Eligible')}
           </div>
           <p className="uh-metric-subtext">
-            Eligible for monthly reverse auctions
+            {t('Eligible for monthly reverse auctions')}
           </p>
         </div>
       </div>
@@ -599,10 +601,10 @@ const UserHome = () => {
           {/* Card 4: Dual Language */}
           <div className="uh-explore-card" onClick={() => setShowLanguageModal(true)}>
             <div className="uh-explore-info">
-              <h3 className="uh-explore-title">Dual Language</h3>
-              <p className="uh-explore-sub">Switch between Tamil (தமிழ்) and English preference seamlessly</p>
+              <h3 className="uh-explore-title">{t('Language')}</h3>
+              <p className="uh-explore-sub">{t('Switch between Tamil (தமிழ்) and English preference seamlessly') || 'Switch between Tamil (தமிழ்) and English preference seamlessly'}</p>
               <span className="uh-explore-action">
-                <span>{currentLang === 'ta' ? 'தமிழ் (Tamil)' : 'English'}</span>
+                <span>{language === 'ta' ? 'தமிழ் (Tamil)' : 'English'}</span>
                 <ChevronRight size={14} />
               </span>
             </div>
@@ -1159,8 +1161,8 @@ const UserHome = () => {
                   style={{
                     padding: '16px 20px',
                     borderRadius: 'var(--radius)',
-                    border: `2px solid ${currentLang === 'en' ? 'var(--primary)' : 'var(--border)'}`,
-                    background: currentLang === 'en' ? 'var(--primary-light)' : 'var(--surface)',
+                    border: `2px solid ${language === 'en' ? 'var(--primary)' : 'var(--border)'}`,
+                    background: language === 'en' ? 'var(--primary-light)' : 'var(--surface)',
                     cursor: 'pointer',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -1171,7 +1173,7 @@ const UserHome = () => {
                     <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>English</div>
                     <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Standard banking terminology</div>
                   </div>
-                  {currentLang === 'en' && <CheckCircle2 size={20} color="var(--primary)" />}
+                  {language === 'en' && <CheckCircle2 size={20} color="var(--primary)" />}
                 </div>
 
                 {/* Tamil */}
@@ -1180,8 +1182,8 @@ const UserHome = () => {
                   style={{
                     padding: '16px 20px',
                     borderRadius: 'var(--radius)',
-                    border: `2px solid ${currentLang === 'ta' ? 'var(--primary)' : 'var(--border)'}`,
-                    background: currentLang === 'ta' ? 'var(--primary-light)' : 'var(--surface)',
+                    border: `2px solid ${language === 'ta' ? 'var(--primary)' : 'var(--border)'}`,
+                    background: language === 'ta' ? 'var(--primary-light)' : 'var(--surface)',
                     cursor: 'pointer',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -1192,7 +1194,7 @@ const UserHome = () => {
                     <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>தமிழ் (Tamil)</div>
                     <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>ஸ்ரீ பெரியநாயகி அம்மன் சீட்டு நிதி</div>
                   </div>
-                  {currentLang === 'ta' && <CheckCircle2 size={20} color="var(--primary)" />}
+                  {language === 'ta' && <CheckCircle2 size={20} color="var(--primary)" />}
                 </div>
               </div>
 

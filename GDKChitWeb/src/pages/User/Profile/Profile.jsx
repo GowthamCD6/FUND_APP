@@ -43,16 +43,18 @@ import HelpSupportModal from './Modals/HelpSupportModal.jsx';
 import UserManualModal from './Modals/UserManualModal.jsx';
 import ShareModal from './Modals/ShareModal.jsx';
 import RateModal from './Modals/RateModal.jsx';
+import { useLanguage } from '../../../context/LanguageContext.jsx';
 
 import './Profile.css';
 
 const Profile = () => {
   const { user, logout } = useAuth();
+  const { language, t } = useLanguage();
   const location = useLocation();
 
   const [profileData, setProfileData] = useState(null);
   const [profileImage, setProfileImage] = useState('');
-  const [currentLang, setCurrentLang] = useState(localStorage.getItem('app_language') || 'en');
+
 
   // ── Modal State Toggles ──
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -188,8 +190,8 @@ const Profile = () => {
     },
     {
       id: 'language',
-      title: 'Language',
-      sub: currentLang === 'ta' ? 'தமிழ்' : 'English',
+      title: t('Language'),
+      sub: language === 'ta' ? 'தமிழ்' : 'English',
       icon: Languages,
       color: '#059669',
       bg: '#ecfdf5',
