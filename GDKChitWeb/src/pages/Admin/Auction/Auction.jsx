@@ -556,66 +556,68 @@ const Auction = () => {
 
   return (
     <div className="rn-page">
-      {/* ── Page Header & Action Bar Container (Exact Match to ManageGroups) ── */}
-      <div className="reports-header-container">
-        <div className="reports-toolbar-row">
-          {/* Tab Bar (Active vs. Completed) */}
-          <div className="reports-tabs-wrapper">
-            {[
-              { key: 'active', label: `Active (${counts.active})` },
-              { key: 'completed', label: `Completed (${counts.completed})` },
-            ].map(t => (
-              <button
-                key={t.key}
-                className={`reports-tab-btn ${activeTab === t.key ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveTab(t.key);
-                  setGroupSearchQuery('');
-                  setSelectedGroup(null);
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Search, Action Buttons */}
-          <div className="reports-filters-wrapper">
-            <div className={`auc-ws-badge ${wsConnected ? 'connected' : 'disconnected'}`}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: wsConnected ? '#10B981' : '#EF4444', display: 'inline-block' }} />
-              <span>{wsConnected ? 'Live' : 'Offline'}</span>
-            </div>
-
-            <div className="reports-search-container">
-              <RiSearchLine className="reports-search-icon" size={16} />
-              <input
-                type="text"
-                className="reports-search-input"
-                placeholder="Search groups..."
-                value={groupSearchQuery}
-                onChange={(e) => setGroupSearchQuery(e.target.value)}
-              />
-              {groupSearchQuery && (
+      {/* ── Page Header & Action Bar Container (Shown only on setup overview screen) ── */}
+      {currentStep === 'setup' && (
+        <div className="reports-header-container">
+          <div className="reports-toolbar-row">
+            {/* Tab Bar (Active vs. Completed) */}
+            <div className="reports-tabs-wrapper">
+              {[
+                { key: 'active', label: `Active (${counts.active})` },
+                { key: 'completed', label: `Completed (${counts.completed})` },
+              ].map(t => (
                 <button
-                  className="reports-search-clear"
-                  onClick={() => setGroupSearchQuery('')}
+                  key={t.key}
+                  className={`reports-tab-btn ${activeTab === t.key ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab(t.key);
+                    setGroupSearchQuery('');
+                    setSelectedGroup(null);
+                  }}
                 >
-                  <RiCloseLine size={14} />
+                  {t.label}
                 </button>
-              )}
+              ))}
             </div>
 
-            <button
-              className="reports-refresh-btn"
-              onClick={fetchGroups}
-              disabled={loadingGroups}
-            >
-              <RiRefreshLine size={16} className={loadingGroups ? 'spin-anim' : ''} />
-              <span>Refresh</span>
-            </button>
+            {/* Search, Action Buttons */}
+            <div className="reports-filters-wrapper">
+              <div className={`auc-ws-badge ${wsConnected ? 'connected' : 'disconnected'}`}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: wsConnected ? '#10B981' : '#EF4444', display: 'inline-block' }} />
+                <span>{wsConnected ? 'Live' : 'Offline'}</span>
+              </div>
+
+              <div className="reports-search-container">
+                <RiSearchLine className="reports-search-icon" size={16} />
+                <input
+                  type="text"
+                  className="reports-search-input"
+                  placeholder="Search groups..."
+                  value={groupSearchQuery}
+                  onChange={(e) => setGroupSearchQuery(e.target.value)}
+                />
+                {groupSearchQuery && (
+                  <button
+                    className="reports-search-clear"
+                    onClick={() => setGroupSearchQuery('')}
+                  >
+                    <RiCloseLine size={14} />
+                  </button>
+                )}
+              </div>
+
+              <button
+                className="reports-refresh-btn"
+                onClick={fetchGroups}
+                disabled={loadingGroups}
+              >
+                <RiRefreshLine size={16} className={loadingGroups ? 'spin-anim' : ''} />
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Inline Text Alert Notification (No window.alert) */}
       {pageNotice.text && (
