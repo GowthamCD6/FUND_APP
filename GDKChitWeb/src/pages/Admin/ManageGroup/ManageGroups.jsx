@@ -378,9 +378,18 @@ const ManageGroups = () => {
               className="reports-refresh-btn"
               onClick={() => navigate('/admin/create-group')}
               title="New Group"
-              style={{ border: '1px solid #2563eb', background: '#2563eb', color: '#ffffff', fontWeight: 600 }}
+              style={{
+                border: '1px solid #1E272E',
+                background: '#1E272E',
+                color: '#FFFFFF',
+                fontWeight: 600,
+                borderRadius: '8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6
+              }}
             >
-              <RiAddLine size={16} />
+              <RiAddLine size={16} color="#05C46B" />
               <span>New Group</span>
             </button>
           </div>

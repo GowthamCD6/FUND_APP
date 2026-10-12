@@ -7,43 +7,58 @@
    ============================================================ */
 
 :root {
-  /* Refined, professional banking palette */
-  --primary: #1E40AF;
-  --primary-dark: #1E3A8A;
-  --primary-light: #EFF6FF;
-  --primary-border: #DBEAFE;
+  /* ════ FinTech Modern (Modern & Innovative) ════
+     Charcoal Grey: #1E272E (High-end, premium tech aesthetic)
+     Vibrant Mint Green: #05C46B (Growth, financial health)
+     Bright Cyan Blue: #00D2D3 (Energy and high tech innovation)
+     Pure White: #FFFFFF (Clean stark contrast)
+  ═══════════════════════════════════════════════ */
+  --theme-charcoal: #1E272E;
+  --theme-mint: #05C46B;
+  --theme-cyan: #00D2D3;
+  --theme-white: #FFFFFF;
+
+  /* Primary Brand colors */
+  --primary: #1E272E;
+  --primary-dark: #141b20;
+  --primary-light: #e6faf1;
+  --primary-border: #bbf3d8;
+
+  /* Accent highlights */
+  --accent-cyan: #00D2D3;
+  --accent-mint: #05C46B;
 
   /* Semantic status colors */
-  --success: #059669;
-  --success-bg: #ECFDF5;
+  --success: #05C46B;
+  --success-bg: #EBFBF3;
   --success-border: #A7F3D0;
-  --warning: #D97706;
+  --warning: #F59E0B;
   --warning-bg: #FFFBEB;
   --warning-border: #FDE68A;
-  --danger: #DC2626;
+  --danger: #EF4444;
   --danger-bg: #FEF2F2;
   --danger-border: #FECACA;
 
   /* Surfaces & Backgrounds */
-  --bg: #F8FAFC;
+  --bg: #F4F6F9;
   --surface: #FFFFFF;
-  --surface2: #F1F5F9;
+  --surface2: #EAEFF5;
 
   /* Typography Colors */
-  --text: #0F172A;
-  --text-secondary: #334155;
-  --muted: #64748B;
-  --subtle: #94A3B8;
+  --text: #1E272E;
+  --text-secondary: #3D4D59;
+  --muted: #657786;
+  --subtle: #9AA7B2;
 
-  /* Crisp 1px Borders */
-  --border: #E2E8F0;
-  --border-focus: #1E40AF;
+  /* Crisp Borders */
+  --border: #DDE3EA;
+  --border-focus: #00D2D3;
 
-  /* Subtle, realistic elevation (No glow) */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  /* Elevation */
+  --shadow-sm: 0 1px 3px rgba(30, 39, 46, 0.05);
+  --shadow: 0 2px 6px rgba(30, 39, 46, 0.06), 0 1px 2px rgba(30, 39, 46, 0.04);
+  --shadow-md: 0 6px 14px -2px rgba(30, 39, 46, 0.08), 0 2px 6px -1px rgba(30, 39, 46, 0.05);
+  --shadow-lg: 0 14px 28px -4px rgba(30, 39, 46, 0.12), 0 6px 12px -2px rgba(30, 39, 46, 0.06);
 
   /* Standard Product Radii */
   --radius-sm: 6px;

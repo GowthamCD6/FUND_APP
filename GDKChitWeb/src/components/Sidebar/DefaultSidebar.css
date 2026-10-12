@@ -213,13 +213,13 @@
 
 .sidebar-nav-item:hover {
   background: #f1f5f9;
-  color: #0f172a;
+  color: #1E272E;
 }
 
 .sidebar-nav-item-active {
-  background: #eff6ff !important;
-  color: #1d4ed8 !important;
-  font-weight: 600 !important;
+  background: #f0fdf9 !important;
+  color: #05C46B !important;
+  font-weight: 700 !important;
 }
 
 .sidebar-nav-item-active::before {
@@ -228,9 +228,9 @@
   left: 0;
   top: 6px;
   bottom: 6px;
-  width: 3px;
-  background: #2563eb;
-  border-radius: 0 3px 3px 0;
+  width: 3.5px;
+  background: #00D2D3;
+  border-radius: 0 4px 4px 0;
 }
 
 .sidebar-nav-item-left {
