@@ -17,15 +17,15 @@ import AuctionW from './Modal/AuctionW.jsx';
 import MemberRegistration from './Modal/MemberRegistration.jsx';
 
 const SC = {
-  active: '#10B981',
-  ongoing: '#10B981',
-  completed: '#6B46C1',
-  paid: '#10B981',
-  pending: '#F59E0B',
-  overdue: '#EF4444',
-  'not started': '#6B7280',
+  active: '#4CAF50',
+  ongoing: '#4CAF50',
+  completed: '#1B3322',
+  paid: '#4CAF50',
+  pending: '#A3704C',
+  overdue: '#D32F2F',
+  'not started': '#6B7A6E',
 };
-const scOf = (s) => SC[String(s).toLowerCase()] || '#6B7280';
+const scOf = (s) => SC[String(s).toLowerCase()] || '#6B7A6E';
 
 const StatusIcon = ({ status, size = 11 }) => {
   const s = String(status).toLowerCase();

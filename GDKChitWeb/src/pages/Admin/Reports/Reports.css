@@ -438,9 +438,9 @@
 /* ── Reports Header & Action Bar Layout ── */
 .reports-header-container {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #DCE3DC;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(27, 51, 34, 0.04);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -460,10 +460,10 @@
 .reports-tabs-wrapper {
   display: flex;
   gap: 4px;
-  background: #f8fafc;
+  background: #E8ECE8;
   padding: 4px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #DCE3DC;
 }
 
 .reports-tab-btn {
@@ -471,8 +471,8 @@
   border: none;
   border-radius: 6px;
   font-size: 14px;
-  font-weight: 500;
-  color: #334155;
+  font-weight: 600;
+  color: #4A564C;
   background: transparent;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -480,14 +480,14 @@
 }
 
 .reports-tab-btn:hover {
-  color: #030712;
+  color: #0B140E;
 }
 
 .reports-tab-btn.active {
-  font-weight: 600;
-  color: #030712;
+  font-weight: 700;
+  color: #1B3322;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(27, 51, 34, 0.1);
 }
 
 .reports-filters-wrapper {
