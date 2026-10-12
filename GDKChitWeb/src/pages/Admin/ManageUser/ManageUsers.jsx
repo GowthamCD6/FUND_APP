@@ -190,61 +190,75 @@ const ManageUsers = () => {
   return (
     <div className="rn-page">
       
-      {/* ── Page Header & Action Bar Container ── */}
+      {/* ── Single-Line Header & Filters Toolbar ── */}
       <div className="reports-header-container">
-        <div className="reports-toolbar-row">
-          
-          {/* Tab Bar */}
-          <div className="reports-tabs-wrapper">
-            {[
-              { key: 'all', label: `All (${counts.all})` },
-              { key: 'user', label: `Users (${counts.user})` },
-              { key: 'admin', label: `Admins (${counts.admin})` },
-            ].map(t => (
+        <div className="mu-unified-toolbar">
+          {/* Search Box */}
+          <div className="mu-unified-search">
+            <RiSearchLine className="mu-unified-search-icon" size={16} />
+            <input
+              type="text"
+              className="mu-unified-search-input"
+              placeholder="Search by name, phone or username..."
+              value={searchQuery}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+            {searchQuery && (
               <button
-                key={t.key}
-                className={`reports-tab-btn ${activeFilter === t.key ? 'active' : ''}`}
+                className="reports-search-clear"
                 onClick={() => {
-                  setActiveFilter(t.key);
                   setSearchQuery('');
                   setCurrentPage(1);
                 }}
+                title="Clear search"
               >
-                {t.label}
+                <RiCloseLine size={14} />
               </button>
-            ))}
+            )}
           </div>
 
-          {/* Search, Action Buttons */}
-          <div className="reports-filters-wrapper">
-            {/* Search Bar */}
-            <div className="reports-search-container">
-              <RiSearchLine className="reports-search-icon" size={16} />
-              <input
-                type="text"
-                className="reports-search-input"
-                placeholder="Search by name or phone..."
-                value={searchQuery}
-                onChange={e => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-              {searchQuery && (
-                <button
-                  className="reports-search-clear"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setCurrentPage(1);
-                  }}
-                  title="Clear search"
-                >
-                  <RiCloseLine size={14} />
-                </button>
-              )}
-            </div>
+          {/* Single-line role filter pills */}
+          <div className="mu-role-filters">
+            <button
+              className={`mu-role-pill-btn ${activeFilter === 'all' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveFilter('all');
+                setCurrentPage(1);
+              }}
+            >
+              <RiGroupLine size={14} />
+              <span>All</span>
+              <span className="mu-role-pill-count">{counts.all}</span>
+            </button>
+            <button
+              className={`mu-role-pill-btn ${activeFilter === 'user' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveFilter('user');
+                setCurrentPage(1);
+              }}
+            >
+              <RiUserLine size={14} />
+              <span>Users</span>
+              <span className="mu-role-pill-count">{counts.user}</span>
+            </button>
+            <button
+              className={`mu-role-pill-btn ${activeFilter === 'admin' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveFilter('admin');
+                setCurrentPage(1);
+              }}
+            >
+              <RiShieldUserLine size={14} />
+              <span>Admins</span>
+              <span className="mu-role-pill-count">{counts.admin}</span>
+            </button>
+          </div>
 
-            {/* Refresh Button */}
+          {/* Action buttons */}
+          <div className="mu-toolbar-actions">
             <button
               className="reports-refresh-btn"
               onClick={loadUsers}
@@ -258,7 +272,6 @@ const ManageUsers = () => {
               <span>Refresh</span>
             </button>
           </div>
-
         </div>
       </div>
 
