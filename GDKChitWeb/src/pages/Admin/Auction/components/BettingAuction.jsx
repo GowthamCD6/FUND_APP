@@ -10,6 +10,7 @@ import './BettingAuction.css';
 const BettingAuction = ({
   selectedGroup,
   participants,
+  joinedParticipants = new Set(),
   wsConnected,
   activeBidders,
   auctionHistory,
@@ -31,20 +32,78 @@ const BettingAuction = ({
   getCurrentLowestBid,
   resetAuction,
   formatTime,
-  formatCurrency
+  formatCurrency,
+  errorMessage = ''
 }) => {
+  const allJoined = participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id)));
+  const joinedCount = participants.filter(p => joinedParticipants.has(String(p.userId || p.id))).length;
+
   return (
     <div className="auc-betting-live-layout">
       <div className="auc-live-controls-card">
         <div className="auc-live-controls-header">
-          <div className="auc-controls-icon-wrap">
-            <RiGavelLine size={24} color="#6B46C1" />
+          <div className="auc-controls-icon-wrap" style={{ background: '#EBF3ED', color: '#1B3322' }}>
+            <RiGavelLine size={24} color="#1B3322" />
           </div>
           <div>
             <h4 className="auc-controls-title">Auction Monitor</h4>
-            <p className="auc-controls-subtitle">Real-time bidding auction</p>
+            <p className="auc-controls-subtitle">Real-time reverse bidding auction</p>
           </div>
         </div>
+
+        {/* Member Readiness Status Banner */}
+        {!auctionStarted && (
+          <div style={{
+            margin: '12px 0 16px',
+            padding: '10px 14px',
+            borderRadius: '8px',
+            background: allJoined ? '#EBF3ED' : '#FDF6F0',
+            border: `1px solid ${allJoined ? '#C8DEC9' : '#E8D5C4'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '13px',
+            fontWeight: 600,
+            color: allJoined ? '#1B3322' : '#A3704C'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: allJoined ? '#2E7D32' : '#A3704C',
+                display: 'inline-block'
+              }} />
+              <span>
+                {allJoined 
+                  ? 'All members have joined and are ready!' 
+                  : `Waiting for members to apply/join: ${joinedCount}/${participants.length} joined`}
+              </span>
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: 700 }}>
+              {Math.round((joinedCount / Math.max(participants.length, 1)) * 100)}%
+            </span>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div style={{
+            marginBottom: 14,
+            padding: '10px 14px',
+            borderRadius: '6px',
+            background: '#FDECEC',
+            border: '1px solid #F5C6C6',
+            color: '#D32F2F',
+            fontSize: '13px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}>
+            <RiAlertLine size={16} />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
         {!auctionStarted && (
           <div className="auc-initial-amount-card">
@@ -94,11 +153,17 @@ const BettingAuction = ({
         <div className="auc-control-buttons">
           <button
             className="auc-ctrl-btn auc-ctrl-start"
-            disabled={isAuctionActive || auctionStarted}
+            disabled={isAuctionActive || auctionStarted || !allJoined}
             onClick={handleStartBettingAuction}
+            style={{
+              opacity: (isAuctionActive || auctionStarted || !allJoined) ? 0.6 : 1,
+              cursor: (isAuctionActive || auctionStarted || !allJoined) ? 'not-allowed' : 'pointer',
+              background: allJoined ? '#2E7D32' : '#6B7A6E'
+            }}
+            title={!allJoined ? 'All selected members must join before starting the auction' : 'Start Auction'}
           >
             <RiPlayLine size={16} />
-            Start
+            {allJoined ? 'Start Auction' : 'Waiting for Users...'}
           </button>
           <button
             className="auc-ctrl-btn auc-ctrl-pause"
@@ -161,6 +226,48 @@ const BettingAuction = ({
       </div>
 
       <div className="auc-live-grid">
+        <div className="auc-section-card">
+          <div className="auc-section-header">
+            <RiGroupLine size={18} color="#1B3322" />
+            <span>Participants Joined ({joinedCount}/{participants.length})</span>
+          </div>
+          <div className="auc-bidder-list" style={{ maxHeight: '240px', overflowY: 'auto' }}>
+            {participants.map((p) => {
+              const hasJoined = joinedParticipants.has(String(p.userId || p.id));
+              return (
+                <div key={p.userId || p.id} className="auc-bidder-row">
+                  <div className="auc-bidder-info">
+                    <div className="auc-m-avatar">
+                      {(p.name || 'U').substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="auc-m-name">{p.name}</div>
+                      <div className="auc-m-phone">{p.phone || '--'}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      padding: '3px 8px',
+                      borderRadius: '12px',
+                      background: hasJoined ? '#EBF3ED' : '#FDF6F0',
+                      color: hasJoined ? '#2E7D32' : '#A3704C',
+                      border: `1px solid ${hasJoined ? '#C8DEC9' : '#E8D5C4'}`
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: hasJoined ? '#2E7D32' : '#A3704C' }} />
+                      {hasJoined ? 'Ready' : 'Pending'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="auc-section-card">
           <div className="auc-section-header">
             <RiZapLine size={18} color="#10B981" />

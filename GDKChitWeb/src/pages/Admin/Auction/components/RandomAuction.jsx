@@ -71,13 +71,51 @@ const RandomAuction = ({
           </div>
         )}
 
+        {/* Member Readiness Status Banner */}
+        <div style={{
+          width: '100%',
+          marginBottom: 16,
+          padding: '10px 14px',
+          borderRadius: '8px',
+          background: participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ? '#EBF3ED' : '#FDF6F0',
+          border: `1px solid ${participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ? '#C8DEC9' : '#E8D5C4'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: '13px',
+          fontWeight: 600,
+          color: participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ? '#1B3322' : '#A3704C'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ? '#2E7D32' : '#A3704C',
+              display: 'inline-block'
+            }} />
+            <span>
+              {participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id)))
+                ? 'All participants are joined and ready!'
+                : `Waiting for participants: ${participants.filter(p => joinedParticipants.has(String(p.userId || p.id))).length}/${participants.length} joined`}
+            </span>
+          </div>
+        </div>
+
         <button
           className="auc-btn-roll"
-          disabled={isRolling}
+          disabled={isRolling || participants.length === 0 || !participants.every(p => joinedParticipants.has(String(p.userId || p.id)))}
           onClick={rollDice}
+          style={{
+            opacity: (isRolling || participants.length === 0 || !participants.every(p => joinedParticipants.has(String(p.userId || p.id)))) ? 0.6 : 1,
+            cursor: (isRolling || participants.length === 0 || !participants.every(p => joinedParticipants.has(String(p.userId || p.id)))) ? 'not-allowed' : 'pointer',
+            background: participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ? '#2E7D32' : '#6B7A6E'
+          }}
         >
           {isRolling ? (
             <><RiLoader4Line size={18} className="spin-anim" /> Rolling...</>
+          ) : !participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ? (
+            <><RiTimerLine size={18} /> Waiting for all members to join...</>
           ) : (
             <><RiDiceLine size={18} /> Roll Dice (Lucky Draw)</>
           )}

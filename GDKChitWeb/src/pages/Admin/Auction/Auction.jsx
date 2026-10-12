@@ -51,6 +51,7 @@ const Auction = () => {
   const [auctionResult, setAuctionResult] = useState(null);
   const [savingWinner, setSavingWinner] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [pageNotice, setPageNotice] = useState({ text: '', type: 'error' }); // Inline feedback instead of browser alert()
 
   // ──── Betting Auction Live State ────
   const [initialAmount, setInitialAmount] = useState('');
@@ -272,8 +273,9 @@ const Auction = () => {
 
   // ──── START AUCTION SETUP (both modes) ────
   const startAuctionSetup = () => {
+    setPageNotice({ text: '', type: 'error' });
     if (selectedMembers.length < 2) {
-      alert('Please select at least 2 members for the auction.');
+      setPageNotice({ text: 'Please select at least 2 members for the auction.', type: 'error' });
       return;
     }
 
@@ -292,20 +294,28 @@ const Auction = () => {
 
   // ──── BETTING: Start/Pause/Resume/End/Reset ────
   const handleStartBettingAuction = () => {
+    setPageNotice({ text: '', type: 'error' });
     const pAmt = parseFloat(poolAmount);
     if (Number.isNaN(pAmt) || pAmt <= 0) {
-      alert('Please set a valid pool amount before starting.');
+      setPageNotice({ text: 'Please enter a valid pool amount before starting.', type: 'error' });
       return;
     }
     const amt = parseFloat(initialAmount);
     if (!amt || amt <= 0) {
-      alert('Please set a valid initial amount before starting.');
+      setPageNotice({ text: 'Please enter a valid initial bidding amount before starting.', type: 'error' });
       return;
     }
     if (!selectedGroup?.id) {
-      alert('No group selected');
+      setPageNotice({ text: 'No group selected.', type: 'error' });
       return;
     }
+
+    const allJoined = participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id)));
+    if (!allJoined) {
+      setPageNotice({ text: 'Please wait until all selected members have applied and joined the auction before starting.', type: 'error' });
+      return;
+    }
+
     if (isAuctionActive) return;
 
     if (wsConnected) {
@@ -348,7 +358,7 @@ const Auction = () => {
   };
 
   const handleResetBettingAuction = () => {
-    if (!confirm('Are you sure you want to reset the auction? All bids will be cleared.')) return;
+    setPageNotice({ text: '', type: 'error' });
     if (selectedGroup?.id && wsConnected) {
       AuctionWS.resetAuction(selectedGroup.id);
     }
@@ -369,15 +379,22 @@ const Auction = () => {
 
   // ──── RANDOM: Roll Dice ────
   const rollDice = () => {
+    setPageNotice({ text: '', type: 'error' });
     if (isRolling) return;
     if (participants.length === 0) {
-      alert('No participants available.');
+      setPageNotice({ text: 'No participants available for the random draw.', type: 'error' });
       return;
     }
 
     const amt = parseFloat(poolAmount);
     if (Number.isNaN(amt) || amt <= 0) {
-      alert('Please set a valid prize amount for the draw.');
+      setPageNotice({ text: 'Please enter a valid pool prize amount for the draw.', type: 'error' });
+      return;
+    }
+
+    const allJoined = participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id)));
+    if (!allJoined) {
+      setPageNotice({ text: 'Please wait until all selected participants have applied and joined the draw.', type: 'error' });
       return;
     }
 
@@ -600,11 +617,40 @@ const Auction = () => {
         </div>
       </div>
 
+      {/* Inline Text Alert Notification (No window.alert) */}
+      {pageNotice.text && (
+        <div style={{
+          marginTop: 12,
+          padding: '12px 16px',
+          borderRadius: '8px',
+          background: pageNotice.type === 'error' ? '#FDECEC' : '#EBF3ED',
+          border: `1px solid ${pageNotice.type === 'error' ? '#F5C6C6' : '#C8DEC9'}`,
+          color: pageNotice.type === 'error' ? '#D32F2F' : '#1B3322',
+          fontSize: '13.5px',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {pageNotice.type === 'error' ? <RiAlertLine size={18} /> : <RiCheckLine size={18} />}
+            <span>{pageNotice.text}</span>
+          </div>
+          <button
+            onClick={() => setPageNotice({ text: '', type: 'error' })}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'inherit', padding: 2 }}
+          >
+            <RiCloseLine size={16} />
+          </button>
+        </div>
+      )}
+
       {currentStep === 'setup' ? (
         /* ════════════════════════════════════════════
            GROUPS CARD GRID
            ════════════════════════════════════════════ */
-        <div style={{ marginTop: 24 }}>
+        <div style={{ marginTop: 14 }}>
           {loadingGroups ? (
             <div className="rn-list">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -655,7 +701,7 @@ const Auction = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       if (activeTab === 'completed') {
-                        alert('This group has completed all monthly cycles. You cannot run new auctions for it.');
+                        setPageNotice({ text: 'This group has completed all monthly cycles. You cannot run new auctions for it.', type: 'error' });
                         return;
                       }
                       handleSelectGroup(g);
@@ -749,7 +795,7 @@ const Auction = () => {
         /* ════════════════════════════════════════════
            RUNNING SIMULATION SCREENS
            ════════════════════════════════════════════ */
-        <div className="auc-run-container" style={{ marginTop: 24 }}>
+        <div className="auc-run-container" style={{ marginTop: 14 }}>
           <div className="auc-run-header-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -777,6 +823,7 @@ const Auction = () => {
             <BettingAuction
               selectedGroup={selectedGroup}
               participants={participants}
+              joinedParticipants={joinedParticipants}
               wsConnected={wsConnected}
               activeBidders={activeBidders}
               auctionHistory={auctionHistory}
@@ -799,6 +846,7 @@ const Auction = () => {
               resetAuction={resetAuction}
               formatTime={formatTime}
               formatCurrency={formatCurrency}
+              errorMessage={pageNotice.text}
             />
           ) : (
             <RandomAuction
