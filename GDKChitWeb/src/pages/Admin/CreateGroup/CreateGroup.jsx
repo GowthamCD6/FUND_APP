@@ -309,10 +309,6 @@ const CreateGroup = () => {
             <CheckCircle2 size={14} color="#10B981" style={{ flexShrink: 0, marginTop: 1 }} />
             <p className="cg-tip-text">Monthly contribution = Amount ÷ Members</p>
           </div>
-          <div className="cg-tip">
-            <CheckCircle2 size={14} color="#10B981" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p className="cg-tip-text">Use presets for standard plans</p>
-          </div>
         </div>
 
       </div>
