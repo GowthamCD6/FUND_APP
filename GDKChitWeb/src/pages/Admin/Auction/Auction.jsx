@@ -246,7 +246,7 @@ const Auction = () => {
     setSelectedGroup(group);
     setLoadingMembers(true);
     setSelectedMembers([]);
-    setPoolAmount('');
+    setPoolAmount(group?.groupAmount ? String(group.groupAmount) : '');
     try {
       const res = await makeRequest(`/admin/groups/getMembers?groupId=${group.id}`);
       const data = await safeJson(res);
@@ -797,23 +797,46 @@ const Auction = () => {
            ════════════════════════════════════════════ */
         <div className="auc-run-container" style={{ marginTop: 14 }}>
           <div className="auc-run-header-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h4>{selectedGroup?.name || 'Group'}</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  <h4 style={{ margin: 0 }}>{selectedGroup?.name || 'Group'}</h4>
+                  {selectedGroup?.groupCode && (
+                    <span className="mg-code-chip">{selectedGroup.groupCode}</span>
+                  )}
+                  <span className="gc-badge" style={{ background: '#2E7D32', color: '#ffffff', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                    Live Session
+                  </span>
+                </div>
                 <p>
                   Pool Amount:{' '}
-                  <strong>
-                    {formatCurrency(parseFloat(poolAmount) || 0)}
+                  <strong style={{ color: '#0B140E', fontSize: '14.5px' }}>
+                    {formatCurrency(parseFloat(poolAmount) || selectedGroup?.groupAmount || 0)}
                   </strong>
-                  {auctionType === 'betting' && (
-                    <>
-                      {' · Installment: '}
-                      <strong>{formatCurrency((selectedGroup?.groupAmount || 0) / (selectedGroup?.duration || 20))}</strong>
-                    </>
-                  )}
+                  {' · Installment: '}
+                  <strong style={{ color: '#1B3322' }}>
+                    {formatCurrency((selectedGroup?.groupAmount || 0) / (selectedGroup?.duration || 20))}/mo
+                  </strong>
+                  {' · Total Members: '}
+                  <strong>{participants.length}</strong>
                 </p>
               </div>
-              <button className="auc-btn-cancel" onClick={resetAuction}>
+              <button 
+                className="auc-btn-cancel" 
+                onClick={resetAuction}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  border: '1px solid #DCE3DC',
+                  background: '#ffffff',
+                  color: '#D32F2F',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                }}
+              >
                 Exit Auction
               </button>
             </div>

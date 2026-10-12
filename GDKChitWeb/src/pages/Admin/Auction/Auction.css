@@ -392,24 +392,27 @@
 }
 
 .auc-run-header-card {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
+  background: #ffffff;
+  border: 1px solid #DCE3DC;
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(27, 51, 34, 0.04);
 }
 
 .auc-run-header-card h4 {
-  margin: 0 0 6px 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #0f172a;
+  margin: 0 0 4px 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: #0B140E;
+  letter-spacing: -0.01em;
 }
 
 .auc-run-header-card p {
   margin: 0;
-  font-size: 14px;
-  color: #64748b;
+  font-size: 13.5px;
+  color: #4A564C;
+  font-weight: 500;
 }
 
 /* ══════════════════════════════════════
