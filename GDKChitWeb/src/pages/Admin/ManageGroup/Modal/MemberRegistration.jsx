@@ -52,7 +52,7 @@ const MemberRegistration = ({ isOpen, onClose, group, onMembersUpdate, inline = 
       const res = await makeRequest(`/admin/groups/getMembers?groupId=${group.id}`);
       const data = await safeJson(res);
       if (res.ok && data?.success) {
-        setGroupMembers(data.data || []);
+        setGroupMembers(data.members || data.data || []);
       } else {
         setGroupMembers([]);
       }

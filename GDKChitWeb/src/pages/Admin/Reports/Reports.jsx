@@ -181,7 +181,7 @@ const Reports = () => {
     try {
       const res = await makeRequest(`/admin/groups/getMembers?groupId=${group.id}`);
       const data = await safeJson(res);
-      if (res.ok && data?.success) setGroupMembers(data.data || []);
+      if (res.ok && data?.success) setGroupMembers(data.members || data.data || []);
     } catch { }
     finally { setMembersLoading(false); }
   }, []);

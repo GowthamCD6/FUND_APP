@@ -105,7 +105,7 @@ const USER_NAV_GROUPS = [
 
 /* Page title map */
 const PAGE_TITLES = {
-  '/admin/dashboard': 'Treasury & Operations Dashboard',
+  '/admin/dashboard': 'Dashboard',
   '/admin/reports': 'Monthly Collections & Reports',
   '/admin/defaulters': 'Global Defaulters Tracker',
   '/admin/auction': 'Chit Reverse Auctions',
@@ -391,37 +391,16 @@ const DefaultSidebar = () => {
           </div>
           <div className="sidebar-brand-text">
             <span className="sidebar-brand-title">GDK CHIT FUNDS</span>
-            <span className="sidebar-brand-subtitle">
-              {isAdmin ? t("Treasury & Operations Dashboard") : t("MEMBER PORTAL")}
-            </span>
+            {!isAdmin && (
+              <span className="sidebar-brand-subtitle">
+                {t("MEMBER PORTAL")}
+              </span>
+            )}
           </div>
         </NavLink>
         <div className="sidebar-status-dot-wrap" title={t("Live")}>
           <span className="sidebar-status-dot" />
           <span>{t("Live")}</span>
-        </div>
-      </div>
-
-      {/* QUICK FILTER SEARCH */}
-      <div className="sidebar-search-box">
-        <div className="sidebar-search-inner">
-          <Search size={14} color="#94a3b8" />
-          <input
-            type="text"
-            className="sidebar-search-input"
-            placeholder={t("Quick filter menu...")}
-            value={navSearch}
-            onChange={(e) => setNavSearch(e.target.value)}
-          />
-          {navSearch && (
-            <button
-              type="button"
-              className="sidebar-search-clear"
-              onClick={() => setNavSearch('')}
-            >
-              <X size={13} />
-            </button>
-          )}
         </div>
       </div>
 
@@ -529,43 +508,10 @@ const DefaultSidebar = () => {
             </div>
           </div>
 
-          {/* CENTER QUICK SEARCH (DESKTOP) */}
-          {isAdmin && (
-            <div className="admin-topbar-center">
-              <div
-                className="admin-global-search"
-                onClick={() => navigate('/admin/manage-groups')}
-                style={{ cursor: 'pointer' }}
-              >
-                <Search size={15} color="#94a3b8" />
-                <input
-                  type="text"
-                  placeholder="Quick search chit groups or subscribers..."
-                  readOnly
-                />
-                <span className="admin-search-kbd">⌘K</span>
-              </div>
-            </div>
-          )}
-
           {/* RIGHT ACTION CONTROLS */}
           <div className="admin-topbar-right">
             {isAdmin && (
               <>
-                <div className="admin-cycle-pill" title="Current Financial Period">
-                  <span>Cycle:</span>
-                  <strong>{currentMonthYear}</strong>
-                </div>
-
-                <button
-                  type="button"
-                  className="admin-action-btn-primary"
-                  onClick={() => navigate('/admin/create-group')}
-                >
-                  <Plus size={15} />
-                  <span>New Chit Plan</span>
-                </button>
-
                 {/* NOTIFICATIONS DROPDOWN */}
                 <div className="admin-notif-wrap" ref={notifRef}>
                   <button

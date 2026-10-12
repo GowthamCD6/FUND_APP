@@ -2,6 +2,158 @@
 
 /* Specific overrides/additions for ManageGroups Page */
 
+/* ─── Top Full-Width Tabs Bar ─── */
+.mg-full-tabs-container {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.mg-top-tabs-bar {
+  display: flex;
+  width: 100%;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 4px;
+  gap: 4px;
+}
+
+.mg-top-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.mg-top-tab-btn:hover:not(.active) {
+  color: #0f172a;
+  background: rgba(241, 245, 249, 0.7);
+}
+
+.mg-top-tab-btn.active {
+  background: #ffffff;
+  color: #2563eb;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.mg-subtoolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  background: #ffffff;
+}
+
+.mg-search-container {
+  flex: 1;
+  max-width: 480px;
+}
+
+.mg-new-group-btn {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: 1px solid #2563eb !important;
+  font-weight: 600;
+  padding: 8px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mg-new-group-btn:hover {
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+/* ─── Ultra Clean & Professional Card Presentation ─── */
+.mg-enhanced-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+.mg-enhanced-card:hover {
+  transform: translateY(-3px);
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+}
+
+.mg-enhanced-card .gc-header {
+  padding: 18px 20px 14px 20px;
+}
+
+.mg-enhanced-card .gc-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.015em;
+}
+
+.mg-code-chip {
+  display: inline-block;
+  padding: 2px 7px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.02em;
+}
+
+.mg-card-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.mg-metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mg-metric-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.mg-metric-val {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+
 .gc-delete-btn {
   background: #fef2f2;
   border: 1px solid #fee2e2;
@@ -81,14 +233,16 @@
 .mg2-panel {
   background: #ffffff;
   width: 100%;
-  max-width: 500px;
+  max-width: 540px;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 24px 20px;
+  padding: 24px 22px 16px 22px;
   overflow: hidden;
+  box-sizing: border-box;
   animation: slideRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   border-left: 1px solid #e2e8f0;
-  box-shadow: -4px 0 24px rgba(15, 23, 42, 0.05);
+  box-shadow: -8px 0 32px rgba(15, 23, 42, 0.1);
 }
 
 @keyframes slideRight {
@@ -236,9 +390,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 11px 0;
+  padding: 10px 0;
   border-bottom: 1px solid #f1f5f9;
-  font-size: 13.5px;
+  font-size: 13px;
+  gap: 12px;
 }
 
 .rn-detail-row:last-child {
@@ -246,13 +401,16 @@
 }
 
 .rn-detail-row span {
-  color: #475569;
+  color: #64748b;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .rn-detail-row strong {
-  color: #030712;
+  color: #0f172a;
   font-weight: 600;
+  text-align: right;
+  word-break: break-word;
 }
 
 /* Modal styling overrides */
@@ -307,15 +465,43 @@
 
 /* Sidebar details and layout styling */
 .mg2-details-container {
-  padding-right: 4px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 6px;
+  padding-bottom: 32px;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.mg2-details-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mg2-details-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mg2-details-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.mg2-details-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .mg2-section-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  flex-shrink: 0;
 }
 
 .mg2-section-card:hover {

@@ -263,7 +263,7 @@ const ManageGroups = () => {
         const memRes = await makeRequest(`/admin/groups/getMembers?groupId=${selectedGroup.id}`);
         const memData = await safeJson(memRes);
         if (memRes.ok && memData?.success) {
-          const membersList = memData.data || [];
+          const membersList = memData.members || memData.data || [];
           const matched = membersList.find(
             m => m.phone === winnerData.chitWinnerMemberId ||
             (m.userId && String(m.userId) === winnerData.chitWinnerMemberId)
@@ -352,9 +352,8 @@ const ManageGroups = () => {
             ))}
           </div>
 
-          {/* Search, Action Buttons */}
+          {/* Search & New Group Action */}
           <div className="reports-filters-wrapper">
-            {/* Search Bar */}
             <div className="reports-search-container">
               <RiSearchLine className="reports-search-icon" size={16} />
               <input
@@ -375,29 +374,14 @@ const ManageGroups = () => {
               )}
             </div>
 
-            {/* New Group Button */}
             <button
               className="reports-refresh-btn"
               onClick={() => navigate('/admin/create-group')}
               title="New Group"
-              style={{ border: '1px solid #2563eb', background: '#2563eb', color: '#ffffff' }}
+              style={{ border: '1px solid #2563eb', background: '#2563eb', color: '#ffffff', fontWeight: 600 }}
             >
               <RiAddLine size={16} />
               <span>New Group</span>
-            </button>
-
-            {/* Refresh Button */}
-            <button
-              className="reports-refresh-btn"
-              onClick={loadGroups}
-              disabled={status === 'loading'}
-              title="Refresh"
-            >
-              <RiRefreshLine
-                size={16}
-                className={status === 'loading' ? 'spin-anim' : ''}
-              />
-              <span>Refresh</span>
             </button>
           </div>
         </div>
@@ -449,42 +433,73 @@ const ManageGroups = () => {
         <div className="rn-list">
           {filtered.map(g => {
             const color = scOf(g.status);
-            const pct = Math.min(100, Math.round(((g.completedCycles || 0) / (g.duration || 20)) * 100));
-            const monthlyAmount = g.monthlyAmount || Math.round((g.groupAmount || 0) / (g.duration || 20));
+            const totalCycles = Number(g.duration) || 20;
+            const completed = Number(g.completedCycles) || 0;
+            const remainingCycles = Math.max(0, totalCycles - completed);
+            const pct = Math.min(100, Math.round((completed / totalCycles) * 100));
+            const poolValue = Number(g.groupAmount) || 0;
+            const monthlyAmount = g.monthlyAmount || (totalCycles > 0 ? Math.round(poolValue / totalCycles) : 0);
 
             return (
-              <div key={g.id} className="gc-card">
+              <div key={g.id} className="gc-card mg-enhanced-card" onClick={() => openGroupDetails(g)}>
                 {/* Header */}
                 <div className="gc-header">
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 className="gc-name">{g.name}</h3>
-                    <span className="gc-badge" style={{ background: color }}>
-                      <StatusIcon status={g.status} size={10} />
-                      {g.status.toUpperCase()}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <h3 className="gc-name" style={{ margin: 0 }}>{g.name}</h3>
+                      {g.groupCode && (
+                        <span className="mg-code-chip">{g.groupCode}</span>
+                      )}
+                    </div>
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="gc-badge" style={{ background: color }}>
+                        <StatusIcon status={g.status} size={10} />
+                        {g.status.toUpperCase()}
+                      </span>
+                    </div>
                   </div>
-                  <button className="gc-arrow-btn" onClick={() => openGroupDetails(g)} title="View Details">
+                  <button className="gc-arrow-btn" onClick={(e) => { e.stopPropagation(); openGroupDetails(g); }} title="View Group Details">
                     <RiChevronRightLine size={24} color="#9CA3AF" />
                   </button>
                 </div>
 
                 {/* Content */}
                 <div className="gc-content">
-                  <div className="gc-info-row">
-                    <div className="gc-info-item">
-                      <RiGroupLine size={16} color="#64748b" />
-                      <span className="gc-info-text">{g.totalMembers} Members</span>
+                  {/* Financial & Membership Stats Matrix */}
+                  <div className="mg-card-metrics-grid">
+                    <div className="mg-metric-item">
+                      <span className="mg-metric-lbl">
+                        <RiGroupLine size={13} color="#64748b" /> Total Members
+                      </span>
+                      <strong className="mg-metric-val">{g.totalMembers} Members</strong>
                     </div>
-                    <div className="gc-info-item" style={{ justifyContent: 'flex-end' }}>
-                      <RiMoneyDollarCircleLine size={16} color="#64748b" />
-                      <span className="gc-info-text">{formatCurrency(monthlyAmount)}/mo</span>
+
+                    <div className="mg-metric-item">
+                      <span className="mg-metric-lbl">
+                        <RiMoneyDollarCircleLine size={13} color="#64748b" /> Monthly Share
+                      </span>
+                      <strong className="mg-metric-val">{formatCurrency(monthlyAmount)}/mo</strong>
+                    </div>
+
+                    <div className="mg-metric-item">
+                      <span className="mg-metric-lbl">
+                        <RiMoneyDollarCircleLine size={13} color="#10b981" /> Pool Value
+                      </span>
+                      <strong className="mg-metric-val" style={{ color: '#0f172a' }}>{formatCurrency(poolValue)}</strong>
+                    </div>
+
+                    <div className="mg-metric-item">
+                      <span className="mg-metric-lbl">
+                        <RiTimeLine size={13} color="#64748b" /> Duration
+                      </span>
+                      <strong className="mg-metric-val">{totalCycles} Months</strong>
                     </div>
                   </div>
 
                   {/* Progress bar */}
-                  <div className="gc-progress-wrap">
+                  <div className="gc-progress-wrap" style={{ marginTop: 14, marginBottom: 14 }}>
                     <div className="gc-progress-hd">
-                      <span className="gc-progress-txt">{g.completedCycles}/{g.duration} Cycles</span>
+                      <span className="gc-progress-txt">{completed}/{totalCycles} Cycles ({remainingCycles} left)</span>
                       <span className="gc-progress-pct" style={{ color }}>{pct}%</span>
                     </div>
                     <div className="gc-bar">
@@ -492,13 +507,16 @@ const ManageGroups = () => {
                     </div>
                   </div>
 
-                  {/* Footer: Dates */}
-                  <div className="gc-footer" style={{ marginBottom: 12 }}>
-                    <span className="gc-date">Start: {formatDate(g.startDate)}</span>
-                    <span className="gc-date" style={{ textAlign: 'right' }}>End: {formatDate(g.endDate)}</span>
+                  {/* Dates Footer */}
+                  <div className="gc-footer" style={{ paddingTop: 12 }}>
+                    <span className="gc-date" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <RiCalendarLine size={13} color="#64748b" />
+                      Start: {formatDate(g.startDate)}
+                    </span>
+                    <span className="gc-date" style={{ textAlign: 'right', display: 'inline-flex', alignItems: 'center', gap: 5, justifyContent: 'flex-end' }}>
+                      End: {formatDate(g.endDate)}
+                    </span>
                   </div>
-
-                  {/* Admin Actions Row removed - Click card chevron to open details */}
                 </div>
               </div>
             );
@@ -546,7 +564,7 @@ const ManageGroups = () => {
 
             {/* Details View */}
             {viewMode === 'details' && (
-              <div className="mg2-details-container" style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div className="mg2-details-container">
                 {/* ── Group Info Section ── */}
                 <div className="mg2-section-card">
                   <div className="mg2-card-header">
