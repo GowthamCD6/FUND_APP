@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X as RiCloseLine, Check as RiCheckLine } from 'lucide-react';
 
-const EditModal = ({ isOpen, onClose, initialData, onSave }) => {
+const EditModal = ({ isOpen, onClose, initialData, onSave, isSaving = false }) => {
   const [form, setForm] = useState({
     groupName: '',
     totalAmount: '',
@@ -49,7 +49,7 @@ const EditModal = ({ isOpen, onClose, initialData, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validate()) {
+    if (validate() && !isSaving) {
       onSave(form);
     }
   };
@@ -57,11 +57,11 @@ const EditModal = ({ isOpen, onClose, initialData, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="rn-modal-backdrop" onClick={onClose}>
+    <div className="rn-modal-backdrop" onClick={!isSaving ? onClose : undefined}>
       <div className="rn-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 450 }}>
         <div className="mg2-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a' }}>Edit Group Information</h3>
-          <button className="rp-close" onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
+          <button className="rp-close" onClick={onClose} disabled={isSaving} style={{ border: 'none', background: 'transparent', cursor: isSaving ? 'not-allowed' : 'pointer' }}>
             <RiCloseLine size={18} />
           </button>
         </div>
@@ -75,6 +75,7 @@ const EditModal = ({ isOpen, onClose, initialData, onSave }) => {
               value={form.groupName}
               onChange={e => handleChange('groupName', e.target.value)}
               placeholder="Enter group name"
+              disabled={isSaving}
             />
             {errors.groupName && <p className="mg2-input-error-txt">{errors.groupName}</p>}
           </div>
@@ -90,6 +91,7 @@ const EditModal = ({ isOpen, onClose, initialData, onSave }) => {
                 value={form.totalAmount}
                 onChange={e => handleChange('totalAmount', e.target.value)}
                 placeholder="10000"
+                disabled={isSaving}
               />
             </div>
             {errors.totalAmount && <p className="mg2-input-error-txt">{errors.totalAmount}</p>}
@@ -103,6 +105,7 @@ const EditModal = ({ isOpen, onClose, initialData, onSave }) => {
               value={form.numberOfUsers}
               onChange={e => handleChange('numberOfUsers', e.target.value)}
               placeholder="20"
+              disabled={isSaving}
             />
             {errors.numberOfUsers && <p className="mg2-input-error-txt">{errors.numberOfUsers}</p>}
           </div>
@@ -114,14 +117,24 @@ const EditModal = ({ isOpen, onClose, initialData, onSave }) => {
               className={`mg2-form-input ${errors.createdDate ? 'input-error' : ''}`}
               value={form.createdDate}
               onChange={e => handleChange('createdDate', e.target.value)}
+              disabled={isSaving}
             />
             {errors.createdDate && <p className="mg2-input-error-txt">{errors.createdDate}</p>}
           </div>
 
           <div className="rn-form-row" style={{ marginTop: 20, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
-            <button type="button" className="mg2-modal-cancel-btn" onClick={onClose}>Cancel</button>
-            <button type="submit" className="mg2-modal-save-btn">
-              <RiCheckLine size={16} /> Save Changes
+            <button type="button" className="mg2-modal-cancel-btn" onClick={onClose} disabled={isSaving}>Cancel</button>
+            <button type="submit" className="mg2-modal-save-btn" disabled={isSaving} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              {isSaving ? (
+                <>
+                  <span className="spinner-border spinner-border-sm" style={{ width: 14, height: 14, border: '2px solid #ffffff', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.6s linear infinite' }} />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <RiCheckLine size={16} /> Save Changes
+                </>
+              )}
             </button>
           </div>
         </form>

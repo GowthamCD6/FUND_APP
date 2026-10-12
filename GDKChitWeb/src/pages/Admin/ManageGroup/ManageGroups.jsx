@@ -59,10 +59,15 @@ const ManageGroups = () => {
   const [monthlySnapshot, setMonthlySnapshot] = useState(null);
   const [snapshotLoading, setSnapshotLoading] = useState(false);
 
-  // Modal visibilities
+  // Modal visibilities & loading states
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isEditSaving, setIsEditSaving] = useState(false);
+
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isPaymentSaving, setIsPaymentSaving] = useState(false);
+
   const [showAuctionModal, setShowAuctionModal] = useState(false);
+  const [isAuctionSaving, setIsAuctionSaving] = useState(false);
 
   // ── Month offset calculation helpers ───────────────────────
   const getPeriodFromOffset = useCallback((offset) => {
@@ -198,6 +203,7 @@ const ManageGroups = () => {
 
   // ── Save Group Info (Edit Group Modal) ──────────────────────
   const handleEditGroupSave = async (editData) => {
+    setIsEditSaving(true);
     try {
       setNotice(null);
       const res = await makeRequest('/admin/groups/updateGroup', {
@@ -237,11 +243,14 @@ const ManageGroups = () => {
       setNotice({ text: 'Group details updated successfully', success: true });
     } catch (err) {
       setNotice({ text: err.message || 'Failed to update group', success: false });
+    } finally {
+      setIsEditSaving(false);
     }
   };
 
   // ── Save Payment Details ───────────────────────────────────
   const handlePaymentSave = async (paymentData) => {
+    setIsPaymentSaving(true);
     try {
       setNotice(null);
       const period = getPeriodFromOffset(currentMonth);
@@ -261,16 +270,19 @@ const ManageGroups = () => {
       if (!res.ok || !data?.success) throw new Error(data?.message || 'Failed to save payment details');
 
       // Refresh snapshot
-      loadMonthSnapshot(selectedGroup.id, currentMonth);
+      await loadMonthSnapshot(selectedGroup.id, currentMonth);
       setShowPaymentModal(false);
       setNotice({ text: 'Payment details saved successfully', success: true });
     } catch (err) {
       setNotice({ text: err.message || 'Failed to save payment details', success: false });
+    } finally {
+      setIsPaymentSaving(false);
     }
   };
 
   // ── Save Auction Winner ───────────────────────────────────
   const handleAuctionWinnerSave = async (winnerData) => {
+    setIsAuctionSaving(true);
     try {
       setNotice(null);
       const period = getPeriodFromOffset(currentMonth);
@@ -308,11 +320,13 @@ const ManageGroups = () => {
       if (!res.ok || !data?.success) throw new Error(data?.message || 'Failed to save auction winner');
 
       // Refresh snapshot
-      loadMonthSnapshot(selectedGroup.id, currentMonth);
+      await loadMonthSnapshot(selectedGroup.id, currentMonth);
       setShowAuctionModal(false);
       setNotice({ text: 'Auction winner details saved successfully', success: true });
     } catch (err) {
       setNotice({ text: err.message || 'Failed to save auction winner', success: false });
+    } finally {
+      setIsAuctionSaving(false);
     }
   };
 
@@ -667,8 +681,15 @@ const ManageGroups = () => {
                   </button>
                   
                   <div className="mg2-month-display">
-                    <span className="mg2-month-label">Viewing Month</span>
-                    <strong className="mg2-month-value">{getMonthLabel(currentMonth)}</strong>
+                    <span className="mg2-month-label">
+                      {snapshotLoading ? 'Updating Month...' : 'Viewing Month'}
+                    </span>
+                    <strong className="mg2-month-value" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {getMonthLabel(currentMonth)}
+                      {snapshotLoading && (
+                        <RiLoader4Line size={14} className="spin-anim" color="var(--primary)" />
+                      )}
+                    </strong>
                     {currentMonth === 0 && <span className="mg2-current-badge">Current</span>}
                   </div>
 
@@ -684,9 +705,36 @@ const ManageGroups = () => {
                 </div>
 
                 {snapshotLoading ? (
-                  <div style={{ textAlign: 'center', padding: '24px 0', color: '#64748b' }}>
-                    <RiLoader4Line size={24} className="spin-anim" style={{ margin: '0 auto 8px' }} />
-                    <p style={{ margin: 0, fontSize: 13 }}>Loading month data...</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {/* Payment Skeleton */}
+                    <div className="mg2-section-card skeleton-pulse" style={{ padding: '16px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ width: '40%', height: 16, background: '#e2e8f0', borderRadius: 4, marginBottom: 14 }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ width: '35%', height: 12, background: '#f1f5f9', borderRadius: 4 }} />
+                        <div style={{ width: '25%', height: 12, background: '#f1f5f9', borderRadius: 4 }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ width: '30%', height: 12, background: '#f1f5f9', borderRadius: 4 }} />
+                        <div style={{ width: '20%', height: 12, background: '#f1f5f9', borderRadius: 4 }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px dashed #e2e8f0' }}>
+                        <div style={{ width: '40%', height: 14, background: '#e2e8f0', borderRadius: 4 }} />
+                        <div style={{ width: '30%', height: 14, background: '#e2e8f0', borderRadius: 4 }} />
+                      </div>
+                    </div>
+
+                    {/* Auction Winner Skeleton */}
+                    <div className="mg2-section-card skeleton-pulse" style={{ padding: '16px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ width: '35%', height: 16, background: '#e2e8f0', borderRadius: 4, marginBottom: 14 }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ width: '30%', height: 12, background: '#f1f5f9', borderRadius: 4 }} />
+                        <div style={{ width: '40%', height: 12, background: '#f1f5f9', borderRadius: 4 }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <div style={{ width: '35%', height: 12, background: '#f1f5f9', borderRadius: 4 }} />
+                        <div style={{ width: '25%', height: 12, background: '#f1f5f9', borderRadius: 4 }} />
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -819,6 +867,7 @@ const ManageGroups = () => {
         onClose={() => setShowEditModal(false)}
         initialData={selectedGroup}
         onSave={handleEditGroupSave}
+        isSaving={isEditSaving}
       />
 
       <PaymentD
@@ -827,6 +876,7 @@ const ManageGroups = () => {
         initialData={monthlySnapshot?.payment}
         defaultAmount={selectedGroup?.monthlyAmount || Math.round((selectedGroup?.groupAmount || 0) / (selectedGroup?.duration || 20))}
         onSave={handlePaymentSave}
+        isSaving={isPaymentSaving}
       />
 
       <AuctionW
@@ -834,6 +884,7 @@ const ManageGroups = () => {
         onClose={() => setShowAuctionModal(false)}
         initialData={monthlySnapshot?.winner}
         onSave={handleAuctionWinnerSave}
+        isSaving={isAuctionSaving}
       />
     </div>
   );
