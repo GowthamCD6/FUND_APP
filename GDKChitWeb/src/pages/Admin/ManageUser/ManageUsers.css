@@ -495,37 +495,241 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-bottom: 24px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+  padding: 20px 16px;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.mu-copy-toast {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  animation: fadeInDown 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .mu-profile-avatar {
-  width: 80px;
-  height: 80px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .mu-profile-name {
   font-size: 20px;
   font-weight: 800;
-  color: var(--text);
-  margin: 0 0 8px 0;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.3px;
 }
 
-.mu-profile-phone {
-  font-size: 13px;
-  color: var(--muted);
+.mu-hero-pills {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 12px 0;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mu-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.mu-status-pill.active {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.mu-status-pill.blocked {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.mu-blocked-warning {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #9f1239;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  width: 100%;
+  text-align: left;
+}
+
+/* ── Quick Shortcuts Panel ── */
+.mu-shortcuts-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.mu-shortcuts-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.mu-shortcuts-title span {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.mu-shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.mu-shortcut-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+  width: 100%;
+}
+
+.mu-shortcut-card:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  transform: translateY(-1.5px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+}
+
+.mu-shortcut-card:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.mu-shortcut-card:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.mu-shortcut-card.block:hover {
+  border-color: #fca5a5;
+  background: #fff5f5;
+}
+
+.mu-shortcut-card.unblock:hover {
+  border-color: #a7f3d0;
+  background: #f0fdf4;
+}
+
+.mu-shortcut-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mu-shortcut-icon.edit { background: #eff6ff; color: #2563eb; }
+.mu-shortcut-icon.key { background: #fef3c7; color: #d97706; }
+.mu-shortcut-icon.danger { background: #fee2e2; color: #dc2626; }
+.mu-shortcut-icon.success { background: #d1fae5; color: #059669; }
+.mu-shortcut-icon.chat { background: #f3e8ff; color: #7c3aed; }
+
+.mu-shortcut-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mu-shortcut-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mu-shortcut-desc {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+/* ── Member Details Section ── */
+.mu-details-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.mu-detail-value-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mu-copy-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.mu-copy-btn:hover {
+  color: #0f172a;
+  background: #e2e8f0;
 }
 
 .mu-details-list {
@@ -534,19 +738,49 @@
 }
 
 .mu-groups-section {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.mu-groups-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
 }
 
 .mu-groups-header h4 {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 800;
-  color: var(--muted);
-  margin: 0 0 14px;
+  color: #64748b;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.mu-groups-nav-link {
+  background: transparent;
+  border: none;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.mu-groups-nav-link:hover {
+  background: #dcfce7;
 }
 
 .mu-empty-state {

@@ -7,7 +7,9 @@ import {
   Pencil as RiEditLine, Trash2 as RiDeleteBinLine, X as RiCloseLine, Check as RiCheckLine,
   Phone as RiPhoneLine, Calendar as RiCalendarLine, Users as RiGroupLine,
   ChevronLeft, ChevronRight, Hash, AtSign, Loader2 as RiLoader4Line, AlertTriangle as RiAlertLine,
-  Clock as RiTimeLine, ChevronRight as RiArrowRightSLine, RefreshCw as RiRefreshLine
+  Clock as RiTimeLine, ChevronRight as RiArrowRightSLine, RefreshCw as RiRefreshLine,
+  Copy as RiCopyLine, Key as RiKeyLine, Ban as RiBanLine, UserCheck as RiUserCheckLine,
+  MessageSquare as RiMessageLine, ExternalLink as RiExternalLinkLine, ShieldAlert
 } from 'lucide-react';
 import './ManageUsers.css';
 
@@ -152,30 +154,159 @@ const ManageUsers = () => {
 
   const closePanel = () => { setSelectedUser(null); setViewMode(null); setNotice(null); };
 
-  // ── Save edit ────────────────────────────────────────────
+  // ── Save edit with Real API ──────────────────────────────
   const saveEdit = async () => {
+    if (!editName.trim()) {
+      setNotice({ text: 'Please enter a valid user name', success: false });
+      return;
+    }
     setEditLoading(true);
     setNotice(null);
     try {
-      // Optimistic update
-      setUsers(prev => prev.map(u =>
-        u.id === selectedUser.id
-          ? { ...u, name: editName, phone: editPhone, type: editRole, nickname: editNickname, yearOfBirth: editYear }
-          : u
-      ));
-      setSelectedUser(prev => ({ ...prev, name: editName, phone: editPhone, type: editRole, nickname: editNickname, yearOfBirth: editYear }));
-      setNotice({ text: 'User updated successfully', success: true });
-      setTimeout(() => { setViewMode('view'); loadUserGroups(selectedUser.id); }, 900);
+      const res = await makeRequest('/admin/users/updateUser', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          name: editName.trim(),
+          phone: editPhone.trim(),
+          type: editRole,
+          nickname: editNickname.trim(),
+          yearOfBirth: editYear.trim(),
+        }),
+      });
+      const data = await safeJson(res);
+      if (res.ok && data?.success) {
+        setUsers(prev => prev.map(u =>
+          u.id === selectedUser.id
+            ? { ...u, name: editName, phone: editPhone, type: editRole, nickname: editNickname, yearOfBirth: editYear }
+            : u
+        ));
+        setSelectedUser(prev => ({ ...prev, name: editName, phone: editPhone, type: editRole, nickname: editNickname, yearOfBirth: editYear }));
+        setNotice({ text: 'User details updated successfully!', success: true });
+        setTimeout(() => { 
+          setViewMode('view');
+          if (selectedUser) loadUserGroups(selectedUser);
+        }, 1000);
+      } else {
+        setNotice({ text: data?.message || 'Failed to update user', success: false });
+      }
     } catch (err) {
-      setNotice({ text: 'Failed to update user', success: false });
+      setNotice({ text: 'Network error: Failed to update user', success: false });
+    } finally {
+      setEditLoading(false);
     }
-    setEditLoading(false);
   };
 
-  // ── Delete ───────────────────────────────────────────────
-  const deleteUser = () => {
-    setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
-    closePanel();
+  // ── Delete with Real API ─────────────────────────────────
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const deleteUser = async () => {
+    setDeleteLoading(true);
+    setNotice(null);
+    try {
+      const res = await makeRequest('/admin/users/deleteUser', {
+        method: 'POST',
+        body: JSON.stringify({ userId: selectedUser.id }),
+      });
+      const data = await safeJson(res);
+      if (res.ok && data?.success) {
+        setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
+        closePanel();
+      } else {
+        setNotice({ text: data?.message || 'Failed to delete user', success: false });
+      }
+    } catch (err) {
+      setNotice({ text: 'Network error: Failed to delete user', success: false });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  // ── Block / Unblock Shortcut ─────────────────────────────
+  const [blockLoading, setBlockLoading] = useState(false);
+  const handleToggleBlock = async () => {
+    if (!selectedUser) return;
+    const isCurrentlyBlocked = Number(selectedUser.isActive) === 0;
+    
+    if (isCurrentlyBlocked) {
+      if (!window.confirm(`Unblock ${selectedUser.name || 'this user'}?`)) return;
+      setBlockLoading(true);
+      try {
+        const res = await makeRequest('/admin/users/unblock', {
+          method: 'POST',
+          body: JSON.stringify({ userId: selectedUser.id }),
+        });
+        const data = await safeJson(res);
+        if (res.ok && data?.success) {
+          setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, isActive: 1, blockReason: null } : u));
+          setSelectedUser(prev => ({ ...prev, isActive: 1, blockReason: null }));
+          setNotice({ text: 'User unblocked successfully!', success: true });
+        } else {
+          setNotice({ text: data?.message || 'Failed to unblock user', success: false });
+        }
+      } catch (err) {
+        setNotice({ text: 'Network error: Could not unblock', success: false });
+      } finally {
+        setBlockLoading(false);
+      }
+    } else {
+      const reason = window.prompt(`Enter reason for blocking ${selectedUser.name || 'this user'}:`, 'Administrative block');
+      if (!reason || !reason.trim()) return;
+      setBlockLoading(true);
+      try {
+        const res = await makeRequest('/admin/users/block', {
+          method: 'POST',
+          body: JSON.stringify({ userId: selectedUser.id, reason: reason.trim() }),
+        });
+        const data = await safeJson(res);
+        if (res.ok && data?.success) {
+          setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, isActive: 0, blockReason: reason } : u));
+          setSelectedUser(prev => ({ ...prev, isActive: 0, blockReason: reason }));
+          setNotice({ text: 'User has been blocked.', success: true });
+        } else {
+          setNotice({ text: data?.message || 'Failed to block user', success: false });
+        }
+      } catch (err) {
+        setNotice({ text: 'Network error: Could not block user', success: false });
+      } finally {
+        setBlockLoading(false);
+      }
+    }
+  };
+
+  // ── Reset Password Shortcut ──────────────────────────────
+  const [resetLoading, setResetLoading] = useState(false);
+  const handleResetPassword = async () => {
+    if (!selectedUser) return;
+    if (!window.confirm(`Reset password for ${selectedUser.name || 'this user'} to default (Year of Birth)?`)) return;
+    setResetLoading(true);
+    try {
+      const res = await makeRequest('/admin/users/resetPassword', {
+        method: 'POST',
+        body: JSON.stringify({ userId: selectedUser.id }),
+      });
+      const data = await safeJson(res);
+      if (res.ok && data?.success) {
+        setNotice({ 
+          text: `Password reset successfully! Default password: ${data.defaultPassword || selectedUser.yearOfBirth || 'YOB'}`, 
+          success: true 
+        });
+      } else {
+        setNotice({ text: data?.message || 'Failed to reset password', success: false });
+      }
+    } catch (err) {
+      setNotice({ text: 'Network error: Could not reset password', success: false });
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  // ── Copy to Clipboard ───────────────────────────────────
+  const [copyNotice, setCopyNotice] = useState('');
+  const copyToClipboard = (text, label) => {
+    if (!text || text === '--') return;
+    navigator.clipboard?.writeText(String(text));
+    setCopyNotice(label);
+    setTimeout(() => setCopyNotice(''), 2200);
   };
 
   // ── Filtered lists ───────────────────────────────────────
@@ -478,85 +609,269 @@ const ManageUsers = () => {
               
               {viewMode === 'view' && (
                 <>
+                  {/* Copy Notification Toast */}
+                  {copyNotice && (
+                    <div className="mu-copy-toast">
+                      <RiCheckLine size={14} /> Copied {copyNotice} to clipboard!
+                    </div>
+                  )}
+
+                  {/* Profile Hero Card */}
                   <div className="mu-profile-hero">
                     <div 
                       className="mu-profile-avatar" 
                       style={{ 
                         background: String(selectedUser.type).toLowerCase() === 'admin' ? 'var(--primary-light)' : 'var(--success-bg)', 
                         color: String(selectedUser.type).toLowerCase() === 'admin' ? 'var(--primary)' : 'var(--success)',
-                        border: `2px solid ${String(selectedUser.type).toLowerCase() === 'admin' ? 'rgba(40, 66, 196, 0.15)' : 'rgba(16, 185, 129, 0.15)'}`
+                        border: `2px solid ${String(selectedUser.type).toLowerCase() === 'admin' ? 'rgba(40, 66, 196, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`
                       }}
                     >
                       {initials(selectedUser)}
                     </div>
                     <h2 className="mu-profile-name">{selectedUser.name || selectedUser.nickname || 'Unnamed'}</h2>
-                    <p className="mu-profile-phone"><RiPhoneLine size={14} /> {selectedUser.phone || '--'}</p>
-                    <span className={`mu-role-badge ${String(selectedUser.type || '').toLowerCase() === 'admin' ? 'admin' : 'user'}`}>
-                      {String(selectedUser.type || '').toLowerCase() === 'admin' ? <RiShieldUserLine size={12} /> : <RiUserLine size={12} />}
-                      {String(selectedUser.type || '').toLowerCase() === 'admin' ? 'Admin' : 'User'}
-                    </span>
+                    
+                    <div className="mu-hero-pills">
+                      <span className={`mu-role-badge ${String(selectedUser.type || '').toLowerCase() === 'admin' ? 'admin' : 'user'}`}>
+                        {String(selectedUser.type || '').toLowerCase() === 'admin' ? <RiShieldUserLine size={12} /> : <RiUserLine size={12} />}
+                        {String(selectedUser.type || '').toLowerCase() === 'admin' ? 'Admin' : 'Regular User'}
+                      </span>
+                      
+                      <span className={`mu-status-pill ${Number(selectedUser.isActive) === 0 ? 'blocked' : 'active'}`}>
+                        {Number(selectedUser.isActive) === 0 ? <RiBanLine size={12} /> : <RiCheckLine size={12} />}
+                        {Number(selectedUser.isActive) === 0 ? 'Blocked' : 'Active Account'}
+                      </span>
+                    </div>
+
+                    {Number(selectedUser.isActive) === 0 && selectedUser.blockReason && (
+                      <div className="mu-blocked-warning">
+                        <ShieldAlert size={14} />
+                        <span><strong>Reason:</strong> {selectedUser.blockReason}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="mu-details-list">
-                    <div className="rn-detail-row">
-                      <span>Full Name</span>
-                      <strong>{selectedUser.name || '--'}</strong>
+                  {/* ── Quick Management Shortcuts ── */}
+                  <div className="mu-shortcuts-panel">
+                    <div className="mu-shortcuts-title">
+                      <span>QUICK SHORTCUTS</span>
                     </div>
-                    <div className="rn-detail-row">
-                      <span>Nickname</span>
-                      <strong>{selectedUser.nickname || '--'}</strong>
-                    </div>
-                    <div className="rn-detail-row">
-                      <span>Year of Birth</span>
-                      <strong>{selectedUser.yearOfBirth || '--'}</strong>
-                    </div>
-                    <div className="rn-detail-row">
-                      <span>User ID</span>
-                      <strong>#U-{String(selectedUser.id).padStart(4, '0')}</strong>
-                    </div>
-                    <div className="rn-detail-row">
-                      <span>Joined Date</span>
-                      <strong>{formatDate(selectedUser.created_at || new Date())}</strong>
+                    
+                    <div className="mu-shortcuts-grid">
+                      {/* Edit Details */}
+                      <button 
+                        className="mu-shortcut-card"
+                        onClick={() => setViewMode('edit')}
+                        title="Edit profile information"
+                      >
+                        <div className="mu-shortcut-icon edit">
+                          <RiEditLine size={16} />
+                        </div>
+                        <div className="mu-shortcut-info">
+                          <span className="mu-shortcut-name">Edit Profile</span>
+                          <span className="mu-shortcut-desc">Update name, phone, role</span>
+                        </div>
+                      </button>
+
+                      {/* Reset Password */}
+                      <button 
+                        className="mu-shortcut-card"
+                        onClick={handleResetPassword}
+                        disabled={resetLoading}
+                        title="Reset password to default year of birth"
+                      >
+                        <div className="mu-shortcut-icon key">
+                          {resetLoading ? <RiLoader4Line size={16} className="spin-anim" /> : <RiKeyLine size={16} />}
+                        </div>
+                        <div className="mu-shortcut-info">
+                          <span className="mu-shortcut-name">Reset Password</span>
+                          <span className="mu-shortcut-desc">Reset to birth year</span>
+                        </div>
+                      </button>
+
+                      {/* Block / Unblock Account */}
+                      <button 
+                        className={`mu-shortcut-card ${Number(selectedUser.isActive) === 0 ? 'unblock' : 'block'}`}
+                        onClick={handleToggleBlock}
+                        disabled={blockLoading}
+                        title={Number(selectedUser.isActive) === 0 ? 'Unblock user' : 'Block user'}
+                      >
+                        <div className={`mu-shortcut-icon ${Number(selectedUser.isActive) === 0 ? 'success' : 'danger'}`}>
+                          {blockLoading ? (
+                            <RiLoader4Line size={16} className="spin-anim" />
+                          ) : Number(selectedUser.isActive) === 0 ? (
+                            <RiUserCheckLine size={16} />
+                          ) : (
+                            <RiBanLine size={16} />
+                          )}
+                        </div>
+                        <div className="mu-shortcut-info">
+                          <span className="mu-shortcut-name">
+                            {Number(selectedUser.isActive) === 0 ? 'Unblock User' : 'Block User'}
+                          </span>
+                          <span className="mu-shortcut-desc">
+                            {Number(selectedUser.isActive) === 0 ? 'Restore login access' : 'Restrict system access'}
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Message / Chat */}
+                      <button 
+                        className="mu-shortcut-card"
+                        onClick={() => {
+                          closePanel();
+                          navigate('/admin/chat');
+                        }}
+                        title="Open admin chat to message user"
+                      >
+                        <div className="mu-shortcut-icon chat">
+                          <RiMessageLine size={16} />
+                        </div>
+                        <div className="mu-shortcut-info">
+                          <span className="mu-shortcut-name">Open Chat</span>
+                          <span className="mu-shortcut-desc">Send message or notice</span>
+                        </div>
+                      </button>
                     </div>
                   </div>
 
+                  {/* ── User Information with Quick Copy ── */}
+                  <div className="mu-details-section">
+                    <div className="mu-shortcuts-title">
+                      <span>MEMBER DETAILS</span>
+                    </div>
+
+                    <div className="mu-details-list">
+                      <div className="rn-detail-row">
+                        <span>Full Name</span>
+                        <div className="mu-detail-value-wrapper">
+                          <strong>{selectedUser.name || '--'}</strong>
+                          {selectedUser.name && (
+                            <button 
+                              className="mu-copy-btn" 
+                              onClick={() => copyToClipboard(selectedUser.name, 'Full Name')}
+                              title="Copy name"
+                            >
+                              <RiCopyLine size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rn-detail-row">
+                        <span>Phone Number</span>
+                        <div className="mu-detail-value-wrapper">
+                          <strong>{selectedUser.phone || '--'}</strong>
+                          {selectedUser.phone && (
+                            <button 
+                              className="mu-copy-btn" 
+                              onClick={() => copyToClipboard(selectedUser.phone, 'Phone number')}
+                              title="Copy phone"
+                            >
+                              <RiCopyLine size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rn-detail-row">
+                        <span>Nickname / Handle</span>
+                        <div className="mu-detail-value-wrapper">
+                          <strong>{selectedUser.nickname ? `@${selectedUser.nickname}` : '--'}</strong>
+                          {selectedUser.nickname && (
+                            <button 
+                              className="mu-copy-btn" 
+                              onClick={() => copyToClipboard(selectedUser.nickname, 'Nickname')}
+                              title="Copy nickname"
+                            >
+                              <RiCopyLine size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rn-detail-row">
+                        <span>Year of Birth</span>
+                        <strong>{selectedUser.yearOfBirth || selectedUser.dateOfBirth || '--'}</strong>
+                      </div>
+
+                      <div className="rn-detail-row">
+                        <span>User ID</span>
+                        <div className="mu-detail-value-wrapper">
+                          <strong>#U-{String(selectedUser.id).padStart(4, '0')}</strong>
+                          <button 
+                            className="mu-copy-btn" 
+                            onClick={() => copyToClipboard(String(selectedUser.id), 'User ID')}
+                            title="Copy User ID"
+                          >
+                            <RiCopyLine size={13} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="rn-detail-row">
+                        <span>Joined Date</span>
+                        <strong>{formatDate(selectedUser.created_at || new Date())}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Enrolled Groups with direct shortcuts ── */}
                   <div className="mu-groups-section">
                     <div className="mu-groups-header">
-                      <h4><RiGroupLine size={14} /> ENROLLED GROUPS ({getRealGroupCount(selectedUser)})</h4>
+                      <h4>
+                        <RiGroupLine size={14} /> ENROLLED GROUPS ({getRealGroupCount(selectedUser)})
+                      </h4>
+                      {getRealGroupCount(selectedUser) > 0 && (
+                        <button 
+                          className="mu-groups-nav-link"
+                          onClick={() => {
+                            closePanel();
+                            navigate('/admin/manage-groups');
+                          }}
+                        >
+                          Manage Groups <RiExternalLinkLine size={12} />
+                        </button>
+                      )}
                     </div>
                     {groupsLoading ? (
                       <p style={{ color: '#64748b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <RiLoader4Line className="spin-anim" size={14} /> Loading groups...
                       </p>
                     ) : getRealGroupCount(selectedUser) === 0 ? (
-                      <p style={{ color: '#64748b', fontSize: 13, margin: '8px 0' }}>No active chit groups enrolled.</p>
+                      <p style={{ color: '#64748b', fontSize: 13, margin: '8px 0' }}>Not enrolled in any chit groups yet.</p>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {userGroups.length > 0 ? (
                           userGroups.map((g, idx) => (
                             <div key={g.id || idx} className="mu-group-card">
-                              <h5 style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                                {g.name || g.group_name || 'Chit Plan'}
-                              </h5>
-                              <p className="mu-group-meta">
-                                ₹{Number(g.groupAmount || g.group_amount || 0).toLocaleString()} • {g.duration || g.totalMembers || 20} months
-                              </p>
-                              <span 
-                                className={`mu-group-status ${String(g.status || '').toLowerCase().includes('comp') ? 'mu-status-pending' : 'mu-status-active'}`}
-                              >
-                                {String(g.status || 'Active').toUpperCase()}
-                              </span>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                  <h5 style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                                    {g.name || g.group_name || 'Chit Plan'}
+                                  </h5>
+                                  <p className="mu-group-meta">
+                                    ₹{Number(g.groupAmount || g.group_amount || 0).toLocaleString()} • {g.duration || g.totalMembers || 20} months
+                                  </p>
+                                </div>
+                                <span 
+                                  className={`mu-group-status ${String(g.status || '').toLowerCase().includes('comp') ? 'mu-status-pending' : 'mu-status-active'}`}
+                                >
+                                  {String(g.status || 'Active').toUpperCase()}
+                                </span>
+                              </div>
                             </div>
                           ))
                         ) : (
                           getUserGroupsList(selectedUser.contributedGroups).map((gName, idx) => (
                             <div key={idx} className="mu-group-card">
-                              <h5 style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                                {gName}
-                              </h5>
-                              <span className="mu-group-status mu-status-active">
-                                ACTIVE
-                              </span>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h5 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                                  {gName}
+                                </h5>
+                                <span className="mu-group-status mu-status-active">
+                                  ACTIVE
+                                </span>
+                              </div>
                             </div>
                           ))
                         )}
@@ -671,6 +986,7 @@ const ManageUsers = () => {
                       className="mu-btn-cancel" 
                       style={{ flex: 1 }} 
                       onClick={() => setViewMode('view')}
+                      disabled={deleteLoading}
                     >
                       Cancel
                     </button>
@@ -678,8 +994,13 @@ const ManageUsers = () => {
                       className="mu-btn-delete" 
                       style={{ flex: 1 }} 
                       onClick={deleteUser}
+                      disabled={deleteLoading}
                     >
-                      <RiDeleteBinLine size={16} /> Delete
+                      {deleteLoading ? (
+                        <><RiLoader4Line size={16} className="spin-anim" /> Deleting...</>
+                      ) : (
+                        <><RiDeleteBinLine size={16} /> Delete User</>
+                      )}
                     </button>
                   </div>
                 </div>
