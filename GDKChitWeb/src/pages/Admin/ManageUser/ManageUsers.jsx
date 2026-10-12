@@ -220,7 +220,7 @@ const ManageUsers = () => {
             )}
           </div>
 
-          {/* Single-line role filter pills */}
+          {/* Single-line role filter pills with icons and counts */}
           <div className="mu-role-filters">
             <button
               className={`mu-role-pill-btn ${activeFilter === 'all' ? 'active' : ''}`}
@@ -229,8 +229,8 @@ const ManageUsers = () => {
                 setCurrentPage(1);
               }}
             >
-              <RiGroupLine size={14} />
-              <span>All</span>
+              <RiGroupLine size={15} />
+              <span>Total Members</span>
               <span className="mu-role-pill-count">{counts.all}</span>
             </button>
             <button
@@ -240,8 +240,8 @@ const ManageUsers = () => {
                 setCurrentPage(1);
               }}
             >
-              <RiUserLine size={14} />
-              <span>Users</span>
+              <RiUserLine size={15} />
+              <span>Regular Users</span>
               <span className="mu-role-pill-count">{counts.user}</span>
             </button>
             <button
@@ -251,51 +251,10 @@ const ManageUsers = () => {
                 setCurrentPage(1);
               }}
             >
-              <RiShieldUserLine size={14} />
+              <RiShieldUserLine size={15} />
               <span>Admins</span>
               <span className="mu-role-pill-count">{counts.admin}</span>
             </button>
-          </div>
-
-          {/* Action buttons */}
-          <div className="mu-toolbar-actions">
-            <button
-              className="reports-refresh-btn"
-              onClick={loadUsers}
-              disabled={status === 'loading'}
-              title="Refresh"
-            >
-              <RiRefreshLine
-                size={16}
-                className={status === 'loading' ? 'spin-anim' : ''}
-              />
-              <span>Refresh</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Hero Stats Row */}
-      <div className="mu-stats-row">
-        <div className="mu-stat-card">
-          <div className="mu-stat-icon total"><RiGroupLine size={20} /></div>
-          <div className="mu-stat-info">
-            <h3>{counts.all}</h3>
-            <p>Total Members</p>
-          </div>
-        </div>
-        <div className="mu-stat-card">
-          <div className="mu-stat-icon users"><RiUserLine size={20} /></div>
-          <div className="mu-stat-info">
-            <h3>{counts.user}</h3>
-            <p>Regular Users</p>
-          </div>
-        </div>
-        <div className="mu-stat-card">
-          <div className="mu-stat-icon admins"><RiShieldUserLine size={20} /></div>
-          <div className="mu-stat-info">
-            <h3>{counts.admin}</h3>
-            <p>Admins</p>
           </div>
         </div>
       </div>
