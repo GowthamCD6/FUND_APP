@@ -20,8 +20,8 @@ const TOOL_SECTIONS = [
         desc: 'Onboard a new chit fund subscriber or register administrative staff',
         route: '/admin/admintool/add-user',
         badge: 'Onboarding',
-        color: '#2563eb',
-        bg: '#eff6ff'
+        color: '#2E7D32',
+        bg: '#EBF3ED'
       },
       {
         id: 'manage-users',
@@ -30,8 +30,8 @@ const TOOL_SECTIONS = [
         desc: 'Full directory of members with role modification, edits, and removal',
         route: '/admin/manage-users',
         badge: 'Directory',
-        color: '#059669',
-        bg: '#ecfdf5'
+        color: '#1B3322',
+        bg: '#EBF3ED'
       },
       {
         id: 'block-members',
@@ -40,8 +40,8 @@ const TOOL_SECTIONS = [
         desc: 'Restrict system access or reinstate accounts with reason logs',
         route: '/admin/block-user',
         badge: 'Security',
-        color: '#dc2626',
-        bg: '#fef2f2'
+        color: '#D32F2F',
+        bg: '#FDECEC'
       },
       {
         id: 'password-mgmt',
@@ -50,8 +50,8 @@ const TOOL_SECTIONS = [
         desc: 'Secure cryptographic password verification and administrative credential resets',
         route: '/admin/password-management',
         badge: 'Vault',
-        color: '#7c3aed',
-        bg: '#f5f3ff'
+        color: '#A3704C',
+        bg: '#FDF6F0'
       },
       {
         id: 'user-locations',
@@ -60,8 +60,8 @@ const TOOL_SECTIONS = [
         desc: 'Geographic tracking of registered subscriber locations across regions',
         route: '/admin/user-locations',
         badge: 'Radar',
-        color: '#d97706',
-        bg: '#fffbeb'
+        color: '#A3704C',
+        bg: '#FDF6F0'
       }
     ]
   },
@@ -77,8 +77,8 @@ const TOOL_SECTIONS = [
         desc: 'Set up a new monthly chit scheme with preset or custom financial plans',
         route: '/admin/create-group',
         badge: 'Scheme',
-        color: '#059669',
-        bg: '#ecfdf5'
+        color: '#2E7D32',
+        bg: '#EBF3ED'
       },
       {
         id: 'manage-groups',
@@ -87,8 +87,8 @@ const TOOL_SECTIONS = [
         desc: 'Track completed cycles, payment snapshots, and group member rosters',
         route: '/admin/manage-groups',
         badge: 'Ledger',
-        color: '#2563eb',
-        bg: '#eff6ff'
+        color: '#1B3322',
+        bg: '#EBF3ED'
       },
       {
         id: 'auction-settings',
@@ -97,8 +97,8 @@ const TOOL_SECTIONS = [
         desc: 'Configure reverse auction duration, anti-sniping rules, and foreman commission rate',
         route: '/admin/admintool/auction-settings',
         badge: 'Engine',
-        color: '#7c3aed',
-        bg: '#f5f3ff'
+        color: '#A3704C',
+        bg: '#FDF6F0'
       }
     ]
   },
@@ -114,8 +114,8 @@ const TOOL_SECTIONS = [
         desc: 'Download subscriber directories and chit ledger schemes in CSV or JSON format',
         route: '/admin/admintool/data-export',
         badge: 'Export',
-        color: '#059669',
-        bg: '#ecfdf5'
+        color: '#2E7D32',
+        bg: '#EBF3ED'
       },
       {
         id: 'otp-requests',
@@ -124,8 +124,8 @@ const TOOL_SECTIONS = [
         desc: 'Live real-time monitor for two-factor authentication codes and withdrawal OTPs',
         route: '/admin/admintool/otp-requests',
         badge: '2FA Audit',
-        color: '#4f46e5',
-        bg: '#eef2ff'
+        color: '#1B3322',
+        bg: '#EBF3ED'
       },
       {
         id: 'office-location',
@@ -134,8 +134,8 @@ const TOOL_SECTIONS = [
         desc: 'Set verified office GPS coordinates for mobile distance and verification radius',
         route: '/admin/admintool/office-location',
         badge: 'Office GPS',
-        color: '#d97706',
-        bg: '#fffbeb'
+        color: '#A3704C',
+        bg: '#FDF6F0'
       }
     ]
   }

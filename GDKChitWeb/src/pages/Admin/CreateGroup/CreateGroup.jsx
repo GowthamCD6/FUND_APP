@@ -108,7 +108,7 @@ const CreateGroup = () => {
                   </>
                 ) : (
                   <>
-                    <p className="cg-preset-sub" style={{ color: isActive ? '#1D4ED8' : '#1F2937' }}>Set your own</p>
+                    <p className="cg-preset-sub" style={{ color: isActive ? '#2E7D32' : '#1B3322' }}>Set your own</p>
                     <p className="cg-preset-desc">Any values</p>
                   </>
                 )}
