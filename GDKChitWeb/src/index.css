@@ -7,58 +7,70 @@
    ============================================================ */
 
 :root {
-  /* ════ FinTech Modern (Modern & Innovative) ════
-     Charcoal Grey: #1E272E (High-end, premium tech aesthetic)
-     Vibrant Mint Green: #05C46B (Growth, financial health)
-     Bright Cyan Blue: #00D2D3 (Energy and high tech innovation)
-     Pure White: #FFFFFF (Clean stark contrast)
-  ═══════════════════════════════════════════════ */
-  --theme-charcoal: #1E272E;
-  --theme-mint: #05C46B;
-  --theme-cyan: #00D2D3;
-  --theme-white: #FFFFFF;
+  /* ════ The "Steady Growth" Theme (Venture Capital, Mortgages, Investments) ════
+     Background (Page): #F4F6F4 (Ultra-soft sage white)
+     Background (Cards/Sections): #FFFFFF (Pure white)
+     Primary (Brand/Headers): #1B3322 (Deep forest green)
+     Secondary (Accents/Links): #A3704C (Bronze)
+     Text (Body): #333D35 (Deep olive charcoal)
+     Bold Text / Headings: #0B140E (Near-black green)
+     CTA Button (Action): #2E7D32 (Rich money green)
+     Success/Positive: #4CAF50 (Standard success green)
+     Danger/Alert: #D32F2F (Standard danger red)
+  ══════════════════════════════════════════════════════════════════════════════ */
+  --theme-page-bg: #F4F6F4;
+  --theme-card-bg: #FFFFFF;
+  --theme-primary: #1B3322;
+  --theme-secondary: #A3704C;
+  --theme-text-body: #333D35;
+  --theme-headings: #0B140E;
+  --theme-cta: #2E7D32;
+  --theme-success: #4CAF50;
+  --theme-danger: #D32F2F;
 
   /* Primary Brand colors */
-  --primary: #1E272E;
-  --primary-dark: #141b20;
-  --primary-light: #e6faf1;
-  --primary-border: #bbf3d8;
+  --primary: #1B3322;
+  --primary-dark: #0B140E;
+  --primary-light: #EBF3ED;
+  --primary-border: #C8DEC9;
 
-  /* Accent highlights */
-  --accent-cyan: #00D2D3;
-  --accent-mint: #05C46B;
+  /* Secondary Accents */
+  --secondary: #A3704C;
+  --secondary-light: #F7F1EB;
+  --accent-cta: #2E7D32;
 
   /* Semantic status colors */
-  --success: #05C46B;
-  --success-bg: #EBFBF3;
-  --success-border: #A7F3D0;
-  --warning: #F59E0B;
-  --warning-bg: #FFFBEB;
-  --warning-border: #FDE68A;
-  --danger: #EF4444;
-  --danger-bg: #FEF2F2;
-  --danger-border: #FECACA;
+  --success: #4CAF50;
+  --success-bg: #E8F5E9;
+  --success-border: #C8E6C9;
+  --warning: #A3704C;
+  --warning-bg: #FBF6F0;
+  --warning-border: #E8D5C4;
+  --danger: #D32F2F;
+  --danger-bg: #FFEBEE;
+  --danger-border: #FFCDD2;
 
   /* Surfaces & Backgrounds */
-  --bg: #F4F6F9;
+  --bg: #F4F6F4;
   --surface: #FFFFFF;
-  --surface2: #EAEFF5;
+  --surface2: #E8ECE8;
 
   /* Typography Colors */
-  --text: #1E272E;
-  --text-secondary: #3D4D59;
-  --muted: #657786;
-  --subtle: #9AA7B2;
+  --text: #333D35;
+  --text-heading: #0B140E;
+  --text-secondary: #4A564C;
+  --muted: #6B7A6E;
+  --subtle: #98A79B;
 
-  /* Crisp Borders */
-  --border: #DDE3EA;
-  --border-focus: #00D2D3;
+  /* Crisp Organic Borders */
+  --border: #DCE3DC;
+  --border-focus: #2E7D32;
 
   /* Elevation */
-  --shadow-sm: 0 1px 3px rgba(30, 39, 46, 0.05);
-  --shadow: 0 2px 6px rgba(30, 39, 46, 0.06), 0 1px 2px rgba(30, 39, 46, 0.04);
-  --shadow-md: 0 6px 14px -2px rgba(30, 39, 46, 0.08), 0 2px 6px -1px rgba(30, 39, 46, 0.05);
-  --shadow-lg: 0 14px 28px -4px rgba(30, 39, 46, 0.12), 0 6px 12px -2px rgba(30, 39, 46, 0.06);
+  --shadow-sm: 0 1px 3px rgba(27, 51, 34, 0.05);
+  --shadow: 0 2px 6px rgba(27, 51, 34, 0.06), 0 1px 2px rgba(27, 51, 34, 0.04);
+  --shadow-md: 0 6px 14px -2px rgba(27, 51, 34, 0.07), 0 2px 6px -1px rgba(27, 51, 34, 0.04);
+  --shadow-lg: 0 14px 28px -4px rgba(27, 51, 34, 0.1), 0 6px 12px -2px rgba(27, 51, 34, 0.05);
 
   /* Standard Product Radii */
   --radius-sm: 6px;

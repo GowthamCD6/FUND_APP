@@ -212,13 +212,13 @@
 }
 
 .sidebar-nav-item:hover {
-  background: #f1f5f9;
-  color: #1E272E;
+  background: #EBF3ED;
+  color: #1B3322;
 }
 
 .sidebar-nav-item-active {
-  background: #f0fdf9 !important;
-  color: #05C46B !important;
+  background: #EBF3ED !important;
+  color: #1B3322 !important;
   font-weight: 700 !important;
 }
 
@@ -229,7 +229,7 @@
   top: 6px;
   bottom: 6px;
   width: 3.5px;
-  background: #00D2D3;
+  background: #A3704C;
   border-radius: 0 4px 4px 0;
 }
 

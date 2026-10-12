@@ -379,8 +379,8 @@ const ManageGroups = () => {
               onClick={() => navigate('/admin/create-group')}
               title="New Group"
               style={{
-                border: '1px solid #1E272E',
-                background: '#1E272E',
+                border: '1px solid #2E7D32',
+                background: '#2E7D32',
                 color: '#FFFFFF',
                 fontWeight: 600,
                 borderRadius: '8px',
@@ -389,7 +389,7 @@ const ManageGroups = () => {
                 gap: 6
               }}
             >
-              <RiAddLine size={16} color="#05C46B" />
+              <RiAddLine size={16} color="#FFFFFF" />
               <span>New Group</span>
             </button>
           </div>
