@@ -94,7 +94,21 @@ const ManageUsers = () => {
 
   useEffect(() => { loadUsers(); }, [loadUsers]);
 
-  // ── Open user panel ──────────────────────────────────────
+  // Parse actual user's enrolled groups from API contributedGroups
+  const getUserGroupsList = useCallback((contributedGroupsStr) => {
+    if (!contributedGroupsStr || contributedGroupsStr === 'None') return [];
+    return contributedGroupsStr
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+  }, []);
+
+  const getRealGroupCount = useCallback((user) => {
+    const list = getUserGroupsList(user?.contributedGroups);
+    return list.length;
+  }, [getUserGroupsList]);
+
+  // Open user panel with their real enrolled groups
   const openUser = useCallback((user, mode = 'view') => {
     setSelectedUser(user);
     setViewMode(mode);
@@ -106,24 +120,34 @@ const ManageUsers = () => {
       setEditNickname(user.nickname || '');
       setEditYear(user.yearOfBirth || '');
     }
-    // Load user groups
     if (mode === 'view') {
-      loadUserGroups(user.id);
+      loadUserGroups(user);
     }
   }, []);
 
-  const loadUserGroups = async (userId) => {
+  const loadUserGroups = async (user) => {
     setGroupsLoading(true);
     setUserGroups([]);
     try {
       const res = await makeRequest('/admin/groups/getGroups');
       const data = await safeJson(res);
       if (res.ok && data?.success) {
-        // Mock filter for now
-        setUserGroups(data.data || []);
+        const allGroups = data.data || [];
+        const enrolledNames = getUserGroupsList(user?.contributedGroups);
+        
+        // Match groups where user is a participant
+        const matched = allGroups.filter(g => {
+          const gName = (g.name || g.group_name || '').trim().toLowerCase();
+          return enrolledNames.some(en => en.toLowerCase() === gName);
+        });
+        
+        setUserGroups(matched);
       }
-    } catch { }
-    finally { setGroupsLoading(false); }
+    } catch (err) {
+      console.warn('Error loading user groups:', err);
+    } finally {
+      setGroupsLoading(false);
+    }
   };
 
   const closePanel = () => { setSelectedUser(null); setViewMode(null); setNotice(null); };
@@ -335,7 +359,7 @@ const ManageUsers = () => {
                         <td>
                           <span className="mu-cell-groups">
                             <RiGroupLine size={13} color="var(--muted)" />
-                            {getGroupCount(user.id)} Groups
+                            {getRealGroupCount(user)} {getRealGroupCount(user) === 1 ? 'Group' : 'Groups'}
                           </span>
                         </td>
                         <td className="mu-action-btn-cell">
@@ -498,27 +522,44 @@ const ManageUsers = () => {
 
                   <div className="mu-groups-section">
                     <div className="mu-groups-header">
-                      <h4><RiGroupLine size={14} /> GROUPS ({userGroups.length})</h4>
+                      <h4><RiGroupLine size={14} /> ENROLLED GROUPS ({getRealGroupCount(selectedUser)})</h4>
                     </div>
                     {groupsLoading ? (
                       <p style={{ color: '#64748b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <RiLoader4Line className="spin-anim" size={14} /> Loading...
+                        <RiLoader4Line className="spin-anim" size={14} /> Loading groups...
                       </p>
-                    ) : userGroups.length === 0 ? (
-                      <p style={{ color: '#64748b', fontSize: 13 }}>No groups found.</p>
+                    ) : getRealGroupCount(selectedUser) === 0 ? (
+                      <p style={{ color: '#64748b', fontSize: 13, margin: '8px 0' }}>No active chit groups enrolled.</p>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {userGroups.slice(0, 3).map((g, idx) => (
-                          <div key={g.id || idx} className="mu-group-card">
-                            <h5 style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700 }}>{g.name || g.group_name || 'Group'}</h5>
-                            <p className="mu-group-meta">₹{(g.groupAmount || 100000).toLocaleString()} • {g.duration || 20} members</p>
-                            <span 
-                              className={`mu-group-status ${g.status === 'running' || g.status === 'ongoing' || g.status === 'active' ? 'mu-status-active' : 'mu-status-pending'}`}
-                            >
-                              {(g.status || 'Active').toUpperCase()}
-                            </span>
-                          </div>
-                        ))}
+                        {userGroups.length > 0 ? (
+                          userGroups.map((g, idx) => (
+                            <div key={g.id || idx} className="mu-group-card">
+                              <h5 style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                                {g.name || g.group_name || 'Chit Plan'}
+                              </h5>
+                              <p className="mu-group-meta">
+                                ₹{Number(g.groupAmount || g.group_amount || 0).toLocaleString()} • {g.duration || g.totalMembers || 20} months
+                              </p>
+                              <span 
+                                className={`mu-group-status ${String(g.status || '').toLowerCase().includes('comp') ? 'mu-status-pending' : 'mu-status-active'}`}
+                              >
+                                {String(g.status || 'Active').toUpperCase()}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          getUserGroupsList(selectedUser.contributedGroups).map((gName, idx) => (
+                            <div key={idx} className="mu-group-card">
+                              <h5 style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                                {gName}
+                              </h5>
+                              <span className="mu-group-status mu-status-active">
+                                ACTIVE
+                              </span>
+                            </div>
+                          ))
+                        )}
                       </div>
                     )}
                   </div>
