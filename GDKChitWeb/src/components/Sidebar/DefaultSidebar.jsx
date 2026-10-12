@@ -19,7 +19,7 @@ const ADMIN_NAV_GROUPS = [
   {
     title: 'OVERVIEW',
     items: [
-      { id: 'dashboard', to: '/admin/dashboard', label: 'Dashboard', Icon: LayoutDashboard, end: true, badge: 'Live', badgeType: 'primary' },
+      { id: 'dashboard', to: '/admin/dashboard', label: 'Dashboard', Icon: LayoutDashboard, end: true },
     ]
   },
   {
@@ -27,7 +27,7 @@ const ADMIN_NAV_GROUPS = [
     items: [
       { id: 'manage-groups', to: '/admin/manage-groups', label: 'Manage Groups', Icon: Layers },
       { id: 'create-group', to: '/admin/create-group', label: 'Create New Plan', Icon: Plus },
-      { id: 'auction', to: '/admin/auction', label: 'Live Reverse Auctions', Icon: Gavel, badge: 'Auctions', badgeType: 'primary' },
+      { id: 'auction', to: '/admin/auction', label: 'Live Reverse Auctions', Icon: Gavel },
     ]
   },
   {
@@ -42,7 +42,7 @@ const ADMIN_NAV_GROUPS = [
     title: 'COLLECTIONS & AUDIT',
     items: [
       { id: 'reports', to: '/admin/reports', label: 'Reports & Collections', Icon: BarChart3 },
-      { id: 'defaulters', to: '/admin/defaulters', label: 'Overdue Tracker', Icon: AlertTriangle, badge: 'Risk', badgeType: 'warning' },
+      { id: 'defaulters', to: '/admin/defaulters', label: 'Overdue Tracker', Icon: AlertTriangle },
     ]
   },
   {
@@ -54,7 +54,7 @@ const ADMIN_NAV_GROUPS = [
   {
     title: 'OPERATIONS & TOOLS',
     items: [
-      { id: 'actions', to: '/admin/admintool', label: 'Admin Tools & Logs', Icon: Zap, badge: 'Ops', badgeType: 'success' },
+      { id: 'actions', to: '/admin/admintool', label: 'Admin Tools & Logs', Icon: Zap },
       { id: 'block-user', to: '/admin/block-user', label: 'Block / Unblock Users', Icon: Ban },
       { id: 'password-management', to: '/admin/password-management', label: 'Password Vault', Icon: Key },
     ]
@@ -79,7 +79,7 @@ const USER_NAV_GROUPS = [
     items: [
       { id: 'group-card', to: '/user/group-card', label: 'Member Chit Card', Icon: Landmark },
       { id: 'join-group', to: '/user/join-group', label: 'Join Chit Group', Icon: Users },
-      { id: 'auction', to: '/user/auction', label: 'Live Reverse Auction', Icon: Gavel, badge: 'Live', badgeType: 'primary' },
+      { id: 'auction', to: '/user/auction', label: 'Live Reverse Auction', Icon: Gavel },
     ]
   },
   {
@@ -398,10 +398,6 @@ const DefaultSidebar = () => {
             )}
           </div>
         </NavLink>
-        <div className="sidebar-status-dot-wrap" title={t("Live")}>
-          <span className="sidebar-status-dot" />
-          <span>{t("Live")}</span>
-        </div>
       </div>
 
       {/* NAV LINKS */}
