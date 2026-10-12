@@ -60,6 +60,25 @@
   margin-bottom: 20px;
 }
 
+.auc-form-grid-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.auc-form-col {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 900px) {
+  .auc-form-grid-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
 .auc-input-label {
   display: block;
   font-size: 12.5px;

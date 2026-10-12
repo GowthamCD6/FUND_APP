@@ -107,46 +107,59 @@ const BettingAuction = ({
 
         {!auctionStarted && (
           <div className="auc-initial-amount-card">
-            <label className="auc-input-label">Pool Amount</label>
-            <div className="auc-amount-input-row" style={{ marginBottom: 16 }}>
-              <span className="auc-currency-symbol">₹</span>
-              <input
-                type="number"
-                className="auc-amount-input"
-                value={poolAmount}
-                onChange={e => setPoolAmount(e.target.value)}
-                placeholder="Enter Pool Amount..."
-              />
-            </div>
+            <div className="auc-form-grid-row">
+              {/* Field 1: Pool Amount */}
+              <div className="auc-form-col">
+                <label className="auc-input-label">Pool Amount</label>
+                <div className="auc-amount-input-row">
+                  <span className="auc-currency-symbol">₹</span>
+                  <input
+                    type="number"
+                    className="auc-amount-input"
+                    value={poolAmount}
+                    onChange={e => setPoolAmount(e.target.value)}
+                    placeholder="Enter Pool Amount..."
+                  />
+                </div>
+                <span className="auc-input-hint">Total chit fund value</span>
+              </div>
 
-            <label className="auc-input-label">Initial Bidding Start Amount</label>
-            <div className="auc-amount-input-row">
-              <span className="auc-currency-symbol">₹</span>
-              <input
-                type="number"
-                className="auc-amount-input"
-                value={initialAmount}
-                onChange={e => setInitialAmount(e.target.value)}
-                placeholder={selectedGroup ? String(selectedGroup.groupAmount / selectedGroup.duration) : ''}
-              />
+              {/* Field 2: Initial Bidding Start Amount */}
+              <div className="auc-form-col">
+                <label className="auc-input-label">Initial Bidding Start Amount</label>
+                <div className="auc-amount-input-row">
+                  <span className="auc-currency-symbol">₹</span>
+                  <input
+                    type="number"
+                    className="auc-amount-input"
+                    value={initialAmount}
+                    onChange={e => setInitialAmount(e.target.value)}
+                    placeholder={selectedGroup ? String(selectedGroup.groupAmount / selectedGroup.duration) : ''}
+                  />
+                </div>
+                <span className="auc-input-hint">Multiples of ₹1,000</span>
+              </div>
+
+              {/* Field 3: Duration */}
+              <div className="auc-form-col">
+                <label className="auc-input-label">Duration</label>
+                <select
+                  className="auc-duration-select"
+                  value={auctionDuration}
+                  onChange={e => {
+                    const val = Number(e.target.value);
+                    setAuctionDuration(val);
+                    setTimeRemaining(val);
+                  }}
+                >
+                  <option value={120}>2 minutes</option>
+                  <option value={180}>3 minutes</option>
+                  <option value={300}>5 minutes (default)</option>
+                  <option value={600}>10 minutes</option>
+                </select>
+                <span className="auc-input-hint">Bidding countdown</span>
+              </div>
             </div>
-            <span className="auc-input-hint">Must be in multiples of ₹1,000</span>
-            
-            <label className="auc-input-label" style={{ marginTop: 12 }}>Duration (seconds)</label>
-            <select
-              className="auc-duration-select"
-              value={auctionDuration}
-              onChange={e => {
-                const val = Number(e.target.value);
-                setAuctionDuration(val);
-                setTimeRemaining(val);
-              }}
-            >
-              <option value={120}>2 minutes</option>
-              <option value={180}>3 minutes</option>
-              <option value={300}>5 minutes (default)</option>
-              <option value={600}>10 minutes</option>
-            </select>
           </div>
         )}
 
