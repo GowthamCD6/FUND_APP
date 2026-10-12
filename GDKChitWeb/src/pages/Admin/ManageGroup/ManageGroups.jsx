@@ -15,17 +15,22 @@ import EditModal from './Modal/EditModal.jsx';
 import PaymentD from './Modal/PaymentD.jsx';
 import AuctionW from './Modal/AuctionW.jsx';
 import MemberRegistration from './Modal/MemberRegistration.jsx';
+import Lottie from 'lottie-react';
+import noFileAnimation from '../../../animation/no-file.json';
+
+const LottieComponent = Lottie.default || Lottie;
 
 const SC = {
-  active: '#4CAF50',
-  ongoing: '#4CAF50',
-  completed: '#1B3322',
-  paid: '#4CAF50',
-  pending: '#A3704C',
-  overdue: '#D32F2F',
-  'not started': '#6B7A6E',
+  active: '#10B981',
+  ongoing: '#10B981',
+  completed: '#3B82F6',
+  paid: '#10B981',
+  pending: '#F59E0B',
+  overdue: '#EF4444',
+  'not started': '#F59E0B',
+  'not-started': '#F59E0B',
 };
-const scOf = (s) => SC[String(s).toLowerCase()] || '#6B7A6E';
+const scOf = (s) => SC[String(s).toLowerCase()] || '#6B7280';
 
 const StatusIcon = ({ status, size = 11 }) => {
   const s = String(status).toLowerCase();
@@ -133,19 +138,31 @@ const ManageGroups = () => {
       const res = await makeRequest('/admin/groups/getGroups');
       const data = await safeJson(res);
       if (!res.ok || !data?.success) throw new Error();
-      const mapped = (data.data || []).map(g => ({
-        id: g.id,
-        name: g.name || g.group_name || 'Untitled',
-        status: String(g.status || 'Not Started').toLowerCase(),
-        totalMembers: g.totalMembers || g.total_members || 0,
-        duration: g.duration || 20,
-        groupAmount: g.groupAmount || g.group_amount || 0,
-        startDate: g.startDate || g.start_date,
-        endDate: g.endDate || g.end_date,
-        createdDate: g.createdDate || g.created_at,
-        groupCode: g.groupCode || '',
-        completedCycles: g.completedCycles || 0,
-      }));
+      const mapped = (data.data || []).map(g => {
+        const rawStatus = String(g.status || '').toLowerCase().trim();
+        const totalNum = Number(g.totalMembers || g.total_members) || 1;
+        const completed = Number(g.completedCycles) || 0;
+        let status = 'Active';
+        if (rawStatus.includes('not started') || rawStatus === 'not-started') {
+          status = 'Not Started';
+        } else if (rawStatus === 'completed' || (completed > 0 && completed >= totalNum)) {
+          status = 'Completed';
+        }
+
+        return {
+          id: g.id,
+          name: g.name || g.group_name || 'Untitled',
+          status,
+          totalMembers: g.totalMembers !== undefined ? g.totalMembers : (g.total_members !== undefined ? g.total_members : 0),
+          duration: g.duration || totalNum || 20,
+          groupAmount: g.groupAmount || g.group_amount || 0,
+          startDate: g.startDate || g.start_date,
+          endDate: g.endDate || g.end_date,
+          createdDate: g.createdDate || g.created_at,
+          groupCode: g.groupCode || '',
+          completedCycles: completed,
+        };
+      });
       setGroups(mapped);
       setStatus('ready');
     } catch {
@@ -302,16 +319,16 @@ const ManageGroups = () => {
   // ── Filters & counts ─────────────────────────────────────
   const counts = useMemo(() => ({
     all: groups.length,
-    active: groups.filter(g => g.status === 'active' || g.status === 'ongoing').length,
-    completed: groups.filter(g => g.status === 'completed').length,
-    other: groups.filter(g => g.status !== 'active' && g.status !== 'ongoing' && g.status !== 'completed').length,
+    active: groups.filter(g => g.status === 'Active').length,
+    notStarted: groups.filter(g => g.status === 'Not Started').length,
+    completed: groups.filter(g => g.status === 'Completed').length,
   }), [groups]);
 
   const filtered = useMemo(() => {
     let list = groups;
-    if (activeTab === 'active') list = groups.filter(g => g.status === 'active' || g.status === 'ongoing');
-    else if (activeTab === 'completed') list = groups.filter(g => g.status === 'completed');
-    else if (activeTab === 'other') list = groups.filter(g => g.status !== 'active' && g.status !== 'ongoing' && g.status !== 'completed');
+    if (activeTab === 'active') list = groups.filter(g => g.status === 'Active');
+    else if (activeTab === 'not-started') list = groups.filter(g => g.status === 'Not Started');
+    else if (activeTab === 'completed') list = groups.filter(g => g.status === 'Completed');
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -336,8 +353,8 @@ const ManageGroups = () => {
             {[
               { key: 'all', label: `All (${counts.all})` },
               { key: 'active', label: `Active (${counts.active})` },
+              { key: 'not-started', label: `Not Started (${counts.notStarted})` },
               { key: 'completed', label: `Completed (${counts.completed})` },
-              { key: 'other', label: `Other (${counts.other})` },
             ].map(t => (
               <button
                 key={t.key}
@@ -433,10 +450,18 @@ const ManageGroups = () => {
           </button></p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rn-empty">
-          <RiGroupLine size={48} color="#94a3b8" style={{ marginBottom: 16 }} />
-          <h3 style={{ color: '#030712', fontWeight: 700 }}>No groups found</h3>
-          <p style={{ color: '#64748b' }}>No {activeTab} groups match your query.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 340, padding: '32px 0', textAlign: 'center' }}>
+          <LottieComponent
+            animationData={noFileAnimation}
+            loop={true}
+            style={{ width: 220, height: 220 }}
+          />
+          <h3 style={{ margin: '12px 0 6px', fontSize: '16px', fontWeight: 700, color: '#030712' }}>
+            No groups found
+          </h3>
+          <p style={{ margin: 0, fontSize: '13px', color: '#6B7A6E', fontWeight: 500 }}>
+            No {activeTab === 'all' ? '' : activeTab === 'not-started' ? 'not started' : activeTab} groups match your query.
+          </p>
         </div>
       ) : (
         <div className="rn-list">
