@@ -539,10 +539,10 @@ const Auction = () => {
 
   return (
     <div className="rn-page">
-      {/* ── Page Header & Action Bar Container ── */}
+      {/* ── Page Header & Action Bar Container (Exact Match to ManageGroups) ── */}
       <div className="reports-header-container">
         <div className="reports-toolbar-row">
-          {/* Tab Bar (Betting Auction vs. Random Draw) */}
+          {/* Tab Bar (Active vs. Completed) */}
           <div className="reports-tabs-wrapper">
             {[
               { key: 'active', label: `Active (${counts.active})` },
@@ -565,6 +565,7 @@ const Auction = () => {
           {/* Search, Action Buttons */}
           <div className="reports-filters-wrapper">
             <div className={`auc-ws-badge ${wsConnected ? 'connected' : 'disconnected'}`}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: wsConnected ? '#10B981' : '#EF4444', display: 'inline-block' }} />
               <span>{wsConnected ? 'Live' : 'Offline'}</span>
             </div>
 
@@ -640,13 +641,17 @@ const Auction = () => {
             <div className="rn-list">
               {filteredGroups.map(g => {
                 const color = scOf(g.status);
-                const pct = Math.min(100, Math.round(((g.completedCycles || 0) / (g.duration || 20)) * 100));
-                const monthlyAmount = Math.round((g.groupAmount || 0) / (g.duration || 20));
+                const totalCycles = Number(g.duration) || 20;
+                const completed = Number(g.completedCycles) || 0;
+                const remainingCycles = Math.max(0, totalCycles - completed);
+                const pct = Math.min(100, Math.round((completed / totalCycles) * 100));
+                const poolValue = Number(g.groupAmount) || 0;
+                const monthlyAmount = g.monthlyAmount || (totalCycles > 0 ? Math.round(poolValue / totalCycles) : 0);
 
                 return (
                   <div
                     key={g.id}
-                    className={`gc-card ${selectedGroup?.id === g.id ? 'selected-card-glow' : ''}`}
+                    className={`gc-card mg-enhanced-card ${selectedGroup?.id === g.id ? 'selected-card-glow' : ''}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (activeTab === 'completed') {
@@ -659,30 +664,62 @@ const Auction = () => {
                   >
                     <div className="gc-header">
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <h3 className="gc-name">{g.name}</h3>
-                        <span className="gc-badge" style={{ background: color }}>
-                          <StatusIcon status={g.status} />
-                          {g.status.toUpperCase()}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <h3 className="gc-name" style={{ margin: 0 }}>{g.name}</h3>
+                          {g.groupCode && (
+                            <span className="mg-code-chip">{g.groupCode}</span>
+                          )}
+                        </div>
+                        <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span className="gc-badge" style={{ background: color }}>
+                            <StatusIcon status={g.status} size={10} />
+                            {g.status.toUpperCase()}
+                          </span>
+                        </div>
                       </div>
                       <button className="gc-arrow-btn" title="Configure Auction">
-                        <RiChevronRightLine size={20} color="#9CA3AF" />
+                        <RiChevronRightLine size={24} color="#9CA3AF" />
                       </button>
                     </div>
 
                     <div className="gc-content">
-                      <div className="gc-info-row">
-                        <div className="gc-info-item">
-                          <RiGroupLine size={16} color="#64748b" />
-                          <span className="gc-info-text">{g.totalMembers} Members</span>
+                      {/* Financial & Membership Stats Matrix */}
+                      <div className="mg-card-metrics-grid">
+                        <div className="mg-metric-item">
+                          <span className="mg-metric-lbl">
+                            <RiGroupLine size={13} color="#64748b" /> Total Members
+                          </span>
+                          <strong className="mg-metric-val">{g.totalMembers} Members</strong>
                         </div>
-                        <div className="gc-info-item" style={{ justifyContent: 'flex-end' }}>
-                          <RiMoneyDollarCircleLine size={16} color="#64748b" />
-                          <span className="gc-info-text">{formatCurrency(monthlyAmount)}/mo</span>
+
+                        <div className="mg-metric-item">
+                          <span className="mg-metric-lbl">
+                            <RiMoneyDollarCircleLine size={13} color="#64748b" /> Monthly Share
+                          </span>
+                          <strong className="mg-metric-val">{formatCurrency(monthlyAmount)}/mo</strong>
+                        </div>
+
+                        <div className="mg-metric-item">
+                          <span className="mg-metric-lbl">
+                            <RiMoneyDollarCircleLine size={13} color="#10b981" /> Pool Value
+                          </span>
+                          <strong className="mg-metric-val" style={{ color: '#0f172a' }}>{formatCurrency(poolValue)}</strong>
+                        </div>
+
+                        <div className="mg-metric-item">
+                          <span className="mg-metric-lbl">
+                            <RiTimeLine size={13} color="#64748b" /> Duration
+                          </span>
+                          <strong className="mg-metric-val">{totalCycles} Months</strong>
                         </div>
                       </div>
 
-                      <div className="gc-progress-wrap">
+                      {/* Progress bar */}
+                      <div className="gc-progress-wrap" style={{ marginTop: 14, marginBottom: 14 }}>
+                        <div className="gc-progress-hd">
+                          <span className="gc-progress-txt">{completed}/{totalCycles} Cycles ({remainingCycles} left)</span>
+                          <span className="gc-progress-pct" style={{ color }}>{pct}%</span>
+                        </div>
                         <div className="gc-bar">
                           <div
                             className="gc-bar-fill"
@@ -691,9 +728,15 @@ const Auction = () => {
                         </div>
                       </div>
 
-                      <div className="gc-footer">
-                        <span className="gc-date">Start: {formatDate(g.startDate)}</span>
-                        <span className="gc-date" style={{ textAlign: 'right' }}>End: {formatDate(g.endDate)}</span>
+                      {/* Dates Footer */}
+                      <div className="gc-footer" style={{ paddingTop: 12 }}>
+                        <span className="gc-date" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <RiTimeLine size={13} color="#64748b" />
+                          Start: {formatDate(g.startDate)}
+                        </span>
+                        <span className="gc-date" style={{ textAlign: 'right', display: 'inline-flex', alignItems: 'center', gap: 5, justifyContent: 'flex-end' }}>
+                          End: {formatDate(g.endDate)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -801,34 +844,34 @@ const Auction = () => {
 
             {/* Auction Type Selection */}
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1B3322', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Auction Type
               </label>
-              <div style={{ display: 'flex', gap: 10, background: '#f1f5f9', padding: 4, borderRadius: 8 }}>
+              <div style={{ display: 'flex', gap: 10, background: '#E8ECE8', padding: 4, borderRadius: 8 }}>
                 <button
                   type="button"
                   style={{
-                    flex: 1, padding: '8px 12px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    flex: 1, padding: '10px 14px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13.5, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     backgroundColor: auctionType === 'betting' ? '#ffffff' : 'transparent',
-                    color: auctionType === 'betting' ? '#2563eb' : '#475569',
-                    boxShadow: auctionType === 'betting' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                    color: auctionType === 'betting' ? '#1B3322' : '#4A564C',
+                    boxShadow: auctionType === 'betting' ? '0 1px 4px rgba(27, 51, 34, 0.1)' : 'none',
                   }}
                   onClick={() => setAuctionType('betting')}
                 >
-                  <RiGavelLine size={14} />
+                  <RiGavelLine size={15} />
                   Betting Auction
                 </button>
                 <button
                   type="button"
                   style={{
-                    flex: 1, padding: '8px 12px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    flex: 1, padding: '10px 14px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13.5, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     backgroundColor: auctionType === 'random' ? '#ffffff' : 'transparent',
-                    color: auctionType === 'random' ? '#2563eb' : '#475569',
-                    boxShadow: auctionType === 'random' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                    color: auctionType === 'random' ? '#1B3322' : '#4A564C',
+                    boxShadow: auctionType === 'random' ? '0 1px 4px rgba(27, 51, 34, 0.1)' : 'none',
                   }}
                   onClick={() => setAuctionType('random')}
                 >
-                  <RiDiceLine size={14} />
+                  <RiDiceLine size={15} />
                   Random Draw
                 </button>
               </div>
