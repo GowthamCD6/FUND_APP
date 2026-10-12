@@ -62,9 +62,10 @@
 }
 
 .sidebar-brand-logo-img {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .sidebar-brand-text {
@@ -74,7 +75,7 @@
 }
 
 .sidebar-brand-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
   color: #0B140E;
   letter-spacing: -0.01em;
@@ -83,7 +84,7 @@
 }
 
 .sidebar-brand-subtitle {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   color: #A3704C;
   letter-spacing: 0.04em;
@@ -189,23 +190,23 @@
 }
 
 .sidebar-group-title {
-  font-size: 10px;
-  font-weight: 700;
-  color: #94a3b8;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748B;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 4px 10px 6px 10px;
+  padding: 6px 12px 6px 12px;
 }
 
 .sidebar-nav-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  border-radius: 8px;
-  color: #475569;
-  font-size: 13.5px;
-  font-weight: 500;
+  padding: 9px 12px;
+  border-radius: 9px;
+  color: #334155;
+  font-size: 14.5px;
+  font-weight: 600;
   text-decoration: none;
   margin-bottom: 3px;
   transition: all 0.15s ease;
@@ -215,6 +216,7 @@
 .sidebar-nav-item:hover {
   background: #EBF3ED;
   color: #1B3322;
+  font-weight: 700;
 }
 
 .sidebar-nav-item-active {
