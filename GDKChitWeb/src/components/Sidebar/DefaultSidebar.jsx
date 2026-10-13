@@ -383,14 +383,14 @@ const DefaultSidebar = () => {
       {/* BRAND HEADER */}
       <div className="sidebar-brand-header">
         <NavLink to={isAdmin ? "/admin/dashboard" : "/user/home"} className="sidebar-brand-main">
-          <img src={logoImg} alt="GDK Chit Fund" className="sidebar-brand-logo-img" />
+          <div className="sidebar-brand-logo-wrap">
+            <img src={logoImg} alt="GDK Chit Fund" className="sidebar-brand-logo-img" />
+          </div>
           <div className="sidebar-brand-text">
             <span className="sidebar-brand-title">GDK CHIT FUNDS</span>
-            {!isAdmin && (
-              <span className="sidebar-brand-subtitle">
-                {t("MEMBER PORTAL")}
-              </span>
-            )}
+            <span className="sidebar-brand-subtitle">
+              {isAdmin ? "EXECUTIVE SUITE" : t("MEMBER PORTAL")}
+            </span>
           </div>
         </NavLink>
       </div>
