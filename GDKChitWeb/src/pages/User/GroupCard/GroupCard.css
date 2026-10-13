@@ -35,28 +35,147 @@
   margin: 0;
 }
 
-/* Group Selector Control */
-.gc-select-group-wrap {
+/* ── Cards First Selector Section ── */
+.gc-cards-selector-section {
   display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.gc-cards-selector-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gc-cards-selector-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0B140E;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gc-cards-selector-sub {
+  font-size: 13px;
+  color: #6B7A6E;
+  font-weight: 500;
+}
+
+.gc-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.gc-group-card {
+  background: #ffffff;
+  border: 1.5px solid #DCE3DC;
+  border-radius: 14px;
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(27, 51, 34, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gc-group-card:hover {
+  border-color: #2E7D32;
+  box-shadow: 0 6px 16px rgba(27, 51, 34, 0.08);
+  transform: translateY(-2px);
+}
+
+.gc-group-card.active {
+  border-color: #2E7D32;
+  background: #FAFCFA;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.18), 0 6px 16px rgba(27, 51, 34, 0.08);
+}
+
+.gc-card-top-row {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 10px;
 }
 
-.gc-select-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted);
+.gc-card-group-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0B140E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.gc-select-input {
-  padding: 8px 14px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 14px;
+.gc-card-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 8px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gc-card-badge.paid {
+  background: #EBF3ED;
+  color: #1B3322;
+  border: 1px solid #C8DEC9;
+}
+
+.gc-card-badge.pending {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+.gc-card-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+}
+
+.gc-card-id {
+  color: #6B7A6E;
   font-weight: 600;
-  outline: none;
+}
+
+.gc-card-value {
+  color: #1B3322;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.gc-card-progress-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.gc-card-progress-bar {
+  height: 6px;
+  background: #E8ECE8;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.gc-card-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1B3322 0%, #2E7D32 100%);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.gc-card-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #6B7A6E;
+  font-weight: 600;
 }
 
 /* Passbook Summary Banner */

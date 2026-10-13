@@ -129,36 +129,62 @@ const GroupCard = () => {
             View transparent monthly ledger statements, installments paid, dividends, and auction outcomes.
           </p>
         </div>
-
-        {selectedGroup && userGroups.length > 1 && (
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>Select Group:</span>
-            <select
-              value={selectedGroup.id}
-              onChange={(e) => {
-                const found = userGroups.find(g => String(g.id) === String(e.target.value));
-                if (found) setSelectedGroup(found);
-              }}
-              style={{
-                padding: '8px 14px',
-                borderRadius: 'var(--radius)',
-                border: '1.5px solid var(--border)',
-                fontWeight: 600,
-                fontSize: 14,
-                color: 'var(--text)',
-                background: 'var(--surface)',
-                outline: 'none',
-              }}
-            >
-              {userGroups.map(g => (
-                <option key={g.id} value={g.id}>
-                  {g.groupName || g.group_name} ({g.groupCode || 'CHIT'})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
+
+      {/* Group Selector Cards Grid (Cards First) */}
+      {userGroups.length > 0 && (
+        <div className="gc-cards-selector-section">
+          <div className="gc-cards-selector-header">
+            <h3 className="gc-cards-selector-title">
+              <Layers size={18} color="#2E7D32" />
+              My Enrolled Chit Groups ({userGroups.length})
+            </h3>
+            <span className="gc-cards-selector-sub">Select any card below to view its monthly passbook statement & auction outcomes</span>
+          </div>
+
+          <div className="gc-groups-grid">
+            {userGroups.map((group) => {
+              const isSelected = selectedGroup && String(selectedGroup.id) === String(group.id);
+              const currMonth = Number(group.currentMonth) || 1;
+              const totMonths = Number(group.totalMonths) || 20;
+              const progressPercent = Math.min(100, Math.max(0, Math.round((currMonth / totMonths) * 100)));
+              const isPaid = ['completed', 'paid'].includes(String(group.paymentStatus).toLowerCase());
+
+              return (
+                <div
+                  key={group.id}
+                  className={`gc-group-card ${isSelected ? 'active' : ''}`}
+                  onClick={() => setSelectedGroup(group)}
+                >
+                  <div className="gc-card-top-row">
+                    <span className="gc-card-group-name" title={group.groupName || group.group_name}>
+                      {group.groupName || group.group_name}
+                    </span>
+                    <span className={`gc-card-badge ${isPaid ? 'paid' : 'pending'}`}>
+                      {isPaid ? 'PAID' : 'PENDING'}
+                    </span>
+                  </div>
+
+                  <div className="gc-card-meta-row">
+                    <span className="gc-card-id">ID: #{group.id} • {group.groupCode || 'CHIT'}</span>
+                    <span className="gc-card-value">{formatINR(group.investmentAmount || 100000)}</span>
+                  </div>
+
+                  <div className="gc-card-progress-block">
+                    <div className="gc-card-progress-bar">
+                      <div className="gc-card-progress-fill" style={{ width: `${progressPercent}%` }} />
+                    </div>
+                    <div className="gc-card-progress-labels">
+                      <span>Cycle {currMonth}/{totMonths}</span>
+                      <span>{progressPercent}% Complete</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {userGroups.length === 0 ? (
         <div className="gc-empty">
@@ -175,10 +201,11 @@ const GroupCard = () => {
               gap: 8,
               padding: '11px 20px',
               borderRadius: 'var(--radius)',
-              background: 'var(--primary)',
+              background: '#2E7D32',
               color: '#fff',
               fontWeight: 600,
               fontSize: 14,
+              textDecoration: 'none'
             }}
           >
             Join a Group
@@ -190,27 +217,26 @@ const GroupCard = () => {
           <div className="gc-passbook-hero">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <span style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>
+                <span style={{ fontSize: 11.5, textTransform: 'uppercase', letterSpacing: 1, color: '#2E7D32', fontWeight: 700 }}>
                   Official Chit Passbook
                 </span>
-                <h2 style={{ fontSize: 28, fontWeight: 800, margin: '4px 0 6px', color: '#fff' }}>
+                <h2 style={{ fontSize: 24, fontWeight: 800, margin: '4px 0 6px', color: '#0B140E' }}>
                   {selectedGroup.groupName || selectedGroup.group_name}
                 </h2>
-                <p style={{ margin: 0, fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>
-                  Periyanayagi Amman Chit Fund • Registered Passbook #{selectedGroup.id}
+                <p style={{ margin: 0, fontSize: 13.5, color: '#6B7A6E' }}>
+                  Periyanayagi Amman Chit Fund • Passbook Ledger #{selectedGroup.id}
                 </p>
               </div>
 
               <span
                 style={{
-                  padding: '6px 14px',
+                  padding: '5px 12px',
                   borderRadius: 20,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 700,
-                  background: 'rgba(255,255,255,0.2)',
-                  color: '#fff',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255,255,255,0.3)',
+                  background: '#EBF3ED',
+                  color: '#1B3322',
+                  border: '1px solid #C8DEC9',
                 }}
               >
                 {selectedGroup.paymentStatus || 'ACTIVE'}
@@ -226,7 +252,7 @@ const GroupCard = () => {
               </div>
               <div className="gc-hero-kpi-item">
                 <span className="gc-hero-kpi-label">Total Paid</span>
-                <span className="gc-hero-kpi-val" style={{ color: '#86efac' }}>
+                <span className="gc-hero-kpi-val" style={{ color: '#2E7D32' }}>
                   {formatINR(selectedGroup.totalPaid || selectedGroup.groupCollectedAmount || 0)}
                 </span>
               </div>

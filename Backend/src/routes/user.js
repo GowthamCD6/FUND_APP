@@ -7,6 +7,7 @@ const locationController = require('../controllers/user/locationController');
 const { authenticateToken } = require('../middleware/auth');
 
 const groupManagement = require('../controllers/admin/groupManagement');
+const manageGroupController = require('../controllers/admin/manageGroupController');
 
 const preferencesController = require('../controllers/user/preferencesController');
 const ratingsController = require('../controllers/user/ratingsController');
