@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import { formatCurrency, formatDate } from '../../../utils/formatters.js';
 import {
@@ -70,48 +71,79 @@ const GroupCardSkeleton = () => (
 );
 
 /* ════════════════════════════════════════════════════════════════
-   GROUP CARD  (mirrors RN GroupCard.jsx)
+   GROUP CARD  (mirrors ManageGroups card style & layout)
 ════════════════════════════════════════════════════════════════ */
 const GroupCard = ({ group, onViewMembers }) => {
   const status = String(group.status || 'active').toLowerCase();
   const color = scOf(status);
-  const pct = Math.min(100, Math.round(
-    ((group.completedCycles || 0) / (group.duration || 20)) * 100
-  ));
+  const totalCycles = Number(group.duration) || 20;
+  const completed = Number(group.completedCycles) || 0;
+  const remainingCycles = Math.max(0, totalCycles - completed);
+  const pct = Math.min(100, Math.round((completed / totalCycles) * 100));
+  const poolValue = Number(group.groupAmount) || 0;
+  const monthlyAmount = group.monthlyAmount || (totalCycles > 0 ? Math.round(poolValue / totalCycles) : 0);
 
   return (
-    <div className="gc-card">
+    <div className="gc-card mg-enhanced-card" onClick={() => onViewMembers(group)}>
       {/* Header */}
       <div className="gc-header">
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 className="gc-name">{group.name}</h3>
-          <span className="gc-badge" style={{ background: color }}>
-            <StatusIcon status={status} size={10} />
-            {status.toUpperCase()}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3 className="gc-name" style={{ margin: 0 }}>{group.name}</h3>
+          </div>
+          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className="gc-badge" style={{ background: color }}>
+              <StatusIcon status={group.status} size={10} />
+              {String(group.status || 'Active').toUpperCase()}
+            </span>
+          </div>
         </div>
-        <button className="gc-arrow-btn" onClick={() => onViewMembers(group)} title="View Members">
+        <button 
+          className="gc-arrow-btn" 
+          onClick={(e) => { e.stopPropagation(); onViewMembers(group); }} 
+          title="View Collections & Members"
+        >
           <RiArrowRightSLine size={24} color="#9CA3AF" />
         </button>
       </div>
 
-      {/* Info row: members + monthly amount */}
+      {/* Content */}
       <div className="gc-content">
-        <div className="gc-info-row">
-          <div className="gc-info-item">
-            <RiGroupLine size={16} color="#6B7280" />
-            <span className="gc-info-text">{group.totalMembers} Members</span>
+        {/* Financial & Membership Stats Matrix */}
+        <div className="mg-card-metrics-grid">
+          <div className="mg-metric-item">
+            <span className="mg-metric-lbl">
+              <RiGroupLine size={13} color="#64748b" /> Total Members
+            </span>
+            <strong className="mg-metric-val">{group.totalMembers} Members</strong>
           </div>
-          <div className="gc-info-item">
-            <RiMoneyDollarCircleLine size={16} color="#6B7280" />
-            <span className="gc-info-text">{formatCurrency(group.groupAmount)}/month</span>
+
+          <div className="mg-metric-item">
+            <span className="mg-metric-lbl">
+              <RiMoneyDollarCircleLine size={13} color="#64748b" /> Monthly Share
+            </span>
+            <strong className="mg-metric-val">{formatCurrency(monthlyAmount)}/mo</strong>
+          </div>
+
+          <div className="mg-metric-item">
+            <span className="mg-metric-lbl">
+              <RiMoneyDollarCircleLine size={13} color="#10b981" /> Pool Value
+            </span>
+            <strong className="mg-metric-val" style={{ color: '#0f172a' }}>{formatCurrency(poolValue)}</strong>
+          </div>
+
+          <div className="mg-metric-item">
+            <span className="mg-metric-lbl">
+              <RiTimeLine size={13} color="#64748b" /> Duration
+            </span>
+            <strong className="mg-metric-val">{totalCycles} Months</strong>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="gc-progress-wrap">
+        <div className="gc-progress-wrap" style={{ marginTop: 14, marginBottom: 14 }}>
           <div className="gc-progress-hd">
-            <span className="gc-progress-txt">{group.completedCycles || 0}/{group.duration || 20} Cycles</span>
+            <span className="gc-progress-txt">{completed}/{totalCycles} Cycles ({remainingCycles} left)</span>
             <span className="gc-progress-pct" style={{ color }}>{pct}%</span>
           </div>
           <div className="gc-bar">
@@ -120,13 +152,16 @@ const GroupCard = ({ group, onViewMembers }) => {
         </div>
 
         {/* Footer */}
-        <div className="gc-footer">
-          <span className="gc-date">
+        <div className="gc-footer" style={{ paddingTop: 12 }}>
+          <span className="gc-date" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <RiCalendarLine size={13} color="#64748b" />
             {status === 'completed'
-              ? `Completed: ${formatDate(group.completedDate)}`
+              ? `Completed: ${formatDate(group.completedDate || group.endDate)}`
               : `Start: ${formatDate(group.startDate)}`}
           </span>
-          <span className="gc-collected">{formatCurrency(group.collectedAmount || 0)} collected</span>
+          <span className="gc-collected">
+            {formatCurrency(group.collectedAmount || 0)} collected
+          </span>
         </div>
       </div>
     </div>
@@ -137,6 +172,7 @@ const GroupCard = ({ group, onViewMembers }) => {
    MAIN REPORTS PAGE
 ════════════════════════════════════════════════════════════════ */
 const Reports = () => {
+  const location = useLocation();
   const [groups, setGroups] = useState([]);
   const [apiStatus, setApiStatus] = useState('loading');
   const [activeTab, setActiveTab] = useState('active');
@@ -148,21 +184,31 @@ const Reports = () => {
   const loadGroups = useCallback(async () => {
     try {
       setApiStatus('loading');
-      const res = await makeRequest('/admin/groups/getGroups');
-      const data = await safeJson(res);
+      // Fetch comprehensive reporting group stats with real-time collected amounts
+      let res = await makeRequest('/admin/reports/groups');
+      let data = await safeJson(res);
+      
+      if (!res.ok || !data?.success) {
+        // Fallback to groups API if needed
+        res = await makeRequest('/admin/groups/getGroups');
+        data = await safeJson(res);
+      }
+      
       if (!res.ok || !data?.success) throw new Error();
       const mapped = (data.data || []).map(g => ({
         id: g.id,
         name: g.name || g.group_name || 'Untitled',
+        groupCode: g.groupCode || g.group_code || '',
         status: String(g.status || 'Not Started').toLowerCase(),
         totalMembers: g.totalMembers || g.total_members || 0,
         completedCycles: g.completedCycles || 0,
-        duration: g.duration || 20,
+        duration: g.duration || g.totalCycles || 20,
         groupAmount: g.groupAmount || g.group_amount || 0,
+        monthlyAmount: g.monthlyAmount || 0,
         startDate: g.startDate || g.start_date,
         endDate: g.endDate || g.end_date,
         completedDate: g.completedDate,
-        collectedAmount: g.collectedAmount || 0,
+        collectedAmount: Number(g.collectedAmount || g.collected_amount || 0),
       }));
       setGroups(mapped);
       setApiStatus('ready');
@@ -176,15 +222,22 @@ const Reports = () => {
 
   const openGroupMembers = useCallback(async (group) => {
     setSelectedGroup(group);
-    setGroupMembers([]);
-    setMembersLoading(true);
-    try {
-      const res = await makeRequest(`/admin/groups/getMembers?groupId=${group.id}`);
-      const data = await safeJson(res);
-      if (res.ok && data?.success) setGroupMembers(data.members || data.data || []);
-    } catch { }
-    finally { setMembersLoading(false); }
   }, []);
+
+  // Auto-open group if redirected with groupId or groupName in location state
+  useEffect(() => {
+    if (location.state?.groupId && groups.length > 0) {
+      const target = groups.find(g => String(g.id) === String(location.state.groupId) || (g.name && g.name.toLowerCase() === String(location.state.groupName || '').toLowerCase()));
+      if (target) {
+        openGroupMembers(target);
+      }
+    } else if (location.state?.groupName && groups.length > 0) {
+      const target = groups.find(g => g.name && g.name.toLowerCase() === String(location.state.groupName).toLowerCase());
+      if (target) {
+        openGroupMembers(target);
+      }
+    }
+  }, [location.state, groups, openGroupMembers]);
 
   const counts = useMemo(() => ({
     all: groups.length,
@@ -223,9 +276,8 @@ const Reports = () => {
       {selectedGroup ? (
         <MemberDetailsPanel
           group={selectedGroup}
-          apiMembers={groupMembers}
-          loading={membersLoading}
-          onClose={() => { setSelectedGroup(null); setGroupMembers([]); }}
+          onClose={() => { setSelectedGroup(null); }}
+          onRefreshParent={loadGroups}
         />
       ) : (
         <>

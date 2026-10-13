@@ -493,8 +493,8 @@ const ManageUsers = () => {
                             {getRealGroupCount(user)} {getRealGroupCount(user) === 1 ? 'Group' : 'Groups'}
                           </span>
                         </td>
-                        <td className="mu-action-btn-cell">
-                          <button className="mu-action-btn" title="View Profile">
+                        <td style={{ textAlign: 'center', width: '56px' }}>
+                          <button className="mu-action-btn" title="View Profile" type="button">
                             <RiArrowRightSLine size={16} />
                           </button>
                         </td>
@@ -826,10 +826,10 @@ const ManageUsers = () => {
                           className="mu-groups-nav-link"
                           onClick={() => {
                             closePanel();
-                            navigate('/admin/manage-groups');
+                            navigate('/admin/reports');
                           }}
                         >
-                          Manage Groups <RiExternalLinkLine size={12} />
+                          Reports & Collections <RiExternalLinkLine size={12} />
                         </button>
                       )}
                     </div>
@@ -843,34 +843,78 @@ const ManageUsers = () => {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {userGroups.length > 0 ? (
                           userGroups.map((g, idx) => (
-                            <div key={g.id || idx} className="mu-group-card">
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <div>
-                                  <h5 style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                                    {g.name || g.group_name || 'Chit Plan'}
-                                  </h5>
-                                  <p className="mu-group-meta">
+                            <div 
+                              key={g.id || idx} 
+                              className="mu-group-card clickable"
+                              onClick={() => {
+                                closePanel();
+                                navigate('/admin/reports', { state: { groupId: g.id, groupName: g.name || g.group_name } });
+                              }}
+                              title="Go to group reports & collections"
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                    <h5 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                                      {g.name || g.group_name || 'Chit Plan'}
+                                    </h5>
+                                    <span 
+                                      className={`mu-group-status ${String(g.status || '').toLowerCase().includes('comp') ? 'mu-status-pending' : 'mu-status-active'}`}
+                                    >
+                                      {String(g.status || 'Active').toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <p className="mu-group-meta" style={{ margin: 0 }}>
                                     ₹{Number(g.groupAmount || g.group_amount || 0).toLocaleString()} • {g.duration || g.totalMembers || 20} months
                                   </p>
                                 </div>
-                                <span 
-                                  className={`mu-group-status ${String(g.status || '').toLowerCase().includes('comp') ? 'mu-status-pending' : 'mu-status-active'}`}
+                                <button
+                                  className="mu-group-arrow-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    closePanel();
+                                    navigate('/admin/reports', { state: { groupId: g.id, groupName: g.name || g.group_name } });
+                                  }}
+                                  title="Go to group reports & collections"
                                 >
-                                  {String(g.status || 'Active').toUpperCase()}
-                                </span>
+                                  <RiArrowRightSLine size={16} />
+                                </button>
                               </div>
                             </div>
                           ))
                         ) : (
                           getUserGroupsList(selectedUser.contributedGroups).map((gName, idx) => (
-                            <div key={idx} className="mu-group-card">
+                            <div 
+                              key={idx} 
+                              className="mu-group-card clickable"
+                              onClick={() => {
+                                closePanel();
+                                navigate('/admin/reports', { state: { groupName: gName } });
+                              }}
+                              title="Go to group reports & collections"
+                            >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h5 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                                  {gName}
-                                </h5>
-                                <span className="mu-group-status mu-status-active">
-                                  ACTIVE
-                                </span>
+                                <div style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <h5 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                                      {gName}
+                                    </h5>
+                                    <span className="mu-group-status mu-status-active">
+                                      ACTIVE
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  className="mu-group-arrow-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    closePanel();
+                                    navigate('/admin/reports', { state: { groupName: gName } });
+                                  }}
+                                  title="Go to group reports & collections"
+                                >
+                                  <RiArrowRightSLine size={16} />
+                                </button>
                               </div>
                             </div>
                           ))

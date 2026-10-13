@@ -288,11 +288,12 @@
   border-radius: 6px;
   width: 32px;
   height: 32px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--muted);
   transition: all 0.2s ease;
+  margin: 0 auto;
 }
 
 .mu-table tr:hover .mu-action-btn {
@@ -442,28 +443,54 @@
   position: relative;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 16px;
+  padding: 14px 16px;
   background: var(--surface);
   transition: all 0.2s ease;
 }
 
+.mu-group-card.clickable {
+  cursor: pointer;
+}
+
 .mu-group-card:hover {
-  border-color: var(--subtle);
+  border-color: var(--primary);
   background: var(--bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .mu-group-status {
-  position: absolute;
-  top: 16px;
-  right: 16px;
+  display: inline-block;
   padding: 2px 8px;
   border-radius: 100px;
   font-size: 10px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .mu-status-active { background: var(--success-bg); color: var(--success); }
 .mu-status-pending { background: var(--warning-bg); color: var(--warning); }
+
+.mu-group-arrow-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.mu-group-card:hover .mu-group-arrow-btn {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  transform: translateX(2px);
+}
 
 /* Detail row */
 .rn-detail-row {

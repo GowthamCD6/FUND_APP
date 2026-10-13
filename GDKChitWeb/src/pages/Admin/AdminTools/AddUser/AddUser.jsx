@@ -217,7 +217,7 @@ const AddUser = () => {
           <div 
             className="au-preview-avatar" 
             style={{ 
-              background: formData.name ? '#2563EB' : 'transparent',
+              background: formData.name ? 'var(--primary)' : 'transparent',
               overflow: formData.name ? 'hidden' : 'visible',
               width: formData.name ? 64 : 164,
               height: formData.name ? 64 : 164

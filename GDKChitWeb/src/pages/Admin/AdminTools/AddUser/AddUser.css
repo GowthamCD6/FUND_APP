@@ -10,11 +10,11 @@
 
 .au-main {
   flex: 1;
-  background: #ffffff;
+  background: var(--surface, #ffffff);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(27, 51, 34, 0.05);
   padding: 24px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #DCE3DC);
 }
 
 .au-sidebar {
@@ -32,7 +32,7 @@
   gap: 8px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--primary, #1B3322);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin: 0 0 16px 0;
@@ -42,7 +42,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--border);
+  background: var(--border, #DCE3DC);
   margin-left: 8px;
 }
 
@@ -71,22 +71,23 @@
 .au-label {
   font-size: 13px;
   font-weight: 600;
-  color: #4B5563;
+  color: var(--text, #333D35);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .au-label-req {
-  color: #EF4444;
+  color: var(--danger, #D32F2F);
 }
 
 .au-input {
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--border, #DCE3DC);
   border-radius: 6px;
   padding: 10px 12px;
   font-size: 14px;
-  color: #111827;
+  color: var(--text-heading, #0B140E);
+  background: var(--surface, #ffffff);
   font-family: inherit;
   transition: all 0.2s;
   width: 100%;
@@ -94,29 +95,29 @@
 
 .au-input:focus {
   outline: none;
-  border-color: #2563EB;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--primary, #1B3322);
+  box-shadow: 0 0 0 3px rgba(27, 51, 34, 0.1);
 }
 
 .au-input.error {
-  border-color: #EF4444;
-  color: #EF4444;
-  background: #FEF2F2;
+  border-color: var(--danger, #D32F2F);
+  color: var(--danger, #D32F2F);
+  background: var(--danger-bg, #FFEBEE);
 }
 
 .au-input.error:focus {
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
 }
 
 .au-input-help {
   font-size: 11px;
-  color: #6B7280;
+  color: var(--muted, #6B7A6E);
   margin: 0;
 }
 
 .au-error-text {
   font-size: 11px;
-  color: #EF4444;
+  color: var(--danger, #D32F2F);
   margin: 0;
   display: flex;
   align-items: center;
@@ -133,40 +134,42 @@
 }
 
 .au-role-card {
-  border: 2px solid #E5E7EB;
+  border: 2px solid var(--border, #E5E7EB);
   border-radius: 8px;
   padding: 16px;
   cursor: pointer;
   transition: all 0.2s;
-  background: #fff;
+  background: var(--surface, #ffffff);
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
 
 .au-role-card:hover {
-  border-color: #BFDBFE;
+  border-color: var(--primary-border, #C8DEC9);
 }
 
 .au-role-card.active {
-  border-color: #2563EB;
-  background: #F8FAFC;
+  border-color: var(--primary, #1B3322);
+  background: var(--primary-light, #EBF3ED);
 }
 
 .au-role-icon {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #EFF6FF;
-  color: #2563EB;
+  background: var(--surface2, #E8ECE8);
+  color: var(--primary, #1B3322);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: all 0.2s;
 }
 
 .au-role-card.active .au-role-icon {
-  background: #DBEAFE;
+  background: var(--primary, #1B3322);
+  color: #ffffff;
 }
 
 .au-role-info {
@@ -176,7 +179,7 @@
 .au-role-name {
   font-size: 14px;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-heading, #0B140E);
   margin: 0 0 4px 0;
   display: flex;
   justify-content: space-between;
@@ -185,7 +188,7 @@
 
 .au-role-desc {
   font-size: 11px;
-  color: #6B7280;
+  color: var(--muted, #6B7A6E);
   margin: 0;
   line-height: 1.4;
 }
@@ -194,7 +197,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 2px solid #E5E7EB;
+  border: 2px solid var(--border, #DCE3DC);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -202,8 +205,8 @@
 }
 
 .au-role-card.active .au-role-radio {
-  border-color: #2563EB;
-  background: #2563EB;
+  border-color: var(--primary, #1B3322);
+  background: var(--primary, #1B3322);
 }
 
 .au-role-card.active .au-role-radio::after {
@@ -214,12 +217,12 @@
 }
 
 .au-role-banner {
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
+  background: var(--primary-light, #EBF3ED);
+  border: 1px solid var(--primary-border, #C8DEC9);
   border-radius: 8px;
   padding: 12px 16px;
   font-size: 12px;
-  color: #1E40AF;
+  color: var(--primary, #1B3322);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -233,7 +236,7 @@
 
 .au-progress-bar {
   height: 4px;
-  background: #E5E7EB;
+  background: var(--surface2, #E8ECE8);
   border-radius: 2px;
   margin-bottom: 8px;
   overflow: hidden;
@@ -241,7 +244,7 @@
 
 .au-progress-fill {
   height: 100%;
-  background: #2563EB;
+  background: var(--accent-cta, #2E7D32);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -251,11 +254,11 @@
   justify-content: space-between;
   font-size: 11px;
   font-weight: 600;
-  color: #6B7280;
+  color: var(--muted, #6B7A6E);
 }
 
 .au-progress-pct {
-  color: #2563EB;
+  color: var(--accent-cta, #2E7D32);
 }
 
 /* BUTTONS */
@@ -266,13 +269,13 @@
 }
 
 .au-btn-primary {
-  background: #2563EB;
-  color: white;
+  background: var(--accent-cta, #2E7D32);
+  color: #ffffff;
   border: none;
   border-radius: 6px;
   padding: 14px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -283,7 +286,7 @@
 }
 
 .au-btn-primary:hover:not(:disabled) {
-  background: #1D4ED8;
+  background: var(--primary, #1B3322);
 }
 
 .au-btn-primary:disabled {
@@ -292,9 +295,9 @@
 }
 
 .au-btn-cancel {
-  background: white;
-  color: #111827;
-  border: 1px solid #D1D5DB;
+  background: var(--surface, #ffffff);
+  color: var(--text, #333D35);
+  border: 1px solid var(--border, #DCE3DC);
   border-radius: 6px;
   padding: 14px;
   font-size: 14px;
@@ -309,22 +312,22 @@
 }
 
 .au-btn-cancel:hover {
-  background: #F3F4F6;
+  background: var(--surface2, #E8ECE8);
 }
 
 /* SIDEBAR CARDS */
 .au-side-card {
-  background: #ffffff;
+  background: var(--surface, #ffffff);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(27, 51, 34, 0.05);
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #DCE3DC);
 }
 
 .au-side-title {
   font-size: 11px;
   font-weight: 700;
-  color: #6B7280;
+  color: var(--muted, #6B7A6E);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin: 0 0 16px 0;
@@ -334,7 +337,7 @@
 .au-preview-avatar {
   width: 64px;
   height: 64px;
-  background: #2563EB;
+  background: var(--primary, #1B3322);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -348,15 +351,15 @@
 .au-preview-name {
   text-align: center;
   font-size: 15px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 700;
+  color: var(--text-heading, #0B140E);
   margin: 0 0 4px 0;
 }
 
 .au-preview-nick {
   text-align: center;
   font-size: 12px;
-  color: #6B7280;
+  color: var(--muted, #6B7A6E);
   margin: 0 0 12px 0;
 }
 
@@ -365,8 +368,8 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  color: #2563EB;
-  background: #EFF6FF;
+  color: var(--primary, #1B3322);
+  background: var(--primary-light, #EBF3ED);
   padding: 4px 12px;
   border-radius: 100px;
   font-size: 11px;
@@ -390,18 +393,18 @@
 .au-preview-info-icon {
   width: 24px;
   height: 24px;
-  background: #F3F4F6;
+  background: var(--surface2, #E8ECE8);
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6B7280;
+  color: var(--muted, #6B7A6E);
   flex-shrink: 0;
 }
 
 .au-preview-info-text {
   font-size: 12px;
-  color: #4B5563;
+  color: var(--muted, #6B7A6E);
   margin: 0;
   flex: 1;
   font-style: italic;
@@ -409,7 +412,7 @@
 
 .au-preview-info-text.filled {
   font-style: normal;
-  color: #111827;
+  color: var(--text-heading, #0B140E);
   font-weight: 500;
 }
 
@@ -428,7 +431,7 @@
   top: 12px;
   bottom: 12px;
   width: 2px;
-  background: #E5E7EB;
+  background: var(--border, #E5E7EB);
   z-index: 0;
 }
 
@@ -444,8 +447,8 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #F3F4F6;
-  color: #6B7280;
+  background: var(--surface2, #E8ECE8);
+  color: var(--muted, #6B7A6E);
   font-size: 11px;
   font-weight: 700;
   display: flex;
@@ -454,18 +457,18 @@
 }
 
 .au-step.active .au-step-num {
-  background: #2563EB;
+  background: var(--primary, #1B3322);
   color: white;
 }
 
 .au-step-text {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--muted, #6B7A6E);
   font-weight: 500;
 }
 
 .au-step.active .au-step-text {
-  color: #111827;
+  color: var(--text-heading, #0B140E);
   font-weight: 600;
 }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import { formatCurrency, formatDate } from '../../../utils/formatters.js';
 import {
@@ -42,6 +42,7 @@ const StatusIcon = ({ status, size = 11 }) => {
 
 const ManageGroups = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [groups, setGroups] = useState([]);
   const [status, setStatus] = useState('loading');
   const [activeTab, setActiveTab] = useState('all');
@@ -184,6 +185,21 @@ const ManageGroups = () => {
     setViewMode('details');
     setNotice(null);
   }, []);
+
+  // Auto-open group if passed from navigation state
+  useEffect(() => {
+    if (location.state?.groupId && groups.length > 0) {
+      const target = groups.find(g => String(g.id) === String(location.state.groupId) || (g.name && g.name.toLowerCase() === String(location.state.groupName || '').toLowerCase()));
+      if (target) {
+        openGroupDetails(target);
+      }
+    } else if (location.state?.groupName && groups.length > 0) {
+      const target = groups.find(g => g.name && g.name.toLowerCase() === String(location.state.groupName).toLowerCase());
+      if (target) {
+        openGroupDetails(target);
+      }
+    }
+  }, [location.state, groups, openGroupDetails]);
 
 
 

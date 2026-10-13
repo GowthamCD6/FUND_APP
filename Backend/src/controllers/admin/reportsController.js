@@ -65,6 +65,7 @@ exports.getReportGroups = async (req, res) => {
       SELECT
         g.id,
         g.group_name,
+        g.group_code,
         g.group_amount,
         g.total_members,
         g.current_members,
@@ -118,6 +119,7 @@ exports.getReportGroups = async (req, res) => {
         return {
           id: row.id,
           name: row.group_name,
+          groupCode: row.group_code || '',
           status: reportStatus,
           totalMembers,
           currentMembers: toSafeNumber(row.current_members, toSafeNumber(row.member_count, 0)),
@@ -131,8 +133,7 @@ exports.getReportGroups = async (req, res) => {
           nextDueDate: row.start_date ? buildDefaultDueDate(new Date().getFullYear(), new Date().getMonth()) : null,
           collectedAmount: toSafeNumber(row.collected_amount, 0),
         };
-      })
-      .filter((group) => group.status === 'active' || group.status === 'completed');
+      });
 
     return res.status(200).json({ success: true, data });
   } catch (error) {

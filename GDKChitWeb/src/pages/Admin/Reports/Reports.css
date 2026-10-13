@@ -127,6 +127,80 @@
   color: #065f46; 
 }
 
+/* ── Enhanced Cards as seen in Manage Groups ── */
+.mg-enhanced-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+.mg-enhanced-card:hover {
+  transform: translateY(-3px);
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+}
+
+.mg-enhanced-card .gc-header {
+  padding: 18px 20px 14px 20px;
+}
+
+.mg-enhanced-card .gc-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0B140E;
+  letter-spacing: -0.015em;
+}
+
+.mg-code-chip {
+  display: inline-block;
+  padding: 2px 7px;
+  background: #F7F1EB;
+  border: 1px solid #E8D5C4;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #A3704C;
+  letter-spacing: 0.02em;
+}
+
+.mg-card-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  background: #F8FAF8;
+  border: 1px solid #E2E8E2;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.mg-metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mg-metric-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B7A6E;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.mg-metric-val {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0B140E;
+}
+
 /* ── Member Details Panel ── */
 .rp-overlay { 
   position: fixed; 
@@ -250,12 +324,12 @@
 }
 .md-month-picker { 
   background: #ffffff; 
-  border: 1px solid #e2e8f0; 
-  border-radius: 8px; 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
-  margin: 0 24px; 
-  max-height: 250px; 
+  border: 1px solid #DCE3DC; 
+  border-radius: 10px; 
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); 
+  max-height: 260px; 
   overflow-y: auto; 
+  z-index: 100;
 }
 .md-month-item { 
   display: block; 
@@ -443,7 +517,9 @@
   box-shadow: 0 1px 3px rgba(27, 51, 34, 0.04);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
+  z-index: 20;
   margin: 0;
 }
 

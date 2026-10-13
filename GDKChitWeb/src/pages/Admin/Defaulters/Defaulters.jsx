@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
+import Lottie from 'lottie-react';
+import noFileAnimation from '../../../animation/no-file.json';
 import {
   AlertTriangle as RiAlertLine,
   Search as RiSearchLine,
@@ -12,6 +14,8 @@ import {
   X as RiCloseLine
 } from 'lucide-react';
 import './Defaulters.css';
+
+const LottieComponent = Lottie.default || Lottie;
 
 const formatCurrency = (amount) => {
   if (amount == null || isNaN(amount)) return 'nil';
@@ -181,20 +185,6 @@ const Defaulters = () => {
                 </button>
               )}
             </div>
-
-            {/* Refresh Button */}
-            <button
-              className="reports-refresh-btn"
-              onClick={fetchDefaulters}
-              disabled={loading}
-              title="Refresh"
-            >
-              <RiRefreshLine
-                size={16}
-                className={loading ? 'spin-anim' : ''}
-              />
-              <span>Refresh</span>
-            </button>
           </div>
         </div>
       </div>
@@ -203,19 +193,24 @@ const Defaulters = () => {
       {loading ? (
         <DefaultersSkeleton />
       ) : error ? (
-        <div className="rn-empty">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 360, textAlign: 'center', padding: '40px 20px' }}>
           <RiAlertLine size={48} color="var(--danger)" style={{ marginBottom: 14 }} />
-          <h3>Failed to Load</h3>
-          <p>{error}</p>
-          <button className="reports-refresh-btn" style={{ marginTop: 14, display: 'inline-flex', margin: '14px auto 0' }} onClick={fetchDefaulters}>
-            <RiRefreshLine size={15} /> Retry
-          </button>
+          <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: '#0B140E' }}>Failed to Load</h3>
+          <p style={{ margin: 0, fontSize: 13, color: '#6B7A6E' }}>{error}</p>
         </div>
       ) : filteredDefaulters.length === 0 ? (
-        <div className="rn-empty" style={{ minHeight: 'calc(100vh - 380px)' }}>
-          <RiCheckLine size={48} color="var(--success)" style={{ marginBottom: 12 }} />
-          <h3>All Caught Up!</h3>
-          <p>{searchQuery ? `No results match "${searchQuery}"` : 'There are no pending or overdue payments.'}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 380, textAlign: 'center', padding: '48px 20px' }}>
+          <LottieComponent
+            animationData={noFileAnimation}
+            loop={true}
+            style={{ width: 220, height: 220, marginBottom: 12 }}
+          />
+          <h3 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 800, color: '#0B140E' }}>
+            All Caught Up!
+          </h3>
+          <p style={{ margin: 0, fontSize: 13, color: '#6B7A6E', fontWeight: 500, maxWidth: 360 }}>
+            {searchQuery ? `No results match "${searchQuery}"` : 'There are no pending or overdue payments.'}
+          </p>
         </div>
       ) : (
         <div className="mu-table-container" style={{ marginTop: 20 }}>
