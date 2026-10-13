@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { makeRequest } from '../../../../api/apiClient.js';
+import { makeRequest, resolveMediaUrl } from '../../../../api/apiClient.js';
 import { useAuth } from '../../../../context/AuthContext.jsx';
 import {
   Search as RiSearchLine, RefreshCw as RiRefreshLine, Plus as RiAddLine,
@@ -139,11 +139,20 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
               onClick={() => handleChatPress(chat)}
             >
               <div className="chat-avatar">
-                {chat.avatar && chat.avatar.startsWith('http') ? (
-                  <img src={chat.avatar} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                ) : (
-                  chat.isGroup ? <RiGroupLine size={22} /> : <RiUserLine size={22} />
-                )}
+                {chat.avatar && typeof chat.avatar === 'string' && (chat.avatar.startsWith('http') || chat.avatar.startsWith('/uploads') || chat.avatar.includes('/uploads/')) ? (
+                  <img 
+                    src={resolveMediaUrl(chat.avatar)} 
+                    alt="avatar" 
+                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div style={{ display: chat.avatar && typeof chat.avatar === 'string' && (chat.avatar.startsWith('http') || chat.avatar.startsWith('/uploads') || chat.avatar.includes('/uploads/')) ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+                  {chat.isGroup ? <RiGroupLine size={22} /> : <RiUserLine size={22} />}
+                </div>
                 {!chat.isGroup && <div className="online-dot" />}
               </div>
               <div className="chat-item-info">

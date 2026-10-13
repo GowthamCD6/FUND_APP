@@ -925,15 +925,140 @@ input:focus + .set-slider { box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
 .web-lock-support span { color: #818cf8; font-weight: 600; }
 
 /* ════════════════════════════════════════════════
-   ADMIN QUICK SHORTCUTS & CORPORATE PANELS
+   EXECUTIVE ADMIN SETTINGS STYLES
    ════════════════════════════════════════════════ */
+
+/* ── 1. Profile Banner ── */
+.adm-profile-banner {
+  background: #ffffff;
+  border: 1px solid #DCE3DC;
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 22px;
+  box-shadow: 0 1px 3px rgba(27, 51, 34, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.adm-profile-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.adm-profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1B3322 0%, #2E7D32 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(27, 51, 34, 0.18);
+  flex-shrink: 0;
+}
+
+.adm-profile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.adm-profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.adm-profile-name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0B140E;
+  letter-spacing: -0.015em;
+}
+
+.adm-profile-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  background: #EBF3ED;
+  color: #1B3322;
+  padding: 3px 9px;
+  border-radius: 12px;
+  border: 1px solid #C8DEC9;
+  letter-spacing: 0.04em;
+}
+
+.adm-profile-sub {
+  margin: 0;
+  font-size: 13px;
+  color: #6B7A6E;
+  font-weight: 500;
+}
+
+.adm-profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.adm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #2E7D32;
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 6px rgba(46, 125, 50, 0.2);
+}
+
+.adm-btn-primary:hover {
+  background: #1B3322;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(27, 51, 34, 0.25);
+}
+
+.adm-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #ffffff;
+  color: #1B3322;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1.5px solid #DCE3DC;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.adm-btn-secondary:hover {
+  background: #F4F6F4;
+  border-color: #2E7D32;
+}
+
+/* ── 2. Shortcuts Section ── */
 .adm-shortcuts-section {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid #DCE3DC;
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin-bottom: 22px;
+  box-shadow: 0 1px 3px rgba(27, 51, 34, 0.04);
 }
 
 .adm-shortcuts-header {
@@ -943,30 +1068,26 @@ input:focus + .set-slider { box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
 .adm-shortcuts-title {
   margin: 0;
   font-size: 16px;
-  font-weight: 700;
-  color: #0f172a;
+  font-weight: 800;
+  color: #0B140E;
   display: flex;
   align-items: center;
   gap: 8px;
+  letter-spacing: -0.01em;
 }
 
 .adm-shortcuts-subtitle {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 12.5px;
+  color: #6B7A6E;
   display: block;
-  margin-top: 2px;
+  margin-top: 3px;
+  font-weight: 500;
 }
 
 .adm-shortcuts-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-@media (max-width: 992px) {
-  .adm-shortcuts-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
 }
 
 @media (max-width: 640px) {
@@ -980,31 +1101,31 @@ input:focus + .set-slider { box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 14px 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  padding: 16px 12px;
+  background: #ffffff;
+  border: 1px solid #DCE3DC;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
 }
 
 .adm-shortcut-card:hover {
-  background: #ffffff;
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+  background: #FAFCFA;
+  border-color: #2E7D32;
+  box-shadow: 0 6px 16px rgba(27, 51, 34, 0.08);
   transform: translateY(-2px);
 }
 
 .adm-shortcut-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 8px;
-  transition: transform 0.15s ease;
+  margin-bottom: 9px;
+  transition: transform 0.2s ease;
 }
 
 .adm-shortcut-card:hover .adm-shortcut-icon {
@@ -1012,23 +1133,24 @@ input:focus + .set-slider { box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
 }
 
 .adm-shortcut-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0B140E;
   line-height: 1.3;
 }
 
 .adm-shortcut-sub {
-  font-size: 10px;
-  color: #94a3b8;
-  margin-top: 2px;
+  font-size: 11px;
+  color: #6B7A6E;
+  margin-top: 3px;
+  font-weight: 500;
 }
 
-/* Dual Column Layout */
+/* ── 3. Dual Column Section Box ── */
 .adm-sections-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 22px;
 }
 
 @media (max-width: 768px) {
@@ -1039,26 +1161,27 @@ input:focus + .set-slider { box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
 
 .adm-section-box {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid #DCE3DC;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 1px 3px rgba(27, 51, 34, 0.04);
 }
 
 .adm-section-title {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   font-size: 15px;
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: 800;
+  color: #0B140E;
   display: flex;
   align-items: center;
   gap: 8px;
+  letter-spacing: -0.01em;
 }
 
 .adm-menu-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .adm-menu-item {
@@ -1066,31 +1189,32 @@ input:focus + .set-slider { box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  background: #FAFCFA;
+  border: 1px solid #DCE3DC;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
   width: 100%;
   text-align: left;
 }
 
 .adm-menu-item:hover {
   background: #ffffff;
-  border-color: #cbd5e1;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  border-color: #2E7D32;
+  box-shadow: 0 4px 12px rgba(27, 51, 34, 0.06);
+  transform: translateY(-1px);
 }
 
 .adm-menu-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 13px;
 }
 
 .adm-menu-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1098,23 +1222,39 @@ input:focus + .set-slider { box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
 }
 
 .adm-menu-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0B140E;
 }
 
 .adm-menu-sub {
-  font-size: 11px;
-  color: #64748b;
-  margin-top: 1px;
+  font-size: 11.5px;
+  color: #6B7A6E;
+  margin-top: 2px;
+  font-weight: 500;
 }
 
 .adm-menu-badge {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 12px;
-  background: #e2e8f0;
-  color: #475569;
+  background: #EBF3ED;
+  color: #1B3322;
+  border: 1px solid #C8DEC9;
+}
+
+/* ── 4. Workbench Callout ── */
+.adm-workbench-callout {
+  background: linear-gradient(135deg, #EBF3ED 0%, #FFFFFF 100%);
+  border: 1px solid #C8DEC9;
+  border-radius: 16px;
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 3px rgba(27, 51, 34, 0.04);
 }
 

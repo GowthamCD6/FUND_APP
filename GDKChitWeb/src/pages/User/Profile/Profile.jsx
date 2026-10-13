@@ -50,6 +50,7 @@ import './Profile.css';
 const Profile = () => {
   const { user, logout } = useAuth();
   const { language, t } = useLanguage();
+  const currentLang = language;
   const location = useLocation();
 
   const [profileData, setProfileData] = useState(null);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Lottie from 'lottie-react';
-import { makeRequest } from '../../../api/apiClient.js';
+import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import joinAnimation from '../../../animation/join a group.json';
 import {
   KeyRound, Users, ShieldCheck, CheckCircle2, AlertCircle, ArrowRight,
@@ -29,12 +29,12 @@ const JoinGroup = () => {
       setLoadingAvailable(true);
       try {
         const res = await makeRequest('/user/groups');
-        const data = await res.json();
+        const data = await safeJson(res);
         if (data.success && Array.isArray(data.data)) {
           setAvailableGroups(data.data.filter(g => g.status !== 'completed'));
         }
       } catch (err) {
-        console.error('Failed to load available groups:', err);
+        console.warn('Failed to load available groups:', err);
       } finally {
         setLoadingAvailable(false);
       }

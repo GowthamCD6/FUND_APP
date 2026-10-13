@@ -9,6 +9,20 @@ const getApiUrl = () => {
 };
 
 const API_URL = getApiUrl();
+const SERVER_BASE = API_URL.replace(/\/api\/?$/, '');
+
+const resolveMediaUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  // If URL contains old hardcoded IPs with :5000/uploads, redirect to current server
+  if (url.includes(':5000/uploads/')) {
+    const filename = url.split(':5000/uploads/')[1];
+    return `${SERVER_BASE}/uploads/${filename}`;
+  }
+  if (url.startsWith('/uploads/')) {
+    return `${SERVER_BASE}${url}`;
+  }
+  return url;
+};
 
 
 const tokenStore = {
@@ -85,4 +99,4 @@ const makeRequest = async (path, options = {}) => {
   return response;
 };
 
-export { API_URL, makeRequest, safeJson, tokenStore };
+export { API_URL, SERVER_BASE, resolveMediaUrl, makeRequest, safeJson, tokenStore };

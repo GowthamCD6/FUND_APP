@@ -120,8 +120,8 @@ const Settings = () => {
       title: 'Admin Profile',
       sub: 'HQ Info & Avatar',
       icon: User,
-      color: '#7c3aed',
-      bg: '#f5f3ff',
+      color: '#1B3322',
+      bg: '#EBF3ED',
       onClick: () => setShowProfileModal(true),
     },
     {
@@ -129,8 +129,8 @@ const Settings = () => {
       title: 'Web Lock PIN',
       sub: 'Passcode & Screen',
       icon: Lock,
-      color: '#dc2626',
-      bg: '#fef2f2',
+      color: '#D32F2F',
+      bg: '#FDECEC',
       onClick: () => setShowSecurityModal(true),
     },
     {
@@ -138,8 +138,8 @@ const Settings = () => {
       title: 'Language',
       sub: currentLang === 'ta' ? 'தமிழ்' : 'English',
       icon: Languages,
-      color: '#059669',
-      bg: '#ecfdf5',
+      color: '#2E7D32',
+      bg: '#EBF3ED',
       onClick: () => setShowLanguageModal(true),
     },
     {
@@ -147,8 +147,8 @@ const Settings = () => {
       title: 'Notifications',
       sub: 'System Alerts',
       icon: Bell,
-      color: '#d97706',
-      bg: '#fffbeb',
+      color: '#A3704C',
+      bg: '#FDF6F0',
       onClick: () => setShowNotificationModal(true),
     },
     {
@@ -156,35 +156,35 @@ const Settings = () => {
       title: 'Compliance Rules',
       sub: 'Act Directives',
       icon: FileText,
-      color: '#475569',
-      bg: '#f1f5f9',
+      color: '#1B3322',
+      bg: '#EBF3ED',
       onClick: () => setShowRulesModal(true),
     },
     {
       id: 'help',
-      title: 'Help & Desk',
+      title: 'Help Desk',
       sub: 'Contact Hotline',
       icon: HelpCircle,
-      color: '#2563eb',
-      bg: '#eff6ff',
+      color: '#2E7D32',
+      bg: '#EBF3ED',
       onClick: () => setShowHelpModal(true),
     },
     {
       id: 'admin-tools-link',
       title: 'Admin Tools',
-      sub: 'All Operations',
+      sub: 'Operations Hub',
       icon: Zap,
-      color: '#059669',
-      bg: '#ecfdf5',
+      color: '#A3704C',
+      bg: '#FDF6F0',
       onClick: () => navigate('/admin/admintool'),
     },
     {
       id: 'share',
       title: 'Share Portal',
-      sub: 'Copy Web Link',
+      sub: 'Copy Access URL',
       icon: Share2,
-      color: '#0891b2',
-      bg: '#ecfeff',
+      color: '#2E7D32',
+      bg: '#EBF3ED',
       onClick: () => setShowShareModal(true),
     },
   ];
@@ -195,7 +195,7 @@ const Settings = () => {
       icon: User,
       label: 'Administrator Profile Details',
       sub: 'Update administrator identity, contact phone, and avatar',
-      color: '#7c3aed',
+      color: '#1B3322',
       badge: 'Profile',
       onClick: () => setShowProfileModal(true),
     },
@@ -203,7 +203,7 @@ const Settings = () => {
       icon: Lock,
       label: 'Web Session Passcode Lock',
       sub: 'Configure 4-digit PIN lock screen and session auto-lock',
-      color: '#dc2626',
+      color: '#D32F2F',
       badge: 'PIN Security',
       onClick: () => setShowSecurityModal(true),
     },
@@ -214,7 +214,7 @@ const Settings = () => {
       icon: Languages,
       label: 'Regional Interface Language',
       sub: 'Switch between English and தமிழ் (Tamil)',
-      color: '#059669',
+      color: '#2E7D32',
       badge: currentLang === 'ta' ? 'தமிழ்' : 'English',
       onClick: () => setShowLanguageModal(true),
     },
@@ -222,7 +222,7 @@ const Settings = () => {
       icon: Bell,
       label: 'System Notification Announcements',
       sub: 'Broadcast administrative notices and collection reminders',
-      color: '#d97706',
+      color: '#A3704C',
       badge: 'Alerts',
       onClick: () => setShowNotificationModal(true),
     },
@@ -233,7 +233,7 @@ const Settings = () => {
       icon: FileText,
       label: 'Chit Funds Act 1982 Compliance Rules',
       sub: 'Statutory rules, bye-laws, and dispute arbitration framework',
-      color: '#475569',
+      color: '#1B3322',
       badge: 'Compliance',
       onClick: () => setShowRulesModal(true),
     },
@@ -241,7 +241,7 @@ const Settings = () => {
       icon: HelpCircle,
       label: 'Technical Operations Help Desk',
       sub: 'Hotline, support contacts, and system status audit',
-      color: '#2563eb',
+      color: '#2E7D32',
       badge: 'Support',
       onClick: () => setShowHelpModal(true),
     },
@@ -249,7 +249,7 @@ const Settings = () => {
       icon: Share2,
       label: 'Share Platform Access URL',
       sub: 'Copy official web portal domain for subscribers and staff',
-      color: '#0891b2',
+      color: '#A3704C',
       badge: 'Share',
       onClick: () => setShowShareModal(true),
     },
@@ -257,7 +257,7 @@ const Settings = () => {
       icon: Star,
       label: 'Platform Performance Feedback',
       sub: 'Submit administrative operational feedback and rating',
-      color: '#d97706',
+      color: '#2E7D32',
       badge: 'Rating',
       onClick: () => setShowRateModal(true),
     },
@@ -283,7 +283,7 @@ const Settings = () => {
 
   if (loadingProfile) {
     return (
-      <div className="set-page" style={{ maxWidth: 1020, margin: '0 auto', paddingBottom: 40 }}>
+      <div className="set-page">
         {/* Profile Card Skeleton */}
         <div className="skeleton-pulse" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '24px 28px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -331,75 +331,43 @@ const Settings = () => {
   }
 
   return (
-    <div className="set-page" style={{ maxWidth: 1020, margin: '0 auto', paddingBottom: 40 }}>
+    <div className="set-page">
       {/* ── 1. Executive Admin Profile Card ── */}
-      <div style={{
-        background: '#ffffff',
-        border: '1px solid #e2e8f0',
-        borderRadius: 14,
-        padding: '24px 28px',
-        marginBottom: 20,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 16
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{
-            width: 68,
-            height: 68,
-            borderRadius: '50%',
-            background: '#2563eb',
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 26,
-            fontWeight: 700,
-            boxShadow: '0 4px 6px -1px rgba(37,99,235,0.2)'
-          }}>
+      <div className="adm-profile-banner">
+        <div className="adm-profile-left">
+          <div className="adm-profile-avatar">
             {initial}
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#0f172a' }}>
+          <div className="adm-profile-text">
+            <div className="adm-profile-name-row">
+              <h2 className="adm-profile-name">
                 {displayName}
               </h2>
-              <span style={{
-                fontSize: 11,
-                fontWeight: 700,
-                background: '#eff6ff',
-                color: '#1d4ed8',
-                padding: '2px 8px',
-                borderRadius: 12,
-                border: '1px solid #bfdbfe'
-              }}>
+              <span className="adm-profile-badge">
                 SUPER ADMIN
               </span>
             </div>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>
+            <p className="adm-profile-sub">
               {displayPhone} • Periyanayagi Amman Chit Funds Headquarters
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="adm-profile-actions">
           <button
             onClick={() => setShowProfileModal(true)}
             className="adm-btn-secondary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            type="button"
           >
-            <User size={14} />
+            <User size={15} />
             Edit Profile
           </button>
           <button
             onClick={() => setShowExportModal(true)}
             className="adm-btn-primary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            type="button"
           >
-            <Download size={14} />
+            <Download size={15} />
             Export Data
           </button>
         </div>
@@ -409,7 +377,7 @@ const Settings = () => {
       <div className="adm-shortcuts-section">
         <div className="adm-shortcuts-header">
           <h3 className="adm-shortcuts-title">
-            <Sparkles size={16} color="#7c3aed" />
+            <Sparkles size={17} color="#2E7D32" />
             Executive Quick Shortcuts
           </h3>
           <span className="adm-shortcuts-subtitle">
@@ -428,7 +396,7 @@ const Settings = () => {
                 type="button"
               >
                 <div className="adm-shortcut-icon" style={{ background: item.bg, color: item.color }}>
-                  <Icon size={20} />
+                  <Icon size={20} strokeWidth={2.2} />
                 </div>
                 <span className="adm-shortcut-label">{item.title}</span>
                 <span className="adm-shortcut-sub">{item.sub}</span>
@@ -444,7 +412,7 @@ const Settings = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div className="adm-section-box">
             <h3 className="adm-section-title">
-              <ShieldAlert size={16} color="#dc2626" />
+              <ShieldAlert size={16} color="#D32F2F" />
               Account & Credentials Management
             </h3>
             <div className="adm-menu-list">
@@ -456,7 +424,7 @@ const Settings = () => {
 
           <div className="adm-section-box">
             <h3 className="adm-section-title">
-              <Languages size={16} color="#059669" />
+              <Languages size={16} color="#2E7D32" />
               Application Preferences & Alerts
             </h3>
             <div className="adm-menu-list">
@@ -467,45 +435,23 @@ const Settings = () => {
           </div>
 
           {/* Operational Workbench Callout */}
-          <div style={{
-            background: 'linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)',
-            border: '1px solid #bfdbfe',
-            borderRadius: 14,
-            padding: '20px 22px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
-            flexWrap: 'wrap'
-          }}>
+          <div className="adm-workbench-callout">
             <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <Zap size={16} color="#2563eb" />
-                <strong style={{ fontSize: 14, color: '#1e3a8a' }}>Administrative Operations Workbench</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
+                <Zap size={16} color="#2E7D32" />
+                <strong style={{ fontSize: 14.5, color: '#1B3322' }}>Administrative Operations Workbench</strong>
               </div>
-              <p style={{ margin: 0, fontSize: 12.5, color: '#475569', lineHeight: 1.45 }}>
+              <p style={{ margin: 0, fontSize: 12.5, color: '#4A564C', lineHeight: 1.5 }}>
                 Data Export, 2FA OTP Stream, Reverse Auction Config, Member Vault, and GPS Location are partitioned in Admin Tools.
               </p>
             </div>
             <button
               type="button"
               onClick={() => navigate('/admin/admintool')}
-              style={{
-                padding: '9px 16px',
-                borderRadius: 8,
-                background: '#2563eb',
-                color: '#ffffff',
-                border: 'none',
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6
-              }}
+              className="adm-btn-primary"
+              style={{ whiteSpace: 'nowrap' }}
             >
-              Open Tools <ChevronRight size={14} />
+              Open Tools <ChevronRight size={15} />
             </button>
           </div>
         </div>

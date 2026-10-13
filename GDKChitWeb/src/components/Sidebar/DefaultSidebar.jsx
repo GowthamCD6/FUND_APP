@@ -93,6 +93,12 @@ const USER_NAV_GROUPS = [
     ]
   },
   {
+    title: 'OPERATIONS & TOOLS',
+    items: [
+      { id: 'user-tool', to: '/user/tools', label: 'Subscriber Tools', Icon: Zap },
+    ]
+  },
+  {
     title: 'MY ACCOUNT',
     items: [
       { id: 'profile', to: '/user/profile', label: 'Profile Settings', Icon: UserIcon },
@@ -129,10 +135,20 @@ const PAGE_TITLES = {
   '/user/portfolio': 'My Portfolio',
   '/user/chat': 'Messages',
   '/user/profile': 'Profile Settings',
+  '/user/tools': 'Subscriber Tools & Services',
   '/user/join-group': 'Join Chit Group',
   '/user/group-card': 'Member Chit Card',
   '/user/auction': 'Live Auction Bidding',
   '/user/finance': 'Financial Statements',
+  '/user/profile/account-details': 'Account Details',
+  '/user/profile/link-bank-account': 'Linked Bank Account',
+  '/user/profile/identity-verification': 'Identity Verification',
+  '/user/profile/nominee-details': 'Nominee Details',
+  '/user/profile/security-permission': 'Security & Lock PIN',
+  '/user/profile/my-location': 'My Location',
+  '/user/profile/admin-location': 'Branch & Office Locations',
+  '/user/profile/privacy-policy': 'Compliance & Policy Directives',
+  '/user/profile/help-support': 'Help & Support Desk',
   '/user/profile/otp-requests': 'OTP Requests',
   '/user/profile/language-settings': 'Language Settings',
 };

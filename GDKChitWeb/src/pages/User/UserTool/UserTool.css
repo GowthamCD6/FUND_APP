@@ -1,0 +1,195 @@
+.ut-page {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Top Header Bar ── */
+.ut-topbar {
+  background: #ffffff;
+  border: 1px solid #DCE3DC;
+  border-radius: 16px;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(27, 51, 34, 0.04);
+  flex-wrap: wrap;
+}
+
+.ut-topbar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ut-topbar-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0B140E;
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.ut-topbar-sub {
+  font-size: 13px;
+  color: #6B7A6E;
+  margin: 0;
+  font-weight: 500;
+}
+
+.ut-topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #F4F6F4;
+  border: 1.5px solid #DCE3DC;
+  border-radius: 10px;
+  padding: 8px 14px;
+  width: 290px;
+  max-width: 100%;
+  transition: all 0.2s ease;
+}
+
+.ut-topbar-search:focus-within {
+  border-color: #2E7D32;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+
+.ut-search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: #0B140E;
+  width: 100%;
+  font-weight: 500;
+}
+
+.ut-search-input::placeholder {
+  color: #94A3B8;
+}
+
+/* ── Sections & Category Groupings ── */
+.ut-sections-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.ut-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ut-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1B3322;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+/* ── Cards Grid (3 Columns on Desktop matching Admin Tools shape) ── */
+.ut-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .ut-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .ut-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Horizontal Reference Card Shape ── */
+.ut-item-card {
+  background: #ffffff;
+  border: 1px solid rgba(220, 227, 220, 0.85);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(11, 20, 14, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 68px;
+  box-sizing: border-box;
+}
+
+.ut-item-card:hover {
+  transform: translateY(-2px);
+  border-color: #2E7D32;
+  box-shadow: 0 8px 20px rgba(27, 51, 34, 0.09);
+  background: #ffffff;
+}
+
+/* Left Icon Box (Squircle matching admin reference) */
+.ut-item-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.ut-item-card:hover .ut-item-icon-box {
+  transform: scale(1.05);
+}
+
+/* Middle Content: Title & 'Click to access' */
+.ut-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ut-item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0B140E;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.ut-item-sub {
+  font-size: 12px;
+  color: #6B7A6E;
+  font-weight: 500;
+}
+
+/* Right Arrow Chevron */
+.ut-item-arrow {
+  color: #94A3B8;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.ut-item-card:hover .ut-item-arrow {
+  color: #2E7D32;
+  transform: translateX(3px);
+}

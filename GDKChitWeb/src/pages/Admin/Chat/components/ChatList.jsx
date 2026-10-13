@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { makeRequest, tokenStore, API_URL } from '../../../../api/apiClient.js';
+import { makeRequest, tokenStore, API_URL, resolveMediaUrl } from '../../../../api/apiClient.js';
 import { useAuth } from '../../../../context/AuthContext.jsx';
 import { Search as RiSearchLine, RefreshCw as RiRefreshLine, Plus as RiAddLine, Users as RiGroupLine, User as RiUserLine, MoreVertical as RiMore2Fill, Settings as RiSettings3Line } from 'lucide-react';
 
@@ -152,9 +152,9 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
               onClick={() => handleChatPress(chat)}
             >
               <div className="chat-avatar">
-                {chat.avatar && typeof chat.avatar === 'string' && (chat.avatar.startsWith('http') || chat.avatar.startsWith('/uploads')) ? (
+                {chat.avatar && typeof chat.avatar === 'string' && (chat.avatar.startsWith('http') || chat.avatar.startsWith('/uploads') || chat.avatar.includes('/uploads/')) ? (
                   <img 
-                    src={chat.avatar.startsWith('http') ? chat.avatar : `${API_URL.replace(/\/api\/?$/, '')}${chat.avatar}`} 
+                    src={resolveMediaUrl(chat.avatar)} 
                     alt={chat.name || 'avatar'} 
                     className="chat-avatar-img"
                     onError={(e) => {
