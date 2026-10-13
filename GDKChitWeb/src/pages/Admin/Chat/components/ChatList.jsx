@@ -152,11 +152,31 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
               onClick={() => handleChatPress(chat)}
             >
               <div className="chat-avatar">
-                {chat.avatar && chat.avatar.startsWith('http') ? (
-                  <img src={chat.avatar} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                ) : (
-                  chat.isGroup ? <RiGroupLine size={22} /> : <RiUserLine size={22} />
-                )}
+                {chat.avatar && typeof chat.avatar === 'string' && (chat.avatar.startsWith('http') || chat.avatar.startsWith('/uploads')) ? (
+                  <img 
+                    src={chat.avatar.startsWith('http') ? chat.avatar : `${API_URL.replace(/\/api\/?$/, '')}${chat.avatar}`} 
+                    alt={chat.name || 'avatar'} 
+                    className="chat-avatar-img"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className="chat-avatar-text" 
+                  style={{ 
+                    display: chat.avatar && typeof chat.avatar === 'string' && (chat.avatar.startsWith('http') || chat.avatar.startsWith('/uploads')) ? 'none' : 'flex' 
+                  }}
+                >
+                  {chat.isGroup ? (
+                    <RiGroupLine size={22} color="var(--chat-primary)" />
+                  ) : chat.name ? (
+                    chat.name.substring(0, 2).toUpperCase()
+                  ) : (
+                    <RiUserLine size={22} color="var(--chat-primary)" />
+                  )}
+                </div>
                 {!chat.isGroup && <div className="online-dot" />}
               </div>
               <div className="chat-item-info">
