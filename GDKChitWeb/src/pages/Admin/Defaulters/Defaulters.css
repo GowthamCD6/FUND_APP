@@ -1,26 +1,25 @@
 /* Defaulters.css */
 
-/* We rely on global .rn-page, .reports-header-container, .mu-table, etc. for layout */
-
 .def-row {
-  transition: background 0.2s;
+  transition: background 0.15s ease;
 }
 
 .def-row:hover {
-  background: #f8fafc;
+  background: #f8faf8;
 }
 
 /* Group & Month */
 .def-group-name {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
-  color: #1e293b;
+  color: #0f172a;
   margin-bottom: 2px;
 }
 
 .def-month-lbl {
   font-size: 12px;
   color: #64748b;
+  font-weight: 500;
 }
 
 /* Status & Due */
@@ -28,12 +27,12 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 4px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .def-badge.pending {
@@ -49,6 +48,7 @@
 .def-due-date {
   font-size: 12px;
   color: #64748b;
+  font-weight: 500;
 }
 
 .def-days-late {
@@ -59,28 +59,130 @@
 /* Amount */
 .def-amount {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   color: #0f172a;
 }
 
-/* Actions */
-.def-whatsapp-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: #10b981;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* Action Cell & Button Alignments */
+.def-action-cell {
+  padding: 12px 20px;
+  text-align: right;
+  vertical-align: middle;
 }
 
-.def-whatsapp-btn:hover {
-  background: #059669;
+.def-action-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.def-reminder-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: #2E7D32;
+  color: #ffffff;
+  border: 1px solid #2E7D32;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(46, 125, 50, 0.2);
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.def-reminder-btn:hover {
+  background: #1B5E20;
+  border-color: #1B5E20;
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 8px rgba(46, 125, 50, 0.25);
+}
+
+.def-whatsapp-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #DCE3DC;
+  background: #ffffff;
+  color: #25D366;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.def-whatsapp-icon-btn:hover {
+  background: #E8F5E9;
+  border-color: #81C784;
+  color: #1EBE5D;
+}
+
+/* Modal Overlay & Styling */
+.def-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.def-modal-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #DCE3DC;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+  animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.def-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid #E8ECE8;
+  background: #FAFCFA;
+}
+
+.def-modal-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0B140E;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.def-modal-body {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.def-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 22px;
+  border-top: 1px solid #E8ECE8;
+  background: #FAFCFA;
 }

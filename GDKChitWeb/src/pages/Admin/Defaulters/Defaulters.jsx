@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import Lottie from 'lottie-react';
 import noFileAnimation from '../../../animation/no-file.json';
@@ -8,10 +9,14 @@ import {
   RefreshCw as RiRefreshLine,
   Phone as RiPhoneLine,
   MessageCircle as RiMessageCircleLine,
+  MessageSquare as RiMessageSquareLine,
   Clock as RiTimeLine,
   Check as RiCheckLine,
   ChevronRight as RiArrowRightSLine,
-  X as RiCloseLine
+  X as RiCloseLine,
+  Send as RiSendLine,
+  Loader2 as RiLoaderLine,
+  ExternalLink as RiExternalLinkLine
 } from 'lucide-react';
 import './Defaulters.css';
 
@@ -41,7 +46,7 @@ const DefaultersSkeleton = () => (
             <th>Group & Month</th>
             <th>Status & Due</th>
             <th>Amount</th>
-            <th style={{ width: 120 }}>Action</th>
+            <th style={{ width: 150, textAlign: 'right' }}>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -65,7 +70,7 @@ const DefaultersSkeleton = () => (
                 <div style={{ width: 90, height: 10, background: '#e2e8f0', borderRadius: 4 }} />
               </td>
               <td><div style={{ width: 70, height: 16, background: '#e2e8f0', borderRadius: 4 }} /></td>
-              <td><div style={{ width: 90, height: 32, background: '#e2e8f0', borderRadius: 6 }} /></td>
+              <td style={{ textAlign: 'right' }}><div style={{ width: 100, height: 32, background: '#e2e8f0', borderRadius: 6, marginLeft: 'auto' }} /></td>
             </tr>
           ))}
         </tbody>
@@ -75,11 +80,18 @@ const DefaultersSkeleton = () => (
 );
 
 const Defaulters = () => {
+  const navigate = useNavigate();
   const [defaulters, setDefaulters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // all, pending, overdue
+
+  // Reminder Modal State
+  const [reminderModalTarget, setReminderModalTarget] = useState(null);
+  const [reminderMessage, setReminderMessage] = useState('');
+  const [sendingReminder, setSendingReminder] = useState(false);
+  const [reminderSuccessNotice, setReminderSuccessNotice] = useState(null);
 
   const fetchDefaulters = async () => {
     try {
@@ -103,6 +115,75 @@ const Defaulters = () => {
   useEffect(() => {
     fetchDefaulters();
   }, []);
+
+  const openReminderModal = (item) => {
+    const defaultMsg = `Dear ${item.user_name}, this is a gentle reminder from GDK Chit Funds. Your monthly contribution of ${formatCurrency(item.amount)} for ${item.monthName} in "${item.group_name}" is currently ${item.status.toUpperCase()}. Kindly complete your payment at the earliest.`;
+    setReminderMessage(defaultMsg);
+    setReminderModalTarget(item);
+  };
+
+  const handleSendInAppReminder = async () => {
+    if (!reminderModalTarget || !reminderMessage.trim()) return;
+    setSendingReminder(true);
+    try {
+      // 1. Get or create private room with the member
+      const roomRes = await makeRequest('/chats/privateRoom', {
+        method: 'POST',
+        body: JSON.stringify({ targetUserId: reminderModalTarget.user_id })
+      });
+      const roomData = await safeJson(roomRes);
+      if (!roomRes.ok || !roomData?.success) {
+        throw new Error(roomData?.message || 'Could not open chat room with user');
+      }
+
+      // 2. Send the reminder message
+      const sendRes = await makeRequest('/chats/send', {
+        method: 'POST',
+        body: JSON.stringify({
+          roomId: roomData.roomId,
+          message: reminderMessage.trim()
+        })
+      });
+      const sendData = await safeJson(sendRes);
+      if (!sendRes.ok || !sendData?.success) {
+        throw new Error(sendData?.message || 'Failed to send message');
+      }
+
+      setReminderSuccessNotice(`Reminder sent to ${reminderModalTarget.user_name} in Chat!`);
+      setTimeout(() => setReminderSuccessNotice(null), 3500);
+      setReminderModalTarget(null);
+    } catch (err) {
+      alert(err.message || 'Failed to send in-app reminder');
+    } finally {
+      setSendingReminder(false);
+    }
+  };
+
+  const handleOpenDirectChat = async (item) => {
+    try {
+      const roomRes = await makeRequest('/chats/privateRoom', {
+        method: 'POST',
+        body: JSON.stringify({ targetUserId: item.user_id })
+      });
+      const roomData = await safeJson(roomRes);
+      if (roomRes.ok && roomData?.success) {
+        navigate('/admin/chat', {
+          state: {
+            chat: {
+              chatId: roomData.roomId,
+              chatName: item.user_name,
+              isGroup: false,
+              userId: item.user_id
+            }
+          }
+        });
+      } else {
+        navigate('/admin/chat');
+      }
+    } catch {
+      navigate('/admin/chat');
+    }
+  };
 
   const handleWhatsApp = (phone, name, amount, groupName, monthName) => {
     if (!phone) {
@@ -185,9 +266,25 @@ const Defaulters = () => {
                 </button>
               )}
             </div>
+            
+            <button
+              className="reports-refresh-btn"
+              onClick={fetchDefaulters}
+              title="Refresh list"
+            >
+              <RiRefreshLine size={15} className={loading ? 'spin-anim' : ''} />
+              <span>Refresh</span>
+            </button>
           </div>
         </div>
       </div>
+
+      {reminderSuccessNotice && (
+        <div style={{ padding: '10px 16px', borderRadius: 8, background: '#E8F5E9', color: '#1B3322', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #C8E6C9' }}>
+          <RiCheckLine size={16} color="#2E7D32" />
+          {reminderSuccessNotice}
+        </div>
+      )}
 
       {/* Content */}
       {loading ? (
@@ -213,7 +310,7 @@ const Defaulters = () => {
           </p>
         </div>
       ) : (
-        <div className="mu-table-container" style={{ marginTop: 20 }}>
+        <div className="mu-table-container">
           <div className="mu-table-wrapper">
             <table className="mu-table">
               <thead>
@@ -222,7 +319,7 @@ const Defaulters = () => {
                   <th>Group & Month</th>
                   <th>Status & Due</th>
                   <th>Amount</th>
-                  <th style={{ width: 120 }}>Action</th>
+                  <th style={{ width: 180, textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,9 +330,10 @@ const Defaulters = () => {
                         <div 
                           className="mu-cell-avatar" 
                           style={{ 
-                            background: 'var(--primary-light)', 
-                            color: 'var(--primary)',
-                            border: '1px solid rgba(40, 66, 196, 0.15)'
+                            background: '#EBF3ED', 
+                            color: '#1B3322',
+                            border: '1px solid #DCE3DC',
+                            fontWeight: 800
                           }}
                         >
                           {item.user_name ? item.user_name.charAt(0).toUpperCase() : '?'}
@@ -265,20 +363,125 @@ const Defaulters = () => {
                     <td>
                       <strong className="def-amount">{formatCurrency(item.amount)}</strong>
                     </td>
-                    <td className="mu-action-btn-cell" style={{ textAlign: 'left' }}>
-                      <button 
-                        className="def-whatsapp-btn"
-                        onClick={() => handleWhatsApp(item.user_phone, item.user_name, item.amount, item.group_name, item.monthName)}
-                        title="Send WhatsApp Reminder"
-                      >
-                        <RiMessageCircleLine size={14} />
-                        Reminder
-                      </button>
+                    <td className="def-action-cell">
+                      <div className="def-action-group">
+                        <button 
+                          className="def-reminder-btn"
+                          onClick={() => openReminderModal(item)}
+                          title="Send In-App Chat Reminder"
+                        >
+                          <RiMessageSquareLine size={14} />
+                          <span>Reminder</span>
+                        </button>
+                        <button 
+                          className="def-whatsapp-icon-btn"
+                          onClick={() => handleWhatsApp(item.user_phone, item.user_name, item.amount, item.group_name, item.monthName)}
+                          title="Send WhatsApp Reminder"
+                        >
+                          <RiMessageCircleLine size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Send In-App Chat Reminder Modal ── */}
+      {reminderModalTarget && (
+        <div className="def-modal-backdrop" onClick={() => setReminderModalTarget(null)}>
+          <div className="def-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="def-modal-header">
+              <h3 className="def-modal-title">
+                <RiMessageSquareLine size={18} color="var(--primary)" />
+                Send Payment Reminder
+              </h3>
+              <button 
+                onClick={() => setReminderModalTarget(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <RiCloseLine size={20} />
+              </button>
+            </div>
+
+            <div className="def-modal-body">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#F8FAF8', padding: '12px 14px', borderRadius: 10, border: '1px solid #E2E8E2' }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#EBF3ED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#1B3322' }}>
+                  {reminderModalTarget.user_name?.charAt(0).toUpperCase()}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0B140E' }}>
+                    {reminderModalTarget.user_name}
+                  </h4>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6B7A6E' }}>
+                    Group: <strong>{reminderModalTarget.group_name}</strong> · Due: <strong>{formatCurrency(reminderModalTarget.amount)}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1B3322', marginBottom: 6 }}>
+                  Reminder Message (Sent via Chat)
+                </label>
+                <textarea
+                  rows={4}
+                  value={reminderMessage}
+                  onChange={e => setReminderMessage(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #DCE3DC',
+                    fontSize: 13,
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="def-modal-footer">
+              <button
+                className="reports-refresh-btn"
+                onClick={() => handleOpenDirectChat(reminderModalTarget)}
+                title="Go to Live Chat with this user"
+                style={{ marginRight: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <RiExternalLinkLine size={14} />
+                <span>Open Chat Screen</span>
+              </button>
+              
+              <button
+                className="reports-refresh-btn"
+                onClick={() => setReminderModalTarget(null)}
+                disabled={sendingReminder}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="def-reminder-btn"
+                onClick={handleSendInAppReminder}
+                disabled={sendingReminder || !reminderMessage.trim()}
+              >
+                {sendingReminder ? (
+                  <>
+                    <RiLoaderLine size={14} className="spin-anim" />
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <RiSendLine size={14} />
+                    <span>Send Reminder</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

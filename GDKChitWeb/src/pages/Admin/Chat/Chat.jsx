@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Lottie from 'lottie-react';
 import ChatList from './components/ChatList.jsx';
 import ChatScreen from './components/ChatScreen.jsx';
@@ -6,7 +7,14 @@ import './Chat.css';
 import messageAnimation from '../../../animation/message.json';
 
 const Chat = () => {
+  const location = useLocation();
   const [selectedChat, setSelectedChat] = useState(null);
+
+  useEffect(() => {
+    if (location.state?.chat) {
+      setSelectedChat(location.state.chat);
+    }
+  }, [location.state]);
 
   return (
     <div className="chat-container">
