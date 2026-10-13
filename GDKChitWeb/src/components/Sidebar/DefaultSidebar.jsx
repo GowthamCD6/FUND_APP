@@ -35,7 +35,6 @@ const ADMIN_NAV_GROUPS = [
     items: [
       { id: 'manage-users', to: '/admin/manage-users', label: 'Manage Members', Icon: UserCog },
       { id: 'add-user', to: '/admin/admintool/add-user', label: 'Add Member', Icon: UserPlus },
-      { id: 'user-locations', to: '/admin/user-locations', label: 'Member Locations', Icon: MapPin },
     ]
   },
   {
@@ -55,8 +54,6 @@ const ADMIN_NAV_GROUPS = [
     title: 'OPERATIONS & TOOLS',
     items: [
       { id: 'actions', to: '/admin/admintool', label: 'Admin Tools & Logs', Icon: Zap },
-      { id: 'block-user', to: '/admin/block-user', label: 'Block / Unblock Users', Icon: Ban },
-      { id: 'password-management', to: '/admin/password-management', label: 'Password Vault', Icon: Key },
     ]
   },
   {
