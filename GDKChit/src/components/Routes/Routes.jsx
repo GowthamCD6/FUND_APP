@@ -26,6 +26,7 @@ import { StatusBar, View, Platform } from "react-native";
 import TabRouter from "../Tab/TabRouter";
 import UserTabs from "../Tab/UTab/UserTab";
 import AdminTab from "../Tab/ATab/AdminTab";
+import ManageG from "../../pages/Admin/Modals/page/ManageGroups/ManageG";
 
 import UserPrivacyPolicy from "../../pages/User/Pages/Profile/Page/PrivacyPolicy/PrivacyPolicy";
 import UserHelpSupport from "../../pages/User/Pages/Profile/Page/HelpAndSupport/Help&Support";
@@ -96,6 +97,7 @@ const Routes = () => {
 
                     {/* Admin Tabs */}
                     <Stack.Screen name="AdminTabs" component={withSafe(AdminTab)} />
+                    <Stack.Screen name="ManageG" component={withSafe(ManageG)} />
 
                     <Stack.Screen name="AccountD" component={withSafe(AccountD)} />
                     <Stack.Screen name="Nominee" component={withSafe(Nominee)} />

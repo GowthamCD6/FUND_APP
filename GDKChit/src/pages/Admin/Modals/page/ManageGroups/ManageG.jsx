@@ -73,7 +73,14 @@ const GroupCardSkeleton = () => (
   </View>
 );
 
-const ManageGroups = ({ onBack }) => {
+const ManageGroups = ({ onBack, navigation }) => {
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (navigation?.canGoBack?.() || navigation?.goBack) {
+      navigation.goBack();
+    }
+  };
   const [activeTab, setActiveTab] = useState('Active');
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -473,7 +480,7 @@ const ManageGroups = ({ onBack }) => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <Header title="Manage Groups" onBack={onBack} />
+      <Header title="Manage Groups" onBack={handleBack} />
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
