@@ -23,6 +23,7 @@ import { launchCamera } from 'react-native-image-picker';
 import styles from './ChatListStyles';
 import ApiService from '../../../../../services/ApiService';
 import ChatScreen from '../ChatScreen/ChatScreen';
+import { useLanguage } from '../../../../../utils/LanguageContext';
 
 const getAvatarUrl = (avatarPath) => {
   if (!avatarPath || typeof avatarPath !== 'string') return null;
@@ -41,6 +42,7 @@ const getAvatarUrl = (avatarPath) => {
 const { width } = Dimensions.get('window');
 
 const ChatList = ({ navigation }) => {
+  const { t, language } = useLanguage();
   // ---- Refs (always first) ----
   const searchAnim = useRef(new Animated.Value(0)).current;
   const ws = useRef(null);
@@ -289,7 +291,11 @@ const ChatList = ({ navigation }) => {
 
   const renderHeaderMenu = () => {
     if (!showHeaderMenu) return null;
-    const sortLabels = { newest: 'Newest First', unread: 'Most Unread', name: 'Name (A–Z)' };
+    const sortLabels = {
+      newest: t('Newest First'),
+      unread: t('Most Unread'),
+      name: t('Name (A–Z)'),
+    };
     return (
       <Modal
         visible={showHeaderMenu}
@@ -318,7 +324,7 @@ const ChatList = ({ navigation }) => {
             elevation: 10,
           }}>
             {/* Sort section label */}
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, letterSpacing: 0.8 }}>SORT BY</Text>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, letterSpacing: 0.8 }}>{t('SORT BY')}</Text>
 
             {['newest', 'unread', 'name'].map((mode) => (
               <TouchableOpacity
@@ -345,7 +351,7 @@ const ChatList = ({ navigation }) => {
               onPress={handleMarkAllRead}
             >
               <MaterialCommunityIcons name="check-all" size={18} color="#6B46C1" />
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginLeft: 10 }}>Mark all as read</Text>
+              <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginLeft: 10 }}>{t('Mark all as read')}</Text>
             </TouchableOpacity>
 
             {/* View archived (only if any) */}
@@ -355,7 +361,7 @@ const ChatList = ({ navigation }) => {
                 onPress={() => { setShowHeaderMenu(false); handleFilterChange('archived'); }}
               >
                 <MaterialCommunityIcons name="archive-outline" size={18} color="#6B46C1" />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginLeft: 10 }}>Archived ({archivedChats.length})</Text>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginLeft: 10 }}>{t('Archived')} ({archivedChats.length})</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -524,7 +530,7 @@ const ChatList = ({ navigation }) => {
             {/* Chat Title */}
             <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
               <Text style={{ fontSize: 18, fontWeight: '800', color: '#1F2937' }}>{selectedChatOptions.name}</Text>
-              <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{selectedChatOptions.isGroup ? 'Group Chat' : 'Personal Chat'}</Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{selectedChatOptions.isGroup ? t('Group Chat') : t('Personal Chat')}</Text>
             </View>
 
             <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 8 }} />
@@ -533,28 +539,28 @@ const ChatList = ({ navigation }) => {
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handlePinChat(selectedChatOptions.id)}>
               <MaterialCommunityIcons name={isPinned ? "pin-off-outline" : "pin-outline"} size={22} color="#6B46C1" />
               <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginLeft: 14 }}>
-                {isPinned ? 'Unpin chat' : 'Pin chat'}
+                {isPinned ? t('Unpin chat') : t('Pin chat')}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleMuteChat(selectedChatOptions.id)}>
               <MaterialCommunityIcons name={isMuted ? "bell-outline" : "bell-off-outline"} size={22} color="#6B46C1" />
               <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginLeft: 14 }}>
-                {isMuted ? 'Unmute notifications' : 'Mute notifications'}
+                {isMuted ? t('Unmute notifications') : t('Mute notifications')}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleArchiveChat(selectedChatOptions.id)}>
               <MaterialCommunityIcons name={isArchived ? "archive-arrow-up-outline" : "archive-outline"} size={22} color="#6B46C1" />
               <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginLeft: 14 }}>
-                {isArchived ? 'Unarchive chat' : 'Archive chat'}
+                {isArchived ? t('Unarchive chat') : t('Archive chat')}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 }} onPress={() => handleDeleteChat(selectedChatOptions.id)}>
               <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
               <Text style={{ fontSize: 15, fontWeight: '600', color: '#EF4444', marginLeft: 14 }}>
-                Delete Chat
+                {t('Delete Chat')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -676,9 +682,9 @@ const ChatList = ({ navigation }) => {
         <View style={{ alignItems: 'center', marginBottom: 10 }}>
           <MaterialCommunityIcons name="chat-outline" size={100} color="#E9D5FF" />
         </View>
-        <Text style={styles.emptyStateText}>Start Conversations</Text>
+        <Text style={styles.emptyStateText}>{t('Start Conversations')}</Text>
         <Text style={styles.emptyStateSubtext}>
-          Connect with your group members and start meaningful conversations today
+          {t('Connect with your group members and start meaningful conversations today')}
         </Text>
       </View>
     </View>
@@ -747,8 +753,8 @@ const ChatList = ({ navigation }) => {
       <View style={styles.headerContainer}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>Messages</Text>
-            <Text style={styles.headerSubtitle}>{filteredChats.length} CONVERSATIONS</Text>
+            <Text style={[styles.headerTitle, language === 'ta' && { fontSize: 20 }]}>{t('Messages')}</Text>
+            <Text style={styles.headerSubtitle}>{filteredChats.length} {t('CONVERSATIONS')}</Text>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity
@@ -764,7 +770,7 @@ const ChatList = ({ navigation }) => {
                 launchCamera(options, (response) => {
                   if (response.didCancel) return;
                   if (response.errorCode) {
-                    Alert.alert('Camera', 'Could not open camera');
+                    Alert.alert(t('Camera'), t('Could not open camera'));
                   }
                 });
               }}
@@ -786,7 +792,7 @@ const ChatList = ({ navigation }) => {
             <MaterialCommunityIcons name="magnify" size={22} color="#6B46C1" />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search messages..."
+              placeholder={t('Search messages...')}
               placeholderTextColor="#9CA3AF"
               value={searchQuery}
               onChangeText={handleSearch}
@@ -806,22 +812,29 @@ const ChatList = ({ navigation }) => {
           style={styles.filterTabsContainer}
           contentContainerStyle={styles.filterTabsContent}
         >
-          {['all', 'personal', 'groups', 'unread', ...(archivedChats.length > 0 ? ['archived'] : [])].map((filter) => (
+          {[
+            { key: 'all', label: t('All') },
+            { key: 'personal', label: t('Personal') },
+            { key: 'groups', label: t('Groups') },
+            { key: 'unread', label: t('Unread') },
+            ...(archivedChats.length > 0 ? [{ key: 'archived', label: t('Archived') }] : [])
+          ].map((item) => (
             <TouchableOpacity
-              key={filter}
+              key={item.key}
               style={[
                 styles.filterTab,
-                activeFilter === filter && styles.filterTabActive,
+                activeFilter === item.key && styles.filterTabActive,
               ]}
-              onPress={() => handleFilterChange(filter)}
+              onPress={() => handleFilterChange(item.key)}
             >
               <Text
                 style={[
                   styles.filterTabText,
-                  activeFilter === filter && styles.filterTabTextActive,
+                  activeFilter === item.key && styles.filterTabTextActive,
+                  language === 'ta' && { fontSize: 12 },
                 ]}
               >
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                {item.label}
               </Text>
             </TouchableOpacity>
           ))}
@@ -855,7 +868,7 @@ const ChatList = ({ navigation }) => {
               >
                 <View style={styles.archivedRowLeft}>
                   <MaterialCommunityIcons name="archive-arrow-down" size={22} color="#6B46C1" />
-                  <Text style={styles.archivedRowText}>Archived</Text>
+                  <Text style={styles.archivedRowText}>{t('Archived')}</Text>
                 </View>
                 <Text style={styles.archivedCount}>{archivedChats.length}</Text>
               </TouchableOpacity>
@@ -865,7 +878,7 @@ const ChatList = ({ navigation }) => {
                 onPress={() => handleFilterChange('all')}
               >
                 <MaterialCommunityIcons name="arrow-left" size={20} color="#6B46C1" style={{ marginRight: 8 }} />
-                <Text style={styles.archivedBackText}>Back to Chats</Text>
+                <Text style={styles.archivedBackText}>{t('Back to Chats')}</Text>
               </TouchableOpacity>
             ) : null
           }

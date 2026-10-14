@@ -19,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import styles from './usermanulesty';
+import { useLanguage } from '../../../utils/LanguageContext';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -285,6 +286,7 @@ const STEPS = [
 const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t, language } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
@@ -322,10 +324,10 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
     const step = STEPS[currentStep];
     if (!step || !isVisible) return;
 
-    let fullText = step.description || '';
+    let fullText = t(step.description) || '';
     // Special override when notification modal is open during step 1
     if (step.id === 'notif_reading' && isNotifModalOpen) {
-      fullText = 'Great! You opened the notification center. Read your alerts, payment reminders, and OTP requests here!';
+      fullText = t('Great! You opened the notification center. Read your alerts, payment reminders, and OTP requests here!');
     }
 
     setDisplayedText('');
@@ -910,13 +912,13 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
                   color="#FFFFFF"
                 />
               </View>
-              <Text style={styles.titleText}>{step?.title || ''}</Text>
+              <Text style={[styles.titleText, language === 'ta' && { fontSize: 16 }]}>{step?.title ? t(step.title) : ''}</Text>
             </View>
 
             {/* Description with typewriter cursor */}
-            <Text style={styles.descriptionText}>
+            <Text style={[styles.descriptionText, language === 'ta' && { fontSize: 13, lineHeight: 20 }]}>
               {displayedText}
-              {displayedText.length < (step?.description?.length || 0) && (
+              {displayedText.length < (step?.description ? (t(step.description)?.length || 0) : 0) && (
                 <Text style={styles.typewriterCursor}>|</Text>
               )}
             </Text>
@@ -951,8 +953,8 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
                     onPress={isLast ? handleComplete : handleNext}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.nextButtonText}>
-                      {isLast ? 'Explore App' : 'Next Step'}
+                    <Text style={[styles.nextButtonText, language === 'ta' && { fontSize: 13 }]}>
+                      {isLast ? t('Explore App') : t('Next Step')}
                     </Text>
                     <MaterialCommunityIcons
                       name={isLast ? 'check' : 'arrow-right'}

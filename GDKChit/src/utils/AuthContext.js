@@ -32,6 +32,9 @@ export const AuthProvider = ({ children }) => {
           setUser(user);
           setIsAuthenticated(true);
           await AsyncStorage.setItem('userId', user.id ? String(user.id) : '');
+          if (user.role) {
+            await AsyncStorage.setItem('userRole', String(user.role));
+          }
         } else {
           // Token might be invalid, clear it
           await ApiService.clearTokens();

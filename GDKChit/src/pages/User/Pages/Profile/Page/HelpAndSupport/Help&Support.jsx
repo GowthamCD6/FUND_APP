@@ -14,8 +14,10 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const HelpSupport = ({ navigation }) => {
+  const { t, language } = useLanguage();
   const [expandedFAQ, setExpandedFAQ] = useState(null);
 
   useEffect(() => {
@@ -103,7 +105,7 @@ const HelpSupport = ({ navigation }) => {
             <MaterialCommunityIcons name="arrow-left" size={26} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>Help & Support</Text>
+            <Text style={[styles.headerTitle, language === 'ta' && { fontSize: 20 }]}>{t('Help & Support')}</Text>
           </View>
         </View>
       </View>

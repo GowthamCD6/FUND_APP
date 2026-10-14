@@ -17,23 +17,57 @@ export const useLanguage = () => {
 
 export const LanguageProvider = ({ children }) => {
   const adminLanguage = useLanguageStore((state) => state.adminLanguage);
+  const userLanguage = useLanguageStore((state) => state.userLanguage);
   const setAdminLanguage = useLanguageStore((state) => state.setAdminLanguage);
+  const setUserLanguage = useLanguageStore((state) => state.setUserLanguage);
   const isLoaded = useLanguageStore((state) => state.isLoaded);
   const storeT = useLanguageStore((state) => state.t);
+  const [activeRole, setActiveRole] = useState('user');
 
-  const setLanguage = useCallback(async (lang) => {
-    await setAdminLanguage(lang);
-  }, [setAdminLanguage]);
+  useEffect(() => {
+    const detectRole = async () => {
+      try {
+        const role = await AsyncStorage.getItem('userRole');
+        if (role && role.toLowerCase() === 'admin') {
+          setActiveRole('admin');
+        } else {
+          setActiveRole('user');
+        }
+      } catch (e) {
+        setActiveRole('user');
+      }
+    };
+    detectRole();
+  }, []);
 
-  const t = useCallback((englishText) => {
-    return storeT(englishText, 'admin');
-  }, [storeT]);
+  const setLanguage = useCallback(async (lang, targetRole = null) => {
+    const roleToSet = targetRole || activeRole;
+    if (roleToSet === 'admin') {
+      await setAdminLanguage(lang);
+    } else {
+      await setUserLanguage(lang);
+    }
+  }, [activeRole, setAdminLanguage, setUserLanguage]);
+
+  const t = useCallback((englishText, overrideRole = null) => {
+    // If overrideRole is specified, use that; otherwise use active role (default 'user')
+    const roleToUse = overrideRole || activeRole;
+    return storeT(englishText, roleToUse);
+  }, [storeT, activeRole]);
+
+  // Current language is based on active role
+  const currentLanguage = activeRole === 'admin' ? adminLanguage : userLanguage;
 
   const value = {
-    language: adminLanguage,
+    language: currentLanguage,
+    adminLanguage,
+    userLanguage,
     setLanguage,
+    setUserLanguage,
+    setAdminLanguage,
     t,
     isLoaded,
+    setActiveRole,
   };
 
   return (

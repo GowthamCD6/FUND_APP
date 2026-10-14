@@ -11,10 +11,13 @@ import {
   BackHandler
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
 const PrivacyPolicy = ({ navigation }) => {
+  const { t, language } = useLanguage();
+
   useEffect(() => {
     const backAction = () => {
       navigation.goBack();
@@ -36,8 +39,8 @@ const PrivacyPolicy = ({ navigation }) => {
             <MaterialCommunityIcons name="arrow-left" size={26} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>Privacy Policy</Text>
-            <Text style={styles.headerSubtitle}>& Chit Fund Rules</Text>
+            <Text style={[styles.headerTitle, language === 'ta' && { fontSize: 20 }]}>{t('Privacy Policy')}</Text>
+            <Text style={styles.headerSubtitle}>& {t('Chit Fund Rules')}</Text>
           </View>
         </View>
       </View>

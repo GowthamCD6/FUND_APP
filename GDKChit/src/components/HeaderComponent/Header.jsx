@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LeftArrowIcon from '../../assets/Icon/left-arrow.svg';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const Header = ({
   title,
@@ -22,6 +23,9 @@ const Header = ({
   dividerStyle = {},
   rightComponent = null
 }) => {
+  const { t, language } = useLanguage();
+  const displayTitle = typeof title === 'string' ? t(title) : title;
+
   return (
     <View style={[styles.container, headerStyle]}>
       {/* Header Content */}
@@ -41,8 +45,8 @@ const Header = ({
           </TouchableOpacity>
         )}
 
-        <Text style={[styles.headerTitle, titleStyle]}>
-          {title}
+        <Text style={[styles.headerTitle, language === 'ta' && { fontSize: 19 }, titleStyle]}>
+          {displayTitle}
         </Text>
 
         {/* Right side component (optional) */}

@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import MoreModal from '../../../pages/User/Modals/More';
 import AdminTab, { ADMIN_PHONE, ADMIN_PASSWORD } from '../ATab/AdminTab';
 import UserManual from '../../../pages/User/manual/usermanule';
+import { useLanguage } from '../../../utils/LanguageContext';
 
 const withSafe = (Component) => {
   return (props) => {
@@ -68,6 +69,7 @@ const CustomTabBarButton = ({ children, onPress, viewRef }) => (
 
 const UserTabs = () => {
   const insets = useSafeAreaInsets();
+  const { t, language } = useLanguage();
   const [showMoreModal, setShowMoreModal] = useState(false);
   const [preselectedGroup, setPreselectedGroup] = useState(null);
   const [manualVisible, setManualVisible] = useState(false);
@@ -157,8 +159,8 @@ const UserTabs = () => {
                   color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
-                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}>
-                  Home
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }, language === 'ta' && { fontSize: 10 }]}>
+                  {t('Home')}
                 </Text>
               </View>
             ),
@@ -178,8 +180,8 @@ const UserTabs = () => {
                   color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
-                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}>
-                  Portfolio
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }, language === 'ta' && { fontSize: 10 }]}>
+                  {t('Portfolio')}
                 </Text>
               </View>
             ),
@@ -213,8 +215,8 @@ const UserTabs = () => {
                   color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
-                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}>
-                  Chat
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }, language === 'ta' && { fontSize: 10 }]}>
+                  {t('Chat')}
                 </Text>
               </View>
             ),
@@ -234,8 +236,8 @@ const UserTabs = () => {
                   color={focused ? '#6B46C1' : '#6B7280'}
                   style={styles.iconStyle}
                 />
-                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }]}>
-                  Profile
+                <Text style={[styles.tabLabel, { color: focused ? '#6B46C1' : '#6B7280' }, language === 'ta' && { fontSize: 10 }]}>
+                  {t('Profile')}
                 </Text>
               </View>
             ),
