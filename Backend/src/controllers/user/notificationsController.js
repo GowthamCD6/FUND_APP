@@ -135,3 +135,40 @@ exports.getNotifications = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+exports.saveFCMToken = async (req, res) => {
+  const userId = req.user.userId || req.user.id;
+  const { fcmToken, platform } = req.body;
+
+  if (!fcmToken) {
+    return res.status(400).json({ success: false, message: 'FCM token is required' });
+  }
+
+  try {
+    // Ensure table exists
+    await db.promise().query(`
+      CREATE TABLE IF NOT EXISTS user_fcm_tokens (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        fcm_token VARCHAR(255) NOT NULL,
+        platform VARCHAR(20) DEFAULT 'android',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_user_fcm (user_id, fcm_token)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    await db.promise().query(
+      `INSERT INTO user_fcm_tokens (user_id, fcm_token, platform) 
+       VALUES (?, ?, ?) 
+       ON DUPLICATE KEY UPDATE platform = VALUES(platform), updated_at = CURRENT_TIMESTAMP`,
+      [userId, fcmToken, platform || 'android']
+    );
+
+    return res.json({ success: true, message: 'FCM token registered successfully' });
+  } catch (err) {
+    console.error('Error saving FCM token:', err);
+    return res.status(500).json({ success: false, message: 'Failed to save FCM token' });
+  }
+};
+

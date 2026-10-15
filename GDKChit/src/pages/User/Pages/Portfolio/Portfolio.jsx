@@ -17,9 +17,11 @@ import Header from '../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../services/ApiService';
 import styles from './Portfoliosty';
 import { useLanguage } from '../../../../utils/LanguageContext';
+import { useSecureScreen } from '../../../../services/ScreenSecurity';
 
 const ChitfundPortfolio = ({ navigation }) => {
   const { t, language } = useLanguage();
+  useSecureScreen();
   // Modal state for showing group details
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedModalGroup, setSelectedModalGroup] = useState(null);

@@ -12,11 +12,12 @@ const AuthLoader = () => {
       try {
         const phone = await AsyncStorage.getItem('userPhone');
         const role = await AsyncStorage.getItem('userRole');
-        const accessToken = await AsyncStorage.getItem('accessToken');
-        const refreshToken = await AsyncStorage.getItem('refreshToken');
+        const accessToken = await ApiService.getAccessToken();
+        const refreshToken = await ApiService.getRefreshToken();
 
         if (!phone || !role || !accessToken || !refreshToken) {
-          await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+          await ApiService.clearTokens();
+          await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'userLoginMethod']);
           return navigation.reset({
             index: 0,
             routes: [{ name: 'Welcome' }],
@@ -26,7 +27,8 @@ const AuthLoader = () => {
         // Verify session in the background so that user transition is instant
         ApiService.getProfile().then(profile => {
           if (!profile.success) {
-            AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+            ApiService.clearTokens();
+            AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'userLoginMethod']);
             navigation.reset({
               index: 0,
               routes: [{ name: 'Welcome' }],
@@ -36,7 +38,8 @@ const AuthLoader = () => {
           console.error('Background session validation failed:', error);
           const errorMessage = error?.message || '';
           if (!errorMessage.includes('Network') && !errorMessage.toLowerCase().includes('blocked')) {
-            AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+            ApiService.clearTokens();
+            AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'userLoginMethod']);
             navigation.reset({
               index: 0,
               routes: [{ name: 'Welcome' }],

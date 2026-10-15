@@ -8,6 +8,7 @@ const server = http.createServer(app);
 const db = require('./src/config/db');
 const checkAndInitializeDatabase = require('./src/utils/dbHealthCheck');
 const setupGracefulShutdown = require('./src/utils/gracefulShutdown');
+const fcmPushService = require('./src/services/fcmPushService');
 
 // Initialize WebSocket servers
 const wss = new WebSocket.Server({ noServer: true });
@@ -42,100 +43,139 @@ const clientSessions = new Map();
 
 // WebSocket connection handler
 wss.on('connection', (ws, req) => {
-  try {
-    // Parse URL params
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const token = url.searchParams.get('token');
-    const userId = url.searchParams.get('userId');
-    const userType = url.searchParams.get('userType') || 'user';
+  let clientId = null;
+  let clientUserType = 'user';
+  let isAuthenticated = false;
 
-    if (!token || !userId) {
-      ws.close(1008, 'Missing authentication');
-      return;
-    }
+  const initSession = (token, userId, userType) => {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const verifiedRole = (decoded.role && String(decoded.role).toLowerCase() === 'admin') 
+        ? 'admin' 
+        : (userType === 'admin' && String(decoded.role).toLowerCase() === 'admin' ? 'admin' : 'user');
+      const finalUserId = decoded.id ? String(decoded.id) : String(userId);
 
-    // Verify JWT token and extract verified role from payload to prevent client-side userType spoofing
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const verifiedRole = (decoded.role && String(decoded.role).toLowerCase() === 'admin') ? 'admin' : (userType === 'admin' && String(decoded.role).toLowerCase() === 'admin' ? 'admin' : 'user');
-    
-    // Store client session
-    const clientId = `${userId}-${Date.now()}`;
-    clientSessions.set(clientId, {
-      ws,
-      userId,
-      userName: decoded.name || `User ${userId}`,
-      userType: verifiedRole,
-      timestamp: Date.now(),
-    });
+      clientId = `${finalUserId}-${Date.now()}`;
+      clientUserType = verifiedRole;
+      isAuthenticated = true;
 
-    console.log(`✅ WebSocket connected: ${clientId} (${userType})`);
+      clientSessions.set(clientId, {
+        ws,
+        userId: finalUserId,
+        userName: decoded.name || `User ${finalUserId}`,
+        userType: verifiedRole,
+        timestamp: Date.now(),
+      });
 
-    // Send connection confirmation
-    ws.send(JSON.stringify({
-      type: 'connected',
-      data: { clientId, userType }
-    }));
+      console.log(`✅ WebSocket authenticated: ${clientId} (${verifiedRole})`);
 
-    // Check for active or setup auctions for this user in the database on connection
-    db.promise().query(
-      `SELECT ga.id as auction_id, ga.group_id, ga.auction_type, ga.initial_amount, ga.duration, ga.status, g.group_name, gap.joined_status
-       FROM group_auctions ga
-       JOIN \`groups\` g ON ga.group_id = g.id
-       JOIN group_auction_participants gap ON ga.id = gap.auction_id
-       WHERE gap.user_id = ? AND ga.status IN ('setup', 'active')`,
-      [userId]
-    ).then(async ([rows]) => {
-      for (const row of rows) {
-        if (row.status === 'setup' && row.joined_status === 'pending') {
-          // User has a pending auction invitation, fetch participant IDs and alert them
-          try {
-            const [parts] = await db.promise().query(
-              'SELECT user_id FROM group_auction_participants WHERE auction_id = ?',
-              [row.auction_id]
-            );
-            const participantIds = parts.map(p => p.user_id);
-            if (ws.readyState === WebSocket.OPEN) {
+      // Send connection confirmation
+      ws.send(JSON.stringify({
+        type: 'connected',
+        data: { clientId, userType: verifiedRole }
+      }));
+
+      // Check for active or setup auctions for this user in the database on connection
+      db.promise().query(
+        `SELECT ga.id as auction_id, ga.group_id, ga.auction_type, ga.initial_amount, ga.duration, ga.status, g.group_name, gap.joined_status
+         FROM group_auctions ga
+         JOIN \`groups\` g ON ga.group_id = g.id
+         JOIN group_auction_participants gap ON ga.id = gap.auction_id
+         WHERE gap.user_id = ? AND ga.status IN ('setup', 'active')`,
+        [finalUserId]
+      ).then(async ([rows]) => {
+        for (const row of rows) {
+          if (row.status === 'setup' && row.joined_status === 'pending') {
+            try {
+              const [parts] = await db.promise().query(
+                'SELECT user_id FROM group_auction_participants WHERE auction_id = ?',
+                [row.auction_id]
+              );
+              const participantIds = parts.map(p => p.user_id);
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                  type: 'auction_created_alert',
+                  data: {
+                    groupId: row.group_id,
+                    groupName: row.group_name,
+                    auctionType: row.auction_type,
+                    participantIds
+                  }
+                }));
+              }
+            } catch (err) {
+              console.error('Error fetching participant IDs for connect alert:', err);
+            }
+          } else if (row.status === 'active') {
+            const auctionId = `auction-${row.group_id}`;
+            const activeAuction = auctionSessions.get(auctionId);
+            if (activeAuction && ws.readyState === WebSocket.OPEN) {
+              const elapsed = Math.floor((Date.now() - activeAuction.startTime) / 1000);
+              const remainingTime = Math.max(0, activeAuction.duration - elapsed);
               ws.send(JSON.stringify({
-                type: 'auction_created_alert',
+                type: 'auction_started',
                 data: {
-                  groupId: row.group_id,
-                  groupName: row.group_name,
-                  auctionType: row.auction_type,
-                  participantIds
+                  groupId: activeAuction.groupId,
+                  initialAmount: activeAuction.initialAmount,
+                  duration: activeAuction.duration,
+                  startTime: activeAuction.startTime,
+                  remainingTime,
+                  bids: activeAuction.bids,
                 }
               }));
             }
-          } catch (err) {
-            console.error('Error fetching participant IDs for connect alert:', err);
-          }
-        } else if (row.status === 'active') {
-          // Active auction: check if we have it in-memory
-          const auctionId = `auction-${row.group_id}`;
-          const activeAuction = auctionSessions.get(auctionId);
-          if (activeAuction && ws.readyState === WebSocket.OPEN) {
-            const elapsed = Math.floor((Date.now() - activeAuction.startTime) / 1000);
-            const remainingTime = Math.max(0, activeAuction.duration - elapsed);
-            ws.send(JSON.stringify({
-              type: 'auction_started',
-              data: {
-                groupId: activeAuction.groupId,
-                initialAmount: activeAuction.initialAmount,
-                duration: activeAuction.duration,
-                startTime: activeAuction.startTime,
-                remainingTime,
-                bids: activeAuction.bids,
-              }
-            }));
           }
         }
-      }
-    }).catch(err => console.error('Error fetching active/setup auctions on connection:', err));
+      }).catch(err => console.error('Error fetching active/setup auctions on connection:', err));
+
+      return true;
+    } catch (err) {
+      console.error('WebSocket JWT verification failed:', err.message);
+      ws.close(1008, 'Authentication failed');
+      return false;
+    }
+  };
+
+  try {
+    // Check for query parameters (backward-compatibility fallback)
+    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const queryToken = url.searchParams.get('token');
+    const queryUserId = url.searchParams.get('userId');
+    const queryUserType = url.searchParams.get('userType') || 'user';
+
+    if (queryToken && queryUserId) {
+      initSession(queryToken, queryUserId, queryUserType);
+    } else {
+      // Clean URL: Expect first frame 'auth' message within 6 seconds
+      const authTimeout = setTimeout(() => {
+        if (!isAuthenticated) {
+          console.warn('WebSocket auth timeout: no auth message received within 6s');
+          ws.close(1008, 'Authentication timeout');
+        }
+      }, 6000);
+
+      ws.once('close', () => clearTimeout(authTimeout));
+    }
 
     // Handle incoming messages
     ws.on('message', (message) => {
       try {
-        const { type, data } = JSON.parse(message);
-        handleAuctionMessage(type, data, clientId, userType);
+        const parsed = JSON.parse(message);
+        const { type, data } = parsed;
+
+        if (type === 'auth') {
+          const authData = data || parsed;
+          initSession(authData.token, authData.userId, authData.userType);
+          return;
+        }
+
+        if (!isAuthenticated) {
+          console.warn('Rejected unauthenticated message frame');
+          ws.close(1008, 'Unauthenticated');
+          return;
+        }
+
+        handleAuctionMessage(type, data, clientId, clientUserType);
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
@@ -143,8 +183,10 @@ wss.on('connection', (ws, req) => {
 
     // Handle disconnection
     ws.on('close', () => {
-      clientSessions.delete(clientId);
-      console.log(`🔌 WebSocket disconnected: ${clientId}`);
+      if (clientId) {
+        clientSessions.delete(clientId);
+        console.log(`🔌 WebSocket disconnected: ${clientId}`);
+      }
     });
 
     // Handle errors
@@ -153,7 +195,7 @@ wss.on('connection', (ws, req) => {
     });
 
   } catch (error) {
-    console.error('WebSocket authentication failed:', error.message);
+    console.error('WebSocket connection error:', error.message);
     ws.close(1008, 'Authentication failed');
   }
 });
@@ -528,6 +570,79 @@ async function handleAuctionMessage(type, data, clientId, userType) {
         resetAuction(data.groupId, clientId);
       }
       break;
+
+    case 'set_auto_bid': {
+      const { groupId, floorAmount, enabled } = data;
+      const auctionId = `auction-${groupId}`;
+      const auction = auctionSessions.get(auctionId);
+      const client = clientSessions.get(clientId);
+      if (auction && client) {
+        if (!auction.autoBidders) {
+          auction.autoBidders = new Map();
+        }
+        if (enabled) {
+          auction.autoBidders.set(client.userId, {
+            userId: client.userId,
+            userName: client.userName,
+            clientId,
+            floorAmount: Number(floorAmount),
+          });
+          console.log(`🤖 Auto-bid enabled for ${client.userName} (floor: ₹${floorAmount})`);
+        } else {
+          auction.autoBidders.delete(client.userId);
+          console.log(`🤖 Auto-bid disabled for ${client.userName}`);
+        }
+        if (client.ws?.readyState === WebSocket.OPEN) {
+          client.ws.send(JSON.stringify({
+            type: 'auto_bid_status',
+            data: { enabled: Boolean(enabled), floorAmount: Number(floorAmount) }
+          }));
+        }
+      }
+      break;
+    }
+
+    case 'check_eligibility': {
+      const { groupId } = data;
+      const client = clientSessions.get(clientId);
+      if (client) {
+        (async () => {
+          try {
+            const [existingWins] = await db.promise().query(
+              `SELECT id FROM group_auction_winners WHERE group_id = ? AND winner_user_id = ? AND deleted_at IS NULL LIMIT 1`,
+              [groupId, client.userId]
+            );
+            const [overdueRows] = await db.promise().query(
+              `SELECT id FROM monthly_collections WHERE group_id = ? AND user_id = ? AND status = 'overdue' AND deleted_at IS NULL LIMIT 1`,
+              [groupId, client.userId]
+            );
+
+            const alreadyWon = existingWins.length > 0;
+            const isOverdue = overdueRows.length > 0;
+            const isEligible = !alreadyWon && !isOverdue;
+
+            let reason = 'You are eligible to participate in this auction.';
+            if (alreadyWon) reason = 'Ineligible: You have already won an auction in this group.';
+            if (isOverdue) reason = 'Ineligible: You have overdue pending monthly installments.';
+
+            if (client.ws?.readyState === WebSocket.OPEN) {
+              client.ws.send(JSON.stringify({
+                type: 'eligibility_status',
+                data: {
+                  isEligible,
+                  reason,
+                  alreadyWon,
+                  isOverdue,
+                }
+              }));
+            }
+          } catch (err) {
+            console.error('Error checking eligibility in WS:', err);
+          }
+        })();
+      }
+      break;
+    }
     
     case 'setup_auction':
       if (userType === 'admin') {
@@ -710,6 +825,11 @@ function startAuction(data, adminClientId) {
     }
   });
 
+  // High-Priority FCM Push Notification to all group subscribers (wakes up killed app)
+  fcmPushService.sendAuctionStartAlert(groupId, initialAmount).catch(err => {
+    console.error('Error sending auction start push notification:', err);
+  });
+
   // Start timer broadcast every second
   const timerInterval = setInterval(() => {
     const auction = auctionSessions.get(auctionId);
@@ -737,22 +857,52 @@ function startAuction(data, adminClientId) {
 }
 
 async function placeBid(data, clientId) {
-  const { groupId, amount, userId, userName, timestamp } = data;
-  const auctionId = `auction-${groupId}`;
-  const auction = auctionSessions.get(auctionId);
-
-  if (!auction) {
-    const client = clientSessions.get(clientId);
-    if (client?.ws) {
-      client.ws.send(JSON.stringify({
-        type: 'error',
-        data: { message: 'Auction not found or not active' }
-      }));
-    }
+  const client = clientSessions.get(clientId);
+  if (!client || !client.ws) {
     return;
   }
 
-  // Strict Rule: Check if user has ALREADY won an auction in a previous cycle for this group
+  const { groupId, amount, idempotencyKey } = data;
+  const auctionId = `auction-${groupId}`;
+  const auction = auctionSessions.get(auctionId);
+
+  if (!auction || auction.status !== 'active') {
+    client.ws.send(JSON.stringify({
+      type: 'error',
+      data: { message: 'Auction not found or not active' }
+    }));
+    return;
+  }
+
+  // 1. Identity Verification: Always use server session identity, NEVER trust client identity
+  const userId = client.userId;
+  const userName = client.userName;
+  const serverTimestamp = Date.now();
+
+  // 2. Clock & Remaining Time Verification: Check server clock
+  const elapsed = Math.floor((serverTimestamp - auction.startTime) / 1000);
+  const remainingTime = Math.max(0, auction.duration - elapsed);
+  if (remainingTime <= 0) {
+    client.ws.send(JSON.stringify({
+      type: 'error',
+      data: { message: 'Auction time has expired' }
+    }));
+    return;
+  }
+
+  // 3. Idempotency Check: Prevent duplicate bids from network retries
+  if (!auction.processedIdempotencyKeys) {
+    auction.processedIdempotencyKeys = new Set();
+  }
+  if (idempotencyKey) {
+    if (auction.processedIdempotencyKeys.has(idempotencyKey)) {
+      console.log(`[Idempotency] Duplicate bid dropped for key: ${idempotencyKey}`);
+      return;
+    }
+    auction.processedIdempotencyKeys.add(idempotencyKey);
+  }
+
+  // 4. Ineligibility Check: Has user already won an auction in a previous cycle for this group?
   try {
     const [existingWins] = await db.promise().query(
       `SELECT id FROM group_auction_winners WHERE group_id = ? AND (winner_user_id = ? OR LOWER(winner_name) = LOWER(?)) AND deleted_at IS NULL LIMIT 1`,
@@ -760,61 +910,120 @@ async function placeBid(data, clientId) {
     );
 
     if (existingWins && existingWins.length > 0) {
-      const client = clientSessions.get(clientId);
-      if (client?.ws) {
-        client.ws.send(JSON.stringify({
-          type: 'error',
-          data: { message: 'STRICT RULE: You have ALREADY won an auction in a previous cycle for this group and cannot participate again.' }
-        }));
-      }
+      client.ws.send(JSON.stringify({
+        type: 'error',
+        data: { message: 'STRICT RULE: You have ALREADY won an auction in a previous cycle for this group and cannot participate again.' }
+      }));
       return;
     }
   } catch (err) {
     console.error('Error checking past auction winner in placeBid:', err);
   }
 
-  // Get current lowest bid
+  // 5. Defaulter Check: Is the user overdue on any monthly collections for this group?
+  try {
+    const [overdueRows] = await db.promise().query(
+      `SELECT id FROM monthly_collections WHERE group_id = ? AND user_id = ? AND status = 'overdue' AND deleted_at IS NULL LIMIT 1`,
+      [groupId, userId]
+    );
+
+    if (overdueRows && overdueRows.length > 0) {
+      client.ws.send(JSON.stringify({
+        type: 'error',
+        data: { message: 'ELIGIBILITY RESTRICTION: You have overdue pending payments for this group and are ineligible to place bids.' }
+      }));
+      return;
+    }
+  } catch (defaulterErr) {
+    console.error('Error checking defaulter status in placeBid:', defaulterErr);
+  }
+
+  // 6. Minimum Bid Decrement Validation
   let currentLowest = auction.initialAmount;
   if (auction.bids.length > 0) {
     currentLowest = Math.min(...auction.bids.map(b => b.amount));
   }
 
-  // Validate bid amount (must be strictly lower than current lowest bid)
-  if (Number(amount) >= currentLowest) {
-    const client = clientSessions.get(clientId);
-    if (client?.ws) {
-      client.ws.send(JSON.stringify({
-        type: 'error',
-        data: { message: `Your bid must be lower than current lowest bid (₹${currentLowest.toLocaleString('en-IN')})` }
-      }));
-    }
+  const MIN_BID_STEP = 500; // minimum bid decrement step ₹500
+  const bidAmount = Number(amount);
+
+  if (isNaN(bidAmount) || bidAmount <= 0) {
+    client.ws.send(JSON.stringify({
+      type: 'error',
+      data: { message: 'Invalid bid amount' }
+    }));
     return;
   }
 
-  // Add bid to auction history
+  if (bidAmount > currentLowest - MIN_BID_STEP) {
+    client.ws.send(JSON.stringify({
+      type: 'error',
+      data: { 
+        message: `Your bid must be at least ₹${MIN_BID_STEP.toLocaleString('en-IN')} lower than the current lowest bid (Maximum allowable bid: ₹${(currentLowest - MIN_BID_STEP).toLocaleString('en-IN')})` 
+      }
+    }));
+    return;
+  }
+
+  // 7. Anti-Sniping Protection: If a bid arrives in the final 30 seconds, extend clock by 30 seconds
+  let antiSnipingExtended = false;
+  let updatedRemainingTime = remainingTime;
+  if (remainingTime <= 30) {
+    const extensionSeconds = 30;
+    auction.duration += extensionSeconds;
+    antiSnipingExtended = true;
+    updatedRemainingTime = Math.max(0, auction.duration - Math.floor((serverTimestamp - auction.startTime) / 1000));
+    console.log(`⏱️ [Anti-Sniping] Extended clock by ${extensionSeconds}s for group ${groupId}. New remaining: ${updatedRemainingTime}s`);
+  }
+
+  // 8. Record Bid with Server Timestamp
   auction.bids.push({
     userId,
     userName,
-    amount,
-    timestamp,
+    amount: bidAmount,
+    timestamp: serverTimestamp,
     clientId,
+    idempotencyKey: idempotencyKey || null,
   });
 
   auction.participants.add(userId);
 
-  console.log(`💰 Bid placed: ${userName} - ₹${amount}`);
+  console.log(`💰 Verified bid accepted: ${userName} (#${userId}) - ₹${bidAmount} (serverTime: ${new Date(serverTimestamp).toISOString()})`);
 
-  // Broadcast bid to all clients
+  // 9. Broadcast Verified Bid to All Group Clients
   broadcastToGroup(groupId, {
     type: 'bid_placed',
     data: {
       userId,
       userName,
-      amount,
-      timestamp,
+      amount: bidAmount,
+      timestamp: serverTimestamp,
       totalBids: auction.bids.length,
+      antiSnipingExtended,
+      newRemainingTime: updatedRemainingTime,
+      newDuration: auction.duration,
     }
   });
+
+  // 10. Process Auto-Bidders (Proxy Bidding)
+  if (auction.autoBidders && auction.autoBidders.size > 0) {
+    setTimeout(() => {
+      for (const [autoUserId, autoBid] of auction.autoBidders.entries()) {
+        if (String(autoUserId) !== String(userId)) {
+          const nextBidAmount = bidAmount - MIN_BID_STEP;
+          if (nextBidAmount >= autoBid.floorAmount) {
+            console.log(`🤖 [Auto-Bid] Executing automated bid for ${autoBid.userName} at ₹${nextBidAmount}`);
+            placeBid({
+              groupId,
+              amount: nextBidAmount,
+              idempotencyKey: `autobid-${autoUserId}-${nextBidAmount}-${Date.now()}`
+            }, autoBid.clientId);
+            break;
+          }
+        }
+      }
+    }, 1200);
+  }
 }
 
 function pauseAuction(groupId, adminClientId) {
@@ -906,6 +1115,30 @@ function endAuction(groupId, adminClientId) {
     winner = minBid;
   }
 
+  // Financial calculations for post-auction summary screen
+  const initialAmount = Number(auction.initialAmount || 100000);
+  const winningBid = winner ? Number(winner.amount) : initialAmount;
+  const discountAmount = Math.max(0, initialAmount - winningBid);
+  const commission = Math.round(initialAmount * 0.05); // 5% foreman commission
+  const netDividendPool = Math.max(0, discountAmount - commission);
+  
+  const totalMembers = 20; // standard chit cycle pool
+  const dividendPerMember = Math.round(netDividendPool / totalMembers);
+  const baseMonthlyInstallment = Math.round(initialAmount / totalMembers);
+  const nextInstallmentAmount = Math.max(0, baseMonthlyInstallment - dividendPerMember);
+
+  const summary = {
+    chitValue: initialAmount,
+    winningBid: winningBid,
+    discountAmount: discountAmount,
+    commission: commission,
+    netDividendPool: netDividendPool,
+    totalMembers: totalMembers,
+    dividendPerMember: dividendPerMember,
+    baseMonthlyInstallment: baseMonthlyInstallment,
+    nextInstallmentAmount: nextInstallmentAmount,
+  };
+
   broadcastToGroup(groupId, {
     type: 'auction_ended',
     data: {
@@ -916,8 +1149,14 @@ function endAuction(groupId, adminClientId) {
         amount: winner.amount,
         timestamp: winner.timestamp,
       } : null,
+      summary,
       totalBids: auction.bids.length,
     }
+  });
+
+  // High-Priority FCM Push Notification with auction results & member dividend
+  fcmPushService.sendAuctionResultAlert(groupId, winner, summary).catch(err => {
+    console.error('Error sending auction result push notification:', err);
   });
 
   // Save winner to database
@@ -1028,6 +1267,14 @@ setupGracefulShutdown(server);
       console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
       console.log(`🌐 WebSocket auction endpoint: ws://localhost:${PORT}/api/auction`);
       console.log('\n📝 Press Ctrl+C to shutdown gracefully\n');
+
+      // Start automated background scan for payment due & overdue alerts (every 12 hours)
+      setTimeout(() => {
+        fcmPushService.sendDailyPaymentDueAlerts().catch(e => console.error('Initial payment due scan error:', e?.message));
+      }, 10000);
+      setInterval(() => {
+        fcmPushService.sendDailyPaymentDueAlerts().catch(e => console.error('Periodic payment due scan error:', e?.message));
+      }, 12 * 60 * 60 * 1000);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);

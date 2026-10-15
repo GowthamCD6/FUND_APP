@@ -11,10 +11,12 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useNavigation } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 import { useLanguage } from '../../../../../../utils/LanguageContext';
+import { useSecureScreen } from '../../../../../../services/ScreenSecurity';
 
 const IdentityVerification = ({ pageName = 'This Page' }) => {
   const navigation = useNavigation();
   const { t, language } = useLanguage();
+  useSecureScreen();
 
   useEffect(() => {
     const backAction = () => {

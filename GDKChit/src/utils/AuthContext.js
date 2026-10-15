@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ApiService from '../services/ApiService';
+import PushNotificationService from '../services/PushNotificationService';
 
 const AuthContext = createContext();
 
@@ -35,6 +36,7 @@ export const AuthProvider = ({ children }) => {
           if (user.role) {
             await AsyncStorage.setItem('userRole', String(user.role));
           }
+          PushNotificationService.init();
         } else {
           // Token might be invalid, clear it
           await ApiService.clearTokens();
@@ -73,6 +75,7 @@ export const AuthProvider = ({ children }) => {
 
         setUser(user);
         setIsAuthenticated(true);
+        PushNotificationService.init();
 
         return response;
       } else {

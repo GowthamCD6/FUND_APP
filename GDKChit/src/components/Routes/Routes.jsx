@@ -37,6 +37,11 @@ import AdminLanguageSettings from "../../pages/Admin/pages/Settings/pages/Langua
 import OTPRequests from "../../pages/User/Pages/Profile/Page/OTPRequests/OTPRequests";
 import OTPNotificationBanner from "../OTPNotificationBanner/OTPNotificationBanner";
 
+import ChitSimulator from "../../pages/User/Pages/Tools/ChitSimulator/ChitSimulator";
+import PrizedSuretyTracker from "../../pages/User/Pages/Tools/PrizedSuretyTracker/PrizedSuretyTracker";
+import DueCalendar from "../../pages/User/Pages/Tools/DueCalendar/DueCalendar";
+import DocumentVault from "../../pages/User/Pages/Tools/DocumentVault/DocumentVault";
+
 import { navigationRef } from "../../utils/navigation";
 
 const AdminDataExport = props => {
@@ -122,6 +127,10 @@ const Routes = () => {
                     <Stack.Screen name="LanguageSettings" component={withSafe(LanguageSettings)} />
                     <Stack.Screen name="AdminLanguageSettings" component={withSafe(AdminLanguageSettings)} />
                     <Stack.Screen name="OTPRequests" component={withSafe(OTPRequests)} />
+                    <Stack.Screen name="ChitSimulator" component={withSafe(ChitSimulator)} />
+                    <Stack.Screen name="PrizedSuretyTracker" component={withSafe(PrizedSuretyTracker)} />
+                    <Stack.Screen name="DueCalendar" component={withSafe(DueCalendar)} />
+                    <Stack.Screen name="DocumentVault" component={withSafe(DocumentVault)} />
                 </Stack.Navigator>
                 <OTPNotificationBanner />
             </View>

@@ -51,6 +51,10 @@ const iconMap = {
   'credit-card': 'credit-card-outline',
   languages: 'translate',
   'check-circle': 'check-circle',
+  'calculator-variant': 'calculator-variant',
+  'shield-account': 'shield-account',
+  'calendar-month': 'calendar-month',
+  'folder-text': 'folder-text',
 };
 
 const Icon = ({ name, size = 16, color = '#000' }) => {
@@ -324,6 +328,18 @@ const Home = () => {
       case 'language':
         navigation.navigate('LanguageSettings');
         break;
+      case 'simulator':
+        navigation.navigate('ChitSimulator');
+        break;
+      case 'surety':
+        navigation.navigate('PrizedSuretyTracker');
+        break;
+      case 'calendar':
+        navigation.navigate('DueCalendar');
+        break;
+      case 'vault':
+        navigation.navigate('DocumentVault');
+        break;
       default:
         break;
     }
@@ -584,6 +600,38 @@ const Home = () => {
       icon: 'languages',
       title: 'Dual Language',
       subtitle: 'Tamil & English\nsupport',
+    },
+    {
+      id: 'simulator',
+      bgColor: '#F0FDFA',
+      iconColor: '#0D9488',
+      icon: 'calculator-variant',
+      title: 'Chit Simulator',
+      subtitle: 'Dividend & ROI\ncalculator',
+    },
+    {
+      id: 'surety',
+      bgColor: '#FFFBEB',
+      iconColor: '#B45309',
+      icon: 'shield-account',
+      title: 'Prized & Surety',
+      subtitle: 'Guarantors\n& winners',
+    },
+    {
+      id: 'calendar',
+      bgColor: '#EFF6FF',
+      iconColor: '#2563EB',
+      icon: 'calendar-month',
+      title: 'Due Calendar',
+      subtitle: 'Deadlines &\ninstallments',
+    },
+    {
+      id: 'vault',
+      bgColor: '#FAF5FF',
+      iconColor: '#7C3AED',
+      icon: 'folder-text',
+      title: 'Document Vault',
+      subtitle: 'E-Sign &\nPDF receipts',
     },
   ];
 
@@ -1042,17 +1090,17 @@ const Home = () => {
             contentContainerStyle={styles.instagramBannersScroll}
           >
             <Image
-              source={require('../../../../assets/UserHomePage/gold_graph_banner.png')}
+              source={require('../../../../assets/UserHomePage/gold_graph_banner.jpg')}
               style={styles.instagramBannerImage}
               resizeMode="cover"
             />
             <Image
-              source={require('../../../../assets/UserHomePage/gold_rupee_banner.png')}
+              source={require('../../../../assets/UserHomePage/gold_rupee_banner.jpg')}
               style={styles.instagramBannerImage}
               resizeMode="cover"
             />
             <Image
-              source={require('../../../../assets/UserHomePage/gold_ripped_banner.png')}
+              source={require('../../../../assets/UserHomePage/gold_ripped_banner.jpg')}
               style={styles.instagramBannerImage}
               resizeMode="cover"
             />

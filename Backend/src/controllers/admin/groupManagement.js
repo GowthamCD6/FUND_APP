@@ -2,6 +2,7 @@ const db = require('../../config/db')
 const { groupEncryptAES, groupDecryptAES } = require('../../utils/decryptAES');
 const { sendSMS } = require('../../services/smsService');
 const { logAuditEvent } = require('../../utils/auditLogger');
+const fcmPushService = require('../../services/fcmPushService');
 
 exports.getAdminNotifications = async (req, res) => {
     try {
@@ -1279,5 +1280,43 @@ exports.getDashboardOverview = async (req, res) => {
     } catch (error) {
         console.error('Error fetching dashboard overview:', error);
         return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+exports.notifyAuctionMembers = async (req, res) => {
+    try {
+        const { groupId, initialAmount, title, message } = req.body;
+        if (!groupId) {
+            return res.status(400).json({ success: false, message: 'groupId is required' });
+        }
+
+        const result = await fcmPushService.sendAuctionStartAlert(groupId, initialAmount || 100000);
+        return res.json({
+            success: true,
+            message: 'Auction notification sent to enrolled subscribers',
+            data: result
+        });
+    } catch (err) {
+        console.error('Error in notifyAuctionMembers:', err);
+        return res.status(500).json({ success: false, message: 'Failed to send auction notification' });
+    }
+};
+
+exports.broadcastAnnouncement = async (req, res) => {
+    try {
+        const { title, message, targetGroupId } = req.body;
+        if (!title || !message) {
+            return res.status(400).json({ success: false, message: 'title and message are required' });
+        }
+
+        const result = await fcmPushService.sendBroadcastAnnouncement(title, message, targetGroupId || null);
+        return res.json({
+            success: true,
+            message: 'Announcement broadcast sent successfully',
+            data: result
+        });
+    } catch (err) {
+        console.error('Error in broadcastAnnouncement:', err);
+        return res.status(500).json({ success: false, message: 'Failed to broadcast announcement' });
     }
 };

@@ -14,6 +14,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuctionWebSocketService from '../../../../../../services/AuctionWebSocketService';
+import ApiService from '../../../../../../services/ApiService';
 import { useLanguage } from '../../../../../../utils/LanguageContext';
 
 const { width } = Dimensions.get('window');
@@ -88,7 +89,7 @@ const RandomAuction = ({
 
     const initWebSocket = async () => {
       try {
-        const token = await AsyncStorage.getItem('accessToken');
+        const token = await ApiService.getAccessToken();
         const userId = await AsyncStorage.getItem('userId');
         
         if (token && userId) {

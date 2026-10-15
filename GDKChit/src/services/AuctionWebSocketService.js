@@ -1,3 +1,5 @@
+import { AppState } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { API_URL } from '../utils/env';
 
 class AuctionWebSocketService {
@@ -5,53 +7,103 @@ class AuctionWebSocketService {
     this.ws = null;
     this.listeners = {};
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
-    this.reconnectDelay = 3000;
+    this.reconnectTimeout = null;
     this.pingInterval = null;
     this.isManuallyClosed = false;
+    this.isAuthenticated = false;
+    this.activeCredentials = null;
+    this.connectionState = 'disconnected'; // 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
+
+    this.setupNetworkAndAppStateListeners();
   }
 
   get url() {
     return API_URL.replace(/^http/, 'ws').replace(/\/+$/, '') + '/auction';
   }
 
-  // Connect to WebSocket
-  connect(token, userId, userType = 'admin') {
+  setupNetworkAndAppStateListeners() {
+    // 1. Listen for network changes: auto-reconnect as soon as internet returns
+    NetInfo.addEventListener(state => {
+      const isOnline = state.isConnected && state.isInternetReachable !== false;
+      if (isOnline && !this.isConnected() && this.activeCredentials && !this.isManuallyClosed) {
+        console.log('🌐 Network restored, reconnecting auction WebSocket immediately...');
+        this.reconnectAttempts = 0;
+        this.attemptReconnect();
+      }
+    });
+
+    // 2. Listen for app resume: reconnect when user re-opens the app
+    AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active' && !this.isConnected() && this.activeCredentials && !this.isManuallyClosed) {
+        console.log('📱 App resumed to active, verifying auction WebSocket connection...');
+        this.attemptReconnect();
+      }
+    });
+  }
+
+  setConnectionState(newState, extra = {}) {
+    this.connectionState = newState;
+    this.emitEvent('connection_state_change', { state: newState, ...extra });
+  }
+
+  // Connect to WebSocket without leaking JWT in URL query string
+  connect(token, userId, userType = 'user') {
     if (!token || !userId) return Promise.reject(new Error('Missing token or userId'));
 
-    // Clean up existing socket before creating a new one
-    this.cleanupSocket();
+    this.activeCredentials = { token, userId, userType };
     this.isManuallyClosed = false;
+    this.cleanupSocket();
 
     return new Promise((resolve, reject) => {
       try {
-        const wsUrl = `${this.url}?token=${token}&userId=${userId}&userType=${userType}`;
-        this.ws = new WebSocket(wsUrl);
+        this.setConnectionState(this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting', {
+          attempt: this.reconnectAttempts,
+        });
+
+        // Clean WebSocket URL — NO token in query parameters!
+        this.ws = new WebSocket(this.url);
         let resolved = false;
 
         this.ws.onopen = () => {
-          console.log('✅ WebSocket connected for auction');
+          console.log('✅ WebSocket socket opened, dispatching first-frame authentication...');
+          
+          // Send authentication as the first frame over the encrypted WS connection
+          this.ws.send(JSON.stringify({
+            type: 'auth',
+            data: {
+              token,
+              userId: String(userId),
+              userType: String(userType).toLowerCase(),
+            }
+          }));
+
           this.reconnectAttempts = 0;
           this.startHeartbeat();
-          if (!resolved) {
-            resolved = true;
-            resolve();
-          }
         };
 
         this.ws.onmessage = (event) => {
           try {
             const message = JSON.parse(event.data);
-            if (message.type === 'pong') return; // Ignore pong response
-            console.log('📨 WebSocket message received:', message.type, message);
+            if (message.type === 'pong') return;
+
+            // Handle server authentication confirmation
+            if (message.type === 'connected') {
+              this.isAuthenticated = true;
+              this.setConnectionState('connected');
+              if (!resolved) {
+                resolved = true;
+                resolve();
+              }
+            }
+
             this.emitEvent(message.type, message.data);
           } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
+            console.error('[AuctionWS] Error parsing WebSocket message:', error);
           }
         };
 
         this.ws.onerror = (error) => {
-          console.error('❌ WebSocket error:', error?.message || error);
+          console.error('❌ [AuctionWS] WebSocket error:', error?.message || error);
           this.emitEvent('error', { message: 'WebSocket connection error' });
           if (!resolved) {
             resolved = true;
@@ -60,13 +112,15 @@ class AuctionWebSocketService {
         };
 
         this.ws.onclose = (event) => {
-          console.log('🔌 WebSocket disconnected');
+          console.log(`🔌 [AuctionWS] WebSocket closed (code: ${event?.code}, reason: ${event?.reason})`);
           this.stopHeartbeat();
-          this.emitEvent('disconnected', {});
+          this.isAuthenticated = false;
+          this.setConnectionState('disconnected', { code: event?.code });
+          this.emitEvent('disconnected', { code: event?.code });
 
-          // Don't auto-reconnect if auth failed (1008) or manually closed
+          // Auto-reconnect unless manually closed or fatal auth error (1008)
           if (!this.isManuallyClosed && event?.code !== 1008) {
-            this.attemptReconnect(token, userId, userType);
+            this.scheduleReconnect();
           }
         };
       } catch (error) {
@@ -78,13 +132,38 @@ class AuctionWebSocketService {
     });
   }
 
+  scheduleReconnect() {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+    }
+
+    this.reconnectAttempts++;
+    // Exponential backoff capped at 8 seconds: 1.5s, 2.25s, 3.37s, 5s, 8s, 8s...
+    const delay = Math.min(1500 * Math.pow(1.5, Math.min(this.reconnectAttempts - 1, 5)), 8000);
+
+    console.log(`🔄 [AuctionWS] Reconnecting attempt ${this.reconnectAttempts} in ${Math.round(delay)}ms...`);
+    this.setConnectionState('reconnecting', { attempt: this.reconnectAttempts, delay });
+
+    this.reconnectTimeout = setTimeout(() => {
+      this.attemptReconnect();
+    }, delay);
+  }
+
+  attemptReconnect() {
+    if (this.isManuallyClosed || !this.activeCredentials) return;
+    const { token, userId, userType } = this.activeCredentials;
+    this.connect(token, userId, userType).catch(err => {
+      console.warn('[AuctionWS] Reconnect failed, will retry:', err?.message);
+    });
+  }
+
   startHeartbeat() {
     this.stopHeartbeat();
     this.pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify({ type: 'ping' }));
       }
-    }, 20000);
+    }, 15000); // 15-second ping interval
   }
 
   stopHeartbeat() {
@@ -96,6 +175,10 @@ class AuctionWebSocketService {
 
   cleanupSocket() {
     this.stopHeartbeat();
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
     if (this.ws) {
       try {
         this.ws.onopen = null;
@@ -108,17 +191,30 @@ class AuctionWebSocketService {
     }
   }
 
-  // Attempt to reconnect
-  attemptReconnect(token, userId, userType) {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      console.log(`🔄 Reconnecting attempt ${this.reconnectAttempts}...`);
-      setTimeout(() => {
-        if (!this.isManuallyClosed) {
-          this.connect(token, userId, userType).catch(console.error);
-        }
-      }, this.reconnectDelay);
+  disconnect() {
+    this.isManuallyClosed = true;
+    this.activeCredentials = null;
+    this.cleanupSocket();
+    this.setConnectionState('disconnected');
+  }
+
+  // Send message
+  send(type, data = {}) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type, data }));
+    } else {
+      console.warn('[AuctionWS] Cannot send message, WebSocket is not open');
     }
+  }
+
+  // Place bid with client-generated idempotency key
+  placeBid(groupId, amount, idempotencyKey = null) {
+    const key = idempotencyKey || `${this.activeCredentials?.userId || 'u'}-${groupId}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    this.send('place_bid', {
+      groupId,
+      amount: Number(amount),
+      idempotencyKey: key,
+    });
   }
 
   // Start auction
@@ -128,124 +224,72 @@ class AuctionWebSocketService {
       initialAmount,
       duration,
       participantIds,
-      startTime: Date.now(),
     });
   }
 
-  // Place bid
-  placeBid(groupId, amount, userId, userName) {
-    this.send('place_bid', {
-      groupId,
-      amount,
-      userId,
-      userName,
-      timestamp: Date.now(),
-    });
-  }
-
-  // Pause auction
   pauseAuction(groupId) {
     this.send('pause_auction', { groupId });
   }
 
-  // Resume auction
   resumeAuction(groupId) {
     this.send('resume_auction', { groupId });
   }
 
-  // End auction
   endAuction(groupId) {
     this.send('end_auction', { groupId });
   }
 
-  // Reset auction
   resetAuction(groupId) {
     this.send('reset_auction', { groupId });
   }
 
-  // Setup auction
-  setupAuction(groupId, type, participantIds = []) {
-    this.send('setup_auction', {
+  userJoinedAuction(groupId, userId) {
+    this.send('user_joined_auction', { groupId, userId });
+  }
+
+  setAutoBid(groupId, floorAmount, enabled = true) {
+    this.send('set_auto_bid', {
       groupId,
-      type,
-      participantIds,
+      floorAmount: Number(floorAmount),
+      enabled: Boolean(enabled),
     });
   }
 
-  // Roll dice
-  rollDice(groupId, duration, finalValue, winner, initialAmount = 0) {
-    this.send('roll_dice', {
-      groupId,
-      duration,
-      finalValue,
-      winner,
-      initialAmount,
-    });
+  checkEligibility(groupId) {
+    this.send('check_eligibility', { groupId });
   }
 
-  // Join auction (User approves)
-  joinAuction(groupId, userId) {
-    this.send('user_joined_auction', {
-      groupId,
-      userId,
-    });
-  }
-
-  // Send message
-  send(type, data) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type, data }));
-    } else {
-      console.warn('WebSocket not connected. Message not sent:', type);
-    }
-  }
-
-  // Register event listener
+  // Event listener management
   on(event, callback) {
     if (!this.listeners[event]) {
       this.listeners[event] = [];
     }
     this.listeners[event].push(callback);
 
-    // Return unsubscribe function
+    // Return unbind function
     return () => {
-      this.off(event, callback);
+      this.listeners[event] = this.listeners[event]?.filter(cb => cb !== callback) || [];
     };
   }
 
-  // Remove event listener
-  off(event, callback) {
-    if (!this.listeners[event]) return;
-    if (callback) {
-      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
-    } else {
-      delete this.listeners[event];
-    }
-  }
-
-  // Emit event
   emitEvent(event, data) {
     if (this.listeners[event]) {
       this.listeners[event].forEach(callback => {
         try {
           callback(data);
         } catch (error) {
-          console.error(`Error in event listener for ${event}:`, error);
+          console.error(`[AuctionWS] Error in event listener for ${event}:`, error);
         }
       });
     }
   }
 
-  // Disconnect
-  disconnect() {
-    this.isManuallyClosed = true;
-    this.cleanupSocket();
-    this.listeners = {};
+  isConnected() {
+    return this.ws !== null && this.ws.readyState === WebSocket.OPEN && this.isAuthenticated;
   }
 
-  // Check connection status
-  isConnected() {
-    return this.ws && this.ws.readyState === WebSocket.OPEN;
+  getConnectionState() {
+    return this.connectionState;
   }
 }
 

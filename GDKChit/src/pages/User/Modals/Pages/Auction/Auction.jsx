@@ -217,7 +217,7 @@ const Auction = ({ route, navigation, onClose, selectedGroupId, selectedGroupTyp
 
     const initSocket = async () => {
       try {
-        const token = await AsyncStorage.getItem('accessToken');
+        const token = await ApiService.getAccessToken();
         const userId = await AsyncStorage.getItem('userId');
         if (token && userId) {
           await AuctionWebSocketService.connect(token, userId, 'user');

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SecureStorage from './SecureStorage';
 import { API_URL } from '../utils/env';
 import { Alert } from 'react-native';
 import { reset as resetNavigation } from '../utils/navigation';
@@ -13,43 +14,37 @@ class ApiService {
     return API_URL;
   }
 
-  // Set tokens
+  // Set tokens in memory
   setTokens(accessToken, refreshToken) {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
   }
 
-  // Get access token from storage
+  // Get access token from hardware-backed Keychain/Keystore
   async getAccessToken() {
     if (!this.accessToken) {
-      this.accessToken = await AsyncStorage.getItem('accessToken');
+      this.accessToken = await SecureStorage.getAccessToken();
     }
     return this.accessToken;
   }
 
-  // Get refresh token from storage
+  // Get refresh token from hardware-backed Keychain/Keystore
   async getRefreshToken() {
     if (!this.refreshToken) {
-      this.refreshToken = await AsyncStorage.getItem('refreshToken');
+      this.refreshToken = await SecureStorage.getRefreshToken();
     }
     return this.refreshToken;
   }
 
-  // Save tokens to storage
+  // Save tokens to hardware-backed Keychain/Keystore
   async saveTokens(accessToken, refreshToken) {
-    await AsyncStorage.setItem('accessToken', accessToken);
-    // console.log(refreshToken);
-    
-    if (refreshToken) {
-      await AsyncStorage.setItem('refreshToken', refreshToken);
-    }
+    await SecureStorage.saveTokens(accessToken, refreshToken);
     this.setTokens(accessToken, refreshToken);
   }
 
-  // Clear tokens
+  // Clear tokens from hardware-backed Keychain/Keystore
   async clearTokens() {
-    await AsyncStorage.removeItem('accessToken');
-    await AsyncStorage.removeItem('refreshToken');
+    await SecureStorage.clearTokens();
     this.accessToken = null;
     this.refreshToken = null;
   }
@@ -479,6 +474,20 @@ class ApiService {
         return { success: false, message: 'Invalid response from server' };
       }
     } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  // Push Notification FCM registration
+  async registerFCMToken(fcmToken, platform = 'android') {
+    try {
+      const response = await this.makeRequest('/user/fcm-token', {
+        method: 'POST',
+        body: JSON.stringify({ fcmToken, platform }),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to register FCM token:', error);
       return { success: false, message: error.message };
     }
   }

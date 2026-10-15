@@ -36,6 +36,7 @@ router.get('/groups/getCompletedAuctions', authenticateToken, groupManagement.ge
 router.get('/groups/getPendingAuctionWinner', authenticateToken, groupManagement.getPendingAuctionWinner);
 router.get('/dashboard-overview', authenticateToken, groupManagement.getDashboardOverview);
 router.get('/notifications', authenticateToken, groupManagement.getAdminNotifications);
+router.post('/notifications/broadcast', authenticateToken, requireAdmin, groupManagement.broadcastAnnouncement);
 
 router.post('/users/addUser', authenticateToken, requireAdmin, userManagement.addUser);
 router.get('/users/getAllUsers', authenticateToken, userManagement.getAllUsers);

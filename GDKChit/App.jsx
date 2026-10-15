@@ -6,6 +6,7 @@ import "react-native-get-random-values";
 import { AuthProvider } from "./src/utils/AuthContext";
 import { LanguageProvider } from "./src/utils/LanguageContext";
 import BiometricService from "./src/services/BiometricService";
+import PushNotificationService from "./src/services/PushNotificationService";
 import SecurityLockScreen from "./src/pages/User/Pages/Profile/Page/SecurityLock/SecurityLockScreen";
 
 const AppContent = () => {
@@ -16,7 +17,10 @@ const AppContent = () => {
   });
 
   useEffect(() => {
-    console.log('App.jsx: Starting security initialization...');
+    console.log('App.jsx: Starting security & push notification initialization...');
+
+    // Initialize Push Notifications
+    PushNotificationService.init();
 
     // Initialize security state
     const initSecurity = async () => {
@@ -94,20 +98,22 @@ const AppContent = () => {
 
 import { AuctionProvider } from "./src/utils/AuctionContext";
 import GlobalAuctionModal from "./src/components/GlobalAuctionModal/GlobalAuctionModal";
+import GlobalErrorBoundary from "./src/components/GlobalErrorBoundary/GlobalErrorBoundary";
 
 const App = () => {
-
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <AuctionProvider>
-          {/* <ThemeProvider> */}
-          <AppContent />
-          <GlobalAuctionModal />
-          {/* </ThemeProvider> */}
-        </AuctionProvider>
-      </AuthProvider>
-    </LanguageProvider>
+    <GlobalErrorBoundary>
+      <LanguageProvider>
+        <AuthProvider>
+          <AuctionProvider>
+            {/* <ThemeProvider> */}
+            <AppContent />
+            <GlobalAuctionModal />
+            {/* </ThemeProvider> */}
+          </AuctionProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </GlobalErrorBoundary>
   );
 };
 

@@ -10,6 +10,8 @@ class ContactPickerPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
         val modules = ArrayList<NativeModule>()
         modules.add(ContactPickerModule(reactContext))
+        modules.add(ScreenSecurityModule(reactContext))
+        modules.add(GdkNotificationModule(reactContext))
         return modules
     }
 
