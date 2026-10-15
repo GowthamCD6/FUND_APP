@@ -164,7 +164,7 @@ const ChatList = ({ navigation }) => {
         const userId = parseJwtUserId(token);
         const userType = userRole || 'Admin';
         
-        let wsUrl = ApiService.baseURL ? ApiService.baseURL.replace('http', 'ws') : 'ws://localhost:5000';
+        let wsUrl = ApiService.baseURL ? ApiService.baseURL.replace(/^http/, 'ws') : 'wss://api.fund.gowthamcd.in/api';
         wsUrl = wsUrl.replace(/\/api\/admin\/?$/, '').replace(/\/api\/?$/, '');
         wsUrl = `${wsUrl}/api/chat?token=${token}&userId=${userId}&userType=${userType}`;
         

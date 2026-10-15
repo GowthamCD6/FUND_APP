@@ -12,7 +12,7 @@ class AuctionWebSocketService {
   }
 
   get url() {
-    return API_URL.replace('http', 'ws') + '/auction';
+    return API_URL.replace(/^http/, 'ws').replace(/\/+$/, '') + '/auction';
   }
 
   // Connect to WebSocket
