@@ -1,7 +1,7 @@
 import { Platform, Alert, PermissionsAndroid, NativeModules, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ApiService from './ApiService';
-import { navigate, navigationRef } from '../utils/navigation';
+import { navigate } from '../utils/navigation';
 
 const { GdkNotification } = NativeModules;
 
@@ -73,7 +73,7 @@ class PushNotificationService {
   }
 
   /**
-   * Generate persistent pseudorandom FCM-compatible device token identifier
+   * Generate persistent pseudorandom device push token identifier
    */
   generateDeviceToken() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
@@ -85,13 +85,39 @@ class PushNotificationService {
   }
 
   /**
-   * Register or update token from native Firebase SDK
+   * Handle onTokenRefresh when Firebase SDK rotates the client token
    */
-  async registerToken(token) {
-    if (!token) return;
-    this.fcmToken = token;
-    await AsyncStorage.setItem('device_fcm_token', token);
-    await this.syncTokenWithBackend(token);
+  async onTokenRefresh(newToken) {
+    if (!newToken || newToken === this.fcmToken) return;
+    console.log('🔄 [PushNotificationService] FCM token refreshed:', newToken);
+    const oldToken = this.fcmToken;
+    this.fcmToken = newToken;
+    await AsyncStorage.setItem('device_fcm_token', newToken);
+
+    // Remove old token and register new one on server
+    if (oldToken) {
+      await ApiService.deleteFCMToken(oldToken).catch(() => {});
+    }
+    await this.syncTokenWithBackend(newToken);
+  }
+
+  /**
+   * Delete token on server and remove locally at user logout
+   * Prevents shared phones from receiving the previous user's sensitive alerts
+   */
+  async deleteTokenOnLogout() {
+    try {
+      if (this.fcmToken) {
+        console.log('🚪 [PushNotificationService] Deleting FCM token on logout...');
+        await ApiService.deleteFCMToken(this.fcmToken);
+      }
+      await AsyncStorage.removeItem('device_fcm_token');
+      this.fcmToken = null;
+      this.isInitialized = false;
+      console.log('✅ [PushNotificationService] FCM token purged successfully on logout');
+    } catch (err) {
+      console.warn('⚠️ [PushNotificationService] Error deleting token on logout:', err?.message);
+    }
   }
 
   /**
@@ -101,7 +127,6 @@ class PushNotificationService {
     try {
       const isAuth = await ApiService.isAuthenticated();
       if (!isAuth) {
-        // Will sync upon successful login
         return;
       }
 
@@ -138,7 +163,6 @@ class PushNotificationService {
       const initialData = await GdkNotification.getInitialNotification();
       if (initialData) {
         console.log('🚀 [PushNotificationService] Launched from killed state via notification:', initialData);
-        // Wait briefly for NavigationContainer to mount
         setTimeout(() => {
           this.routeNotificationAction(initialData);
         }, 1200);
@@ -149,9 +173,11 @@ class PushNotificationService {
   }
 
   /**
-   * Direct deep-link routing to appropriate screen based on notification payload
+   * Direct deep-link routing with auction state verification
+   * If an auction start alert was delayed or the auction has already finished,
+   * automatically redirects to the Post-Auction Summary screen instead of an empty bidding room.
    */
-  routeNotificationAction(data) {
+  async routeNotificationAction(data) {
     if (!data) return;
 
     const screen = data.screen;
@@ -162,6 +188,23 @@ class PushNotificationService {
 
     try {
       if (screen === 'AuctionScreen' && groupId) {
+        // Validate auction status before opening bidding room
+        try {
+          const res = await ApiService.getPortfolio();
+          if (res?.success && Array.isArray(res?.data)) {
+            const groupInfo = res.data.find(g => String(g.id) === String(groupId));
+            const isAuctionActive = groupInfo?.auction_status === 'active' || groupInfo?.status === 'bidding';
+            
+            if (groupInfo && !isAuctionActive && groupInfo.auction_status === 'completed') {
+              console.log('🏁 [PushNotificationService] Auction already ended. Routing to Post-Auction Summary.');
+              navigate('PrizedSuretyTracker', { groupId: String(groupId), highlightResult: true });
+              return;
+            }
+          }
+        } catch (checkErr) {
+          console.warn('Could not check auction state, opening auction screen directly:', checkErr?.message);
+        }
+
         navigate('AuctionScreen', { groupId: String(groupId) });
       } else if (screen === 'DueCalendar') {
         navigate('DueCalendar');
@@ -178,9 +221,65 @@ class PushNotificationService {
   }
 
   /**
+   * Check if battery optimization is currently ignored by Android
+   */
+  async isBatteryOptimizationIgnored() {
+    if (Platform.OS === 'android' && GdkNotification?.isIgnoringBatteryOptimizations) {
+      try {
+        return await GdkNotification.isIgnoringBatteryOptimizations();
+      } catch (e) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Prompt user to disable battery optimization
+   */
+  async requestDisableBatteryOptimization() {
+    if (Platform.OS === 'android' && GdkNotification?.requestIgnoreBatteryOptimizations) {
+      try {
+        return await GdkNotification.requestIgnoreBatteryOptimizations();
+      } catch (e) {
+        console.warn('Failed to open battery optimization settings:', e);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Launch manufacturer autostart manager (Xiaomi, Oppo, Vivo, Samsung, Realme)
+   */
+  async openOEMAutostartSettings() {
+    if (Platform.OS === 'android' && GdkNotification?.openOEMAutostartSettings) {
+      try {
+        return await GdkNotification.openOEMAutostartSettings();
+      } catch (e) {
+        console.warn('Failed to open OEM autostart settings:', e);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get device manufacturer details
+   */
+  async getDeviceManufacturer() {
+    if (Platform.OS === 'android' && GdkNotification?.getDeviceManufacturer) {
+      try {
+        return await GdkNotification.getDeviceManufacturer();
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /**
    * Display a high-importance native heads-up notification with sound and vibration
    */
-  async showLocalNotification({ title, message, channelId = 'gdk_announcements', data = {} }) {
+  async showLocalNotification({ title, message, channelId = 'gdk_announcements_v2', data = {} }) {
     if (Platform.OS === 'android' && GdkNotification?.displayNotification) {
       try {
         await GdkNotification.displayNotification(title, message, channelId, data);
@@ -188,23 +287,23 @@ class PushNotificationService {
         console.warn('Failed to display native notification:', e);
       }
     } else {
-      // Fallback for non-Android or unsupported environments
       Alert.alert(title, message, [{ text: 'View', onPress: () => this.routeNotificationAction(data) }, { text: 'Dismiss' }]);
     }
   }
 
   /**
-   * Quick-trigger: Live Auction Started
+   * Quick-trigger: Live Auction Started (Short TTL heads-up alert)
    */
   async notifyAuctionStarted(groupId, groupName, chitAmount) {
     await this.showLocalNotification({
       title: `⚡ Live Auction Started: ${groupName || 'Chit Group'}`,
       message: `The live auction is NOW OPEN for ₹${Number(chitAmount || 0).toLocaleString('en-IN')}. Tap to bid now!`,
-      channelId: 'gdk_auctions',
+      channelId: 'gdk_auctions_v2',
       data: {
         screen: 'AuctionScreen',
         groupId: String(groupId),
         type: 'auction_start',
+        timestamp: String(Date.now()),
       },
     });
   }
@@ -216,10 +315,11 @@ class PushNotificationService {
     await this.showLocalNotification({
       title: `🏆 Auction Concluded: ${groupName}`,
       message: `Winner: ${winnerName} at ₹${Number(winningBid || 0).toLocaleString('en-IN')}. Your dividend earned: ₹${Number(dividendAmount || 0).toLocaleString('en-IN')}.`,
-      channelId: 'gdk_auctions',
+      channelId: 'gdk_auctions_v2',
       data: {
         screen: 'PrizedSuretyTracker',
         type: 'auction_result',
+        timestamp: String(Date.now()),
       },
     });
   }
@@ -240,10 +340,11 @@ class PushNotificationService {
     await this.showLocalNotification({
       title,
       message,
-      channelId: 'gdk_payments',
+      channelId: 'gdk_payments_v2',
       data: {
         screen: 'DueCalendar',
         type: 'payment_due',
+        timestamp: String(Date.now()),
       },
     });
   }

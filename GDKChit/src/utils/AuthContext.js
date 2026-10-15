@@ -112,6 +112,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      // 1. Delete device push token on server so shared devices stop receiving alerts
+      await PushNotificationService.deleteTokenOnLogout().catch(e => console.warn('Push token delete on logout:', e));
+
       const response = await ApiService.logout();
 
       if (!response.success) {

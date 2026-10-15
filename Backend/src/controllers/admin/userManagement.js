@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const { passwordEncryptAES } = require('../../utils/decryptAES');
 const { logAuditEvent } = require('../../utils/auditLogger');
 const { addUserToGlobalCommunity } = require('../../utils/communityHelper');
+const fcmPushService = require('../../services/fcmPushService');
 
 exports.addUser = async (req, res) => {
     const { name, phoneNumber, yearOfBirth, role } = req.body;
@@ -462,6 +463,9 @@ exports.blockUser = async (req, res) => {
             recordId: Number(userId),
             newValues: { is_active: 0, block_reason: reason }
         });
+
+        // Purge all FCM tokens so blocked user stops receiving alerts immediately
+        await fcmPushService.deleteAllUserTokens(userId);
 
         return res.status(200).json({ success: true, message: 'User blocked successfully' });
     } catch (error) {

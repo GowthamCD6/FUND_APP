@@ -1,18 +1,43 @@
 const db = require('../config/db');
-const https = require('https');
+let admin = null;
+
+try {
+  admin = require('firebase-admin');
+  // Initialize firebase-admin if service account credentials or env config is supplied
+  if (!admin.apps.length) {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      console.log('🔥 [FCM Push] firebase-admin initialized with Service Account (HTTP v1 API)');
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+      });
+      console.log('🔥 [FCM Push] firebase-admin initialized with Application Default Credentials (HTTP v1 API)');
+    } else {
+      console.log('ℹ️ [FCM Push] Running in Simulation/Safe mode (Set FIREBASE_SERVICE_ACCOUNT_KEY in .env for live v1 dispatch)');
+    }
+  }
+} catch (e) {
+  console.warn('⚠️ [FCM Push] firebase-admin could not be loaded, using fallback dispatcher:', e.message);
+}
 
 /**
- * FCM Push Notification Service for GDKChit
+ * FCM Push Notification Service for GDKChit (Firebase HTTP v1 + Multicast Batching)
  * 
  * Supports:
- * 1. Live Auction Started Alerts (Wakes up killed/backgrounded app for live bidding)
- * 2. Auction Result & Dividend Accrual Alerts (Winner name, discount, member dividend)
- * 3. Payment Due Date & Overdue Reminders (Due today, 3 days prior, overdue alerts)
- * 4. Admin Broadcast Announcements (General updates, holiday closures, rate adjustments)
+ * 1. Live Auction Started Alerts (Short 120s TTL, collapse_key, High Priority, channel: gdk_auctions_v2)
+ * 2. Auction Result & Dividend Accrual Alerts (24h TTL, channel: gdk_auctions_v2)
+ * 3. Payment Due Date Reminders (channel: gdk_payments_v2)
+ * 4. Admin Broadcast Announcements (channel: gdk_announcements_v2)
+ * 5. Automatic stale token pruning (removes UNREGISTERED or INVALID_ARGUMENT tokens)
+ * 6. Multi-token device management per user, token deletion at logout, and purge on user block.
  */
 class FCMPushService {
   constructor() {
-    this.serverKey = process.env.FCM_SERVER_KEY || null;
+    this.admin = admin;
     this.ensureTablesExist();
   }
 
@@ -24,6 +49,7 @@ class FCMPushService {
           user_id BIGINT UNSIGNED NOT NULL,
           fcm_token VARCHAR(255) NOT NULL,
           platform VARCHAR(20) DEFAULT 'android',
+          device_id VARCHAR(100) NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           UNIQUE KEY uq_user_fcm (user_id, fcm_token)
@@ -48,19 +74,65 @@ class FCMPushService {
   }
 
   /**
+   * Delete token on server when user logs out of a device
+   */
+  async deleteFCMToken(userId, fcmToken) {
+    if (!userId || !fcmToken) return;
+    try {
+      await db.promise().query(
+        'DELETE FROM user_fcm_tokens WHERE user_id = ? AND fcm_token = ?',
+        [userId, fcmToken]
+      );
+      console.log(`🗑️ [FCM Push] Deleted token for user #${userId}`);
+    } catch (err) {
+      console.error(`Failed to delete FCM token for user #${userId}:`, err?.message);
+    }
+  }
+
+  /**
+   * Purge all tokens when a user is blocked so they immediately stop receiving alerts
+   */
+  async deleteAllUserTokens(userId) {
+    if (!userId) return;
+    try {
+      const [result] = await db.promise().query(
+        'DELETE FROM user_fcm_tokens WHERE user_id = ?',
+        [userId]
+      );
+      console.log(`🚫 [FCM Push] Purged all ${result.affectedRows} tokens for blocked user #${userId}`);
+    } catch (err) {
+      console.error(`Failed to purge tokens for blocked user #${userId}:`, err?.message);
+    }
+  }
+
+  /**
+   * Prune invalid or unregistered tokens returned by Firebase
+   */
+  async removeStaleTokens(tokens) {
+    if (!tokens || tokens.length === 0) return;
+    try {
+      await db.promise().query(
+        'DELETE FROM user_fcm_tokens WHERE fcm_token IN (?)',
+        [tokens]
+      );
+      console.log(`🧹 [FCM Push] Pruned ${tokens.length} unregistered/stale FCM token(s) from database.`);
+    } catch (err) {
+      console.error('Failed to prune stale FCM tokens:', err?.message);
+    }
+  }
+
+  /**
    * 1. Send Alert: Live Auction Started
-   * Dispatched immediately when admin starts auction. Wakes up devices so members never miss bidding.
+   * Short TTL (120s) so delayed pushes arriving after the auction ends are discarded by FCM.
    */
   async sendAuctionStartAlert(groupId, initialAmount) {
     try {
-      // Find group name
       const [groupRows] = await db.promise().query(
         'SELECT group_name FROM `groups` WHERE id = ? LIMIT 1',
         [groupId]
       );
       const groupName = groupRows[0]?.group_name || `Group #${groupId}`;
 
-      // Find all subscribers enrolled in this group
       const [memberRows] = await db.promise().query(
         `SELECT DISTINCT ug.user_id 
          FROM user_grouping ug 
@@ -74,34 +146,25 @@ class FCMPushService {
       const title = `🚨 Live Auction Started: ${groupName}`;
       const message = `Live bidding for ${groupName} (₹${Number(initialAmount).toLocaleString('en-IN')}) is starting now! Tap immediately to place your bids.`;
 
-      const payload = {
-        notification: {
-          title,
-          body: message,
-          sound: 'default',
-        },
+      const notificationOptions = {
+        title,
+        body: message,
         data: {
           type: 'AUCTION_STARTED',
           groupId: String(groupId),
           groupName,
           initialAmount: String(initialAmount),
-          channelId: 'gdk_auctions',
+          channelId: 'gdk_auctions_v2',
           screen: 'AuctionScreen',
-          click_action: 'OPEN_AUCTION',
+          timestamp: String(Date.now()),
         },
-        android: {
-          priority: 'high',
-          notification: {
-            channel_id: 'gdk_auctions',
-            sound: 'default',
-            priority: 'high',
-            visibility: 'public',
-          }
-        }
+        channelId: 'gdk_auctions_v2',
+        ttlSeconds: 120, // 2-minute short TTL: drop if delayed
+        collapseKey: `auction_start_${groupId}`,
       };
 
-      console.log(`📢 [FCM Push] Broadcasting Auction Started alert for "${groupName}" to ${userIds.length} subscribers...`);
-      return await this.sendToUsers(userIds, payload, 'AUCTION_STARTED');
+      console.log(`📢 [FCM Push v1] Broadcasting Auction Started alert for "${groupName}" to ${userIds.length} subscribers...`);
+      return await this.sendToUsers(userIds, notificationOptions, 'AUCTION_STARTED');
     } catch (err) {
       console.error('Error in sendAuctionStartAlert:', err);
       return { success: false, error: err.message };
@@ -109,15 +172,23 @@ class FCMPushService {
   }
 
   /**
-   * 2. Send Alert: Auction Concluded with Winner, Discount & Member Dividend
+   * 2. Send Alert: Auction Result & Member Dividend Summary
    */
   async sendAuctionResultAlert(groupId, winner, summary) {
     try {
       const [groupRows] = await db.promise().query(
-        'SELECT group_name FROM `groups` WHERE id = ? LIMIT 1',
+        'SELECT group_name, chit_amount, max_members FROM `groups` WHERE id = ? LIMIT 1',
         [groupId]
       );
-      const groupName = groupRows[0]?.group_name || `Group #${groupId}`;
+      const group = groupRows[0] || {};
+      const groupName = group.group_name || `Group #${groupId}`;
+      const totalMembers = group.max_members || 20;
+
+      const discount = Number(summary?.winningBid || summary?.discount || 0);
+      const foremanCommission = discount * 0.05;
+      const netDividend = Math.max(0, discount - foremanCommission);
+      const dividendPerMember = Math.round(netDividend / totalMembers);
+      const winnerName = winner?.username || winner?.name || 'A Member';
 
       const [memberRows] = await db.promise().query(
         `SELECT DISTINCT ug.user_id 
@@ -129,35 +200,30 @@ class FCMPushService {
       const userIds = memberRows.map(r => r.user_id);
       if (userIds.length === 0) return { success: true, count: 0 };
 
-      const winnerName = winner?.userName || 'A member';
-      const winningBid = winner ? Number(winner.amount) : 0;
-      const dividendPerMember = summary?.dividendPerMember || 0;
-      const nextInstallment = summary?.nextInstallmentAmount || 0;
+      const title = `🏆 Auction Concluded: ${groupName}`;
+      const message = `${winnerName} won with a bid discount of ₹${discount.toLocaleString('en-IN')}. Your dividend earned: ₹${dividendPerMember.toLocaleString('en-IN')}!`;
 
-      const title = `🏁 Auction Concluded: ${groupName}`;
-      const message = `${winnerName} won at ₹${winningBid.toLocaleString('en-IN')}. Your dividend credit is ₹${dividendPerMember.toLocaleString('en-IN')}. Next installment: ₹${nextInstallment.toLocaleString('en-IN')}.`;
-
-      const payload = {
-        notification: {
-          title,
-          body: message,
-          sound: 'default',
-        },
+      const notificationOptions = {
+        title,
+        body: message,
         data: {
           type: 'AUCTION_RESULT',
           groupId: String(groupId),
           groupName,
           winnerName,
-          winningBid: String(winningBid),
-          dividendPerMember: String(dividendPerMember),
-          nextInstallment: String(nextInstallment),
-          channelId: 'gdk_auctions',
-          screen: 'AuctionScreen',
+          discount: String(discount),
+          dividend: String(dividendPerMember),
+          channelId: 'gdk_auctions_v2',
+          screen: 'PrizedSuretyTracker',
+          timestamp: String(Date.now()),
         },
+        channelId: 'gdk_auctions_v2',
+        ttlSeconds: 86400, // 24 hours
+        collapseKey: `auction_result_${groupId}`,
       };
 
-      console.log(`📢 [FCM Push] Sending Auction Result alert for "${groupName}" to ${userIds.length} subscribers...`);
-      return await this.sendToUsers(userIds, payload, 'AUCTION_RESULT');
+      console.log(`📢 [FCM Push v1] Sending Auction Result alert for "${groupName}" to ${userIds.length} subscribers...`);
+      return await this.sendToUsers(userIds, notificationOptions, 'AUCTION_RESULT');
     } catch (err) {
       console.error('Error in sendAuctionResultAlert:', err);
       return { success: false, error: err.message };
@@ -165,45 +231,38 @@ class FCMPushService {
   }
 
   /**
-   * 3. Send Alert: Payment Due Date / Overdue Notice
+   * 3. Send Alert: Payment Due or Overdue Reminder
    */
   async sendPaymentDueAlert(userId, groupName, amount, dueDateStr, daysLeft) {
     try {
-      let title = `⏰ Upcoming Installment: ${groupName}`;
-      let message = `Your monthly installment of ₹${Number(amount).toLocaleString('en-IN')} for ${groupName} is due on ${dueDateStr}.`;
+      const isOverdue = daysLeft < 0;
+      const title = isOverdue 
+        ? `⚠️ OVERDUE: Installment for ${groupName}`
+        : `📅 Payment Due: ${groupName}`;
 
-      if (daysLeft === 0) {
-        title = `🚨 Payment Due Today: ${groupName}`;
-        message = `Your installment of ₹${Number(amount).toLocaleString('en-IN')} for ${groupName} is due TODAY! Tap to pay securely and avoid penalty.`;
-      } else if (daysLeft < 0) {
-        title = `⚠️ Payment Overdue: ${groupName}`;
-        message = `Your installment of ₹${Number(amount).toLocaleString('en-IN')} for ${groupName} was due on ${dueDateStr} and is OVERDUE. Please remit immediately.`;
-      }
+      const message = isOverdue
+        ? `Your chit installment of ₹${Number(amount).toLocaleString('en-IN')} is OVERDUE by ${Math.abs(daysLeft)} day(s). Please clear immediately to maintain auction bidding eligibility.`
+        : `Your monthly installment of ₹${Number(amount).toLocaleString('en-IN')} is due on ${dueDateStr}. Tap here to view calendar and pay.`;
 
-      const payload = {
-        notification: {
-          title,
-          body: message,
-          sound: 'default',
-        },
+      const notificationOptions = {
+        title,
+        body: message,
         data: {
           type: 'PAYMENT_DUE',
           groupName,
           amount: String(amount),
           dueDate: dueDateStr,
           daysLeft: String(daysLeft),
-          channelId: 'gdk_payments',
+          channelId: 'gdk_payments_v2',
           screen: 'DueCalendar',
+          timestamp: String(Date.now()),
         },
-        android: {
-          priority: 'high',
-          notification: {
-            channel_id: 'gdk_payments',
-          }
-        }
+        channelId: 'gdk_payments_v2',
+        ttlSeconds: 86400,
+        collapseKey: `payment_due_${userId}_${groupName}`,
       };
 
-      return await this.sendToUsers([userId], payload, 'PAYMENT_DUE');
+      return await this.sendToUsers([userId], notificationOptions, isOverdue ? 'PAYMENT_OVERDUE' : 'PAYMENT_DUE');
     } catch (err) {
       console.error('Error in sendPaymentDueAlert:', err);
       return { success: false, error: err.message };
@@ -211,55 +270,50 @@ class FCMPushService {
   }
 
   /**
-   * Run automated daily scan of pending/overdue monthly collections and fire push alerts
+   * 4. Automatic Daily Payment Due Scan
    */
   async sendDailyPaymentDueAlerts() {
     try {
-      console.log('🔍 [FCM Push] Scanning for pending and upcoming payment due deadlines...');
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const [pendingRows] = await db.promise().query(`
+      console.log('🔍 [FCM Push v1] Scanning for pending and upcoming payment due deadlines...');
+      const [dueRows] = await db.promise().query(`
         SELECT 
           mc.user_id,
-          mc.group_id,
-          mc.amount,
+          mc.installment_amount as amount,
           mc.due_date,
-          mc.status,
+          DATEDIFF(mc.due_date, CURDATE()) as days_left,
           g.group_name
         FROM monthly_collections mc
-        INNER JOIN \`groups\` g ON mc.group_id = g.id
-        WHERE mc.status IN ('pending', 'overdue')
-          AND mc.deleted_at IS NULL
-          AND mc.due_date IS NOT NULL
+        JOIN \`groups\` g ON mc.group_id = g.id
+        WHERE mc.status = 'pending'
+          AND (
+            DATEDIFF(mc.due_date, CURDATE()) IN (3, 1, 0)
+            OR (DATEDIFF(mc.due_date, CURDATE()) < 0 AND DATEDIFF(mc.due_date, CURDATE()) >= -7)
+          )
       `);
 
       let sentCount = 0;
-      for (const row of pendingRows) {
-        const dueDate = new Date(row.due_date);
-        dueDate.setHours(0, 0, 0, 0);
-
-        const diffTime = dueDate.getTime() - today.getTime();
-        const daysLeft = Math.ceil(diffTime / (1000 * 3600 * 24));
-
-        // Notify if: overdue (daysLeft < 0), due today (daysLeft === 0), or due in 3 days (daysLeft <= 3 && daysLeft > 0)
-        if (daysLeft <= 3) {
-          const dueDateStr = dueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-          await this.sendPaymentDueAlert(row.user_id, row.group_name, row.amount, dueDateStr, daysLeft);
-          sentCount++;
-        }
+      for (const row of dueRows) {
+        const dueDateFormatted = new Date(row.due_date).toLocaleDateString('en-IN');
+        await this.sendPaymentDueAlert(
+          row.user_id,
+          row.group_name,
+          row.amount,
+          dueDateFormatted,
+          row.days_left
+        );
+        sentCount++;
       }
 
-      console.log(`✅ [FCM Push] Sent ${sentCount} payment due reminders.`);
-      return { success: true, count: sentCount };
+      console.log(`✅ [FCM Push v1] Sent ${sentCount} payment due reminders.`);
+      return { success: true, sent: sentCount };
     } catch (err) {
-      console.error('Error in sendDailyPaymentDueAlerts:', err);
+      console.error('Error running daily payment due alerts:', err);
       return { success: false, error: err.message };
     }
   }
 
   /**
-   * 4. Send Alert: Admin Broadcast Announcement
+   * 5. Send Alert: Admin Broadcast Announcement
    */
   async sendBroadcastAnnouncement(title, message, targetGroupId = null) {
     try {
@@ -271,29 +325,28 @@ class FCMPushService {
         );
         userIds = rows.map(r => r.user_id);
       } else {
-        const [rows] = await db.promise().query(
-          'SELECT DISTINCT id as user_id FROM users WHERE deleted_at IS NULL'
-        );
+        const [rows] = await db.promise().query('SELECT DISTINCT id as user_id FROM users WHERE is_active = 1');
         userIds = rows.map(r => r.user_id);
       }
 
       if (userIds.length === 0) return { success: true, count: 0 };
 
-      const payload = {
-        notification: {
-          title: `📢 ${title}`,
-          body: message,
-          sound: 'default',
-        },
+      const notificationOptions = {
+        title: `📢 ${title}`,
+        body: message,
         data: {
           type: 'ANNOUNCEMENT',
-          channelId: 'gdk_announcements',
-          screen: 'Home',
+          channelId: 'gdk_announcements_v2',
+          screen: 'AdminNotification',
+          timestamp: String(Date.now()),
         },
+        channelId: 'gdk_announcements_v2',
+        ttlSeconds: 86400 * 2, // 48 hours
+        collapseKey: 'broadcast_announcement',
       };
 
-      console.log(`📢 [FCM Push] Broadcasting Announcement "${title}" to ${userIds.length} subscribers...`);
-      return await this.sendToUsers(userIds, payload, 'ANNOUNCEMENT');
+      console.log(`📢 [FCM Push v1] Broadcasting Announcement "${title}" to ${userIds.length} subscribers...`);
+      return await this.sendToUsers(userIds, notificationOptions, 'ANNOUNCEMENT');
     } catch (err) {
       console.error('Error in sendBroadcastAnnouncement:', err);
       return { success: false, error: err.message };
@@ -303,7 +356,7 @@ class FCMPushService {
   /**
    * Deliver push payload to list of user IDs by querying their active FCM tokens
    */
-  async sendToUsers(userIds, payload, notificationType = 'GENERAL') {
+  async sendToUsers(userIds, options, notificationType = 'GENERAL') {
     if (!userIds || userIds.length === 0) return { success: true, delivered: 0 };
 
     try {
@@ -320,20 +373,20 @@ class FCMPushService {
           [
             uid,
             notificationType,
-            payload.notification?.title || 'Notification',
-            payload.notification?.body || '',
-            JSON.stringify(payload.data || {})
+            options.title || 'Notification',
+            options.body || '',
+            JSON.stringify(options.data || {})
           ]
         ).catch(e => console.error('Error logging notification to DB:', e?.message));
       }
 
       const tokens = tokenRows.map(r => r.fcm_token).filter(Boolean);
       if (tokens.length === 0) {
-        console.log(`ℹ️ [FCM Push] No active device tokens found for users [${userIds.join(', ')}]. Notification stored in DB.`);
+        console.log(`ℹ️ [FCM Push v1] No active device tokens found for users [${userIds.join(', ')}]. Notification stored in DB.`);
         return { success: true, delivered: 0, reason: 'no_tokens' };
       }
 
-      return await this.sendToTokens(tokens, payload);
+      return await this.sendMulticastBatches(tokens, options);
     } catch (err) {
       console.error('Error querying FCM tokens for users:', err);
       return { success: false, error: err.message };
@@ -341,59 +394,85 @@ class FCMPushService {
   }
 
   /**
-   * Low-level FCM HTTP request dispatcher
+   * Send messages in batches of up to 500 tokens using Firebase HTTP v1 API
+   * Automatically captures and deletes tokens that return UNREGISTERED or INVALID_ARGUMENT.
    */
-  async sendToTokens(tokens, payload) {
-    if (!this.serverKey) {
-      console.log(`🔔 [FCM Push Simulation] (Set FCM_SERVER_KEY in .env for live Firebase dispatch):`);
-      console.log(`   Tokens: ${tokens.length}`);
-      console.log(`   Title: ${payload.notification?.title}`);
-      console.log(`   Body: ${payload.notification?.body}`);
-      return { success: true, delivered: tokens.length, simulated: true };
+  async sendMulticastBatches(tokens, options) {
+    const BATCH_SIZE = 500; // Official Firebase Multicast batch limit
+    const totalTokens = tokens.length;
+    let totalSuccess = 0;
+    let totalFailure = 0;
+    const staleTokens = [];
+
+    const isLiveFirebaseAdmin = this.admin && this.admin.apps.length > 0;
+
+    for (let i = 0; i < totalTokens; i += BATCH_SIZE) {
+      const batchTokens = tokens.slice(i, i + BATCH_SIZE);
+
+      if (!isLiveFirebaseAdmin) {
+        // Safe Simulation Mode for local dev or when Service Account is pending
+        console.log(`🔔 [FCM Push v1 Simulation] (Batch ${Math.floor(i / BATCH_SIZE) + 1}, ${batchTokens.length} tokens):`);
+        console.log(`   Title: ${options.title}`);
+        console.log(`   Body: ${options.body}`);
+        console.log(`   TTL: ${options.ttlSeconds}s | CollapseKey: ${options.collapseKey}`);
+        totalSuccess += batchTokens.length;
+        continue;
+      }
+
+      try {
+        const messagePayload = {
+          tokens: batchTokens,
+          notification: {
+            title: options.title,
+            body: options.body,
+          },
+          data: options.data || {},
+          android: {
+            priority: 'high',
+            ttl: (options.ttlSeconds || 120) * 1000,
+            collapseKey: options.collapseKey,
+            notification: {
+              channelId: options.channelId || 'gdk_announcements_v2',
+              sound: 'default',
+              priority: 'high',
+              visibility: 'public',
+            },
+          },
+        };
+
+        const batchResponse = await this.admin.messaging().sendEachForMulticast(messagePayload);
+        totalSuccess += batchResponse.successCount;
+        totalFailure += batchResponse.failureCount;
+
+        // Inspect individual response items to detect dead tokens
+        if (batchResponse.failureCount > 0) {
+          batchResponse.responses.forEach((resp, idx) => {
+            if (!resp.success) {
+              const errCode = resp.error?.code;
+              // Check for invalid or unregistered tokens according to FCM v1 error specifications
+              if (
+                errCode === 'messaging/registration-token-not-registered' ||
+                errCode === 'messaging/invalid-registration-token' ||
+                errCode === 'messaging/invalid-argument'
+              ) {
+                staleTokens.push(batchTokens[idx]);
+              }
+            }
+          });
+        }
+      } catch (batchErr) {
+        console.error('Error dispatching multicast batch to FCM:', batchErr);
+        totalFailure += batchTokens.length;
+      }
     }
 
-    return new Promise((resolve) => {
-      const postData = JSON.stringify({
-        registration_ids: tokens,
-        notification: payload.notification,
-        data: payload.data,
-        priority: 'high',
-      });
+    // Automatically purge stale tokens from database
+    if (staleTokens.length > 0) {
+      await this.removeStaleTokens(staleTokens);
+    }
 
-      const options = {
-        hostname: 'fcm.googleapis.com',
-        port: 443,
-        path: '/fcm/send',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `key=${this.serverKey}`,
-          'Content-Length': Buffer.byteLength(postData),
-        },
-      };
-
-      const req = https.request(options, (res) => {
-        let responseBody = '';
-        res.on('data', chunk => responseBody += chunk);
-        res.on('end', () => {
-          try {
-            const parsed = JSON.parse(responseBody);
-            console.log(`✅ [FCM Push Response]: Success: ${parsed.success || 0}, Failure: ${parsed.failure || 0}`);
-            resolve({ success: true, response: parsed });
-          } catch (e) {
-            resolve({ success: false, raw: responseBody });
-          }
-        });
-      });
-
-      req.on('error', (e) => {
-        console.error('❌ [FCM Push] Network error dispatching to Firebase:', e.message);
-        resolve({ success: false, error: e.message });
-      });
-
-      req.write(postData);
-      req.end();
-    });
+    console.log(`✅ [FCM Push v1 Multicast Complete]: Success: ${totalSuccess}, Failure: ${totalFailure}, Stale Purged: ${staleTokens.length}`);
+    return { success: true, delivered: totalSuccess, failures: totalFailure, pruned: staleTokens.length };
   }
 }
 

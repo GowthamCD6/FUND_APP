@@ -3,13 +3,17 @@ package com.gdkchit
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.media.AudioAttributes
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.facebook.react.bridge.*
@@ -23,9 +27,10 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
 
     companion object {
         const val MODULE_NAME = "GdkNotification"
-        const val CHANNEL_AUCTIONS = "gdk_auctions"
-        const val CHANNEL_PAYMENTS = "gdk_payments"
-        const val CHANNEL_ANNOUNCEMENTS = "gdk_announcements"
+        // Versioned channel IDs (Android channels are immutable once created)
+        const val CHANNEL_AUCTIONS = "gdk_auctions_v2"
+        const val CHANNEL_PAYMENTS = "gdk_payments_v2"
+        const val CHANNEL_ANNOUNCEMENTS = "gdk_announcements_v2"
 
         private var instance: GdkNotificationModule? = null
         private var pendingIntentData: WritableMap? = null
@@ -71,10 +76,23 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
         }
     }
 
+    /**
+     * Create versioned notification channels with explicit sounds, vibration, and lights.
+     * Deletes legacy channels if present.
+     */
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager =
                 reactContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+            // Clean up old unversioned channels
+            try {
+                notificationManager.deleteNotificationChannel("gdk_auctions")
+                notificationManager.deleteNotificationChannel("gdk_payments")
+                notificationManager.deleteNotificationChannel("gdk_announcements")
+            } catch (e: Exception) {
+                // Ignore if not present
+            }
 
             val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             val audioAttributes = AudioAttributes.Builder()
@@ -82,7 +100,7 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
                 .build()
 
-            // 1. Live Auction Alerts Channel (Urgent, Heads-up banner, Sound & Vibration)
+            // 1. Live Auction Alerts Channel v2 (High Importance, Urgent Vibration, Purple LED, Heads-up)
             val auctionChannel = NotificationChannel(
                 CHANNEL_AUCTIONS,
                 "Live Auction Alerts",
@@ -96,7 +114,7 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
                 setSound(defaultSoundUri, audioAttributes)
             }
 
-            // 2. Payment Reminders Channel (High Priority)
+            // 2. Payment Reminders Channel v2 (High Importance, Emerald LED)
             val paymentChannel = NotificationChannel(
                 CHANNEL_PAYMENTS,
                 "Payment Reminders",
@@ -110,7 +128,7 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
                 setSound(defaultSoundUri, audioAttributes)
             }
 
-            // 3. Announcements Channel (Default Priority)
+            // 3. Announcements Channel v2 (Default Importance, Blue LED)
             val announcementChannel = NotificationChannel(
                 CHANNEL_ANNOUNCEMENTS,
                 "Announcements & Updates",
@@ -119,6 +137,7 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
                 description = "General chit fund announcements, notices, and dividend updates."
                 enableLights(true)
                 lightColor = Color.parseColor("#3B82F6") // Blue
+                setSound(defaultSoundUri, audioAttributes)
             }
 
             notificationManager.createNotificationChannels(
@@ -137,8 +156,8 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
     ) {
         try {
             val targetChannel = when (channelId) {
-                CHANNEL_AUCTIONS -> CHANNEL_AUCTIONS
-                CHANNEL_PAYMENTS -> CHANNEL_PAYMENTS
+                CHANNEL_AUCTIONS, "gdk_auctions" -> CHANNEL_AUCTIONS
+                CHANNEL_PAYMENTS, "gdk_payments" -> CHANNEL_PAYMENTS
                 else -> CHANNEL_ANNOUNCEMENTS
             }
 
@@ -180,6 +199,8 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
                 context.packageName
             ).let { if (it != 0) it else android.R.drawable.ic_dialog_info }
 
+            // Using CATEGORY_EVENT / CATEGORY_REMINDER to comply with Play Store policies
+            // (eliminates restricted USE_FULL_SCREEN_INTENT and CATEGORY_ALARM)
             val builder = NotificationCompat.Builder(context, targetChannel)
                 .setSmallIcon(smallIconResId)
                 .setContentTitle(title)
@@ -191,7 +212,7 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
                 .setContentIntent(pendingIntent)
 
             if (targetChannel == CHANNEL_AUCTIONS) {
-                builder.setCategory(NotificationCompat.CATEGORY_ALARM)
+                builder.setCategory(NotificationCompat.CATEGORY_EVENT)
             } else if (targetChannel == CHANNEL_PAYMENTS) {
                 builder.setCategory(NotificationCompat.CATEGORY_REMINDER)
             }
@@ -211,7 +232,6 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun getInitialNotification(promise: Promise) {
         try {
-            // First check if pendingIntentData was received before JS module initialized
             if (pendingIntentData != null) {
                 val data = pendingIntentData
                 pendingIntentData = null
@@ -219,8 +239,7 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
                 return
             }
 
-            // Check current activity intent
-            val activity = getCurrentActivity()
+            val activity = reactContext.currentActivity
             val intent: Intent? = activity?.intent
             val extras: Bundle? = intent?.extras
 
@@ -239,7 +258,6 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
                     }
                 }
 
-                // Consume intent so it does not trigger again
                 intent.removeExtra("from_gdk_notification")
                 intent.removeExtra("screen")
 
@@ -260,6 +278,131 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
         } catch (e: Exception) {
             promise.resolve(false)
         }
+    }
+
+    /**
+     * Check if app is whitelisted from Android battery optimizations
+     */
+    @ReactMethod
+    fun isIgnoringBatteryOptimizations(promise: Promise) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val powerManager = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+                val packageName = reactContext.packageName
+                val isIgnoring = powerManager.isIgnoringBatteryOptimizations(packageName)
+                promise.resolve(isIgnoring)
+            } else {
+                promise.resolve(true)
+            }
+        } catch (e: Exception) {
+            promise.resolve(false)
+        }
+    }
+
+    /**
+     * Prompt user to disable aggressive battery optimization for uninterrupted alerts
+     */
+    @ReactMethod
+    fun requestIgnoreBatteryOptimizations(promise: Promise) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val packageName = reactContext.packageName
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                reactContext.startActivity(intent)
+                promise.resolve(true)
+            } else {
+                promise.resolve(false)
+            }
+        } catch (e: Exception) {
+            // Fallback to generic battery optimization settings
+            try {
+                val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                reactContext.startActivity(fallbackIntent)
+                promise.resolve(true)
+            } catch (fallbackError: Exception) {
+                promise.reject("BATTERY_OPTI_ERROR", fallbackError.message)
+            }
+        }
+    }
+
+    /**
+     * Launch manufacturer-specific background manager/autostart activity
+     * for Xiaomi (MIUI/HyperOS), Oppo/Realme (ColorOS), Vivo (Funtouch), and Samsung.
+     */
+    @ReactMethod
+    fun openOEMAutostartSettings(promise: Promise) {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        val packageName = reactContext.packageName
+        var launched = false
+
+        val oemIntents = when {
+            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") -> listOf(
+                Intent().setComponent(ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")),
+                Intent().setComponent(ComponentName("com.miui.securitycenter", "com.miui.powercenter.PowerSettings"))
+            )
+            manufacturer.contains("oppo") || manufacturer.contains("realme") -> listOf(
+                Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")),
+                Intent().setComponent(ComponentName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity")),
+                Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity"))
+            )
+            manufacturer.contains("vivo") || manufacturer.contains("iqoo") -> listOf(
+                Intent().setComponent(ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity")),
+                Intent().setComponent(ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")),
+                Intent().setComponent(ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager"))
+            )
+            manufacturer.contains("samsung") -> listOf(
+                Intent().setComponent(ComponentName("com.samsung.android.lool", "com.samsung.android.sm.battery.ui.BatteryActivity")),
+                Intent().setComponent(ComponentName("com.samsung.android.sm", "com.samsung.android.sm.ui.battery.BatteryActivity"))
+            )
+            else -> emptyList()
+        }
+
+        for (intent in oemIntents) {
+            try {
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                if (reactContext.packageManager.resolveActivity(intent, 0) != null) {
+                    reactContext.startActivity(intent)
+                    launched = true
+                    break
+                }
+            } catch (e: Exception) {
+                // Try next
+            }
+        }
+
+        if (!launched) {
+            // General Application Details fallback
+            try {
+                val appDetailsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                reactContext.startActivity(appDetailsIntent)
+                launched = true
+            } catch (e: Exception) {
+                promise.reject("OEM_LAUNCH_FAILED", e.message)
+                return
+            }
+        }
+
+        val result = Arguments.createMap()
+        result.putBoolean("success", launched)
+        result.putString("manufacturer", manufacturer)
+        promise.resolve(result)
+    }
+
+    @ReactMethod
+    fun getDeviceManufacturer(promise: Promise) {
+        val result = Arguments.createMap()
+        result.putString("manufacturer", Build.MANUFACTURER)
+        result.putString("model", Build.MODEL)
+        result.putInt("sdkInt", Build.VERSION.SDK_INT)
+        promise.resolve(result)
     }
 
     @ReactMethod

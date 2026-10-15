@@ -491,6 +491,20 @@ class ApiService {
       return { success: false, message: error.message };
     }
   }
+
+  // Push Notification FCM deletion at logout
+  async deleteFCMToken(fcmToken) {
+    try {
+      const response = await this.makeRequest('/user/fcm-token/delete', {
+        method: 'POST',
+        body: JSON.stringify({ fcmToken }),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to delete FCM token on server:', error);
+      return { success: false, message: error.message };
+    }
+  }
 }
 
 export default new ApiService();

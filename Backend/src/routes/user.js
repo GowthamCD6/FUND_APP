@@ -18,6 +18,8 @@ router.get('/portfolio/:groupId/months', authenticateToken, groupController.getG
 router.get('/groups/getMembers', authenticateToken, groupManagement.getGroupMembers);
 router.get('/notifications', authenticateToken, notificationsController.getNotifications);
 router.post('/fcm-token', authenticateToken, notificationsController.saveFCMToken);
+router.post('/fcm-token/delete', authenticateToken, notificationsController.deleteFCMToken);
+router.delete('/fcm-token', authenticateToken, notificationsController.deleteFCMToken);
 router.post('/save-location', authenticateToken, locationController.saveLocation);
 router.get('/location', authenticateToken, locationController.getMyLocation);
 router.get('/locations', authenticateToken, locationController.getMyLocation);

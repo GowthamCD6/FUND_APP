@@ -172,3 +172,23 @@ exports.saveFCMToken = async (req, res) => {
   }
 };
 
+exports.deleteFCMToken = async (req, res) => {
+  const userId = req.user.userId || req.user.id;
+  const { fcmToken } = req.body;
+
+  if (!fcmToken) {
+    return res.status(400).json({ success: false, message: 'FCM token is required' });
+  }
+
+  try {
+    const [result] = await db.promise().query(
+      'DELETE FROM user_fcm_tokens WHERE user_id = ? AND fcm_token = ?',
+      [userId, fcmToken]
+    );
+    return res.json({ success: true, message: 'FCM token deleted successfully', deleted: result.affectedRows > 0 });
+  } catch (err) {
+    console.error('Error deleting FCM token:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete FCM token' });
+  }
+};
+

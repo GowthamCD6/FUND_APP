@@ -98,6 +98,7 @@ const AppContent = () => {
 
 import { AuctionProvider } from "./src/utils/AuctionContext";
 import GlobalAuctionModal from "./src/components/GlobalAuctionModal/GlobalAuctionModal";
+import BatteryOptimizationModal from "./src/components/BatteryOptimizationModal/BatteryOptimizationModal";
 import GlobalErrorBoundary from "./src/components/GlobalErrorBoundary/GlobalErrorBoundary";
 
 const App = () => {
@@ -109,6 +110,7 @@ const App = () => {
             {/* <ThemeProvider> */}
             <AppContent />
             <GlobalAuctionModal />
+            <BatteryOptimizationModal />
             {/* </ThemeProvider> */}
           </AuctionProvider>
         </AuthProvider>

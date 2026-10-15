@@ -9,6 +9,7 @@ import ChitSimulator from '../Pages/Tools/ChitSimulator/ChitSimulator';
 import PrizedSuretyTracker from '../Pages/Tools/PrizedSuretyTracker/PrizedSuretyTracker';
 import DueCalendar from '../Pages/Tools/DueCalendar/DueCalendar';
 import DocumentVault from '../Pages/Tools/DocumentVault/DocumentVault';
+import PushNotificationService from '../../../services/PushNotificationService';
 import { useRef } from 'react';
 
 import Header from '../../../components/HeaderComponent/Header';
@@ -294,6 +295,15 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
                 title={t('E-Sign & Document Vault')}
                 description={t('Sign agreement and download verified PDF receipts')}
                 onPress={() => setShowDocumentVault(true)}
+                language={language}
+              />
+              <MenuItem
+                icon={<MaterialCommunityIcons name="battery-charging-high" size={26} color="#EAB308" />}
+                title={t('Background Alerts & Autostart')}
+                description={t('Ensure live auctions wake up your device reliably')}
+                onPress={async () => {
+                  await PushNotificationService.openOEMAutostartSettings();
+                }}
                 language={language}
               />
               <MenuItem

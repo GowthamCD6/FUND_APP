@@ -492,7 +492,7 @@ $$\text{Next Installment} = \text{Base Monthly Installment} - \text{Dividend Per
 
 ---
 
-## 15. Push Notification & Critical Alert Infrastructure (FCM + Native Channels)
+## 15. Push Notification & Critical Alert Infrastructure (Firebase HTTP v1 + Native Channels)
 
 ### 1. Problem Solved
 In standard WebSocket implementations, when an app is killed by Android OS battery optimization or backgrounded during screen lock, socket connections terminate immediately. This caused subscribers to miss live auctions, fail to bid in time, or miss critical payment due dates and dividend announcements.
@@ -504,21 +504,21 @@ The push notification pipeline combines server-side event dispatching with nativ
 [Auction Started / Payment Due / Concluded]
                    │
                    ▼
-  Backend: fcmPushService.js
+  Backend: fcmPushService.js (HTTP v1 Multicast Batching)
                    │
          ┌─────────┴─────────┐
          ▼                   ▼
 Firebase FCM Server    Direct MySQL Audit Log
-(fcm.googleapis.com)    (notifications table)
+(fcm.googleapis.com)    (notifications & user_fcm_tokens)
          │
-         ▼ (High Priority FCM Push)
+         ▼ (High Priority FCM Push with TTL & Collapse Keys)
 Android Device (Killed / Background / Active)
          │
          ▼
   GdkNotificationModule (Kotlin)
-  ├── Channel: "gdk_auctions" (IMPORTANCE_HIGH, Heads-up banner, Vibration, Custom Sound)
-  ├── Channel: "gdk_payments" (IMPORTANCE_HIGH, Emerald LED, Reminder Sound)
-  └── Channel: "gdk_announcements" (IMPORTANCE_DEFAULT)
+  ├── Channel: "gdk_auctions_v2" (IMPORTANCE_HIGH, Heads-up banner, Vibration, Custom Sound, CATEGORY_EVENT)
+  ├── Channel: "gdk_payments_v2" (IMPORTANCE_HIGH, Emerald LED, Reminder Sound, CATEGORY_REMINDER)
+  └── Channel: "gdk_announcements_v2" (IMPORTANCE_DEFAULT, Blue LED)
          │
          ▼ (User taps notification banner)
 MainActivity (PendingIntent with Extras)
@@ -527,34 +527,44 @@ MainActivity (PendingIntent with Extras)
 PushNotificationService (React Native)
   ├── Cold Start: getInitialNotification()
   ├── Warm Background: DeviceEventEmitter ('onNotificationOpened')
-  └── Direct Deep Link Routing:
-        ├── "AuctionScreen" (groupId) -> Opens live bidding room instantly
+  └── Direct Deep Link Routing & Auction State Verification:
+        ├── "AuctionScreen" (groupId) -> Verifies live status; if already ended, redirects to Post-Auction Summary
         ├── "DueCalendar" -> Opens installment calendar with payment action
         └── "PrizedSuretyTracker" -> Displays post-auction dividend summary
 ```
 
 ### 3. Server-Side Push Dispatcher (`fcmPushService.js`)
+- **Firebase HTTP v1 API**: Upgraded to the modern Firebase HTTP v1 API (`sendEachForMulticast`) supporting batches of up to 500 tokens per multicast call. Legacy server key API has been fully superseded.
+- **Short TTL & Anti-Stale Delivery**:
+  - Live auction alerts carry a strict **120-second TTL** (`ttl: 120 * 1000`) and `collapseKey: auction_start_<groupId>`. If device was offline or delivery delayed, FCM drops the expired alert so members aren't alerted to an auction that already finished.
+  - Payment reminders carry a 24-hour TTL (`86400s`) and `collapseKey: payment_due_<userId>_<groupId>`.
+- **Automatic Dead Token Pruning**:
+  - The dispatcher evaluates each individual multicast response. If a token returns `messaging/registration-token-not-registered`, `messaging/invalid-registration-token`, or `messaging/invalid-argument`, it is automatically deleted from `user_fcm_tokens` to keep the device registry lean and performant.
 - **`sendAuctionStartAlert(groupId, initialAmount)`**: High-priority alert triggered automatically upon `startAuction`. Wakes up all enrolled subscribers' devices.
 - **`sendAuctionResultAlert(groupId, winner, summary)`**: Broadcasts winner identity, winning bid, and exact calculated member dividend accrual to all participants.
 - **`sendPaymentDueAlert(userId, groupName, amount, dueDateStr, daysLeft)`**: Sends targeted payment reminder.
 - **`sendDailyPaymentDueAlerts()`**: Background 12-hour scheduler scanning `monthly_collections` for pending/overdue collections (3 days advance, due today, overdue).
 - **`sendBroadcastAnnouncement(title, message, targetGroupId)`**: Admin broadcast tool with multi-group filtering.
 
-### 4. Client Native Channel Specifications
-- **`gdk_auctions`**:
-  - `importance`: `NotificationManager.IMPORTANCE_HIGH`
-  - `vibrationPattern`: `[0, 400, 200, 400, 200, 400]` (Distinct double-pulse urgency alert)
-  - `category`: `NotificationCompat.CATEGORY_ALARM`
-  - `lightColor`: `#6B46C1` (Royal Purple)
-- **`gdk_payments`**:
-  - `importance`: `NotificationManager.IMPORTANCE_HIGH`
-  - `vibrationPattern`: `[0, 300, 150, 300]`
-  - `category`: `NotificationCompat.CATEGORY_REMINDER`
-  - `lightColor`: `#10B981` (Emerald Green)
-- **`gdk_announcements`**:
-  - `importance`: `NotificationManager.IMPORTANCE_DEFAULT`
-  - `lightColor`: `#3B82F6` (Electric Blue)
+### 4. Token Lifecycle & Multi-Device Management
+- **One Token Per Device**: Database table `user_fcm_tokens` indexes `(user_id, fcm_token)` uniquely, supporting users logged into multiple devices (e.g. phone and tablet) simultaneously.
+- **Server Deletion on Logout**: When a user logs out (`ApiService.logout`), client calls `PushNotificationService.deleteTokenOnLogout()` which triggers `POST /api/user/fcm-token/delete`. This removes the token from the database and AsyncStorage, ensuring shared phones never receive the previous user's private financial alerts.
+- **Immediate Purge on User Block**: When an admin blocks a user (`AdminBlockUserScreen` / `blockUser`), all registered FCM tokens for that user ID are purged from `user_fcm_tokens` (`deleteAllUserTokens`), cutting off notification delivery immediately.
+- **Client `onTokenRefresh`**: Automatically catches rotated device tokens, replaces the old token on the backend, and persists the new identifier.
 
-### 5. Runtime Permission & Token Synchronization
-- **Android 13+ (API 33+)**: Automatically prompts for `android.permission.POST_NOTIFICATIONS` runtime permission.
-- **Auto-Sync**: Tying hardware device token with authenticated `userId` on backend (`POST /api/user/fcm-token`) upon both initial launch and user login/profile reload.
+### 5. Client Native Channel Specifications & Play Policy Compliance
+Because Android notification channels are immutable once created in the operating system:
+- **Channel Versioning**: Channels are migrated to versioned identifiers:
+  - `gdk_auctions_v2`: High importance, distinct double-pulse vibration `[0, 400, 200, 400, 200, 400]`, sound set at creation time, purple LED (`#6B46C1`).
+  - `gdk_payments_v2`: High importance, reminder sound, emerald LED (`#10B981`).
+  - `gdk_announcements_v2`: Default importance, blue LED (`#3B82F6`).
+- **Play Store Android 14+ Policy Compliance**:
+  - Avoids restricted `USE_FULL_SCREEN_INTENT` or `CATEGORY_ALARM` permissions.
+  - Auction notifications use `NotificationCompat.CATEGORY_EVENT` with `PRIORITY_HIGH` + `IMPORTANCE_HIGH` to achieve full floating heads-up banner presentation with zero policy restrictions.
+
+### 6. Aggressive Background Killer Defense (OEM Onboarding)
+Aggressive task killers on Xiaomi (MIUI/HyperOS), Oppo/Realme (ColorOS), Vivo (Funtouch), and Samsung (OneUI) terminate background processes and sleep network radios.
+- **`BatteryOptimizationModal.jsx`**: An onboarding modal prompts users on these devices during initial launch to:
+  1. Whitelist GDKChit from battery optimization (`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`).
+  2. Enable "Autostart" / "Run in Background" through direct manufacturer intent shortcuts in `GdkNotificationModule.openOEMAutostartSettings()`.
+- **Settings Access**: Accessible anytime via the More Menu under *Background Alerts & Autostart*.
