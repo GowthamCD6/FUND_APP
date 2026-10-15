@@ -7,6 +7,9 @@ const { apiRateLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
+// Trust proxy for reverse proxies (Render, Cloudflare, Custom Domains)
+app.set('trust proxy', 1);
+
 // 1. Security Headers via Helmet
 app.use(
   helmet({

@@ -1,11 +1,14 @@
 const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
   if (typeof window !== 'undefined' && window.location.hostname) {
     const host = window.location.hostname;
     if (host !== 'localhost' && host !== '127.0.0.1') {
       return `http://${host}:5000/api`;
     }
   }
-  return import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  return 'https://api.fund.gowthamcd.in/api';
 };
 
 const API_URL = getApiUrl();
