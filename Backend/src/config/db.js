@@ -10,8 +10,7 @@ const connection = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 20,
   enableKeepAlive: true,
-  keepAliveInitialDelayMs: 0,
-  timezone: 'Z', // Set connection time_zone to UTC (+00:00) and parse DATETIME as UTC
+  timezone: '+05:30', // Match TiDB server timezone (IST +05:30) for accurate UTC conversions
   // IMPORTANT: Do NOT add any cleanup SQL here that would delete tables or database!
   // The database should persist between sessions
   ssl: process.env.DB_HOST && process.env.DB_HOST.includes('tidbcloud.com') ? {

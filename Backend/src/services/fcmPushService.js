@@ -416,18 +416,8 @@ class FCMPushService {
       };
 
       console.log(`💬 [FCM Push v1] Sending chat alert from "${senderName}" to recipients [${filteredRecipientIds.join(', ')}]...`);
-      try {
-        realtimeBroadcastService.broadcastChatMessage({
-          id: Date.now(),
-          roomId,
-          senderId: Number(senderId),
-          sender_name: senderName || 'User',
-          message: previewText,
-          created_at: new Date()
-        }, filteredRecipientIds, senderId);
-      } catch (wsErr) {
-        console.error('Error broadcasting chat message alert to WS clients:', wsErr?.message);
-      }
+      // Real-time WebSocket delivery is handled directly by chatController and server.js
+      // with real message IDs; FCM handles push delivery to background/offline users.
       return await this.sendToUsers(filteredRecipientIds, notificationOptions, 'CHAT_MESSAGE');
     } catch (err) {
       console.error('Error in sendChatMessageAlert:', err);

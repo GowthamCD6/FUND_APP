@@ -135,6 +135,117 @@ class RealtimeBroadcastService {
       }
     });
   }
+
+  /**
+   * Send arbitrary payload to a specific connected user
+   */
+  sendToChatUser(userId, payload) {
+    const serialized = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    const targetId = Number(userId);
+    this.chatClients.forEach(client => {
+      if (client.ws.readyState === WebSocket.OPEN && Number(client.userId) === targetId) {
+        client.ws.send(serialized);
+      }
+    });
+  }
+
+  /**
+   * Broadcast read receipt to message senders and room participants
+   */
+  broadcastReadReceipt(roomId, messageIds = [], readBy = null, senderIds = []) {
+    const payload = JSON.stringify({
+      type: 'read_receipt',
+      data: {
+        roomId,
+        messageIds,
+        readBy: Number(readBy),
+        status: 'READ'
+      }
+    });
+
+    const targetSenders = new Set((senderIds || []).map(id => Number(id)));
+
+    this.chatClients.forEach(client => {
+      if (client.ws.readyState === WebSocket.OPEN) {
+        const cUserId = Number(client.userId);
+        const isLookingAtRoom =
+          client.rooms.has(roomId) ||
+          client.rooms.has(String(roomId)) ||
+          client.rooms.has(Number(roomId));
+
+        if (targetSenders.has(cUserId) || isLookingAtRoom) {
+          client.ws.send(payload);
+        }
+      }
+    });
+  }
+
+  /**
+   * Broadcast status update (e.g. DELIVERED)
+   */
+  broadcastMessageStatus(messageId, status, roomId = null, senderId = null) {
+    const payload = JSON.stringify({
+      type: 'message_status_update',
+      data: {
+        messageId,
+        status,
+        roomId
+      }
+    });
+
+    this.chatClients.forEach(client => {
+      if (client.ws.readyState === WebSocket.OPEN) {
+        const cUserId = Number(client.userId);
+        const isSender = senderId && Number(senderId) === cUserId;
+        const isLookingAtRoom = roomId && (
+          client.rooms.has(roomId) ||
+          client.rooms.has(String(roomId)) ||
+          client.rooms.has(Number(roomId))
+        );
+
+        if (isSender || isLookingAtRoom) {
+          client.ws.send(payload);
+        }
+      }
+    });
+  }
+
+  /**
+   * Determine initial delivery status (READ, DELIVERED, or SENT)
+   * based on whether recipients are connected and viewing the room.
+   */
+  getRecipientDeliveryStatus(targetRoomId, recipientUserIds = [], senderId = null) {
+    const sId = senderId ? Number(senderId) : null;
+    const recipients = (recipientUserIds || []).map(Number).filter(id => !sId || id !== sId);
+    const recipientSet = new Set(recipients);
+
+    let anyOnline = false;
+    let anyLooking = false;
+
+    this.chatClients.forEach(client => {
+      if (client.ws.readyState === WebSocket.OPEN) {
+        const cUserId = Number(client.userId);
+        if (sId && cUserId === sId) return; // skip sender
+
+        const matchesRecipient = recipientSet.size === 0 || recipientSet.has(cUserId);
+        if (matchesRecipient) {
+          anyOnline = true;
+          const isLookingAtRoom =
+            client.rooms.has(targetRoomId) ||
+            client.rooms.has(String(targetRoomId)) ||
+            client.rooms.has(Number(targetRoomId));
+
+          if (isLookingAtRoom) {
+            anyLooking = true;
+          }
+        }
+      }
+    });
+
+    if (anyLooking) return 'READ';
+    if (anyOnline) return 'DELIVERED';
+    return 'SENT';
+  }
 }
 
 module.exports = new RealtimeBroadcastService();

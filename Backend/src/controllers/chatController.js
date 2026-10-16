@@ -4,6 +4,7 @@ const path = require('path');
 const { groupDecryptAES } = require('../utils/decryptAES');
 const { getOrCreateGlobalCommunity } = require('../utils/communityHelper');
 const fcmPushService = require('../services/fcmPushService');
+const realtimeBroadcastService = require('../services/realtimeBroadcastService');
 
 // Get all chats for the logged-in user (Admin or User)
 exports.getChats = async (req, res) => {
@@ -315,8 +316,24 @@ exports.getMessages = async (req, res) => {
             }
         }
 
-        // Mark as read — set read_at for messages sent by others
-        await db.promise().query(`UPDATE chat_messages SET read_at = CURRENT_TIMESTAMP WHERE room_id = ? AND sender_id != ? AND read_at IS NULL`, [roomId, userId]);
+        // Mark unread messages sent by others as READ and notify senders via read receipt
+        try {
+            const [unreadMsgs] = await db.promise().query(
+                `SELECT id, sender_id FROM chat_messages WHERE (room_id = ? OR source_room_id = ?) AND sender_id != ? AND (read_at IS NULL OR status != 'READ')`,
+                [roomId, roomId, userId]
+            );
+            if (unreadMsgs.length > 0) {
+                await db.promise().query(
+                    `UPDATE chat_messages SET read_at = COALESCE(read_at, CURRENT_TIMESTAMP), status = 'READ' WHERE (room_id = ? OR source_room_id = ?) AND sender_id != ? AND (read_at IS NULL OR status != 'READ')`,
+                    [roomId, roomId, userId]
+                );
+                const senderIds = [...new Set(unreadMsgs.map(m => Number(m.sender_id)))];
+                const readMsgIds = unreadMsgs.map(m => m.id);
+                realtimeBroadcastService.broadcastReadReceipt(roomId, readMsgIds, userId, senderIds);
+            }
+        } catch (readErr) {
+            console.warn('[getMessages] Error updating read status:', readErr.message);
+        }
 
         return res.json({ success: true, messages });
     } catch (error) {
@@ -436,36 +453,16 @@ exports.sendMessage = async (req, res) => {
             sourceRoomId = roomId;
         }
 
-        // Save message (using read_at instead of is_read, as is_read was dropped)
-        const [insertMsg] = await db.promise().query(
-            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [targetRoomId, senderId, senderType, message, sourceRoomId, 'text', replyTo || null]
-        );
-
-        // Dispatch FCM Push Notification to recipient(s) asynchronously
-        (async () => {
-            try {
-                let recipientUserIds = [];
-                if (room.type === 'private' || targetRoomId !== roomId) {
-                    const [privRows] = await db.promise().query(
-                        'SELECT user1, user2 FROM private_conversations WHERE room_id = ?',
-                        [targetRoomId]
-                    );
-                    if (privRows.length > 0) {
-                        recipientUserIds = [Number(privRows[0].user1), Number(privRows[0].user2)];
-                    } else {
-                        const [memRows] = await db.promise().query(
-                            'SELECT user_id FROM chat_room_members WHERE room_id = ?',
-                            [targetRoomId]
-                        );
-                        recipientUserIds = memRows.map(r => Number(r.user_id));
-                    }
-                } else if (room.type === 'group_broadcast' && room.group_id) {
-                    const [memRows] = await db.promise().query(
-                        'SELECT user_id FROM user_grouping WHERE group_id = ?',
-                        [room.group_id]
-                    );
-                    recipientUserIds = memRows.map(r => Number(r.user_id));
+        // Determine recipients
+        let recipientUserIds = [];
+        try {
+            if (room.type === 'private' || targetRoomId !== roomId) {
+                const [privRows] = await db.promise().query(
+                    'SELECT user1, user2 FROM private_conversations WHERE room_id = ?',
+                    [targetRoomId]
+                );
+                if (privRows.length > 0) {
+                    recipientUserIds = [Number(privRows[0].user1), Number(privRows[0].user2)];
                 } else {
                     const [memRows] = await db.promise().query(
                         'SELECT user_id FROM chat_room_members WHERE room_id = ?',
@@ -473,8 +470,58 @@ exports.sendMessage = async (req, res) => {
                     );
                     recipientUserIds = memRows.map(r => Number(r.user_id));
                 }
+            } else if (room.type === 'group_broadcast' && room.group_id) {
+                const [memRows] = await db.promise().query(
+                    'SELECT user_id FROM user_grouping WHERE group_id = ?',
+                    [room.group_id]
+                );
+                recipientUserIds = memRows.map(r => Number(r.user_id));
+            } else {
+                const [memRows] = await db.promise().query(
+                    'SELECT user_id FROM chat_room_members WHERE room_id = ?',
+                    [targetRoomId]
+                );
+                recipientUserIds = memRows.map(r => Number(r.user_id));
+            }
+        } catch (recErr) {
+            console.warn('[sendMessage] Error finding recipients:', recErr.message);
+        }
 
-                const senderName = req.user.name || (senderType === 'Admin' ? 'Admin' : 'Member');
+        // Determine initial status based on recipient WebSocket connectivity
+        const initialStatus = realtimeBroadcastService.getRecipientDeliveryStatus(targetRoomId, recipientUserIds, senderId);
+        const deliveredAt = initialStatus !== 'SENT' ? new Date() : null;
+        const readAt = initialStatus === 'READ' ? new Date() : null;
+
+        // Save message with proper initial delivery status
+        const [insertMsg] = await db.promise().query(
+            'INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to, status, delivered_at, read_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [targetRoomId, senderId, senderType, message, sourceRoomId, 'text', replyTo || null, initialStatus, deliveredAt, readAt]
+        );
+
+        const senderName = req.user.name || (senderType === 'Admin' ? 'Admin' : 'Member');
+        const msgPayload = {
+            id: insertMsg.insertId,
+            roomId: targetRoomId,
+            sourceRoomId,
+            senderId: Number(senderId),
+            senderType,
+            message,
+            status: initialStatus,
+            created_at: new Date(),
+            sender_name: senderName,
+            reply_to: replyTo || null
+        };
+
+        // Real-time broadcast to connected clients via WebSocket
+        try {
+            realtimeBroadcastService.broadcastChatMessage(msgPayload, recipientUserIds, senderId);
+        } catch (bcErr) {
+            console.warn('[sendMessage] WS broadcast error:', bcErr.message);
+        }
+
+        // Dispatch FCM Push Notification to recipient(s) asynchronously
+        (async () => {
+            try {
                 await fcmPushService.sendChatMessageAlert({
                     senderId,
                     senderName,
@@ -490,7 +537,7 @@ exports.sendMessage = async (req, res) => {
         return res.json({
             success: true,
             message: 'Message sent',
-            data: { id: insertMsg.insertId, roomId: targetRoomId, sourceRoomId, senderId, senderType, message, created_at: new Date() }
+            data: msgPayload
         });
     } catch (error) {
         console.error('Error in sendMessage:', error);

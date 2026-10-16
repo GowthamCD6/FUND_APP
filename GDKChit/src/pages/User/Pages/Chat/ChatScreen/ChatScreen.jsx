@@ -34,6 +34,7 @@ import { getUserCurrentLocationWithFallback, getStoredLocation, storeLocationLoc
 import Header from '../../../../../components/HeaderComponent/Header';
 import Join from '../../../Modals/Pages/JoinGroup/JoinGroup';
 import GlobalNotificationService from '../../../../../services/GlobalNotificationService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Enable long press context menu on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -47,6 +48,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [groupMembers, setGroupMembers] = useState([]);
   const [groupDetails, setGroupDetails] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -84,6 +86,12 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   const [contactSearchQuery, setContactSearchQuery] = useState('');
   const recordingTimerRef = useRef(null);
   const recordingSecondsRef = useRef(0);
+
+  useEffect(() => {
+    AsyncStorage.getItem('userId').then(id => {
+      if (id) setCurrentUserId(Number(id));
+    }).catch(() => {});
+  }, []);
 
   const handleMakeCall = (phoneNumber) => {
     if (!phoneNumber) {
@@ -306,27 +314,17 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       const data = await response.json();
 
       if (data.success && data.data) {
+        const serverStatus = String(data.data.status || 'sent').toLowerCase();
         setMessages(prev =>
           prev.map(msg =>
             msg.id === tempId ? {
               ...msg,
               id: data.data.id,
-              status: 'delivered'
+              status: serverStatus,
+              timestamp: data.data.created_at || msg.timestamp
             } : msg
           )
         );
-      }
-
-      // 2. Broadcast via WebSocket if socket is open
-      if (ws && ws.readyState === 1) {
-        ws.send(JSON.stringify({
-          type: 'send_message',
-          data: {
-            roomId: chatId,
-            text: newMessage.text,
-            replyTo: activeReply?.id || null
-          }
-        }));
       }
       setIsSending(false);
     } catch (error) {
@@ -812,18 +810,24 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       const data = await response.json();
       if (data.success && data.messages) {
         const formatted = data.messages.map(msg => {
-          const isMine = msg.sender_type === 'User'; // user app — 'User' = me
+          const isMine = currentUserId ? Number(msg.sender_id) === Number(currentUserId) : msg.sender_type === 'User';
           // Determine tick status for my sent messages
           let status = 'sent';
           if (isMine) {
-            status = msg.read_at ? 'read' : 'sent';
+            if (msg.read_at || String(msg.status).toUpperCase() === 'READ') {
+              status = 'read';
+            } else if (msg.delivered_at || String(msg.status).toUpperCase() === 'DELIVERED') {
+              status = 'delivered';
+            } else {
+              status = 'sent';
+            }
           }
           return {
             id: msg.id,
             sender: isMine ? 'user' : 'other',
             text: msg.message,
             timestamp: msg.created_at, // keep raw string, parse in formatTime
-            isRead: !!msg.read_at,
+            isRead: !!msg.read_at || String(msg.status).toUpperCase() === 'READ',
             status,
             avatar: isMine ? null : chatAvatar,
             senderName: msg.sender_name,
@@ -841,7 +845,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     } finally {
       setLoading(false);
     }
-  }, [chatId, chatAvatar]);
+  }, [chatId, chatAvatar, currentUserId]);
 
   // Load messages on component mount
   useEffect(() => {
@@ -863,10 +867,11 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       // Notify server that we've read all messages in this room
       ws.send(JSON.stringify({ type: 'mark_read', roomId: chatId }));
     } else {
-      ws.addEventListener('open', () => {
+      const handleOpen = () => {
         ws.send(JSON.stringify({ type: 'join_room', roomId: chatId }));
         ws.send(JSON.stringify({ type: 'mark_read', roomId: chatId }));
-      });
+      };
+      ws.addEventListener('open', handleOpen);
     }
 
     const handleWsMessage = (event) => {
@@ -874,18 +879,20 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
         const payload = JSON.parse(event.data);
 
         // New incoming message
-        if (payload.type === 'new_message' && (payload.data.roomId === chatId || payload.data.sourceRoomId === chatId)) {
+        if (payload.type === 'new_message' && (String(payload.data?.roomId) === String(chatId) || String(payload.data?.sourceRoomId) === String(chatId))) {
+          const isMine = currentUserId ? Number(payload.data.senderId) === Number(currentUserId) : payload.data.senderType === 'User';
+          const msgStatus = isMine ? (payload.data.status ? String(payload.data.status).toLowerCase() : 'sent') : 'received';
+
           setMessages(prev => {
-            if (prev.find(m => m.id === payload.data.id)) return prev;
+            if (prev.find(m => String(m.id) === String(payload.data.id))) return prev;
             const filtered = prev.filter(m => !(String(m.id).startsWith('temp-') && m.text === payload.data.message));
-            const isMine = payload.data.senderType === 'User';
             const newMsg = {
               id: payload.data.id,
               sender: isMine ? 'user' : 'other',
               text: payload.data.message,
-              timestamp: payload.data.created_at,
-              isRead: false,
-              status: isMine ? 'sent' : 'received',
+              timestamp: payload.data.created_at || new Date(),
+              isRead: msgStatus === 'read',
+              status: msgStatus,
               avatar: isMine ? null : chatAvatar,
               senderName: payload.data.sender_name,
               isStarred: false,
@@ -896,15 +903,38 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
             };
             return [...filtered, newMsg];
           });
+
+          // If incoming message from other user and we are viewing this room, mark it read
+          if (!isMine && ws.readyState === 1) {
+            ws.send(JSON.stringify({ type: 'mark_read', roomId: chatId }));
+          }
+        }
+
+        // Message status update (e.g. DELIVERED or READ)
+        if (payload.type === 'message_status_update') {
+          const { messageId, status } = payload.data || {};
+          if (messageId && status) {
+            const newStatus = String(status).toLowerCase();
+            setMessages(prev =>
+              prev.map(msg =>
+                String(msg.id) === String(messageId)
+                  ? { ...msg, status: newStatus, isRead: newStatus === 'read' }
+                  : msg
+              )
+            );
+          }
         }
 
         // Read receipt — upgrade my sent messages to blue tick
-        if (payload.type === 'read_receipt' && payload.data.roomId === chatId) {
-          const readIds = new Set(payload.data.messageIds);
+        if (payload.type === 'read_receipt' && (String(payload.data?.roomId) === String(chatId) || String(payload.data?.sourceRoomId) === String(chatId))) {
+          const readIds = new Set((payload.data.messageIds || []).map(id => String(id)));
           setMessages(prev =>
-            prev.map(msg =>
-              readIds.has(msg.id) ? { ...msg, status: 'read', isRead: true } : msg
-            )
+            prev.map(msg => {
+              if (msg.sender === 'user' && (readIds.size === 0 || readIds.has(String(msg.id)))) {
+                return { ...msg, status: 'read', isRead: true };
+              }
+              return msg;
+            })
           );
         }
       } catch (e) {
@@ -920,7 +950,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       }
       ws.removeEventListener('message', handleWsMessage);
     };
-  }, [ws, chatId, chatAvatar]);
+  }, [ws, chatId, chatAvatar, currentUserId]);
 
   const initialScrollDone = useRef(false);
 
@@ -960,19 +990,20 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     }, 2000);
   };
 
-  const formatTime = (rawTimestamp) => {
-    if (!rawTimestamp) return '';
-    let date;
-    if (rawTimestamp instanceof Date) {
-      // Optimistic sends use new Date() — already correct local time
-      date = rawTimestamp;
-    } else {
-      // Normalize MySQL DATETIME: "2025-07-16 04:27:36" → "2025-07-16T04:27:36Z"
-      // Also handles ISO strings that already have T and Z
-      const str = String(rawTimestamp).trim().replace(' ', 'T');
-      date = new Date(str.endsWith('Z') ? str : str + 'Z');
+  const parseTimestamp = (rawTimestamp) => {
+    if (!rawTimestamp) return null;
+    if (rawTimestamp instanceof Date) return rawTimestamp;
+    const str = String(rawTimestamp).trim();
+    if (str.includes('T') || str.endsWith('Z') || str.includes('+')) {
+      return new Date(str);
     }
-    if (isNaN(date.getTime())) return '';
+    // Parse plain SQL DATETIME "YYYY-MM-DD HH:mm:ss" in local device time
+    return new Date(str.replace(' ', 'T'));
+  };
+
+  const formatTime = (rawTimestamp) => {
+    const date = parseTimestamp(rawTimestamp);
+    if (!date || isNaN(date.getTime())) return '';
     return date.toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit',
@@ -982,15 +1013,8 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
 
   // Format date separator (Today, Yesterday, or Date)
   const formatDateSeparator = (rawTimestamp) => {
-    if (!rawTimestamp) return '';
-    let date;
-    if (rawTimestamp instanceof Date) {
-      date = rawTimestamp;
-    } else {
-      const str = String(rawTimestamp).trim().replace(' ', 'T');
-      date = new Date(str.endsWith('Z') ? str : str + 'Z');
-    }
-    if (isNaN(date.getTime())) return '';
+    const date = parseTimestamp(rawTimestamp);
+    if (!date || isNaN(date.getTime())) return '';
 
     const today = new Date();
     const yesterday = new Date(today);
@@ -1008,25 +1032,21 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
   // Check if we need to show date separator
   const shouldShowDateSeparator = (currentMsg, previousMsg) => {
     if (!previousMsg) return true;
-    const parseTs = (ts) => {
-      if (ts instanceof Date) return ts;
-      const s = String(ts).trim().replace(' ', 'T');
-      return new Date(s.endsWith('Z') ? s : s + 'Z');
-    };
-    return parseTs(currentMsg.timestamp).toDateString() !== parseTs(previousMsg.timestamp).toDateString();
+    const d1 = parseTimestamp(currentMsg?.timestamp);
+    const d2 = parseTimestamp(previousMsg?.timestamp);
+    if (!d1 || !d2 || isNaN(d1.getTime()) || isNaN(d2.getTime())) return false;
+    return d1.toDateString() !== d2.toDateString();
   };
 
   // Check if messages from same sender should be grouped (within 1 minute)
   const shouldGroupWithPrevious = (currentMsg, previousMsg) => {
     if (!previousMsg || !currentMsg) return false;
-    const parseTs = (ts) => {
-      if (ts instanceof Date) return ts.getTime();
-      const s = String(ts).trim().replace(' ', 'T');
-      return new Date(s.endsWith('Z') ? s : s + 'Z').getTime();
-    };
+    const d1 = parseTimestamp(currentMsg?.timestamp);
+    const d2 = parseTimestamp(previousMsg?.timestamp);
+    if (!d1 || !d2 || isNaN(d1.getTime()) || isNaN(d2.getTime())) return false;
     return (
       previousMsg.sender === currentMsg.sender &&
-      (parseTs(currentMsg.timestamp) - parseTs(previousMsg.timestamp)) < 60000
+      Math.abs(d1.getTime() - d2.getTime()) < 60000
     );
   };
 

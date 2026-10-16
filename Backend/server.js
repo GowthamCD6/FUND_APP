@@ -253,6 +253,33 @@ chatWss.on('connection', (ws, req) => {
           }));
         }
       });
+
+      // Mark unread sent messages to this user as DELIVERED now that user is connected
+      (async () => {
+        try {
+          const [deliveredRows] = await db.promise().query(
+            `SELECT cm.id, cm.sender_id, cm.room_id 
+             FROM chat_messages cm 
+             WHERE (cm.room_id IN (SELECT room_id FROM chat_room_members WHERE user_id = ?) 
+                    OR cm.room_id IN (SELECT room_id FROM private_conversations WHERE user1 = ? OR user2 = ?))
+               AND cm.sender_id != ? 
+               AND cm.status = 'SENT'`,
+            [Number(userId), Number(userId), Number(userId), Number(userId)]
+          );
+          if (deliveredRows.length > 0) {
+            const dIds = deliveredRows.map(r => r.id);
+            await db.promise().query(
+              `UPDATE chat_messages SET status = 'DELIVERED', delivered_at = COALESCE(delivered_at, CURRENT_TIMESTAMP) WHERE id IN (?)`,
+              [dIds]
+            );
+            deliveredRows.forEach(row => {
+              realtimeBroadcastService.broadcastMessageStatus(row.id, 'DELIVERED', row.room_id, row.sender_id);
+            });
+          }
+        } catch (delivErr) {
+          console.warn('Error marking messages DELIVERED on WS connect:', delivErr.message);
+        }
+      })();
     } catch (presErr) { console.error('Error setting user online:', presErr); }
 
     ws.on('message', async (message) => {
@@ -329,21 +356,21 @@ chatWss.on('connection', (ws, req) => {
           try {
             // Find which message IDs were unread (so we know whose messages to notify)
             const [unreadRows] = await db.promise().query(
-              `SELECT id, sender_id FROM chat_messages WHERE room_id = ? AND sender_id != ? AND (read_at IS NULL OR status != 'READ')`,
-              [roomId, Number(userId)]
+              `SELECT id, sender_id FROM chat_messages WHERE (room_id = ? OR source_room_id = ?) AND sender_id != ? AND (read_at IS NULL OR status != 'READ')`,
+              [roomId, roomId, Number(userId)]
             );
 
             if (unreadRows.length > 0) {
               // Mark them all read
               try {
                 await db.promise().query(
-                  `UPDATE chat_messages SET read_at = CURRENT_TIMESTAMP, status = 'READ' WHERE room_id = ? AND sender_id != ? AND (read_at IS NULL OR status != 'READ')`,
-                  [roomId, Number(userId)]
+                  `UPDATE chat_messages SET read_at = COALESCE(read_at, CURRENT_TIMESTAMP), status = 'READ' WHERE (room_id = ? OR source_room_id = ?) AND sender_id != ? AND (read_at IS NULL OR status != 'READ')`,
+                  [roomId, roomId, Number(userId)]
                 );
               } catch (e) {
                 await db.promise().query(
-                  `UPDATE chat_messages SET read_at = CURRENT_TIMESTAMP WHERE room_id = ? AND sender_id != ? AND read_at IS NULL`,
-                  [roomId, Number(userId)]
+                  `UPDATE chat_messages SET read_at = CURRENT_TIMESTAMP WHERE (room_id = ? OR source_room_id = ?) AND sender_id != ? AND read_at IS NULL`,
+                  [roomId, roomId, Number(userId)]
                 );
               }
 
@@ -351,15 +378,8 @@ chatWss.on('connection', (ws, req) => {
               const senderIds = [...new Set(unreadRows.map(r => Number(r.sender_id)))];
               const msgIds = unreadRows.map(r => r.id);
 
-              // Push read_receipt to those senders if they are connected
-              chatClients.forEach(client => {
-                if (client.ws.readyState === WebSocket.OPEN && senderIds.includes(Number(client.userId))) {
-                  client.ws.send(JSON.stringify({
-                    type: 'read_receipt',
-                    data: { roomId, messageIds: msgIds, readBy: Number(userId), status: 'READ' }
-                  }));
-                }
-              });
+              // Broadcast read receipt to senders and room participants
+              realtimeBroadcastService.broadcastReadReceipt(roomId, msgIds, Number(userId), senderIds);
             }
           } catch (e) {
             console.warn('[mark_read] WS error:', e.message);
@@ -423,36 +443,6 @@ chatWss.on('connection', (ws, req) => {
             }
           }
 
-          // Save message with fallback if status column is absent
-          let insertMsg;
-          try {
-            const [res] = await db.promise().query(
-              "INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'SENT')",
-              [targetRoomId, userId, userType, text, sourceRoomId, 'text', replyTo || null]
-            );
-            insertMsg = res;
-          } catch (e) {
-            const [res] = await db.promise().query(
-              "INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?)",
-              [targetRoomId, userId, userType, text, sourceRoomId, 'text', replyTo || null]
-            );
-            insertMsg = res;
-          }
-
-          const msgData = {
-            id: insertMsg.insertId,
-            roomId: targetRoomId,
-            sourceRoomId: sourceRoomId,
-            senderId: Number(userId),
-            senderType: userType,
-            message: text,
-            status: 'SENT',
-            created_at: new Date(),
-            sender_name: decoded.name || 'User',
-            reply_to: replyTo || null,
-            replied_to_message: replyToMessageText
-          };
-
           // Fetch members to notify for group, community, or broadcast room
           let memberUserIds = [];
           if (room.type === 'group' || room.type === 'community') {
@@ -483,6 +473,41 @@ chatWss.on('connection', (ws, req) => {
               if (room.user_id) memberUserIds.push(Number(room.user_id));
             }
           }
+
+          // Determine initial status based on recipient WebSocket connectivity
+          const initialStatus = realtimeBroadcastService.getRecipientDeliveryStatus(targetRoomId, memberUserIds, userId);
+          const deliveredAt = initialStatus !== 'SENT' ? new Date() : null;
+          const readAt = initialStatus === 'READ' ? new Date() : null;
+
+          // Save message with initial delivery status
+          let insertMsg;
+          try {
+            const [res] = await db.promise().query(
+              "INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to, status, delivered_at, read_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              [targetRoomId, userId, userType, text, sourceRoomId, 'text', replyTo || null, initialStatus, deliveredAt, readAt]
+            );
+            insertMsg = res;
+          } catch (e) {
+            const [res] = await db.promise().query(
+              "INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              [targetRoomId, userId, userType, text, sourceRoomId, 'text', replyTo || null]
+            );
+            insertMsg = res;
+          }
+
+          const msgData = {
+            id: insertMsg.insertId,
+            roomId: targetRoomId,
+            sourceRoomId: sourceRoomId,
+            senderId: Number(userId),
+            senderType: userType,
+            message: text,
+            status: initialStatus,
+            created_at: new Date(),
+            sender_name: decoded.name || 'User',
+            reply_to: replyTo || null,
+            replied_to_message: replyToMessageText
+          };
 
           // Broadcast to connected clients who are in this room, or notify members/admins
           const activeInRoomUsers = new Set();
