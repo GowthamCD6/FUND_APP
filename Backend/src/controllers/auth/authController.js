@@ -5,6 +5,7 @@ const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../
 const fs = require('fs');
 const path = require('path');
 const { addUserToGlobalCommunity } = require('../../utils/communityHelper');
+const cloudinaryService = require('../../services/cloudinaryService');
 
 // User Registration
 exports.register = async (req, res) => {
@@ -403,45 +404,49 @@ exports.updateProfile = async (req, res) => {
       const trimmedImage = userImage.trim();
       let imagePathToSave = null;
       if (trimmedImage) {
-        if (trimmedImage.startsWith('data:image/')) {
+        if (trimmedImage.startsWith('data:image/') || trimmedImage.length > 500) {
           try {
-            // Process Base64 string
-            const matches = trimmedImage.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
-            if (matches && matches.length === 3) {
-              const extension = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-              const base64Data = matches[2];
-              const buffer = Buffer.from(base64Data, 'base64');
-              const fileName = `user_${userId}_${Date.now()}.${extension}`;
-              const uploadDir = path.join(__dirname, '../../../uploads/profiles');
-              
-              if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-              }
-              
-              const filePath = path.join(uploadDir, fileName);
-              fs.writeFileSync(filePath, buffer);
-              
-              imagePathToSave = `/uploads/profiles/${fileName}`;
-
-              // Attempt to delete old image file to save space
-              try {
-                const [oldProfile] = await db.promise().query(
-                  'SELECT user_image FROM user_profiles WHERE user_id = ? AND deleted_at IS NULL LIMIT 1',
-                  [userId]
-                );
-                if (oldProfile.length > 0 && oldProfile[0].user_image) {
-                  const oldImagePath = path.join(__dirname, '../../..', oldProfile[0].user_image);
-                  if (fs.existsSync(oldImagePath)) {
-                    fs.unlinkSync(oldImagePath);
-                  }
+            // Upload to Cloudinary for high-speed CDN delivery and auto-optimization
+            const cloudRes = await cloudinaryService.uploadProfileImage(trimmedImage, userId);
+            if (cloudRes.success && cloudRes.url) {
+              imagePathToSave = cloudRes.url;
+            } else {
+              // Local fallback if Cloudinary upload fails
+              const matches = trimmedImage.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+              if (matches && matches.length === 3) {
+                const extension = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+                const base64Data = matches[2];
+                const buffer = Buffer.from(base64Data, 'base64');
+                const fileName = `user_${userId}_${Date.now()}.${extension}`;
+                const uploadDir = path.join(__dirname, '../../../uploads/profiles');
+                
+                if (!fs.existsSync(uploadDir)) {
+                  fs.mkdirSync(uploadDir, { recursive: true });
                 }
-              } catch (delErr) {
-                console.error('Failed to delete old image:', delErr);
+                
+                const filePath = path.join(uploadDir, fileName);
+                fs.writeFileSync(filePath, buffer);
+                imagePathToSave = `/uploads/profiles/${fileName}`;
               }
+            }
 
+            // Attempt to delete old local image file if it was locally stored
+            try {
+              const [oldProfile] = await db.promise().query(
+                'SELECT user_image FROM user_profiles WHERE user_id = ? AND deleted_at IS NULL LIMIT 1',
+                [userId]
+              );
+              if (oldProfile.length > 0 && oldProfile[0].user_image && oldProfile[0].user_image.startsWith('/uploads/')) {
+                const oldImagePath = path.join(__dirname, '../../..', oldProfile[0].user_image);
+                if (fs.existsSync(oldImagePath)) {
+                  fs.unlinkSync(oldImagePath);
+                }
+              }
+            } catch (delErr) {
+              console.error('Failed to clean up old image:', delErr);
             }
           } catch (e) {
-            console.error('Failed to parse or save base64 image:', e);
+            console.error('Failed to parse or save image:', e);
           }
         } else {
           imagePathToSave = trimmedImage;

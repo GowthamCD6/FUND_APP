@@ -324,7 +324,7 @@ const ChatScreen = ({ chat, onBack }) => {
     }
 
     // 3. Image URL directly
-    if (text.match(/\.(jpeg|jpg|gif|png|webp)/i) || (text.includes('/uploads/') && !text.includes(' '))) {
+    if (text.match(/\.(jpeg|jpg|gif|png|webp|avif)/i) || ((text.includes('/uploads/') || text.includes('cloudinary.com') || text.includes('/image/upload/')) && !text.includes(' '))) {
       const imgUrl = formatFileUrl(text);
       return (
         <a href={imgUrl} target="_blank" rel="noopener noreferrer">

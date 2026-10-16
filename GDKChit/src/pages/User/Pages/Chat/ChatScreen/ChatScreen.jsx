@@ -1464,7 +1464,7 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
     const trimmed = text.trim();
     return (
       (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image')) &&
-      (trimmed.match(/\.(jpeg|jpg|gif|png|webp)/i) || trimmed.includes('/uploads/'))
+      (trimmed.match(/\.(jpeg|jpg|gif|png|webp|avif)/i) || trimmed.includes('/uploads/') || trimmed.includes('cloudinary.com') || trimmed.includes('/image/upload/'))
     );
   };
 

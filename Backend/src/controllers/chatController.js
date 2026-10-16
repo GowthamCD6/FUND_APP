@@ -5,6 +5,7 @@ const { groupDecryptAES } = require('../utils/decryptAES');
 const { getOrCreateGlobalCommunity } = require('../utils/communityHelper');
 const fcmPushService = require('../services/fcmPushService');
 const realtimeBroadcastService = require('../services/realtimeBroadcastService');
+const cloudinaryService = require('../services/cloudinaryService');
 
 // Get all chats for the logged-in user (Admin or User)
 exports.getChats = async (req, res) => {
@@ -765,7 +766,7 @@ exports.getRoomMedia = async (req, res) => {
             if (text.startsWith('Document:') || r.message_type === 'document') {
                 docs.push({ id: r.id, title: text, timestamp: r.created_at, senderName: r.sender_name });
             } else if (text.startsWith('http://') || text.startsWith('https://') || text.startsWith('data:image')) {
-                if (text.match(/\.(jpeg|jpg|gif|png|webp|mp4)/i) || text.includes('/uploads/')) {
+                if (text.match(/\.(jpeg|jpg|gif|png|webp|mp4|avif)/i) || text.includes('/uploads/') || text.includes('cloudinary.com') || text.includes('/image/upload/')) {
                     media.push({ id: r.id, url: text, type: r.message_type || 'image', timestamp: r.created_at });
                 } else {
                     links.push({ id: r.id, url: text, timestamp: r.created_at });
@@ -812,32 +813,41 @@ exports.updateGroupAvatar = async (req, res) => {
 
         let savedAvatarUrl = avatarInput;
 
-        // If avatarInput is base64, convert to file and save in /uploads directory
+        // If avatarInput is provided, upload to Cloudinary for fast delivery with local fallback
         if (avatarInput.startsWith('data:image/') || avatarInput.length > 500) {
-            const matches = avatarInput.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
-            let mimeType = 'image/jpeg';
-            let base64Data = avatarInput;
+            try {
+                const cloudRes = await cloudinaryService.uploadGroupAvatar(avatarInput, targetGroupId);
+                if (cloudRes.success && cloudRes.url) {
+                    savedAvatarUrl = cloudRes.url;
+                } else {
+                    const matches = avatarInput.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+                    let mimeType = 'image/jpeg';
+                    let base64Data = avatarInput;
 
-            if (matches && matches.length === 3) {
-                mimeType = matches[1];
-                base64Data = matches[2];
+                    if (matches && matches.length === 3) {
+                        mimeType = matches[1];
+                        base64Data = matches[2];
+                    }
+
+                    let ext = 'jpg';
+                    if (mimeType.includes('png')) ext = 'png';
+                    else if (mimeType.includes('gif')) ext = 'gif';
+                    else if (mimeType.includes('webp')) ext = 'webp';
+
+                    const uploadsDir = path.join(__dirname, '../../uploads');
+                    if (!fs.existsSync(uploadsDir)) {
+                        fs.mkdirSync(uploadsDir, { recursive: true });
+                    }
+
+                    const fileName = `group_avatar_${Date.now()}_${Math.round(Math.random() * 1e6)}.${ext}`;
+                    const filePath = path.join(uploadsDir, fileName);
+
+                    fs.writeFileSync(filePath, base64Data, 'base64');
+                    savedAvatarUrl = `${req.protocol}://${req.get('host')}/uploads/${fileName}`;
+                }
+            } catch (cErr) {
+                console.warn('Group avatar Cloudinary upload notice:', cErr.message);
             }
-
-            let ext = 'jpg';
-            if (mimeType.includes('png')) ext = 'png';
-            else if (mimeType.includes('gif')) ext = 'gif';
-            else if (mimeType.includes('webp')) ext = 'webp';
-
-            const uploadsDir = path.join(__dirname, '../../uploads');
-            if (!fs.existsSync(uploadsDir)) {
-                fs.mkdirSync(uploadsDir, { recursive: true });
-            }
-
-            const fileName = `group_avatar_${Date.now()}_${Math.round(Math.random() * 1e6)}.${ext}`;
-            const filePath = path.join(uploadsDir, fileName);
-
-            fs.writeFileSync(filePath, base64Data, 'base64');
-            savedAvatarUrl = `${req.protocol}://${req.get('host')}/uploads/${fileName}`;
         }
 
         // 1. Try updating `groups` table
@@ -1383,12 +1393,30 @@ exports.getContacts = async (req, res) => {
     }
 };
 
-// Upload chat file (base64 image or multipart file upload)
+// Upload chat file (base64 image or multipart file upload to Cloudinary with local fallback)
 exports.uploadChatFile = async (req, res) => {
     try {
         // If uploaded via FormData (multer)
         if (req.file) {
-            const fileName = req.file.filename;
+            const fileName = req.file.filename || req.file.originalname;
+            try {
+                const isImage = req.file.mimetype ? req.file.mimetype.startsWith('image/') : (fileName && fileName.match(/\.(jpg|jpeg|png|webp|gif)$/i));
+                let cloudRes;
+                if (isImage) {
+                    cloudRes = await cloudinaryService.uploadChatImage(req.file.path, 'chat');
+                } else {
+                    cloudRes = await cloudinaryService.uploadGenericFile(req.file.path, 'fundapp/chat_files');
+                }
+                if (cloudRes.success && cloudRes.url) {
+                    return res.json({
+                        success: true,
+                        fileUrl: cloudRes.url,
+                        fileName
+                    });
+                }
+            } catch (err) {
+                console.warn('Cloudinary upload error, using local fallback:', err.message);
+            }
             const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${fileName}`;
             return res.json({
                 success: true,
@@ -1402,8 +1430,27 @@ exports.uploadChatFile = async (req, res) => {
             return res.status(400).json({ success: false, message: 'fileBase64 or file upload is required' });
         }
 
-        // Clean up base64 header if it exists
-        // e.g. "data:image/jpeg;base64,/9j/4AAQSkZ..." -> "/9j/4AAQSkZ..."
+        // Try Cloudinary upload for fast global CDN delivery & automatic format/quality optimization
+        try {
+            const isImage = fileBase64.startsWith('data:image/') || !clientFileName || clientFileName.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+            let cloudRes;
+            if (isImage) {
+                cloudRes = await cloudinaryService.uploadChatImage(fileBase64, req.body?.roomId || 'chat');
+            } else {
+                cloudRes = await cloudinaryService.uploadGenericFile(fileBase64, 'fundapp/chat_files');
+            }
+            if (cloudRes.success && cloudRes.url) {
+                return res.json({
+                    success: true,
+                    fileUrl: cloudRes.url,
+                    fileName: clientFileName || 'attachment'
+                });
+            }
+        } catch (cloudErr) {
+            console.warn('Cloudinary upload error, falling back to local file:', cloudErr.message);
+        }
+
+        // Fallback: save to local /uploads directory
         const matches = fileBase64.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
         let mimeType = 'image/jpeg';
         let base64Data = fileBase64;
@@ -1413,7 +1460,6 @@ exports.uploadChatFile = async (req, res) => {
             base64Data = matches[2];
         }
 
-        // Determine extension from clientFileName or fall back to mimeType
         let ext = 'jpg';
         if (clientFileName && typeof clientFileName === 'string' && clientFileName.includes('.')) {
             ext = clientFileName.split('.').pop().toLowerCase();
@@ -1451,6 +1497,26 @@ exports.uploadChatFileMultipart = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No file uploaded' });
+        }
+
+        try {
+            const fileName = req.file.originalname || req.file.filename;
+            const isImage = req.file.mimetype ? req.file.mimetype.startsWith('image/') : (fileName && fileName.match(/\.(jpg|jpeg|png|webp|gif)$/i));
+            let cloudRes;
+            if (isImage) {
+                cloudRes = await cloudinaryService.uploadChatImage(req.file.path, 'chat');
+            } else {
+                cloudRes = await cloudinaryService.uploadGenericFile(req.file.path, 'fundapp/chat_files');
+            }
+            if (cloudRes.success && cloudRes.url) {
+                return res.json({
+                    success: true,
+                    fileUrl: cloudRes.url,
+                    fileName
+                });
+            }
+        } catch (cErr) {
+            console.warn('Multipart Cloudinary upload error, using local file URL:', cErr.message);
         }
 
         const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
