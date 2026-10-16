@@ -38,9 +38,13 @@ export const AuthProvider = ({ children }) => {
             await AsyncStorage.setItem('userRole', String(user.role));
           }
           PushNotificationService.init();
-          const token = await ApiService.getToken();
-          if (token && user.id) {
-            GlobalNotificationService.init(token, user.id, user.role || 'User');
+          try {
+            const token = await ApiService.getAccessToken();
+            if (token && user.id) {
+              GlobalNotificationService.init(token, user.id, user.role || 'User');
+            }
+          } catch (tokErr) {
+            console.warn('Error fetching token for GlobalNotificationService:', tokErr);
           }
         } else {
           // Token might be invalid, clear it
@@ -81,9 +85,13 @@ export const AuthProvider = ({ children }) => {
         setUser(user);
         setIsAuthenticated(true);
         PushNotificationService.init();
-        const token = await ApiService.getToken();
-        if (token && user.id) {
-          GlobalNotificationService.init(token, user.id, user.role || 'User');
+        try {
+          const token = await ApiService.getAccessToken();
+          if (token && user.id) {
+            GlobalNotificationService.init(token, user.id, user.role || 'User');
+          }
+        } catch (tokErr) {
+          console.warn('Error fetching token for GlobalNotificationService on login:', tokErr);
         }
 
         return response;

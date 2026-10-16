@@ -28,6 +28,11 @@ class ApiService {
     return this.accessToken;
   }
 
+  // Alias for getAccessToken
+  async getToken() {
+    return await this.getAccessToken();
+  }
+
   // Get refresh token from hardware-backed Keychain/Keystore
   async getRefreshToken() {
     if (!this.refreshToken) {

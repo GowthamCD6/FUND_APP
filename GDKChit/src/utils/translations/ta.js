@@ -62,6 +62,11 @@ const ta = {
   'per month for': 'மாதத்திற்கு',
   'Notifications': 'அறிவிப்புகள்',
   'No new notifications': 'அறிவிப்புகள் இல்லை',
+  'Mark all as read': 'அனைத்தையும் படித்ததாகக் குறி',
+  'Clear all': 'அனைத்தையும் நீக்கு',
+  'Clear': 'நீக்கு',
+  'Mark as read': 'படித்ததாகக் குறி',
+  'All caught up!': 'அனைத்தும் படிக்கப்பட்டது!',
 
   // Plan names & badges
   '1 Lakh Plan': '1 லட்சம் திட்டம்',
