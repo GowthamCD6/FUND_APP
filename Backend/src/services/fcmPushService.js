@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const realtimeBroadcastService = require('./realtimeBroadcastService');
 let admin = null;
 
 try {
@@ -165,6 +166,18 @@ class FCMPushService {
       };
 
       console.log(`📢 [FCM Push v1] Broadcasting Auction Started alert for "${groupName}" to ${userIds.length} subscribers...`);
+      try {
+        realtimeBroadcastService.broadcastAuctionAlert({
+          groupId,
+          groupName,
+          initialAmount,
+          title,
+          message,
+          type: 'AUCTION_STARTED'
+        }, userIds);
+      } catch (wsErr) {
+        console.error('Error broadcasting auction alert to WS clients:', wsErr?.message);
+      }
       return await this.sendToUsers(userIds, notificationOptions, 'AUCTION_STARTED');
     } catch (err) {
       console.error('Error in sendAuctionStartAlert:', err);
@@ -347,6 +360,16 @@ class FCMPushService {
       };
 
       console.log(`📢 [FCM Push v1] Broadcasting Announcement "${title}" to ${userIds.length} subscribers...`);
+      try {
+        realtimeBroadcastService.broadcastAnnouncement({
+          title,
+          message,
+          targetGroupId,
+          payload: notificationOptions.data
+        });
+      } catch (wsErr) {
+        console.error('Error broadcasting announcement to WS clients:', wsErr?.message);
+      }
       return await this.sendToUsers(userIds, notificationOptions, 'ANNOUNCEMENT');
     } catch (err) {
       console.error('Error in sendBroadcastAnnouncement:', err);
@@ -393,6 +416,18 @@ class FCMPushService {
       };
 
       console.log(`💬 [FCM Push v1] Sending chat alert from "${senderName}" to recipients [${filteredRecipientIds.join(', ')}]...`);
+      try {
+        realtimeBroadcastService.broadcastChatMessage({
+          id: Date.now(),
+          roomId,
+          senderId: Number(senderId),
+          sender_name: senderName || 'User',
+          message: previewText,
+          created_at: new Date()
+        }, filteredRecipientIds, senderId);
+      } catch (wsErr) {
+        console.error('Error broadcasting chat message alert to WS clients:', wsErr?.message);
+      }
       return await this.sendToUsers(filteredRecipientIds, notificationOptions, 'CHAT_MESSAGE');
     } catch (err) {
       console.error('Error in sendChatMessageAlert:', err);

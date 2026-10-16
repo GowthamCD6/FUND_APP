@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ApiService from '../services/ApiService';
 import PushNotificationService from '../services/PushNotificationService';
+import GlobalNotificationService from '../services/GlobalNotificationService';
 
 const AuthContext = createContext();
 
@@ -37,6 +38,10 @@ export const AuthProvider = ({ children }) => {
             await AsyncStorage.setItem('userRole', String(user.role));
           }
           PushNotificationService.init();
+          const token = await ApiService.getToken();
+          if (token && user.id) {
+            GlobalNotificationService.init(token, user.id, user.role || 'User');
+          }
         } else {
           // Token might be invalid, clear it
           await ApiService.clearTokens();
@@ -76,6 +81,10 @@ export const AuthProvider = ({ children }) => {
         setUser(user);
         setIsAuthenticated(true);
         PushNotificationService.init();
+        const token = await ApiService.getToken();
+        if (token && user.id) {
+          GlobalNotificationService.init(token, user.id, user.role || 'User');
+        }
 
         return response;
       } else {
@@ -112,7 +121,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // 1. Delete device push token on server so shared devices stop receiving alerts
+      // 1. Disconnect real-time notification socket
+      GlobalNotificationService.disconnect();
+
+      // 2. Delete device push token on server so shared devices stop receiving alerts
       await PushNotificationService.deleteTokenOnLogout().catch(e => console.warn('Push token delete on logout:', e));
 
       const response = await ApiService.logout();

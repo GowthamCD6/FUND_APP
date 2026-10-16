@@ -9,6 +9,7 @@ const db = require('./src/config/db');
 const checkAndInitializeDatabase = require('./src/utils/dbHealthCheck');
 const setupGracefulShutdown = require('./src/utils/gracefulShutdown');
 const fcmPushService = require('./src/services/fcmPushService');
+const realtimeBroadcastService = require('./src/services/realtimeBroadcastService');
 
 // Initialize WebSocket servers
 const wss = new WebSocket.Server({ noServer: true });
@@ -66,6 +67,7 @@ wss.on('connection', (ws, req) => {
         userType: verifiedRole,
         timestamp: Date.now(),
       });
+      realtimeBroadcastService.registerAuctionClient(clientId, clientSessions.get(clientId));
 
       console.log(`✅ WebSocket authenticated: ${clientId} (${verifiedRole})`);
 
@@ -185,6 +187,7 @@ wss.on('connection', (ws, req) => {
     ws.on('close', () => {
       if (clientId) {
         clientSessions.delete(clientId);
+        realtimeBroadcastService.removeAuctionClient(clientId);
         console.log(`🔌 WebSocket disconnected: ${clientId}`);
       }
     });
@@ -226,6 +229,7 @@ chatWss.on('connection', (ws, req) => {
       userType,
       rooms: new Set() // Store active rooms they are looking at
     });
+    realtimeBroadcastService.registerChatClient(clientId, chatClients.get(clientId));
 
     // Mark user as Online in DB on WebSocket connection
     try {
@@ -535,6 +539,7 @@ chatWss.on('connection', (ws, req) => {
 
     ws.on('close', async () => {
       chatClients.delete(clientId);
+      realtimeBroadcastService.removeChatClient(clientId);
       console.log(`🔌 Chat WebSocket disconnected: ${clientId}`);
       try {
         await db.promise().query('UPDATE users SET is_online = 0, last_seen = CURRENT_TIMESTAMP WHERE id = ?', [Number(userId)]);

@@ -33,6 +33,7 @@ import ApiService from '../../../../../services/ApiService';
 import { getUserCurrentLocationWithFallback, getStoredLocation, storeLocationLocally } from '../../../../../services/locationService';
 import Header from '../../../../../components/HeaderComponent/Header';
 import Join from '../../../Modals/Pages/JoinGroup/JoinGroup';
+import GlobalNotificationService from '../../../../../services/GlobalNotificationService';
 
 // Enable long press context menu on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -238,6 +239,15 @@ const ChatScreen = ({ route, navigation, onBack, ws }) => {
       hideSub.remove();
     };
   }, []);
+
+  useEffect(() => {
+    if (chatId) {
+      GlobalNotificationService.setActiveChatRoomId(chatId);
+    }
+    return () => {
+      GlobalNotificationService.setActiveChatRoomId(null);
+    };
+  }, [chatId]);
 
   const toggleEmojiPicker = () => {
     if (showEmojiPicker) {
