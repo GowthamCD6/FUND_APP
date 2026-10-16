@@ -678,6 +678,10 @@ async function handleAuctionMessage(type, data, clientId, userType) {
       if (client) {
         (async () => {
           try {
+            const [membershipRows] = await db.promise().query(
+              `SELECT id FROM user_grouping WHERE group_id = ? AND user_id = ? LIMIT 1`,
+              [groupId, client.userId]
+            );
             const [existingWins] = await db.promise().query(
               `SELECT id FROM group_auction_winners WHERE group_id = ? AND winner_user_id = ? AND deleted_at IS NULL LIMIT 1`,
               [groupId, client.userId]
@@ -687,13 +691,15 @@ async function handleAuctionMessage(type, data, clientId, userType) {
               [groupId, client.userId]
             );
 
+            const isMember = membershipRows.length > 0;
             const alreadyWon = existingWins.length > 0;
             const isOverdue = overdueRows.length > 0;
-            const isEligible = !alreadyWon && !isOverdue;
+            const isEligible = isMember && !alreadyWon && !isOverdue;
 
             let reason = 'You are eligible to participate in this auction.';
-            if (alreadyWon) reason = 'Ineligible: You have already won an auction in this group.';
-            if (isOverdue) reason = 'Ineligible: You have overdue pending monthly installments.';
+            if (!isMember) reason = 'Ineligible: You are not an enrolled member of this chit group.';
+            else if (alreadyWon) reason = 'Ineligible: You have already won an auction in this group.';
+            else if (isOverdue) reason = 'Ineligible: You have overdue pending monthly installments.';
 
             if (client.ws?.readyState === WebSocket.OPEN) {
               client.ws.send(JSON.stringify({
@@ -701,6 +707,7 @@ async function handleAuctionMessage(type, data, clientId, userType) {
                 data: {
                   isEligible,
                   reason,
+                  isMember,
                   alreadyWon,
                   isOverdue,
                 }
@@ -972,7 +979,25 @@ async function placeBid(data, clientId) {
     auction.processedIdempotencyKeys.add(idempotencyKey);
   }
 
-  // 4. Ineligibility Check: Has user already won an auction in a previous cycle for this group?
+  // 4. Group Enrollment Check: Is user an enrolled member of this group?
+  try {
+    const [membershipRows] = await db.promise().query(
+      `SELECT id FROM user_grouping WHERE group_id = ? AND user_id = ? LIMIT 1`,
+      [groupId, userId]
+    );
+
+    if (!membershipRows || membershipRows.length === 0) {
+      client.ws.send(JSON.stringify({
+        type: 'error',
+        data: { message: 'MEMBERSHIP RESTRICTION: You are not an enrolled member of this chit group.' }
+      }));
+      return;
+    }
+  } catch (memErr) {
+    console.error('Error checking group membership in placeBid:', memErr);
+  }
+
+  // 5. Ineligibility Check: Has user already won an auction in a previous cycle for this group?
   try {
     const [existingWins] = await db.promise().query(
       `SELECT id FROM group_auction_winners WHERE group_id = ? AND (winner_user_id = ? OR LOWER(winner_name) = LOWER(?)) AND deleted_at IS NULL LIMIT 1`,
