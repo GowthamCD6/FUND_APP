@@ -63,6 +63,8 @@ const RandomAuction = ({
   const [isDiceRolling, setIsDiceRolling] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [joinedParticipants, setJoinedParticipants] = useState(new Set());
+  const [drawMode, setDrawMode] = useState('random'); // 'random' | 'manual'
+  const [selectedWinnerId, setSelectedWinnerId] = useState(null);
 
   const animX = useRef(new Animated.Value(0)).current;
   const animY = useRef(new Animated.Value(0)).current;
@@ -121,8 +123,25 @@ const RandomAuction = ({
       return;
     }
 
-    const finalValue = Math.floor(Math.random() * maxParticipants) + 1;
-    const winner = participants[finalValue - 1]; // Dice value maps directly to participant number
+    let winner = null;
+    let finalValue = 1;
+
+    if (drawMode === 'manual') {
+      if (!selectedWinnerId) {
+        Alert.alert(t("Selection Required"), t("Please select a participant from the list below before starting the draw."));
+        return;
+      }
+      const winnerIdx = participants.findIndex(p => (p.id || p.userId)?.toString() === selectedWinnerId?.toString());
+      if (winnerIdx === -1) {
+        Alert.alert(t("Error"), t("The selected winner was not found in participants."));
+        return;
+      }
+      winner = participants[winnerIdx];
+      finalValue = (winnerIdx % maxParticipants) + 1;
+    } else {
+      finalValue = Math.floor(Math.random() * maxParticipants) + 1;
+      winner = participants[finalValue - 1] || participants[0];
+    }
 
     if (selectedGroup?.id) {
       AuctionWebSocketService.rollDice(
@@ -254,27 +273,65 @@ const RandomAuction = ({
 
   const renderParticipantsTable = () => (
     <View style={styles.participantsCard}>
-      <Text style={styles.cardTitle}>{t('Participants')}</Text>
+      <View style={styles.participantsHeaderRow}>
+        <Text style={styles.cardTitle}>{t('Participants')}</Text>
+        {drawMode === 'manual' && (
+          <View style={styles.manualSelectionBadge}>
+            <MaterialCommunityIcons name="gesture-tap" size={14} color="#6B46C1" />
+            <Text style={styles.manualSelectionBadgeText}>{t('Tap member to choose winner')}</Text>
+          </View>
+        )}
+      </View>
+
       <View style={styles.tableContainer}>
         <View style={styles.tableHeader}>
-          <Text style={[styles.tableHeaderText, { flex: 0.2 }]}>No.</Text>
-          <Text style={[styles.tableHeaderText, { flex: 0.5 }]}>{t('Participant')}</Text>
+          <Text style={[styles.tableHeaderText, { flex: 0.18 }]}>No.</Text>
+          <Text style={[styles.tableHeaderText, { flex: 0.52 }]}>{t('Participant')}</Text>
           <Text style={[styles.tableHeaderText, { flex: 0.3, textAlign: 'right' }]}>{t('Status')}</Text>
         </View>
         {participants.map((participant, index) => {
+          const participantId = (participant.id || participant.userId)?.toString();
           const isJoined = joinedParticipants.has(participant.id.toString());
+          const isSelected = drawMode === 'manual' && selectedWinnerId === participantId;
+
           return (
-            <View key={participant.id} style={styles.tableRow}>
-              <View style={{ flex: 0.2, justifyContent: 'center' }}>
-                <View style={styles.numberBadge}>
-                  <Text style={styles.numberBadgeText}>{index + 1}</Text>
+            <TouchableOpacity 
+              key={participant.id || index} 
+              style={[
+                styles.tableRow,
+                isSelected && styles.tableRowSelected
+              ]}
+              onPress={() => {
+                if (isDiceRolling) return;
+                if (drawMode === 'manual') {
+                  setSelectedWinnerId(participantId);
+                }
+              }}
+              disabled={isDiceRolling || drawMode !== 'manual'}
+              activeOpacity={drawMode === 'manual' ? 0.7 : 1}
+            >
+              <View style={{ flex: 0.18, justifyContent: 'center' }}>
+                <View style={[styles.numberBadge, isSelected && styles.numberBadgeSelected]}>
+                  <Text style={[styles.numberBadgeText, isSelected && styles.numberBadgeTextSelected]}>
+                    {index + 1}
+                  </Text>
                 </View>
               </View>
               <View style={styles.tableCellUser}>
-                <View style={styles.smallAvatar}>
+                <View style={[styles.smallAvatar, isSelected && styles.smallAvatarSelected]}>
                   <Text style={styles.smallAvatarText}>{participant.avatar}</Text>
                 </View>
-                <Text style={styles.tableUserName} numberOfLines={1}>{participant.name}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.tableUserName, isSelected && styles.tableUserNameSelected]} numberOfLines={1}>
+                    {participant.name}
+                  </Text>
+                  {isSelected && (
+                    <View style={styles.designatedBadge}>
+                      <MaterialCommunityIcons name="crown" size={12} color="#047857" />
+                      <Text style={styles.designatedBadgeText}>{t('Pre-Selected Winner')}</Text>
+                    </View>
+                  )}
+                </View>
               </View>
               <View style={{ flex: 0.3, alignItems: 'flex-end', justifyContent: 'center' }}>
                 <View style={[styles.statusBadgeInline, isJoined ? {backgroundColor: '#D1FAE5'} : {backgroundColor: '#FEF3C7'}]}>
@@ -283,11 +340,15 @@ const RandomAuction = ({
                   </Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
       </View>
     </View>
+  );
+
+  const selectedWinnerObj = participants.find(
+    p => (p.id || p.userId)?.toString() === selectedWinnerId?.toString()
   );
 
   return (
@@ -300,6 +361,66 @@ const RandomAuction = ({
             <Text style={styles.participantCountText}>{participants.length} {participants.length === 1 ? t('Participant') : t('Participants')}</Text>
           </View>
         </View>
+
+        {/* Mode Selector: Random Draw vs Pre-Select Winner */}
+        {!isDiceRolling && !showResult && (
+          <View style={styles.modeSelectorContainer}>
+            <TouchableOpacity
+              style={[styles.modeButton, drawMode === 'random' && styles.modeButtonActive]}
+              onPress={() => setDrawMode('random')}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons 
+                name="dice-multiple" 
+                size={16} 
+                color={drawMode === 'random' ? '#FFFFFF' : '#6B7280'} 
+              />
+              <Text style={[styles.modeButtonText, drawMode === 'random' && styles.modeButtonTextActive]}>
+                {t('Random Winner')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modeButton, drawMode === 'manual' && styles.modeButtonActive]}
+              onPress={() => setDrawMode('manual')}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons 
+                name="account-star" 
+                size={16} 
+                color={drawMode === 'manual' ? '#FFFFFF' : '#6B7280'} 
+              />
+              <Text style={[styles.modeButtonText, drawMode === 'manual' && styles.modeButtonTextActive]}>
+                {t('Pre-Select Winner')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Mode Info & Designated Winner Banner */}
+        {!isDiceRolling && !showResult && drawMode === 'manual' && (
+          <View style={selectedWinnerObj ? styles.designatedWinnerBanner : styles.modeDescriptionBox}>
+            <MaterialCommunityIcons 
+              name={selectedWinnerObj ? "crown" : "cursor-pointer"} 
+              size={18} 
+              color={selectedWinnerObj ? "#047857" : "#6B46C1"} 
+            />
+            <Text style={selectedWinnerObj ? styles.designatedWinnerText : styles.modeDescriptionText}>
+              {selectedWinnerObj 
+                ? `${t('Designated Winner')}: ${selectedWinnerObj.name} (${t('Wins after 30s roll')})`
+                : t('Select a participant from the table below as the designated winner.')}
+            </Text>
+          </View>
+        )}
+
+        {!isDiceRolling && !showResult && drawMode === 'random' && (
+          <View style={styles.modeDescriptionBox}>
+            <MaterialCommunityIcons name="information-outline" size={16} color="#6B7280" />
+            <Text style={styles.modeDescriptionText}>
+              {t('Winner is chosen purely randomly by the system after the 30-second roll.')}
+            </Text>
+          </View>
+        )}
         
         {!isDiceRolling && !showResult && (
           <View style={styles.poolAmountCard}>
@@ -353,24 +474,31 @@ const RandomAuction = ({
         {isDiceRolling && (
           <View style={styles.rollingBadge}>
             <MaterialCommunityIcons name="timer-sand" size={18} color="#92400E" />
-            <Text style={styles.rollingText}>{t('Rolling...')}</Text>
+            <Text style={styles.rollingText}>{t('Rolling 30s...')}</Text>
           </View>
         )}
         
         {!isDiceRolling && !showResult && (
           <TouchableOpacity 
-            style={[styles.rollButton, !allJoined && styles.disabledButton]}
+            style={[
+              styles.rollButton, 
+              (!allJoined || (drawMode === 'manual' && !selectedWinnerId)) && styles.disabledButton
+            ]}
             onPress={rollDice}
             disabled={!allJoined}
             activeOpacity={0.7}
           >
             <MaterialCommunityIcons 
-              name="dice-multiple" 
+              name={drawMode === 'manual' ? "account-star" : "dice-multiple"} 
               size={20} 
               color="#FFFFFF" 
             />
             <Text style={styles.rollButtonText}>
-              {allJoined ? t('Roll Dice') : t('Waiting for Participants...')}
+              {!allJoined 
+                ? t('Waiting for Participants...') 
+                : drawMode === 'manual'
+                  ? (selectedWinnerId ? t('Start 30s Draw (Selected Winner)') : t('Select a Winner Below'))
+                  : t('Roll Dice (Random Draw)')}
             </Text>
           </TouchableOpacity>
         )}
@@ -638,6 +766,137 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
     flexShrink: 1,
+  },
+  participantsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  manualSelectionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  manualSelectionBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6B46C1',
+  },
+  modeSelectorContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    width: '100%',
+  },
+  modeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    gap: 6,
+  },
+  modeButtonActive: {
+    backgroundColor: '#6B46C1',
+    shadowColor: '#6B46C1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  modeButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  modeButtonTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  modeDescriptionBox: {
+    width: '100%',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modeDescriptionText: {
+    fontSize: 12,
+    color: '#4B5563',
+    flex: 1,
+    lineHeight: 16,
+  },
+  designatedWinnerBanner: {
+    width: '100%',
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  designatedWinnerText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#065F46',
+    flex: 1,
+  },
+  tableRowSelected: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#10B981',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    marginVertical: 2,
+  },
+  numberBadgeSelected: {
+    backgroundColor: '#10B981',
+    borderColor: '#059669',
+  },
+  numberBadgeTextSelected: {
+    color: '#FFFFFF',
+  },
+  smallAvatarSelected: {
+    backgroundColor: '#059669',
+  },
+  tableUserNameSelected: {
+    color: '#065F46',
+    fontWeight: '700',
+  },
+  designatedBadge: {
+    backgroundColor: '#D1FAE5',
+    borderColor: '#10B981',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    marginTop: 3,
+  },
+  designatedBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#065F46',
   },
   statusBadgeInline: {
     paddingHorizontal: 10,

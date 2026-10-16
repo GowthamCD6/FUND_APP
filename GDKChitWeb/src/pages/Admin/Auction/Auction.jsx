@@ -70,6 +70,8 @@ const Auction = () => {
   const [rollTimer, setRollTimer] = useState(0);
   const [joinedParticipants, setJoinedParticipants] = useState(new Set());
   const [showDiceResult, setShowDiceResult] = useState(false);
+  const [drawMode, setDrawMode] = useState('random'); // 'random' | 'manual'
+  const [selectedWinnerId, setSelectedWinnerId] = useState(null);
 
   const unsubscribeRef = useRef([]);
   const timerRef = useRef(null);
@@ -399,16 +401,36 @@ const Auction = () => {
     }
 
     const maxDiceValue = Math.min(participants.length, 6);
-    const finalValue = Math.floor(Math.random() * maxDiceValue) + 1;
-    const winner = participants[Math.floor(Math.random() * participants.length)];
+    let winner = null;
+    let finalValue = 1;
+
+    if (drawMode === 'manual') {
+      if (!selectedWinnerId) {
+        setPageNotice({ text: 'Please select a participant from the list below as designated winner before starting.', type: 'error' });
+        return;
+      }
+      const winnerIdx = participants.findIndex(p => String(p.userId || p.id) === String(selectedWinnerId));
+      if (winnerIdx === -1) {
+        setPageNotice({ text: 'Selected participant not found in list.', type: 'error' });
+        return;
+      }
+      winner = participants[winnerIdx];
+      finalValue = (winnerIdx % maxDiceValue) + 1;
+    } else {
+      finalValue = Math.floor(Math.random() * maxDiceValue) + 1;
+      winner = participants[finalValue - 1] || participants[0];
+    }
+
+    const ROLL_DURATION_MS = 30000;
+    const ROLL_DURATION_SEC = 30;
 
     if (selectedGroup?.id && wsConnected) {
-      AuctionWS.rollDice(selectedGroup.id, 4000, finalValue, winner);
+      AuctionWS.rollDice(selectedGroup.id, ROLL_DURATION_MS, finalValue, winner, parseFloat(poolAmount));
     }
 
     setIsRolling(true);
     setShowDiceResult(false);
-    setRollTimer(4);
+    setRollTimer(ROLL_DURATION_SEC);
 
     const countdownInterval = setInterval(() => {
       setRollTimer(prev => {
@@ -442,7 +464,7 @@ const Auction = () => {
         });
         setShowResultModal(true);
       }, 1000);
-    }, 4000);
+    }, ROLL_DURATION_MS);
   };
 
   // ──── Save Winner ────
@@ -885,6 +907,10 @@ const Auction = () => {
               rollDice={rollDice}
               poolAmount={poolAmount}
               setPoolAmount={setPoolAmount}
+              drawMode={drawMode}
+              setDrawMode={setDrawMode}
+              selectedWinnerId={selectedWinnerId}
+              setSelectedWinnerId={setSelectedWinnerId}
             />
           )}
         </div>

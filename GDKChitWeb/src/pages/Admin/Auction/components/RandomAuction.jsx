@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Users as RiGroupLine, Dice5 as RiDiceLine, Loader2 as RiLoader4Line, Timer as RiTimerLine,
-  UserCheck as RiUserCheckLine, Clock as RiTimeLine
+  UserCheck as RiUserCheckLine, Clock as RiTimeLine, Crown, Sparkles, MousePointerClick, Info
 } from 'lucide-react';
 
 import './RandomAuction.css';
@@ -16,8 +16,16 @@ const RandomAuction = ({
   showDiceResult,
   rollDice,
   poolAmount,
-  setPoolAmount
+  setPoolAmount,
+  drawMode = 'random',
+  setDrawMode,
+  selectedWinnerId,
+  setSelectedWinnerId
 }) => {
+  const selectedWinner = participants.find(
+    p => String(p.userId || p.id) === String(selectedWinnerId)
+  );
+
   return (
     <div className="auc-random-layout">
       <div className="auc-dice-box">
@@ -28,6 +36,59 @@ const RandomAuction = ({
             {participants.length} Participants
           </span>
         </div>
+
+        {/* Dual Mode Switcher: Random vs Admin Pre-Select */}
+        {!isRolling && !showDiceResult && (
+          <div className="auc-mode-switcher-container">
+            <button
+              type="button"
+              className={`auc-mode-tab-btn ${drawMode === 'random' ? 'active' : ''}`}
+              onClick={() => setDrawMode && setDrawMode('random')}
+            >
+              <RiDiceLine size={16} />
+              <span>Random Winner</span>
+            </button>
+            <button
+              type="button"
+              className={`auc-mode-tab-btn ${drawMode === 'manual' ? 'active' : ''}`}
+              onClick={() => setDrawMode && setDrawMode('manual')}
+            >
+              <Crown size={16} />
+              <span>Pre-Select Winner</span>
+            </button>
+          </div>
+        )}
+
+        {/* Mode Information & Status */}
+        {!isRolling && !showDiceResult && (
+          <div className={`auc-mode-info-banner ${drawMode === 'manual' && selectedWinner ? 'highlight-winner' : ''}`}>
+            {drawMode === 'manual' ? (
+              selectedWinner ? (
+                <>
+                  <Crown size={18} className="auc-crown-icon" />
+                  <div className="auc-info-text">
+                    <strong>Designated Winner:</strong> {selectedWinner.name}
+                    <span className="auc-info-subtext">Will emerge as winner after the 30-second roll.</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <MousePointerClick size={18} color="#6B46C1" />
+                  <div className="auc-info-text">
+                    <strong>Pre-selection active:</strong> Click a member in the list on the right to select them as winner.
+                  </div>
+                </>
+              )
+            ) : (
+              <>
+                <Info size={18} color="#4B5563" />
+                <div className="auc-info-text">
+                  <strong>Pure Random Mode:</strong> System will randomly pick the winner from all participants after a 30s roll.
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {!isRolling && !showDiceResult && (
           <div className="auc-initial-amount-card" style={{ width: '100%', marginBottom: 20 }}>
@@ -104,35 +165,81 @@ const RandomAuction = ({
 
         <button
           className="auc-btn-roll"
-          disabled={isRolling || participants.length === 0 || !participants.every(p => joinedParticipants.has(String(p.userId || p.id)))}
+          disabled={
+            isRolling ||
+            participants.length === 0 ||
+            !participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ||
+            (drawMode === 'manual' && !selectedWinnerId)
+          }
           onClick={rollDice}
           style={{
-            opacity: (isRolling || participants.length === 0 || !participants.every(p => joinedParticipants.has(String(p.userId || p.id)))) ? 0.6 : 1,
-            cursor: (isRolling || participants.length === 0 || !participants.every(p => joinedParticipants.has(String(p.userId || p.id)))) ? 'not-allowed' : 'pointer',
+            opacity: (
+              isRolling ||
+              participants.length === 0 ||
+              !participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ||
+              (drawMode === 'manual' && !selectedWinnerId)
+            ) ? 0.6 : 1,
+            cursor: (
+              isRolling ||
+              participants.length === 0 ||
+              !participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ||
+              (drawMode === 'manual' && !selectedWinnerId)
+            ) ? 'not-allowed' : 'pointer',
             background: participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ? '#2E7D32' : '#6B7A6E'
           }}
         >
           {isRolling ? (
-            <><RiLoader4Line size={18} className="spin-anim" /> Rolling...</>
+            <><RiLoader4Line size={18} className="spin-anim" /> Rolling 30s...</>
           ) : !participants.every(p => joinedParticipants.has(String(p.userId || p.id))) ? (
             <><RiTimerLine size={18} /> Waiting for all members to join...</>
+          ) : drawMode === 'manual' ? (
+            selectedWinnerId ? (
+              <><Crown size={18} /> Start 30s Draw (Selected Winner)</>
+            ) : (
+              <><MousePointerClick size={18} /> Select a Winner from List</>
+            )
           ) : (
-            <><RiDiceLine size={18} /> Roll Dice (Lucky Draw)</>
+            <><RiDiceLine size={18} /> Roll Dice (Random Draw - 30s)</>
           )}
         </button>
       </div>
 
       <div className="auc-rand-participants">
-        <h5>Participating Members ({participants.length})</h5>
+        <div className="auc-rand-header-row">
+          <h5>Participating Members ({participants.length})</h5>
+          {drawMode === 'manual' && (
+            <span className="auc-select-hint-badge">
+              <MousePointerClick size={12} /> Click to select winner
+            </span>
+          )}
+        </div>
         <div className="auc-rand-list">
           {participants.map((p, index) => {
-            const hasJoined = joinedParticipants.has(String(p.userId));
+            const participantId = String(p.userId || p.id);
+            const hasJoined = joinedParticipants.has(participantId);
+            const isSelected = drawMode === 'manual' && String(selectedWinnerId) === participantId;
+
             return (
-              <div key={p.userId} className="auc-rand-row">
+              <div 
+                key={p.userId || p.id || index} 
+                className={`auc-rand-row ${isSelected ? 'selected-winner-row' : ''} ${drawMode === 'manual' ? 'clickable' : ''}`}
+                onClick={() => {
+                  if (!isRolling && drawMode === 'manual' && setSelectedWinnerId) {
+                    setSelectedWinnerId(participantId);
+                  }
+                }}
+              >
                 <div className="auc-rand-row-left">
-                  <div className="auc-rand-number">{index + 1}</div>
-                  <div className="auc-m-avatar">{(p.name || 'U').substring(0, 2).toUpperCase()}</div>
-                  <span>{p.name}</span>
+                  <div className={`auc-rand-number ${isSelected ? 'selected' : ''}`}>{index + 1}</div>
+                  <div className={`auc-m-avatar ${isSelected ? 'selected' : ''}`}>{(p.name || 'U').substring(0, 2).toUpperCase()}</div>
+                  <div className="auc-member-info-col">
+                    <span className="auc-member-name">{p.name}</span>
+                    {isSelected && (
+                      <span className="auc-designated-tag">
+                        <Crown size={11} /> Pre-Selected Winner
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className={`auc-join-badge ${hasJoined ? 'joined' : 'pending'}`}>
                   {hasJoined ? (

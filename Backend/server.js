@@ -806,21 +806,24 @@ async function handleAuctionMessage(type, data, clientId, userType) {
           }
         });
 
-        // Auto-save the random auction winner to the database after dice roll completes
+        // Auto-save the random auction winner to the database after dice roll completes (30s)
         if (winner) {
-          // Mark auction as ended
-          db.promise().query(
-            "UPDATE group_auctions SET status = 'ended' WHERE group_id = ? AND status IN ('setup', 'active')",
-            [groupId]
-          ).catch(err => console.error('Error ending random auction in DB:', err));
+          const rollDurationMs = Number(duration) || 30000;
+          setTimeout(() => {
+            // Mark auction as ended
+            db.promise().query(
+              "UPDATE group_auctions SET status = 'ended' WHERE group_id = ? AND status IN ('setup', 'active')",
+              [groupId]
+            ).catch(err => console.error('Error ending random auction in DB:', err));
 
-          // Save winner to group_auction_winners — use initialAmount as the amount taken
-          saveAuctionWinnerToDb(groupId, {
-            userId: winner.id || winner.userId,
-            userName: winner.name || winner.userName,
-            amount: rollInitialAmount,
-          });
-          console.log(`🎲 Random auction winner auto-saved: ${winner.name || winner.userName}, Amount: ₹${rollInitialAmount}`);
+            // Save winner to group_auction_winners — use initialAmount as the amount taken
+            saveAuctionWinnerToDb(groupId, {
+              userId: winner.id || winner.userId,
+              userName: winner.name || winner.userName,
+              amount: rollInitialAmount,
+            });
+            console.log(`🎲 Random auction winner auto-saved after ${rollDurationMs / 1000}s: ${winner.name || winner.userName}, Amount: ₹${rollInitialAmount}`);
+          }, rollDurationMs);
         }
       }
       break;
