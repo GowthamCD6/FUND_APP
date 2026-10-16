@@ -41,6 +41,7 @@ import ChitSimulator from "../../pages/User/Pages/Tools/ChitSimulator/ChitSimula
 import PrizedSuretyTracker from "../../pages/User/Pages/Tools/PrizedSuretyTracker/PrizedSuretyTracker";
 import DueCalendar from "../../pages/User/Pages/Tools/DueCalendar/DueCalendar";
 import DocumentVault from "../../pages/User/Pages/Tools/DocumentVault/DocumentVault";
+import NotificationScreen from "../../pages/User/Pages/Notification/NotificationScreen";
 
 import { navigationRef } from "../../utils/navigation";
 
@@ -131,6 +132,8 @@ const Routes = () => {
                     <Stack.Screen name="PrizedSuretyTracker" component={withSafe(PrizedSuretyTracker)} />
                     <Stack.Screen name="DueCalendar" component={withSafe(DueCalendar)} />
                     <Stack.Screen name="DocumentVault" component={withSafe(DocumentVault)} />
+                    <Stack.Screen name="Notifications" component={withSafe(NotificationScreen)} />
+                    <Stack.Screen name="Notification" component={withSafe(NotificationScreen)} />
                 </Stack.Navigator>
                 <OTPNotificationBanner />
             </View>

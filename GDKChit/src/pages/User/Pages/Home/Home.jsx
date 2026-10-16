@@ -358,67 +358,37 @@ const Home = () => {
 
   const goldenFade = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const loadStoredNotifState = async () => {
-      try {
-        const storedRead = await AsyncStorage.getItem('read_notification_ids');
-        if (storedRead) {
-          setReadNotifIds(new Set(JSON.parse(storedRead)));
+  const loadStoredNotifState = useCallback(async () => {
+    try {
+      const [storedRead, storedCleared, cachedNotifs] = await Promise.all([
+        AsyncStorage.getItem('read_notification_ids'),
+        AsyncStorage.getItem('cleared_notification_ids'),
+        AsyncStorage.getItem('cached_user_notifications'),
+      ]);
+      if (storedRead) {
+        setReadNotifIds(new Set(JSON.parse(storedRead)));
+      }
+      if (storedCleared) {
+        setClearedNotifIds(new Set(JSON.parse(storedCleared)));
+      }
+      if (cachedNotifs) {
+        const parsed = JSON.parse(cachedNotifs);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setNotifications(parsed);
         }
-        const storedCleared = await AsyncStorage.getItem('cleared_notification_ids');
-        if (storedCleared) {
-          setClearedNotifIds(new Set(JSON.parse(storedCleared)));
-        }
-      } catch (e) {}
-    };
-    loadStoredNotifState();
+      }
+    } catch (e) {}
   }, []);
 
-  const handleMarkAllAsRead = async () => {
-    try {
-      const allIds = new Set(readNotifIds);
-      notifications.forEach((n, idx) => {
-        allIds.add(n.id || `notif-${idx}`);
-      });
-      setReadNotifIds(allIds);
-      await AsyncStorage.setItem('read_notification_ids', JSON.stringify([...allIds]));
-    } catch (e) {
-      console.warn('Error marking all notifications as read:', e);
-    }
-  };
+  useEffect(() => {
+    loadStoredNotifState();
+  }, [loadStoredNotifState]);
 
-  const handleClearAllNotifications = async () => {
-    try {
-      const allCleared = new Set(clearedNotifIds);
-      notifications.forEach((n, idx) => {
-        allCleared.add(n.id || `notif-${idx}`);
-      });
-      setClearedNotifIds(allCleared);
-      await AsyncStorage.setItem('cleared_notification_ids', JSON.stringify([...allCleared]));
-    } catch (e) {
-      console.warn('Error clearing all notifications:', e);
-    }
-  };
-
-  const handleMarkSingleAsRead = async (id) => {
-    if (!id || readNotifIds.has(id)) return;
-    try {
-      const updated = new Set(readNotifIds);
-      updated.add(id);
-      setReadNotifIds(updated);
-      await AsyncStorage.setItem('read_notification_ids', JSON.stringify([...updated]));
-    } catch (e) {}
-  };
-
-  const handleClearSingleNotification = async (id) => {
-    if (!id) return;
-    try {
-      const updated = new Set(clearedNotifIds);
-      updated.add(id);
-      setClearedNotifIds(updated);
-      await AsyncStorage.setItem('cleared_notification_ids', JSON.stringify([...updated]));
-    } catch (e) {}
-  };
+  useFocusEffect(
+    useCallback(() => {
+      loadStoredNotifState();
+    }, [loadStoredNotifState])
+  );
 
   const visibleNotifications = notifications.filter((n, idx) => {
     const id = n.id || `notif-${idx}`;
@@ -430,13 +400,16 @@ const Home = () => {
     return !readNotifIds.has(id);
   }).length;
 
-  const handleOpenNotifications = async () => {
-    setShowNotifications(true);
+  const handleOpenNotifications = () => {
+    navigation.navigate('Notifications');
   };
 
   useEffect(() => {
+    const notifUpdatedSub = DeviceEventEmitter.addListener('NOTIFICATIONS_UPDATED', () => {
+      loadStoredNotifState();
+    });
     const sub = DeviceEventEmitter.addListener('OPEN_NOTIFICATIONS', () => {
-      setShowNotifications(true);
+      navigation.navigate('Notifications');
     });
     const scrollSub = DeviceEventEmitter.addListener('SCROLL_HOME', (y) => {
       if (mainScrollRef.current) {
@@ -449,11 +422,12 @@ const Home = () => {
       }
     });
     return () => {
+      notifUpdatedSub.remove();
       sub.remove();
       scrollSub.remove();
       scrollToSocialSub.remove();
     };
-  }, []);
+  }, [loadStoredNotifState, navigation]);
 
   const triggerRangoliAnimation = useCallback(() => {
     goldenFade.setValue(0);
@@ -1220,196 +1194,6 @@ const Home = () => {
           onClose={() => setShowAllPlans(false)}
           initialPlanIndex={selectedPlanIndex}
         />
-      </Modal>
-
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={showNotifications}
-        onRequestClose={handleCloseNotificationsModal}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-          <View 
-            ref={notifModalRef}
-            onLayout={measureNotifModal}
-            style={{ width: width * 0.92, maxHeight: '82%', backgroundColor: '#fff', borderRadius: 20, padding: 20, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12 }}
-          >
-            {/* Modal Header */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>{t('Notifications')}</Text>
-                {unreadCount > 0 && (
-                  <View style={{ marginLeft: 8, backgroundColor: '#6B46C1', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 }}>
-                    <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{unreadCount} {t('New')}</Text>
-                  </View>
-                )}
-              </View>
-
-              <TouchableOpacity 
-                ref={notifCrossRef} 
-                onPress={handleCloseNotificationsModal}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                onLayout={() => {
-                  if (showNotifications) {
-                    DeviceEventEmitter.emit('REQUEST_NOTIF_CROSS_LAYOUT');
-                  }
-                }}
-              >
-                <Icon name="close" size={22} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Quick Actions Bar (Mark Read & Clear All) */}
-            {visibleNotifications.length > 0 && (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={handleMarkAllAsRead}
-                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 }}
-                >
-                  <Icon name="check-all" size={16} color={unreadCount > 0 ? '#4F46E5' : '#9CA3AF'} />
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: unreadCount > 0 ? '#4F46E5' : '#9CA3AF', marginLeft: 4 }}>
-                    {t('Mark all as read')}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={handleClearAllNotifications}
-                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF2F2', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 }}
-                >
-                  <Icon name="trash-can-outline" size={15} color="#EF4444" />
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#EF4444', marginLeft: 4 }}>
-                    {t('Clear all')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {visibleNotifications.length > 0 ? (
-                visibleNotifications.map((notif, index) => {
-                  const notifId = notif.id || `notif-${index}`;
-                  const isRead = readNotifIds.has(notifId);
-
-                  // Special handling for OTP request notifications
-                  if (notif.type === 'otp_request') {
-                    return (
-                      <TouchableOpacity
-                        key={notifId}
-                        activeOpacity={0.7}
-                        onPress={() => {
-                          handleMarkSingleAsRead(notifId);
-                          setShowNotifications(false);
-                          navigation.navigate('OTPRequests');
-                        }}
-                        style={{
-                          marginBottom: 12,
-                          padding: 14,
-                          backgroundColor: isRead ? '#F9FAFB' : '#EEF2FF',
-                          borderRadius: 14,
-                          borderWidth: 1,
-                          borderColor: isRead ? '#E5E7EB' : '#C7D2FE',
-                          opacity: isRead ? 0.75 : 1
-                        }}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                            {!isRead && (
-                              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#6366F1', marginRight: 6 }} />
-                            )}
-                            <Icon name="shield-check" size={18} color="#6366F1" />
-                            <Text style={{ fontSize: 15, fontWeight: '600', color: '#4338CA', marginLeft: 6, flex: 1 }}>
-                              {notif.title}
-                            </Text>
-                          </View>
-                          <TouchableOpacity
-                            onPress={() => handleClearSingleNotification(notifId)}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            style={{ padding: 4 }}
-                          >
-                            <Icon name="close" size={16} color="#9CA3AF" />
-                          </TouchableOpacity>
-                        </View>
-                        <Text style={{ fontSize: 13, color: isRead ? '#6B7280' : '#4B5563', lineHeight: 18 }}>
-                          {notif.message}
-                        </Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 11, color: '#9CA3AF' }}>
-                            {isRead ? t('Read') : t('New')}
-                          </Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 12, color: '#6366F1', fontWeight: '600' }}>Tap to view OTP</Text>
-                            <Icon name="arrow-right" size={14} color="#6366F1" />
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  }
-
-                  const isDanger = notif.type === 'danger';
-                  const bg = isRead ? '#F9FAFB' : (isDanger ? '#FEF2F2' : '#FFFBEB');
-                  const border = isRead ? '#E5E7EB' : (isDanger ? '#FECACA' : '#FEF3C7');
-                  const titleColor = isRead ? '#4B5563' : (isDanger ? '#991B1B' : '#B45309');
-
-                  return (
-                    <TouchableOpacity
-                      key={notifId}
-                      activeOpacity={0.8}
-                      onPress={() => handleMarkSingleAsRead(notifId)}
-                      style={{
-                        marginBottom: 12,
-                        padding: 14,
-                        backgroundColor: bg,
-                        borderRadius: 14,
-                        borderWidth: 1,
-                        borderColor: border,
-                        opacity: isRead ? 0.75 : 1
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                          {!isRead && (
-                            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: isDanger ? '#EF4444' : '#F59E0B', marginRight: 6 }} />
-                          )}
-                          <Icon
-                            name={isDanger ? 'alert-circle' : 'clock-alert'}
-                            size={18}
-                            color={isDanger ? '#EF4444' : '#F59E0B'}
-                          />
-                          <Text style={{ fontSize: 15, fontWeight: '600', color: titleColor, marginLeft: 6, flex: 1 }}>
-                            {notif.title}
-                          </Text>
-                        </View>
-                        <TouchableOpacity
-                          onPress={() => handleClearSingleNotification(notifId)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          style={{ padding: 4 }}
-                        >
-                          <Icon name="close" size={16} color="#9CA3AF" />
-                        </TouchableOpacity>
-                      </View>
-                      <Text style={{ fontSize: 13, color: isRead ? '#6B7280' : '#4B5563', lineHeight: 18 }}>
-                        {notif.message}
-                      </Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, justifyContent: 'flex-end' }}>
-                        <Text style={{ fontSize: 11, color: isRead ? '#9CA3AF' : (isDanger ? '#EF4444' : '#F59E0B'), fontWeight: '500' }}>
-                          {isRead ? t('Read') : t('New')}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })
-              ) : (
-                <View style={{ padding: 36, alignItems: 'center' }}>
-                  <Icon name="bell-sleep" size={48} color="#D1D5DB" />
-                  <Text style={{ marginTop: 14, color: '#374151', fontSize: 16, fontWeight: '600' }}>{t('No new notifications')}</Text>
-                  <Text style={{ marginTop: 4, color: '#9CA3AF', fontSize: 13 }}>{t('All caught up!')}</Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        </View>
       </Modal>
     </View>
   );

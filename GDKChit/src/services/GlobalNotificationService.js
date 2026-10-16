@@ -1,4 +1,4 @@
-import { AppState, Platform } from 'react-native';
+import { AppState, Platform, DeviceEventEmitter } from 'react-native';
 import PushNotificationService from './PushNotificationService';
 import ApiService from './ApiService';
 
@@ -166,10 +166,18 @@ class GlobalNotificationService {
           message,
           channelId: 'gdk_announcements_v2',
           data: {
-            screen: 'AdminNotification',
+            screen: 'Notifications',
             type: 'ANNOUNCEMENT',
             timestamp: String(Date.now()),
           },
+        });
+
+        DeviceEventEmitter.emit('REALTIME_NOTIFICATION_RECEIVED', {
+          id: `broadcast-${Date.now()}`,
+          type: 'info',
+          title: `📢 ${title}`,
+          message,
+          date: new Date().toISOString(),
         });
         break;
       }
@@ -182,6 +190,15 @@ class GlobalNotificationService {
           data.groupName || 'Chit Group',
           data.initialAmount || 0
         );
+
+        DeviceEventEmitter.emit('REALTIME_NOTIFICATION_RECEIVED', {
+          id: `auction-${data.groupId}-${Date.now()}`,
+          type: 'info',
+          title: `🏆 Live Auction Started: ${data.groupName || 'Chit Group'}`,
+          message: `Live bidding has begun for ${data.groupName || 'Chit Group'}! Tap to join the auction room.`,
+          date: new Date().toISOString(),
+          groupId: data.groupId,
+        });
         break;
       }
 
