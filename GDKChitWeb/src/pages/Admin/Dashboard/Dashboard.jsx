@@ -8,7 +8,7 @@ import {
   CircleDollarSign as RiMoneyDollarCircleLine, Check as RiCheckLine, Clock as RiTimeLine,
   AlertTriangle, AlertTriangle as RiAlertLine, ChevronRight as RiArrowRightSLine, ShieldCheck as RiShieldUserLine,
   User as RiUserLine, Calendar as RiCalendarLine, Zap as RiZapLine, Layers, Gavel,
-  ShieldAlert, TrendingUp, RefreshCw, ArrowUpRight, CheckCircle2
+  ShieldAlert, TrendingUp, RefreshCw, ArrowUpRight, CheckCircle2, BellRing, Send, X, Activity, Radio
 } from 'lucide-react';
 import './Dashboard.css';
 
@@ -19,6 +19,14 @@ const Dashboard = () => {
   const [groups, setGroups] = useState([]);
   const [users, setUsers] = useState([]);
   const [overview, setOverview] = useState(null);
+
+  // Broadcast Modal state
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastTargetGroup, setBroadcastTargetGroup] = useState('');
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [broadcastNotice, setBroadcastNotice] = useState(null);
 
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -52,6 +60,43 @@ const Dashboard = () => {
     loadData();
   }, [loadData]);
 
+  const handleSendBroadcast = async (e) => {
+    if (e) e.preventDefault();
+    if (!broadcastTitle.trim() || !broadcastMessage.trim()) {
+      setBroadcastNotice({ type: 'error', text: 'Please fill both title and announcement message.' });
+      return;
+    }
+    setSendingBroadcast(true);
+    setBroadcastNotice(null);
+    try {
+      const res = await makeRequest('/admin/notifications/broadcast', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: broadcastTitle.trim(),
+          message: broadcastMessage.trim(),
+          targetGroupId: broadcastTargetGroup || null,
+        })
+      });
+      const data = await safeJson(res);
+      if (res.ok && data?.success) {
+        setBroadcastNotice({ type: 'success', text: 'Announcement broadcast sent successfully to subscribers!' });
+        setTimeout(() => {
+          setShowBroadcastModal(false);
+          setBroadcastTitle('');
+          setBroadcastMessage('');
+          setBroadcastTargetGroup('');
+          setBroadcastNotice(null);
+        }, 1500);
+      } else {
+        setBroadcastNotice({ type: 'error', text: data?.message || 'Failed to send broadcast announcement.' });
+      }
+    } catch (err) {
+      setBroadcastNotice({ type: 'error', text: err.message || 'Network error while broadcasting.' });
+    } finally {
+      setSendingBroadcast(false);
+    }
+  };
+
   // Derived calculations fallback
   const activeGroups = useMemo(() => {
     return groups.filter(g => {
@@ -72,30 +117,33 @@ const Dashboard = () => {
     return activeGroups.reduce((acc, g) => acc + Number(g.groupAmount || g.group_amount || 0), 0);
   }, [activeGroups]);
 
-  // Metrics from overview or fallback
-  const totalMembersCount = overview?.total_members ?? users.length;
-  const activeGroupsCount = overview?.active_groups ?? activeGroups.length;
-  const completedGroupsCount = overview?.completed_groups ?? completedGroups.length;
+  // Real Metrics from overview or live fallback
+  const totalMembersCount = overview?.metrics?.totalMembers ?? (overview?.total_members ?? users.length);
+  const activeGroupsCount = overview?.metrics?.activeGroups ?? (overview?.active_groups ?? activeGroups.length);
+  const completedGroupsCount = overview?.metrics?.completedGroups ?? (overview?.completed_groups ?? completedGroups.length);
 
-  const collectionTarget = overview?.collection?.target || activePool || 1500000;
-  const collectionCollected = overview?.collection?.collected || Math.round(collectionTarget * 0.72);
-  const collectionPct = overview?.collection?.percentage ?? (collectionTarget > 0 ? Math.min(100, Math.round((collectionCollected / collectionTarget) * 100)) : 72);
+  const collectionTarget = overview?.metrics?.monthlyTarget ?? (overview?.collection?.target || activePool || 1500000);
+  const collectionCollected = overview?.metrics?.monthlyCollected ?? (overview?.collection?.collected || 0);
+  const collectionPct = overview?.metrics?.collectionRate !== undefined
+    ? parseFloat(overview.metrics.collectionRate)
+    : (collectionTarget > 0 ? Math.min(100, Math.round((collectionCollected / collectionTarget) * 100)) : 0);
 
-  const overdueAmount = overview?.overdue?.amount ?? 145000;
-  const overdueCount = overview?.overdue?.count ?? 5;
+  const overdueAmount = overview?.metrics?.overdueAmount ?? (overview?.overdue?.amount ?? 0);
+  const overdueCount = overview?.metrics?.overdueCount ?? (overview?.overdue?.count ?? 0);
 
-  const unfilledMonthlyGroups = overview?.action_required?.unfilled_monthly_groups || [];
-  const pendingAuctionWinnerGroups = overview?.action_required?.pending_auction_winner_groups || [];
-  const pendingPayments = overview?.pending_member_payments || [];
-  const recentWinners = overview?.recent_auction_winners || [];
+  const unfilledMonthlyGroups = overview?.actionRequired?.unfilledPaymentGroups || overview?.action_required?.unfilled_monthly_groups || [];
+  const pendingAuctionWinnerGroups = overview?.actionRequired?.pendingAuctionWinnerGroups || overview?.action_required?.pending_auction_winner_groups || [];
+  const pendingPayments = overview?.actionRequired?.pendingMemberPayments || overview?.pending_member_payments || [];
+  const recentWinners = overview?.auctionsHub?.recentWinners || overview?.recent_auction_winners || [];
+  const recentActivities = overview?.recentActivities || [];
 
   const quickShortcuts = [
-    { title: 'Create Chit Group', sub: 'New Monthly Chit Scheme', Icon: Plus, color: '#059669', bg: '#ecfdf5', route: '/admin/create-group' },
-    { title: 'Live Reverse Auction', sub: 'Bidding & Commission', Icon: Gavel, color: '#2563eb', bg: '#eff6ff', route: '/admin/auction' },
-    { title: 'Record Collections', sub: 'Verify Payments & OTP', Icon: RiBarChartLine, color: '#7c3aed', bg: '#f5f3ff', route: '/admin/reports' },
-    { title: 'Overdue Tracker', sub: 'Risk Analysis & Defaulters', Icon: AlertTriangle, color: '#dc2626', bg: '#fef2f2', route: '/admin/defaulters' },
-    { title: 'Add Subscriber', sub: 'KYC & Member Onboarding', Icon: RiUserAddLine, color: '#d97706', bg: '#fffbeb', route: '/admin/admintool/add-user' },
-    { title: 'Member Map', sub: 'Subscriber Geolocation', Icon: RiUserSettingsLine, color: '#0284c7', bg: '#f0f9ff', route: '/admin/user-locations' },
+    { title: 'Create Chit Group', sub: 'New Monthly Chit Scheme', Icon: Plus, color: '#059669', bg: '#ecfdf5', action: () => navigate('/admin/create-group') },
+    { title: 'Live Reverse Auction', sub: 'Bidding & Lucky Draw', Icon: Gavel, color: '#2563eb', bg: '#eff6ff', action: () => navigate('/admin/auction') },
+    { title: 'Record Collections', sub: 'Verify Payments & OTP', Icon: RiBarChartLine, color: '#7c3aed', bg: '#f5f3ff', action: () => navigate('/admin/reports') },
+    { title: 'Broadcast Alert', sub: 'Push Notice to All', Icon: Radio, color: '#db2777', bg: '#fdf2f8', action: () => setShowBroadcastModal(true) },
+    { title: 'Overdue Tracker', sub: 'Risk Analysis & Defaulters', Icon: AlertTriangle, color: '#dc2626', bg: '#fef2f2', action: () => navigate('/admin/defaulters') },
+    { title: 'Add Subscriber', sub: 'KYC & Member Onboarding', Icon: RiUserAddLine, color: '#d97706', bg: '#fffbeb', action: () => navigate('/admin/admintool/add-user') },
   ];
 
   return (
@@ -310,7 +358,7 @@ const Dashboard = () => {
               key={idx}
               type="button"
               className="dash-shortcut-btn"
-              onClick={() => navigate(item.route)}
+              onClick={item.action || (() => navigate(item.route))}
             >
               <div className="dash-shortcut-icon" style={{ background: item.bg, color: item.color }}>
                 <Icon size={18} />
@@ -534,6 +582,226 @@ const Dashboard = () => {
           </table>
         </div>
       </div>
+
+      {/* ─── 7. RECENT TRANSACTIONS / LIVE ACTIVITY STREAM ─── */}
+      <div className="dash-panel" style={{ marginTop: 4 }}>
+        <div className="dash-panel-header">
+          <div className="dash-panel-title-group">
+            <Activity size={18} color="#2563eb" />
+            <h3 className="dash-panel-title">Recent Real-time Activity & Collections Feed</h3>
+          </div>
+          <button
+            type="button"
+            className="dash-panel-action-link"
+            onClick={() => navigate('/admin/reports')}
+          >
+            All Ledger Reports <ArrowUpRight size={14} />
+          </button>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table className="dash-payments-table">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Chit Scheme</th>
+                <th>Transaction Amount</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentActivities.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                    No recent payment records logged yet.
+                  </td>
+                </tr>
+              ) : (
+                recentActivities.slice(0, 6).map((act, idx) => (
+                  <tr key={act.id || idx}>
+                    <td>
+                      <strong style={{ color: '#0f172a' }}>{act.user_name || 'Subscriber'}</strong>
+                    </td>
+                    <td>{act.group_name || 'Chit Group'}</td>
+                    <td>
+                      <strong style={{ color: '#059669' }}>
+                        {formatCurrency(act.amount)}
+                      </strong>
+                    </td>
+                    <td>
+                      <span className="dash-status-pill" style={{ background: '#ecfdf5', color: '#059669' }}>
+                        {(act.status || 'PAID').toUpperCase()}
+                      </span>
+                    </td>
+                    <td style={{ color: '#64748b', fontSize: 12 }}>
+                      {act.updated_at ? new Date(act.updated_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Recently'}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ─── BROADCAST ANNOUNCEMENT MODAL ─── */}
+      {showBroadcastModal && (
+        <div className="dash-modal-backdrop" onClick={() => !sendingBroadcast && setShowBroadcastModal(false)}>
+          <div className="dash-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="dash-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fdf2f8', color: '#db2777', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Radio size={20} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0f172a' }}>Broadcast Announcement</h4>
+                  <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>Push instant notification to subscribers</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dash-modal-close-btn"
+                onClick={() => !sendingBroadcast && setShowBroadcastModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {broadcastNotice && (
+              <div style={{
+                margin: '16px 20px 0',
+                padding: '10px 14px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                background: broadcastNotice.type === 'error' ? '#fef2f2' : '#f0fdf4',
+                color: broadcastNotice.type === 'error' ? '#dc2626' : '#15803d',
+                border: `1px solid ${broadcastNotice.type === 'error' ? '#fecaca' : '#bbf7d0'}`
+              }}>
+                {broadcastNotice.text}
+              </div>
+            )}
+
+            <form onSubmit={handleSendBroadcast} style={{ padding: '20px' }}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  Target Audience
+                </label>
+                <select
+                  value={broadcastTargetGroup}
+                  onChange={e => setBroadcastTargetGroup(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 13.5,
+                    outline: 'none',
+                    background: '#ffffff',
+                    color: '#0f172a'
+                  }}
+                >
+                  <option value="">📢 All Registered Subscribers (Global Broadcast)</option>
+                  {groups.filter(g => g.status?.toLowerCase() === 'ongoing' || g.status?.toLowerCase() === 'active').map(g => (
+                    <option key={g.id} value={g.id}>👥 {g.name || g.group_name} Members</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  Announcement Title
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Reverse Auction Scheduled for Tomorrow at 6 PM"
+                  value={broadcastTitle}
+                  onChange={e => setBroadcastTitle(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 13.5,
+                    outline: 'none',
+                    color: '#0f172a'
+                  }}
+                  required
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  Message Details
+                </label>
+                <textarea
+                  placeholder="Type announcement message details for your subscribers..."
+                  rows={4}
+                  value={broadcastMessage}
+                  onChange={e => setBroadcastMessage(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 13.5,
+                    outline: 'none',
+                    resize: 'vertical',
+                    color: '#0f172a',
+                    fontFamily: 'inherit'
+                  }}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowBroadcastModal(false)}
+                  disabled={sendingBroadcast}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#475569',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingBroadcast}
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#db2777',
+                    color: '#ffffff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: sendingBroadcast ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    opacity: sendingBroadcast ? 0.7 : 1
+                  }}
+                >
+                  {sendingBroadcast ? (
+                    <>Sending Broadcast...</>
+                  ) : (
+                    <><Send size={15} /> Send Broadcast</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

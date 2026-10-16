@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
+  TextInput,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +29,14 @@ const Dashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [adminName, setAdminName] = useState('Admin');
   const [adminImage, setAdminImage] = useState('');
+
+  // Broadcast Announcement State
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastTargetGroup, setBroadcastTargetGroup] = useState('all');
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [groupsList, setGroupsList] = useState([]);
   
   // Real-time API state
   const [overviewData, setOverviewData] = useState({
@@ -57,9 +67,10 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [notifRes, overviewRes] = await Promise.allSettled([
+      const [notifRes, overviewRes, groupsRes] = await Promise.allSettled([
         ApiService.makeRequest('/admin/notifications', { method: 'GET' }),
         ApiService.makeRequest('/admin/dashboard-overview', { method: 'GET' }),
+        ApiService.makeRequest('/admin/groups/getGroups', { method: 'GET' }),
       ]);
 
       if (notifRes.status === 'fulfilled' && notifRes.value.ok) {
@@ -73,6 +84,13 @@ const Dashboard = () => {
         const overviewResult = await overviewRes.value.json();
         if (overviewResult.success && overviewResult.data) {
           setOverviewData(overviewResult.data);
+        }
+      }
+
+      if (groupsRes.status === 'fulfilled' && groupsRes.value.ok) {
+        const groupsResult = await groupsRes.value.json();
+        if (groupsResult.success && groupsResult.data) {
+          setGroupsList(groupsResult.data || []);
         }
       }
     } catch (err) {
@@ -141,18 +159,97 @@ const Dashboard = () => {
     }).format(Number(amount) || 0);
   };
 
-  const quickActions = [
-    { id: 1, title: 'Manage Groups', icon: 'account-group', screen: 'ManageG' },
-    { id: 2, title: 'Auction Setup', icon: 'gavel', screen: 'AuctionSettings' },
-    { id: 3, title: 'Reports & Chit', icon: 'chart-line', screen: 'Reports' },
-    { id: 4, title: 'Notifications', icon: 'bell-ring-outline', screen: 'AdminNotification' },
-  ];
+  const handleSendBroadcast = async () => {
+    if (!broadcastTitle.trim() || !broadcastMessage.trim()) {
+      Alert.alert('Required Fields', 'Please enter both an announcement title and message.');
+      return;
+    }
+    try {
+      setSendingBroadcast(true);
+      const payload = {
+        title: broadcastTitle.trim(),
+        message: broadcastMessage.trim(),
+        targetGroupId: broadcastTargetGroup === 'all' ? null : broadcastTargetGroup,
+      };
+      const res = await ApiService.makeRequest('/admin/notifications/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-  const handleQuickAction = (action) => {
-    if (action.screen) {
-      navigation.navigate(action.screen);
+      if (res && res.ok) {
+        Alert.alert('Broadcast Sent', 'Announcement push notification dispatched to members successfully!');
+        setShowBroadcastModal(false);
+        setBroadcastTitle('');
+        setBroadcastMessage('');
+        setBroadcastTargetGroup('all');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        Alert.alert('Dispatch Failed', errData.message || 'Could not dispatch broadcast notification.');
+      }
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Network request failed');
+    } finally {
+      setSendingBroadcast(false);
     }
   };
+
+  const quickActionsList = [
+    {
+      id: 'groups',
+      title: 'Chit Groups',
+      subtitle: `${overviewData.metrics.activeGroups || 0} Active`,
+      icon: 'account-group',
+      iconColor: '#6B46C1',
+      bgColor: '#F3F0FF',
+      action: () => navigation.navigate('ManageG'),
+    },
+    {
+      id: 'auction',
+      title: 'Reverse Auction',
+      subtitle: 'Live & Random',
+      icon: 'gavel',
+      iconColor: '#2563EB',
+      bgColor: '#EFF6FF',
+      action: () => navigation.navigate('AuctionSettings'),
+    },
+    {
+      id: 'collection',
+      title: 'Dues & Reports',
+      subtitle: 'Collect & OTP',
+      icon: 'cash-multiple',
+      iconColor: '#059669',
+      bgColor: '#ECFDF5',
+      action: () => navigation.navigate('Reports'),
+    },
+    {
+      id: 'broadcast',
+      title: 'Push Notice',
+      subtitle: 'Instant Alert',
+      icon: 'bullhorn-outline',
+      iconColor: '#DB2777',
+      bgColor: '#FDF2F8',
+      action: () => setShowBroadcastModal(true),
+    },
+    {
+      id: 'defaulters',
+      title: 'Defaulters Desk',
+      subtitle: `${overviewData.metrics.overdueCount || 0} Overdue`,
+      icon: 'account-alert',
+      iconColor: '#DC2626',
+      bgColor: '#FEF2F2',
+      action: () => setActiveTab('actions'),
+    },
+    {
+      id: 'settings',
+      title: 'System Settings',
+      subtitle: 'Config & App',
+      icon: 'cog-outline',
+      iconColor: '#4B5563',
+      bgColor: '#F3F4F6',
+      action: () => navigation.navigate('Settings'),
+    },
+  ];
 
   const totalActionCount = 
     (overviewData.actionRequired?.unfilledPaymentGroups?.length || 0) +
@@ -193,6 +290,37 @@ const Dashboard = () => {
           <Text style={styles.collectionPending}>
             {formatCurrency(Math.max(0, overviewData.metrics.monthlyTarget - overviewData.metrics.monthlyCollected))} pending
           </Text>
+        </View>
+      </View>
+
+      {/* Executive Action Hub */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Executive Action Hub</Text>
+          <TouchableOpacity onPress={() => setShowBroadcastModal(true)}>
+            <View style={styles.broadcastQuickBtn}>
+              <MaterialCommunityIcons name="broadcast" size={14} color="#DB2777" />
+              <Text style={styles.broadcastQuickBtnText}>Broadcast</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.actionHubGrid}>
+          {quickActionsList.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.actionHubTile}
+              onPress={item.action}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.actionHubIconWrapper, { backgroundColor: item.bgColor }]}>
+                <MaterialCommunityIcons name={item.icon} size={24} color={item.iconColor} />
+              </View>
+              <View style={styles.actionHubTextWrap}>
+                <Text style={styles.actionHubTitle} numberOfLines={1}>{item.title}</Text>
+                <Text style={styles.actionHubSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
@@ -714,6 +842,107 @@ const Dashboard = () => {
       )}
 
       <View style={styles.bottomSpacing} />
+
+      {/* Broadcast Announcement Modal */}
+      <Modal
+        visible={showBroadcastModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !sendingBroadcast && setShowBroadcastModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderTitleRow}>
+                <View style={[styles.actionHubIconWrapper, { backgroundColor: '#FDF2F8', width: 38, height: 38 }]}>
+                  <MaterialCommunityIcons name="bullhorn-outline" size={20} color="#DB2777" />
+                </View>
+                <View>
+                  <Text style={styles.modalTitle}>Broadcast Alert</Text>
+                  <Text style={styles.modalSubtitle}>Push announcement to mobile app users</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => !sendingBroadcast && setShowBroadcastModal(false)}
+                style={styles.modalCloseBtn}
+              >
+                <MaterialCommunityIcons name="close" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <Text style={styles.inputLabel}>Target Subscribers</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupChipsContainer}>
+                <TouchableOpacity
+                  style={[styles.groupChip, broadcastTargetGroup === 'all' && styles.groupChipActive]}
+                  onPress={() => setBroadcastTargetGroup('all')}
+                >
+                  <Text style={[styles.groupChipText, broadcastTargetGroup === 'all' && styles.groupChipTextActive]}>
+                    📢 All Subscribers
+                  </Text>
+                </TouchableOpacity>
+                {groupsList.map((g) => (
+                  <TouchableOpacity
+                    key={g.id}
+                    style={[styles.groupChip, broadcastTargetGroup === String(g.id) && styles.groupChipActive]}
+                    onPress={() => setBroadcastTargetGroup(String(g.id))}
+                  >
+                    <Text style={[styles.groupChipText, broadcastTargetGroup === String(g.id) && styles.groupChipTextActive]}>
+                      👥 {g.name || g.group_name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={styles.inputLabel}>Notice Title</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. Reverse Auction Scheduled for Tomorrow at 6 PM"
+                placeholderTextColor="#9CA3AF"
+                value={broadcastTitle}
+                onChangeText={setBroadcastTitle}
+              />
+
+              <Text style={styles.inputLabel}>Announcement Message</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalTextArea]}
+                placeholder="Type message details for all chit subscribers..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                value={broadcastMessage}
+                onChangeText={setBroadcastMessage}
+              />
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setShowBroadcastModal(false)}
+                disabled={sendingBroadcast}
+              >
+                <Text style={styles.modalCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalSubmitBtn, sendingBroadcast && { opacity: 0.7 }]}
+                onPress={handleSendBroadcast}
+                disabled={sendingBroadcast}
+              >
+                {sendingBroadcast ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons name="send" size={16} color="#FFFFFF" />
+                    <Text style={styles.modalSubmitBtnText}>Send Push</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
