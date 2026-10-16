@@ -4,7 +4,7 @@ let admin = null;
 try {
   admin = require('firebase-admin');
   // Initialize firebase-admin if service account credentials or env config is supplied
-  if (!admin.apps.length) {
+  if (admin && Array.isArray(admin.apps) && !admin.apps.length) {
     if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
       admin.initializeApp({
@@ -22,6 +22,7 @@ try {
   }
 } catch (e) {
   console.warn('⚠️ [FCM Push] firebase-admin could not be loaded, using fallback dispatcher:', e.message);
+  admin = null;
 }
 
 /**
@@ -404,7 +405,7 @@ class FCMPushService {
     let totalFailure = 0;
     const staleTokens = [];
 
-    const isLiveFirebaseAdmin = this.admin && this.admin.apps.length > 0;
+    const isLiveFirebaseAdmin = Boolean(this.admin && Array.isArray(this.admin.apps) && this.admin.apps.length > 0);
 
     for (let i = 0; i < totalTokens; i += BATCH_SIZE) {
       const batchTokens = tokens.slice(i, i + BATCH_SIZE);

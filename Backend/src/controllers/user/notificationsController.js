@@ -129,6 +129,27 @@ exports.getNotifications = async (req, res) => {
       });
     }
 
+    // ── Broadcast & Push Log Notifications ──
+    const [pushLogRows] = await db.promise().query(
+      `SELECT id, type, title, message, payload, created_at
+       FROM push_notifications_log
+       WHERE (user_id = ? OR user_id IS NULL)
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [userId]
+    ).catch(() => [[]]);
+
+    for (const pLog of pushLogRows) {
+      notifications.push({
+        id: `push-log-${pLog.id}`,
+        type: String(pLog.type || '').toLowerCase() === 'danger' ? 'danger' : 'info',
+        title: pLog.title,
+        message: pLog.message,
+        date: pLog.created_at,
+        payload: pLog.payload,
+      });
+    }
+
     res.json({ success: true, data: notifications });
   } catch (error) {
     console.error('Error fetching notifications:', error);
