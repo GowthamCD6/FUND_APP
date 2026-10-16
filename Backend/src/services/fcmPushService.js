@@ -355,6 +355,52 @@ class FCMPushService {
   }
 
   /**
+   * 6. Send Alert: Chat Message Notification
+   */
+  async sendChatMessageAlert({ senderId, senderName, messageText, roomId, recipientUserIds }) {
+    try {
+      if (!recipientUserIds || recipientUserIds.length === 0) return { success: true, delivered: 0 };
+
+      const filteredRecipientIds = recipientUserIds
+        .map(id => Number(id))
+        .filter(id => id && id !== Number(senderId));
+
+      if (filteredRecipientIds.length === 0) return { success: true, delivered: 0 };
+
+      // Format preview snippet
+      let previewText = (messageText || 'Sent a new message').trim();
+      if (previewText.startsWith('[GROUP_INVITE]')) {
+        previewText = 'Sent a Chit Group Invitation';
+      } else if (previewText.length > 120) {
+        previewText = previewText.substring(0, 117) + '...';
+      }
+
+      const notificationOptions = {
+        title: `💬 ${senderName || 'New Message'}`,
+        body: previewText,
+        data: {
+          type: 'CHAT_MESSAGE',
+          channelId: 'gdk_announcements_v2',
+          screen: 'Chat',
+          roomId: String(roomId || ''),
+          senderId: String(senderId || ''),
+          senderName: String(senderName || 'User'),
+          timestamp: String(Date.now()),
+        },
+        channelId: 'gdk_announcements_v2',
+        ttlSeconds: 86400, // 24 hours
+        collapseKey: `chat_room_${roomId || 'msg'}`,
+      };
+
+      console.log(`💬 [FCM Push v1] Sending chat alert from "${senderName}" to recipients [${filteredRecipientIds.join(', ')}]...`);
+      return await this.sendToUsers(filteredRecipientIds, notificationOptions, 'CHAT_MESSAGE');
+    } catch (err) {
+      console.error('Error in sendChatMessageAlert:', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
    * Deliver push payload to list of user IDs by querying their active FCM tokens
    */
   async sendToUsers(userIds, options, notificationType = 'GENERAL') {

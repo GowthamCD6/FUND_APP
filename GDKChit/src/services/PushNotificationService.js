@@ -215,6 +215,14 @@ class PushNotificationService {
         navigate('PrizedSuretyTracker', { groupId: String(groupId) });
       } else if (screen === 'AdminNotification') {
         navigate('AdminNotification');
+      } else if (screen === 'Chat' || type === 'CHAT_MESSAGE') {
+        try {
+          const role = await AsyncStorage.getItem('userRole');
+          const tabRoot = String(role || '').toLowerCase() === 'admin' ? 'AdminTabs' : 'UserTabs';
+          navigate(tabRoot, { screen: 'Chat' });
+        } catch (_) {
+          navigate('Chat');
+        }
       } else if (screen) {
         navigate(screen, data);
       }

@@ -453,9 +453,25 @@ chatWss.on('connection', (ws, req) => {
               [room.group_id]
             );
             memberUserIds = memberRows.map(row => Number(row.user_id));
+          } else if (room.type === 'private' || sourceRoomId) {
+            const [privRows] = await db.promise().query(
+              'SELECT user1, user2 FROM private_conversations WHERE room_id = ?',
+              [targetRoomId]
+            );
+            if (privRows.length > 0) {
+              memberUserIds = [Number(privRows[0].user1), Number(privRows[0].user2)];
+            } else {
+              const [memberRows] = await db.promise().query(
+                'SELECT user_id FROM chat_room_members WHERE room_id = ?',
+                [targetRoomId]
+              );
+              memberUserIds = memberRows.map(row => Number(row.user_id));
+              if (room.user_id) memberUserIds.push(Number(room.user_id));
+            }
           }
 
           // Broadcast to connected clients who are in this room, or notify members/admins
+          const activeInRoomUsers = new Set();
           chatClients.forEach(client => {
             if (client.ws.readyState === WebSocket.OPEN) {
               const isSender = Number(client.userId) === Number(userId);
@@ -466,6 +482,7 @@ chatWss.on('connection', (ws, req) => {
                 if (isSender || isAdmin) {
                   const isLookingAtRoom = client.rooms.has(targetRoomId) || client.rooms.has(String(targetRoomId)) || client.rooms.has(Number(targetRoomId)) || (isSender && (client.rooms.has(roomId) || client.rooms.has(String(roomId)) || client.rooms.has(Number(roomId))));
                   if (isLookingAtRoom) {
+                    activeInRoomUsers.add(Number(client.userId));
                     client.ws.send(JSON.stringify({
                       type: 'new_message',
                       data: msgData
@@ -483,6 +500,7 @@ chatWss.on('connection', (ws, req) => {
                 const isMember = memberUserIds.includes(Number(client.userId));
 
                 if (isLookingAtRoom) {
+                  activeInRoomUsers.add(Number(client.userId));
                   client.ws.send(JSON.stringify({
                     type: 'new_message',
                     data: msgData
@@ -497,6 +515,18 @@ chatWss.on('connection', (ws, req) => {
               }
             }
           });
+
+          // Dispatch FCM Push Notification to recipients who are offline or in the background
+          const pushRecipients = memberUserIds.filter(id => id && id !== Number(userId) && !activeInRoomUsers.has(id));
+          if (pushRecipients.length > 0) {
+            fcmPushService.sendChatMessageAlert({
+              senderId: Number(userId),
+              senderName: decoded.name || (userType === 'Admin' ? 'Admin' : 'Member'),
+              messageText: text,
+              roomId: targetRoomId,
+              recipientUserIds: pushRecipients,
+            }).catch(e => console.error('Error dispatching chat push notification over WS:', e?.message));
+          }
         }
       } catch (err) {
         console.error('Error handling chat WS message', err);

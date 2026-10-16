@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { groupDecryptAES } = require('../utils/decryptAES');
 const { getOrCreateGlobalCommunity } = require('../utils/communityHelper');
+const fcmPushService = require('../services/fcmPushService');
 
 // Get all chats for the logged-in user (Admin or User)
 exports.getChats = async (req, res) => {
@@ -440,6 +441,51 @@ exports.sendMessage = async (req, res) => {
             'INSERT INTO chat_messages (room_id, sender_id, sender_type, message, source_room_id, message_type, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [targetRoomId, senderId, senderType, message, sourceRoomId, 'text', replyTo || null]
         );
+
+        // Dispatch FCM Push Notification to recipient(s) asynchronously
+        (async () => {
+            try {
+                let recipientUserIds = [];
+                if (room.type === 'private' || targetRoomId !== roomId) {
+                    const [privRows] = await db.promise().query(
+                        'SELECT user1, user2 FROM private_conversations WHERE room_id = ?',
+                        [targetRoomId]
+                    );
+                    if (privRows.length > 0) {
+                        recipientUserIds = [Number(privRows[0].user1), Number(privRows[0].user2)];
+                    } else {
+                        const [memRows] = await db.promise().query(
+                            'SELECT user_id FROM chat_room_members WHERE room_id = ?',
+                            [targetRoomId]
+                        );
+                        recipientUserIds = memRows.map(r => Number(r.user_id));
+                    }
+                } else if (room.type === 'group_broadcast' && room.group_id) {
+                    const [memRows] = await db.promise().query(
+                        'SELECT user_id FROM user_grouping WHERE group_id = ?',
+                        [room.group_id]
+                    );
+                    recipientUserIds = memRows.map(r => Number(r.user_id));
+                } else {
+                    const [memRows] = await db.promise().query(
+                        'SELECT user_id FROM chat_room_members WHERE room_id = ?',
+                        [targetRoomId]
+                    );
+                    recipientUserIds = memRows.map(r => Number(r.user_id));
+                }
+
+                const senderName = req.user.name || (senderType === 'Admin' ? 'Admin' : 'Member');
+                await fcmPushService.sendChatMessageAlert({
+                    senderId,
+                    senderName,
+                    messageText: message,
+                    roomId: targetRoomId,
+                    recipientUserIds,
+                });
+            } catch (pushErr) {
+                console.error('Error dispatching chat push notification in sendMessage:', pushErr?.message);
+            }
+        })();
 
         return res.json({
             success: true,
