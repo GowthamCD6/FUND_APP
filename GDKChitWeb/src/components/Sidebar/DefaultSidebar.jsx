@@ -90,6 +90,7 @@ const USER_NAV_GROUPS = [
     title: 'COMMUNICATION',
     items: [
       { id: 'user-chat', to: '/user/chat', label: 'Messaging', Icon: MessageSquare },
+      { id: 'user-notifications', to: '/user/notifications', label: 'Notifications', Icon: Bell },
     ]
   },
   {
@@ -134,6 +135,7 @@ const PAGE_TITLES = {
   '/user/home': 'Dashboard Home',
   '/user/portfolio': 'My Portfolio',
   '/user/chat': 'Messages',
+  '/user/notifications': 'Notifications & Activity',
   '/user/profile': 'Profile Settings',
   '/user/tools': 'Subscriber Tools & Services',
   '/user/join-group': 'Join Chit Group',
@@ -319,13 +321,13 @@ const DefaultSidebar = () => {
   const headerTitle = t(rawHeaderTitle);
 
 
-  // Load notifications for admin
+  // Load notifications for admin and user
   useEffect(() => {
-    if (!isAdmin) return;
     let isMounted = true;
     const fetchNotifs = async () => {
       try {
-        const res = await makeRequest('/admin/notifications');
+        const endpoint = isAdmin ? '/admin/notifications' : '/user/notifications';
+        const res = await makeRequest(endpoint);
         const data = await safeJson(res);
         if (isMounted && res.ok && data?.success) {
           setNotifications(data.data || []);
@@ -335,8 +337,14 @@ const DefaultSidebar = () => {
       }
     };
     fetchNotifs();
-    return () => { isMounted = false; };
+    const iv = setInterval(fetchNotifs, 30000);
+    return () => { isMounted = false; clearInterval(iv); };
   }, [isAdmin]);
+
+  const unreadCount = useMemo(() => {
+    if (isAdmin) return notifications.length;
+    return notifications.filter(n => !(n.is_read === 1 || n.isRead === true)).length;
+  }, [notifications, isAdmin]);
 
   // Close notifications dropdown on outside click
   useEffect(() => {
@@ -517,77 +525,100 @@ const DefaultSidebar = () => {
 
           {/* RIGHT ACTION CONTROLS */}
           <div className="admin-topbar-right">
-            {isAdmin && (
-              <>
-                {/* NOTIFICATIONS DROPDOWN */}
-                <div className="admin-notif-wrap" ref={notifRef}>
-                  <button
-                    type="button"
-                    className="admin-notif-btn"
-                    onClick={() => setShowNotifications(prev => !prev)}
-                    title="Alerts & Reminders"
-                  >
-                    <Bell size={18} />
-                    {notifications.length > 0 && (
-                      <span className="admin-notif-badge" />
-                    )}
-                  </button>
+            {/* NOTIFICATIONS DROPDOWN */}
+            <div className="admin-notif-wrap" ref={notifRef}>
+              <button
+                type="button"
+                className="admin-notif-btn"
+                onClick={() => setShowNotifications(prev => !prev)}
+                title={isAdmin ? "System Alerts" : "Notifications"}
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="admin-notif-badge" />
+                )}
+              </button>
 
-                  {showNotifications && (
-                    <div className="admin-notif-dropdown">
-                      <div className="admin-notif-header">
-                        <h4>System Alerts ({notifications.length})</h4>
-                        <button
-                          type="button"
-                          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 2 }}
-                          onClick={() => setShowNotifications(false)}
-                        >
-                          <X size={15} />
-                        </button>
+              {showNotifications && (
+                <div className="admin-notif-dropdown">
+                  <div className="admin-notif-header">
+                    <h4>{isAdmin ? `System Alerts (${notifications.length})` : `Notifications (${unreadCount} unread)`}</h4>
+                    <button
+                      type="button"
+                      style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 2 }}
+                      onClick={() => setShowNotifications(false)}
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+
+                  <div className="admin-notif-list">
+                    {notifications.length === 0 ? (
+                      <div className="admin-notif-empty">
+                        <CheckCircle2 size={24} color="#10b981" style={{ marginBottom: 8 }} />
+                        <div>{isAdmin ? "All chit cycles and payments are in order!" : "You have no notifications. All caught up!"}</div>
                       </div>
-
-                      <div className="admin-notif-list">
-                        {notifications.length === 0 ? (
-                          <div className="admin-notif-empty">
-                            <CheckCircle2 size={24} color="#10b981" style={{ marginBottom: 8 }} />
-                            <div>All chit cycles and payments are in order!</div>
-                          </div>
-                        ) : (
-                          notifications.map((notif, idx) => (
-                            <div
-                              key={notif.id || idx}
-                              className="admin-notif-item"
-                              onClick={() => {
-                                setShowNotifications(false);
+                    ) : (
+                      notifications.slice(0, 8).map((notif, idx) => {
+                        const isUnread = !isAdmin && !(notif.is_read === 1 || notif.isRead === true);
+                        return (
+                          <div
+                            key={notif.id || idx}
+                            className={`admin-notif-item ${isUnread ? 'admin-notif-unread-item' : ''}`}
+                            onClick={() => {
+                              setShowNotifications(false);
+                              if (isAdmin) {
                                 if (notif.title?.toLowerCase().includes('payment')) {
                                   navigate('/admin/reports');
                                 } else {
                                   navigate('/admin/auction');
                                 }
+                              } else {
+                                const tLower = (notif.title || '').toLowerCase();
+                                if (tLower.includes('payment') || tLower.includes('due')) {
+                                  navigate('/user/group-card');
+                                } else if (tLower.includes('auction') || tLower.includes('bid')) {
+                                  navigate('/user/auction');
+                                } else {
+                                  navigate('/user/notifications');
+                                }
+                              }
+                            }}
+                          >
+                            <div
+                              className="admin-notif-icon-wrap"
+                              style={{
+                                background: notif.type === 'danger' ? '#fef2f2' : notif.type === 'broadcast' ? '#fdf2f8' : '#fffbeb',
+                                color: notif.type === 'danger' ? '#dc2626' : notif.type === 'broadcast' ? '#db2777' : '#d97706'
                               }}
                             >
-                              <div
-                                className="admin-notif-icon-wrap"
-                                style={{
-                                  background: notif.type === 'danger' ? '#fef2f2' : '#fffbeb',
-                                  color: notif.type === 'danger' ? '#dc2626' : '#d97706'
-                                }}
-                              >
-                                {notif.type === 'danger' ? <AlertCircle size={16} /> : <AlertTriangle size={16} />}
-                              </div>
-                              <div className="admin-notif-content">
-                                <h5 className="admin-notif-title">{notif.title}</h5>
-                                <p className="admin-notif-desc">{notif.message}</p>
-                              </div>
+                              {notif.type === 'danger' ? <AlertCircle size={16} /> : notif.type === 'broadcast' ? <Radio size={16} /> : <AlertTriangle size={16} />}
                             </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
+                            <div className="admin-notif-content">
+                              <h5 className="admin-notif-title">{notif.title}</h5>
+                              <p className="admin-notif-desc">{notif.message}</p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="admin-notif-footer">
+                    <button
+                      type="button"
+                      className="admin-notif-view-all"
+                      onClick={() => {
+                        setShowNotifications(false);
+                        navigate(isAdmin ? '/admin/dashboard' : '/user/notifications');
+                      }}
+                    >
+                      {isAdmin ? 'View Admin Dashboard' : 'View All Notifications'} &rarr;
+                    </button>
+                  </div>
                 </div>
-              </>
-            )}
+              )}
+            </div>
 
             {/* LANGUAGE SWITCH BUTTON */}
             <button

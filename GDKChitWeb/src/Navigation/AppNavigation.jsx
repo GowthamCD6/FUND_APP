@@ -30,6 +30,7 @@ import Portfolio from '../pages/User/Portfolio/Portfolio.jsx';
 import UserProfile from '../pages/User/Profile/Profile.jsx';
 import UserChat from '../pages/User/Chat/UserChat.jsx';
 import UserTool from '../pages/User/UserTool/UserTool.jsx';
+import UserNotifications from '../pages/User/Notifications/Notifications.jsx';
 
 // ── User Chit Pages ──
 import JoinGroup from '../pages/User/JoinGroup/JoinGroup.jsx';
@@ -145,6 +146,7 @@ const AppNavigation = () => {
         <Route path="home" element={<UserHome />} />
         <Route path="portfolio" element={<Portfolio />} />
         <Route path="chat" element={<UserChat />} />
+        <Route path="notifications" element={<UserNotifications />} />
         <Route path="profile" element={<UserProfile />} />
         <Route path="tools" element={<UserTool />} />
 

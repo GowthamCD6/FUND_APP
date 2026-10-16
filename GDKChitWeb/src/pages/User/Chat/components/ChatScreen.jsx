@@ -1,13 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { makeRequest } from '../../../../api/apiClient.js';
+import { makeRequest, API_URL, tokenStore } from '../../../../api/apiClient.js';
 import { useAuth } from '../../../../context/AuthContext.jsx';
 import {
   Users as RiGroupLine, User as RiUserLine, MoreVertical as RiMore2Fill,
   Check as RiCheckLine, CheckCheck as RiCheckCheckLine,
   Star as RiStarLine, Trash2 as RiDeleteBinLine, Info as RiInformationLine,
   Search as RiSearchLine, Plus as RiPlusLine, Smile as RiSmileLine,
-  X as RiCloseLine, ArrowLeft as RiArrowLeftLine, Send as RiSendLine
+  X as RiCloseLine, ArrowLeft as RiArrowLeftLine, Send as RiSendLine,
+  Image as RiImageLine, FileText as RiFileTextLine, Download as RiDownloadLine,
+  Paperclip as RiPaperclipLine
 } from 'lucide-react';
+
+const EMOJIS = ['👍', '❤️', '😊', '🙏', '🔥', '🎉', '💰', '💵', '💳', '✅', '⚠️', '🤝', '👏', '⭐', '📍', '📞'];
+
+const formatFileUrl = (url) => {
+  if (!url) return '';
+  const cleanUrl = url.trim();
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) return cleanUrl;
+  const baseUrl = API_URL.replace(/\/api\/?$/, '');
+  return `${baseUrl}${cleanUrl.startsWith('/') ? '' : '/'}${cleanUrl}`;
+};
 
 const ChatScreen = ({ chat, onBack }) => {
   const { user } = useAuth();
@@ -19,6 +31,12 @@ const ChatScreen = ({ chat, onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
+  const [showAttachments, setShowAttachments] = useState(false);
+  const [showEmojis, setShowEmojis] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -49,12 +67,11 @@ const ChatScreen = ({ chat, onBack }) => {
       if (data.success && data.messages) {
         const formatted = data.messages.map(msg => ({
           id: msg.id,
-          // user sees User as 'user' (self)
           sender: msg.sender_type === 'User' ? 'user' : 'other',
           text: msg.message,
           timestamp: new Date(msg.created_at),
-          isRead: msg.is_read === 1,
-          status: msg.is_read === 1 ? 'read' : 'delivered',
+          isRead: msg.is_read === 1 || msg.read_at !== null,
+          status: (msg.is_read === 1 || msg.read_at !== null) ? 'read' : 'delivered',
           senderName: msg.sender_name,
         }));
         setMessages(formatted);
@@ -76,32 +93,31 @@ const ChatScreen = ({ chat, onBack }) => {
 
     const interval = setInterval(() => {
       loadMessages(false);
-    }, 5000);
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [chat.chatId, user]);
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!messageText.trim()) return;
+  const sendRawMessage = async (text) => {
+    if (!text.trim()) return;
 
     const tempId = 'temp-' + Date.now();
     const newMessage = {
       id: tempId,
       sender: 'user',
-      text: messageText,
+      text: text,
       timestamp: new Date(),
       isRead: false,
       status: 'sent',
     };
 
     setMessages(prev => [...prev, newMessage]);
-    setMessageText('');
     setTimeout(scrollToBottom, 50);
 
     try {
       const response = await makeRequest('/chats/send', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           roomId: chat.chatId,
           message: newMessage.text,
@@ -110,12 +126,103 @@ const ChatScreen = ({ chat, onBack }) => {
       const data = await response.json();
       
       if (data.success) {
-        setMessages(prev => prev.map(msg => msg.id === tempId ? { ...msg, id: data.data.id, status: 'read', isRead: true } : msg));
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === tempId ? { ...msg, id: data.data.id, status: 'delivered' } : msg
+          )
+        );
         loadMessages(false);
       }
     } catch (error) {
       console.error('Error sending message:', error);
     }
+  };
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!messageText.trim()) return;
+    const txt = messageText;
+    setMessageText('');
+    setShowEmojis(false);
+    setShowAttachments(false);
+    sendRawMessage(txt);
+  };
+
+  const handleFileUpload = async (e, type = 'image') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    setShowAttachments(false);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = tokenStore.getAccessToken();
+      const res = await fetch(`${API_URL}/chats/upload-file`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success && data.fileUrl) {
+        if (type === 'image') {
+          await sendRawMessage(data.fileUrl);
+        } else {
+          await sendRawMessage(`Document: ${file.name} | ${data.fileUrl}`);
+        }
+      } else {
+        alert(data.message || 'Failed to upload media file');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('Error uploading attachment');
+    } finally {
+      setIsUploading(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const renderMessageContent = (msg) => {
+    const text = msg.text || '';
+
+    // 1. Document file
+    if (text.startsWith('Document:')) {
+      const parts = text.replace('Document:', '').split('|');
+      const docName = parts[0]?.trim() || 'Attached Document';
+      const docUrl = formatFileUrl(parts[1]?.trim() || '');
+
+      return (
+        <a href={docUrl} target="_blank" rel="noopener noreferrer" className="chat-doc-card">
+          <RiFileTextLine size={24} color="#059669" />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {docName}
+            </div>
+            <span style={{ fontSize: 11, opacity: 0.8, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <RiDownloadLine size={12} /> Download file
+            </span>
+          </div>
+        </a>
+      );
+    }
+
+    // 2. Image URL directly (Cloudinary or local upload)
+    if (
+      text.match(/\.(jpeg|jpg|gif|png|webp|avif)/i) ||
+      ((text.includes('/uploads/') || text.includes('cloudinary.com') || text.includes('/image/upload/')) && !text.includes(' '))
+    ) {
+      const imgUrl = formatFileUrl(text);
+      return (
+        <a href={imgUrl} target="_blank" rel="noopener noreferrer">
+          <img src={imgUrl} alt="attachment" className="chat-image-attachment" />
+        </a>
+      );
+    }
+
+    // Plain text
+    return <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{text}</div>;
   };
 
   const formatTime = (date) => {
@@ -138,65 +245,115 @@ const ChatScreen = ({ chat, onBack }) => {
 
   const shouldShowDateSeparator = (currentMsg, previousMsg) => {
     if (!previousMsg) return true;
-    const currentDate = new Date(currentMsg.timestamp).toDateString();
-    const previousDate = new Date(previousMsg.timestamp).toDateString();
-    return currentDate !== previousDate;
+    return new Date(currentMsg.timestamp).toDateString() !== new Date(previousMsg.timestamp).toDateString();
   };
 
   const shouldGroupWithPrevious = (currentMsg, previousMsg) => {
-    if (!previousMsg || !currentMsg) return false;
-    return (
-      previousMsg.sender === currentMsg.sender &&
-      (new Date(currentMsg.timestamp) - new Date(previousMsg.timestamp)) < 60000
-    );
+    if (!previousMsg) return false;
+    const sameSender = currentMsg.sender === previousMsg.sender;
+    const timeDiff = Math.abs(new Date(currentMsg.timestamp) - new Date(previousMsg.timestamp));
+    return sameSender && timeDiff < 60000;
   };
 
   const filteredMessages = searchQuery.trim()
-    ? messages.filter(msg => msg.text.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? messages.filter(msg => (msg.text || '').toLowerCase().includes(searchQuery.toLowerCase()))
     : messages;
 
   return (
     <>
+      {/* Hidden file inputs for attachments */}
+      <input 
+        type="file" 
+        ref={imageInputRef} 
+        accept="image/*" 
+        style={{ display: 'none' }} 
+        onChange={(e) => handleFileUpload(e, 'image')} 
+      />
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        accept=".pdf,.doc,.docx,.txt,.xls,.xlsx" 
+        style={{ display: 'none' }} 
+        onChange={(e) => handleFileUpload(e, 'doc')} 
+      />
+
       {/* Header */}
       <div className="chat-screen-header">
         <div className="chat-screen-header-info" onClick={() => { if (chat.isGroup) { fetchGroupMembers(); setShowGroupInfo(true); } }}>
           <div className="chat-screen-avatar">
-            {chat.chatAvatar && chat.chatAvatar.startsWith('http') ? (
-              <img src={chat.chatAvatar} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-            ) : (
-              chat.isGroup ? <RiGroupLine size={20} /> : <RiUserLine size={20} />
-            )}
+            {chat.chatAvatar && typeof chat.chatAvatar === 'string' && (chat.chatAvatar.startsWith('http') || chat.chatAvatar.startsWith('/uploads')) ? (
+              <img 
+                src={chat.chatAvatar.startsWith('http') ? chat.chatAvatar : `${API_URL.replace(/\/api\/?$/, '')}${chat.chatAvatar}`} 
+                alt={chat.chatName} 
+                className="chat-avatar-img"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className="chat-avatar-text" 
+              style={{ 
+                display: chat.chatAvatar && typeof chat.chatAvatar === 'string' && (chat.chatAvatar.startsWith('http') || chat.chatAvatar.startsWith('/uploads')) ? 'none' : 'flex' 
+              }}
+            >
+              {chat.isGroup ? (
+                <RiGroupLine size={20} color="var(--chat-primary)" />
+              ) : chat.chatName ? (
+                chat.chatName.substring(0, 2).toUpperCase()
+              ) : (
+                <RiUserLine size={20} color="var(--chat-primary)" />
+              )}
+            </div>
             {!chat.isGroup && <div className="online-dot" />}
           </div>
           <div>
             <h3 className="chat-screen-name">{chat.chatName}</h3>
-            <p className="chat-screen-status">
-              {chat.isGroup ? `${groupMembers.length > 0 ? groupMembers.length : ''} Members` : 'Online'}
-            </p>
+            <span className="chat-screen-status">
+              {chat.isGroup ? `${groupMembers.length || 'Chit'} members` : 'online'}
+            </span>
           </div>
         </div>
-        <div className="chat-header-actions">
-          <button className="chat-header-action-btn" onClick={() => setSearchActive(!searchActive)}>
+
+        {/* Header Right Actions */}
+        <div className="chat-screen-header-actions">
+          <button 
+            type="button" 
+            className={`chat-header-icon-btn ${searchActive ? 'active' : ''}`}
+            onClick={() => {
+              setSearchActive(!searchActive);
+              if (searchActive) setSearchQuery('');
+            }}
+            title="Search Messages"
+          >
             <RiSearchLine size={20} />
           </button>
+          
           <div style={{ position: 'relative' }}>
-            <button className="chat-header-action-btn" onClick={() => setShowDropdown(!showDropdown)}>
+            <button 
+              type="button" 
+              className="chat-header-icon-btn"
+              onClick={() => setShowDropdown(!showDropdown)}
+              title="More Options"
+            >
               <RiMore2Fill size={20} />
             </button>
+
             {showDropdown && (
               <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowDropdown(false)} />
+                <div className="chat-dropdown-overlay" onClick={() => setShowDropdown(false)} />
                 <div className="chat-dropdown-menu">
                   {chat.isGroup && (
                     <button className="chat-dropdown-item" onClick={() => { setShowDropdown(false); fetchGroupMembers(); setShowGroupInfo(true); }}>
                       <RiInformationLine size={16} /> Group Info
                     </button>
                   )}
-                  <button className="chat-dropdown-item" onClick={() => setShowDropdown(false)}>
-                    <RiStarLine size={16} style={{ color: '#F59E0B' }} /> Starred Messages
+                  <button className="chat-dropdown-item" onClick={() => { setShowDropdown(false); loadMessages(true); }}>
+                    <RiStarLine size={16} style={{ color: '#F59E0B' }} /> Refresh Chat
                   </button>
-                  <button className="chat-dropdown-item danger" onClick={() => setShowDropdown(false)}>
-                    <RiDeleteBinLine size={16} /> Delete Chat
+                  <button className="chat-dropdown-item danger" onClick={() => { setShowDropdown(false); setMessages([]); }}>
+                    <RiDeleteBinLine size={16} /> Clear Messages
                   </button>
                 </div>
               </>
@@ -229,7 +386,7 @@ const ChatScreen = ({ chat, onBack }) => {
       {/* Messages Area */}
       <div className="chat-screen-messages">
         {loading ? (
-          <div style={{ textAlign: 'center', marginTop: 20, color: 'var(--muted)' }}>Loading messages...</div>
+          <div style={{ textAlign: 'center', marginTop: 20, color: 'var(--muted)' }}>Loading conversation...</div>
         ) : filteredMessages.length > 0 ? (
           filteredMessages.map((msg, index) => {
             const showDate = shouldShowDateSeparator(msg, filteredMessages[index - 1]);
@@ -247,15 +404,15 @@ const ChatScreen = ({ chat, onBack }) => {
                     {msg.sender === 'other' && chat.isGroup && !isGrouped && (
                       <div className="chat-bubble-sender-name">{msg.senderName}</div>
                     )}
-                    <div style={{ wordBreak: 'break-word' }}>{msg.text}</div>
+                    {renderMessageContent(msg)}
                     <div className="chat-message-footer">
                       <span className="chat-message-time">{formatTime(msg.timestamp)}</span>
                       {msg.sender === 'user' && (
                         msg.status === 'read' 
-                          ? <RiCheckCheckLine size={14} color="#FFFFFF" style={{ marginLeft: 2 }} />
+                          ? <RiCheckCheckLine size={14} color="#60a5fa" style={{ marginLeft: 2 }} title="Read" />
                           : msg.status === 'delivered'
-                            ? <RiCheckCheckLine size={14} color="#D8BFD8" style={{ marginLeft: 2 }} />
-                            : <RiCheckLine size={14} color="#D8BFD8" style={{ marginLeft: 2 }} />
+                            ? <RiCheckCheckLine size={14} color="rgba(255,255,255,0.7)" style={{ marginLeft: 2 }} title="Delivered" />
+                            : <RiCheckLine size={14} color="rgba(255,255,255,0.7)" style={{ marginLeft: 2 }} title="Sent" />
                       )}
                     </div>
                   </div>
@@ -269,35 +426,96 @@ const ChatScreen = ({ chat, onBack }) => {
               <RiUserLine size={36} />
             </div>
             <h3>No messages yet</h3>
-            <p>Start the conversation by typing below!</p>
+            <p>Start the conversation with {chat.chatName}!</p>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area (Redesigned Pill) */}
-      <div className="chat-screen-input-container">
+      {/* Quick Emoji Picker Strip */}
+      {showEmojis && (
+        <div style={{ background: '#FFFFFF', padding: '8px 16px', display: 'flex', gap: 10, overflowX: 'auto', borderTop: '1px solid #E2E8E2' }}>
+          {EMOJIS.map(emoji => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => setMessageText(prev => prev + emoji)}
+              style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '4px' }}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Attachment Options Popover */}
+      {showAttachments && (
+        <div style={{ background: '#FFFFFF', padding: '12px 18px', borderTop: '1px solid #E2E8E2', display: 'flex', gap: 24, alignItems: 'center' }}>
+          <button 
+            type="button" 
+            onClick={() => imageInputRef.current?.click()} 
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#1B3322', fontSize: 12, fontWeight: 600 }}
+          >
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#EBF3ED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <RiImageLine size={20} color="#059669" />
+            </div>
+            <span>Photo / Media</span>
+          </button>
+
+          <button 
+            type="button" 
+            onClick={() => fileInputRef.current?.click()} 
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#1B3322', fontSize: 12, fontWeight: 600 }}
+          >
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <RiFileTextLine size={20} color="#2563EB" />
+            </div>
+            <span>Document</span>
+          </button>
+        </div>
+      )}
+
+      {/* Bottom Message Input Bar */}
+      <div className="chat-screen-footer-area">
         <form className="chat-screen-input-wrapper" onSubmit={handleSendMessage}>
-          <button type="button" className="chat-input-action-btn">
+          <button 
+            type="button" 
+            className={`chat-input-action-btn ${showAttachments ? 'active' : ''}`}
+            onClick={() => {
+              setShowAttachments(!showAttachments);
+              setShowEmojis(false);
+            }}
+            title="Attach Media or File"
+          >
             <RiPlusLine size={22} />
           </button>
           
           <input 
             type="text" 
             className="chat-input-box-redesign" 
-            placeholder="Type a message..." 
+            placeholder={isUploading ? "Uploading attachment..." : "Type a message..."} 
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
+            disabled={isUploading}
           />
 
-          <button type="button" className="chat-input-action-btn secondary">
+          <button 
+            type="button" 
+            className={`chat-input-action-btn secondary ${showEmojis ? 'active' : ''}`}
+            onClick={() => {
+              setShowEmojis(!showEmojis);
+              setShowAttachments(false);
+            }}
+            title="Insert Emoji"
+          >
             <RiSmileLine size={22} />
           </button>
           
           <button 
             type="submit" 
             className="chat-send-btn-redesign"
-            disabled={!messageText.trim()}
+            disabled={!messageText.trim() || isUploading}
+            title="Send Message"
           >
             <RiSendLine size={18} />
           </button>

@@ -9,20 +9,32 @@ import {
   TrendingUp, ShieldCheck, CheckCircle2, AlertCircle, Clock,
   FileText, Calendar, X, RefreshCw, MapPin, Key, Lock, Unlock,
   CreditCard, Globe, Sparkles, ExternalLink, HelpCircle, Phone,
-  Mail, Award, Check, ChevronRight, Share2, Info
+  Mail, Award, Check, ChevronRight, Share2, Info, MessageSquare
 } from 'lucide-react';
 import './Home.css';
+import { getCloudinaryAsset } from '../../../utils/cloudinaryAssetHelper.js';
 
 // Import high-resolution illustrative assets
-import activeMembersImg from '../../../assets/UserHomePage/ActiveMembers.png';
-import trustImg from '../../../assets/UserHomePage/trust.png';
-import yearsLegacyImg from '../../../assets/UserHomePage/YearsLegacy.png';
-import fundMgmtImg from '../../../assets/UserHomePage/FundManagement.png';
-import locationImg from '../../../assets/UserHomePage/Location.png';
-import biometricImg from '../../../assets/UserHomePage/Biometric.png';
-import onlineImg from '../../../assets/UserHomePage/OnlineTransation.png';
-import languageImg from '../../../assets/UserHomePage/DuelLanguage.png';
-import bankLockerImg from '../../../assets/UserHomePage/banklocker.png';
+import activeMembersImgRaw from '../../../assets/UserHomePage/ActiveMembers.png';
+import trustImgRaw from '../../../assets/UserHomePage/trust.png';
+import yearsLegacyImgRaw from '../../../assets/UserHomePage/YearsLegacy.png';
+import fundMgmtImgRaw from '../../../assets/UserHomePage/FundManagement.png';
+import locationImgRaw from '../../../assets/UserHomePage/Location.png';
+import biometricImgRaw from '../../../assets/UserHomePage/Biometric.png';
+import onlineImgRaw from '../../../assets/UserHomePage/OnlineTransation.png';
+import languageImgRaw from '../../../assets/UserHomePage/DuelLanguage.png';
+import bankLockerImgRaw from '../../../assets/UserHomePage/banklocker.png';
+
+// Cloudinary-optimized illustrative assets with local fallback
+const activeMembersImg = getCloudinaryAsset('ActiveMembers.png', activeMembersImgRaw);
+const trustImg = getCloudinaryAsset('trust.png', trustImgRaw);
+const yearsLegacyImg = getCloudinaryAsset('YearsLegacy.png', yearsLegacyImgRaw);
+const fundMgmtImg = getCloudinaryAsset('FundManagement.png', fundMgmtImgRaw);
+const locationImg = getCloudinaryAsset('Location.png', locationImgRaw);
+const biometricImg = getCloudinaryAsset('Biometric.png', biometricImgRaw);
+const onlineImg = getCloudinaryAsset('OnlineTransation.png', onlineImgRaw);
+const languageImg = getCloudinaryAsset('DuelLanguage.png', languageImgRaw);
+const bankLockerImg = getCloudinaryAsset('banklocker.png', bankLockerImgRaw);
 
 const formatINR = (amt) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(amt) || 0);
@@ -445,6 +457,40 @@ const UserHome = () => {
             </div>
             <div className="uh-action-footer" style={{ color: '#6d28d9' }}>
               <span>Calculate Loan</span>
+              <ArrowRight size={14} />
+            </div>
+          </div>
+
+          <div className="uh-action-card" onClick={() => navigate('/user/notifications')}>
+            <div className="uh-action-card-top">
+              <div className="uh-action-icon" style={{ background: '#fdf2f8', color: '#db2777' }}>
+                <Bell size={22} />
+              </div>
+              <ArrowRight size={18} color="var(--subtle)" />
+            </div>
+            <div>
+              <h3 className="uh-action-title">Notifications & Activity</h3>
+              <p className="uh-action-desc">Check payment due reminders, auction outcomes, and official announcements.</p>
+            </div>
+            <div className="uh-action-footer" style={{ color: '#db2777' }}>
+              <span>View Alerts</span>
+              <ArrowRight size={14} />
+            </div>
+          </div>
+
+          <div className="uh-action-card" onClick={() => navigate('/user/chat')}>
+            <div className="uh-action-card-top">
+              <div className="uh-action-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
+                <MessageSquare size={22} />
+              </div>
+              <ArrowRight size={18} color="var(--subtle)" />
+            </div>
+            <div>
+              <h3 className="uh-action-title">Chit Messages & Support</h3>
+              <p className="uh-action-desc">Direct communications with group members and branch support administration.</p>
+            </div>
+            <div className="uh-action-footer" style={{ color: '#059669' }}>
+              <span>Open Chat</span>
               <ArrowRight size={14} />
             </div>
           </div>

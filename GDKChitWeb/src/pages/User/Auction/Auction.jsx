@@ -19,6 +19,9 @@ const UserAuction = () => {
 
   // Auction live state
   const [isLive, setIsLive] = useState(false);
+  const [isDiceRolling, setIsDiceRolling] = useState(false);
+  const [rollTimer, setRollTimer] = useState(30);
+  const [diceFace, setDiceFace] = useState(1);
   const [timeRemaining, setTimeRemaining] = useState(300);
   const [currentLowestBid, setCurrentLowestBid] = useState(0);
   const [bidHistory, setBidHistory] = useState([]);
@@ -86,6 +89,7 @@ const UserAuction = () => {
           const unsubStart = AuctionWebSocketService.on('auction_started', (data) => {
             if (!data.groupId || String(data.groupId) === String(groupId)) {
               setIsLive(true);
+              setIsDiceRolling(false);
               if (data.initialAmount) setCurrentLowestBid(data.initialAmount);
               if (data.duration) setTimeRemaining(data.duration);
             }
@@ -111,8 +115,46 @@ const UserAuction = () => {
             }
           });
 
+          const unsubDice = AuctionWebSocketService.on('dice_rolling', (data) => {
+            if (!data.groupId || String(data.groupId) === String(groupId)) {
+              setIsLive(true);
+              setIsDiceRolling(true);
+              const durationSec = Math.floor((data.duration || 30000) / 1000);
+              setRollTimer(durationSec);
+              if (data.initialAmount) setCurrentLowestBid(data.initialAmount);
+
+              const diceInterval = setInterval(() => {
+                setDiceFace(Math.floor(Math.random() * 6) + 1);
+              }, 150);
+
+              const timerCountdown = setInterval(() => {
+                setRollTimer((prev) => {
+                  if (prev <= 1) {
+                    clearInterval(timerCountdown);
+                    clearInterval(diceInterval);
+                    return 0;
+                  }
+                  return prev - 1;
+                });
+              }, 1000);
+
+              setTimeout(() => {
+                clearInterval(diceInterval);
+                clearInterval(timerCountdown);
+                setIsLive(false);
+                setIsDiceRolling(false);
+                setWinnerModal({
+                  isOpen: true,
+                  winner: data.winner || { name: 'Lucky Draw Winner' },
+                  amount: data.initialAmount || currentLowestBid,
+                });
+              }, data.duration || 30000);
+            }
+          });
+
           const unsubEnd = AuctionWebSocketService.on('auction_ended', (data) => {
             setIsLive(false);
+            setIsDiceRolling(false);
             setWinnerModal({
               isOpen: true,
               winner: data.winner || { name: 'Winner Declared' },
@@ -120,7 +162,7 @@ const UserAuction = () => {
             });
           });
 
-          cleanupFns = [unsubStart, unsubBid, unsubTime, unsubEnd];
+          cleanupFns = [unsubStart, unsubBid, unsubTime, unsubDice, unsubEnd];
         })
         .catch((err) => console.log('Auction WS error:', err));
     }
@@ -299,6 +341,35 @@ const UserAuction = () => {
           >
             <div className="ua-live-dot" style={{ background: '#f59e0b' }} />
             Listening for Admin Start Broadcast...
+          </div>
+        </div>
+      ) : isDiceRolling ? (
+        /* Lucky Draw / Random Auction 30s Live Arena */
+        <div className="ua-waiting-card" style={{ padding: '40px 24px', background: '#ffffff', borderColor: '#cbd5e1' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 20, background: '#fdf2f8', color: '#db2777', fontWeight: 800, fontSize: 13, marginBottom: 20 }}>
+            <span className="ua-live-dot" style={{ background: '#db2777' }} />
+            <span>30-SECOND LUCKY DRAW IN PROGRESS</span>
+          </div>
+
+          <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 12 }}>
+            🎲
+          </div>
+
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: '0 0 8px' }}>
+            Selecting Chit Winner for {selectedGroup.groupName || selectedGroup.group_name}...
+          </h2>
+          <p style={{ fontSize: 14.5, color: 'var(--muted)', maxWidth: 440, margin: '0 auto 24px', lineHeight: 1.5 }}>
+            The lucky draw is rolling live across all enrolled participants. Winner will be revealed in:
+          </p>
+
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 36, fontWeight: 900, color: '#059669', background: '#ecfdf5', padding: '14px 32px', borderRadius: 16, border: '2px solid #a7f3d0' }}>
+            <Clock size={32} />
+            <span>{rollTimer.toString().padStart(2, '0')}s</span>
+          </div>
+
+          <div style={{ marginTop: 24, padding: '12px 24px', borderRadius: 12, background: 'var(--surface2)', display: 'inline-block' }}>
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>Lucky Draw Prize Pot: </span>
+            <strong style={{ fontSize: 16, color: '#059669' }}>{formatINR(currentLowestBid)}</strong>
           </div>
         </div>
       ) : (

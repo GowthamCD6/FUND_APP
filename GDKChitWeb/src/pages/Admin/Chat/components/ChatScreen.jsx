@@ -530,8 +530,10 @@ const ChatScreen = ({ chat, onBack }) => {
                       <span className="chat-message-time">{formatTime(msg.timestamp)}</span>
                       {msg.sender === 'user' && (
                         msg.status === 'read' 
-                          ? <RiCheckCheckLine size={14} color="#81C784" style={{ marginLeft: 2 }} />
-                          : <RiCheckLine size={14} color="rgba(255,255,255,0.7)" style={{ marginLeft: 2 }} />
+                          ? <RiCheckCheckLine size={14} color="#60a5fa" style={{ marginLeft: 2 }} title="Read" />
+                          : msg.status === 'delivered'
+                            ? <RiCheckCheckLine size={14} color="rgba(255,255,255,0.7)" style={{ marginLeft: 2 }} title="Delivered" />
+                            : <RiCheckLine size={14} color="rgba(255,255,255,0.7)" style={{ marginLeft: 2 }} title="Sent" />
                       )}
                     </div>
                   </div>
