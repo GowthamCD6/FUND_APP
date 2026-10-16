@@ -9,10 +9,9 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  Share,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../../../../../components/HeaderComponent/Header';
 import { useLanguage } from '../../../../../utils/LanguageContext';
@@ -199,18 +198,13 @@ const DocumentVault = ({ navigation, onBack }) => {
         </html>
       `;
 
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-      setIsGeneratingPdf(false);
+      const receiptDetails = `📄 GDK CHIT FUNDS (P) LTD\nRegd. Under Chit Funds Act, 1982\n\n${doc.title}\n------------------------------------\nSubscriber: ${userName}\nChit Group: ${doc.groupName}\nDocument ID: ${doc.id?.toUpperCase?.() || doc.id}\nIssue Date: ${doc.date}\n${doc.amount ? `Amount: ${doc.amount}\n` : ''}Status: VERIFIED & ACTIVE\n------------------------------------\n${isReceipt ? 'Official computerized proof of installment payment received.' : 'Terms: Monthly installments due on or before 10th of every month. Digitally verified.'}\n\n🔒 Cryptographic verification seal: Issued by GDKChit Core Server`;
 
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'application/pdf',
-          dialogTitle: `Download ${doc.title}`,
-          UTI: 'com.adobe.pdf',
-        });
-      } else {
-        Alert.alert(t('PDF Generated'), `${t('Document saved to device cache:')} ${uri}`);
-      }
+      await Share.share({
+        title: `GDKChit - ${doc.title}`,
+        message: receiptDetails,
+      });
+      setIsGeneratingPdf(false);
     } catch (err) {
       setIsGeneratingPdf(false);
       console.error('Error generating PDF:', err);

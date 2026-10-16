@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { StyleSheet, Alert } from "react-native";
 import { SafeAreaProvider, initialWindowMetrics, SafeAreaView } from "react-native-safe-area-context";
 import Router from "./src/components/Routes/Routes";
 import "react-native-get-random-values";
@@ -8,12 +8,15 @@ import { LanguageProvider } from "./src/utils/LanguageContext";
 import BiometricService from "./src/services/BiometricService";
 import PushNotificationService from "./src/services/PushNotificationService";
 import SecurityLockScreen from "./src/pages/User/Pages/Profile/Page/SecurityLock/SecurityLockScreen";
+import { AuctionProvider } from "./src/utils/AuctionContext";
+import GlobalAuctionModal from "./src/components/GlobalAuctionModal/GlobalAuctionModal";
+import GlobalErrorBoundary from "./src/components/GlobalErrorBoundary/GlobalErrorBoundary";
 
 const AppContent = () => {
   const [securityState, setSecurityState] = useState({
     isLocked: false,
     isSecurityEnabled: false,
-    isLoading: true
+    isLoading: false
   });
 
   useEffect(() => {
@@ -66,18 +69,6 @@ const AppContent = () => {
 
   console.log('App.jsx: Current state:', securityState);
 
-  // Show loading if still initializing
-  if (securityState.isLoading) {
-    console.log('App.jsx: Still loading...');
-    return (
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#6B46C1' }]}>
-          <ActivityIndicator size="large" color="#FFFFFF" />
-        </SafeAreaView>
-      </SafeAreaProvider>
-    );
-  }
-
   // Show lock screen if app is locked
   if (securityState.isLocked) {
     console.log('App.jsx: Showing SecurityLockScreen');
@@ -96,11 +87,6 @@ const AppContent = () => {
   );
 };
 
-import { AuctionProvider } from "./src/utils/AuctionContext";
-import GlobalAuctionModal from "./src/components/GlobalAuctionModal/GlobalAuctionModal";
-import BatteryOptimizationModal from "./src/components/BatteryOptimizationModal/BatteryOptimizationModal";
-import GlobalErrorBoundary from "./src/components/GlobalErrorBoundary/GlobalErrorBoundary";
-
 const App = () => {
   return (
     <GlobalErrorBoundary>
@@ -110,7 +96,6 @@ const App = () => {
             {/* <ThemeProvider> */}
             <AppContent />
             <GlobalAuctionModal />
-            <BatteryOptimizationModal />
             {/* </ThemeProvider> */}
           </AuctionProvider>
         </AuthProvider>

@@ -728,24 +728,13 @@ const UserManual = ({ visible = false, onClose = null, forceShow = false }) => {
   // ─── Initialization ───
   useEffect(() => {
     const checkStatus = async () => {
-      if (forceShow) {
+      if (forceShow || visible) {
         setIsVisible(true);
         setCurrentStep(0);
         setTimeout(() => goToStep(0), 200);
         return;
       }
-      try {
-        const hasSeen = await AsyncStorage.getItem(USER_MANUAL_STORAGE_KEY);
-        if (!hasSeen || hasSeen !== 'true') {
-          setIsVisible(true);
-          setCurrentStep(0);
-          setTimeout(() => goToStep(0), 200);
-        } else {
-          setIsVisible(false);
-        }
-      } catch (err) {
-        console.error('Error checking User Manual status:', err);
-      }
+      setIsVisible(false);
     };
 
     checkStatus();

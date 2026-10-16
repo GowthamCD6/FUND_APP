@@ -76,6 +76,16 @@ class GdkNotificationModule(private val reactContext: ReactApplicationContext) :
         }
     }
 
+    @ReactMethod
+    fun addListener(eventName: String?) {
+        // Required for React Native's NativeEventEmitter
+    }
+
+    @ReactMethod
+    fun removeListeners(count: Int?) {
+        // Required for React Native's NativeEventEmitter
+    }
+
     /**
      * Create versioned notification channels with explicit sounds, vibration, and lights.
      * Deletes legacy channels if present.

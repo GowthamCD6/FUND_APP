@@ -8,5 +8,7 @@
   },
   "files.watcherExclude": {
     "**/node_modules": true
-  }
+  },
+  "java.autobuild.enabled": false,
+  "java.import.gradle.enabled": false
 }

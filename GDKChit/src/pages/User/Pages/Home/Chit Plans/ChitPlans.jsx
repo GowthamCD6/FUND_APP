@@ -9,16 +9,26 @@ import {
   Animated,
   ImageBackground,
   StatusBar,
-  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import LottieView from 'lottie-react-native';
 import Header from '../../../../../components/HeaderComponent/Header';
 
 const plansBG = require('../../../../../assets/UserHomePage/PlansBG.jpeg');
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Helper to decide if a hex color is light or dark
+const isLightColor = (hex) => {
+  if (!hex || typeof hex !== 'string') return false;
+  const cleanHex = hex.replace('#', '');
+  if (cleanHex.length !== 6) return false;
+  const r = parseInt(cleanHex.slice(0, 2), 16);
+  const g = parseInt(cleanHex.slice(2, 4), 16);
+  const b = parseInt(cleanHex.slice(4, 6), 16);
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance > 186; // threshold: true for light colors
+};
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
   const insets = useSafeAreaInsets();
@@ -29,16 +39,14 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
     {
       id: 1,
       name: '1 Lakh Plan',
-      badge: 'Popular',
       amount: '₹1,00,000',
       monthly: '₹5,000',
       duration: '20 Months',
-      return: '₹95,000',
       members: '20',
-      color: '#D97706',
-      accentColor: '#F59E0B',
-      lottie: require('../../../../../animation/UserHome/1LAkhLotte.json'),
-      description: 'Perfect for first-time investors and small businesses with quick returns and low monthly commitments.',
+      color: '#FFD700',
+      lightColor: '#FFF7CC',
+      gradientColors: ['#FFE57F', '#FFF0B3', '#FFF9E6'],
+      description: 'Perfect for first-time investors and small businesses',
       idealFor: [
         'First-time investors',
         'Small business owners',
@@ -46,25 +54,23 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
         'Short-term goals',
       ],
       highlights: [
-        'Low monthly commitment of ₹5,000',
-        'Quick returns up to ₹95,000',
-        'Build strong chit history',
-        'Transparent & flexible bidding',
+        'Low monthly commitment',
+        'Quick returns possible',
+        'Build credit history',
+        'Flexible bidding options',
       ],
     },
     {
       id: 2,
       name: '2 Lakh Plan',
-      badge: 'Best Value',
       amount: '₹2,00,000',
       monthly: '₹10,000',
       duration: '20 Months',
-      return: '₹1,90,000',
       members: '20',
-      color: '#0D9488',
-      accentColor: '#14B8A6',
-      lottie: require('../../../../../animation/UserHome/2LakhLotte.json'),
-      description: 'Ideal for medium-term savings, family planning, vehicle purchases, and business expansion needs.',
+      color: '#E5E4E2',
+      lightColor: '#F5F5F4',
+      gradientColors: ['#D5D8DC', '#E5E8EC', '#F2F4F7'],
+      description: 'Ideal for medium-term savings and expansion needs',
       idealFor: [
         'Business expansion',
         'Home renovation',
@@ -72,25 +78,23 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
         'Education funding',
       ],
       highlights: [
-        'Balanced ₹10,000 monthly commitment',
-        'Higher savings potential & dividend benefits',
-        'Expected return of ₹1,90,000',
-        'Prompt prize money disbursement',
+        'Balanced commitment',
+        'Higher savings potential',
+        'Medium-term goals',
+        'Better returns',
       ],
     },
     {
       id: 3,
       name: '3 Lakh Plan',
-      badge: 'Trending',
       amount: '₹3,00,000',
       monthly: '₹15,000',
       duration: '20 Months',
-      return: '₹2,85,000',
       members: '20',
-      color: '#7C3AED',
-      accentColor: '#8B5CF6',
-      lottie: require('../../../../../animation/UserHome/3LakhLotte.json'),
-      description: 'Great for substantial investments, weddings, home improvements, and long-term capital creation.',
+      color: '#B9F2FF',
+      lightColor: '#E0F8FF',
+      gradientColors: ['#80DEEA', '#B2EBF2', '#E0F7FA'],
+      description: 'Great for substantial investments and long-term goals',
       idealFor: [
         'Property investment',
         'Major renovations',
@@ -98,36 +102,34 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
         'Long-term savings',
       ],
       highlights: [
-        'Substantial returns up to ₹2,85,000',
-        'Long-term disciplined wealth accumulation',
-        'Priority participation & digital tracking',
-        'Dedicated customer manager support',
+        'Substantial returns',
+        'Long-term wealth building',
+        'Major investment needs',
+        'Premium benefits',
       ],
     },
     {
       id: 4,
       name: '5 Lakh Plan',
-      badge: 'Premium',
       amount: '₹5,00,000',
       monthly: '₹25,000',
       duration: '20 Months',
-      return: '₹4,75,000',
       members: '20',
-      color: '#DB2777',
-      accentColor: '#EC4899',
-      lottie: require('../../../../../animation/UserHome/5LakhLotte.json'),
-      description: 'Premium flagship tier for maximum returns, property acquisitions, and major venture capital needs.',
+      color: '#DA70D6',
+      lightColor: '#F5D4F5',
+      gradientColors: ['#E1BEE7', '#F3E5F5', '#FAEEFA'],
+      description: 'Premium option for maximum returns and large projects',
       idealFor: [
         'Large investments',
         'Property purchase',
         'Major business ventures',
-        'High-yield wealth creation',
+        'Wealth creation',
       ],
       highlights: [
-        'Maximum expected prize pool of ₹4,75,000',
-        'VIP status with highest auction priority',
-        'Dedicated fast-track documentation & payouts',
-        'Comprehensive financial security & guarantees',
+        'Maximum returns',
+        'Premium member status',
+        'Priority support',
+        'Exclusive benefits',
       ],
     },
   ];
@@ -135,9 +137,7 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
   const handleScroll = (event) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / SCREEN_WIDTH);
-    if (index >= 0 && index < plans.length && index !== currentPlan) {
-      setCurrentPlan(index);
-    }
+    setCurrentPlan(index);
   };
 
   const scrollToPlan = (index) => {
@@ -145,9 +145,9 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
       x: index * SCREEN_WIDTH,
       animated: true,
     });
-    setCurrentPlan(index);
   };
 
+  // On mount or when initialPlanIndex changes, jump to that plan
   useEffect(() => {
     setCurrentPlan(initialPlanIndex);
     requestAnimationFrame(() => {
@@ -157,6 +157,8 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
       });
     });
   }, [initialPlanIndex]);
+
+  const plan = plans[currentPlan];
 
   return (
     <ImageBackground source={plansBG} style={styles.backgroundImage} resizeMode="cover">
@@ -174,7 +176,7 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
           snapToInterval={SCREEN_WIDTH}
           snapToAlignment="center"
         >
-          {plans.map((planItem, planIdx) => {
+          {plans.map((planItem) => {
             return (
               <View key={planItem.id} style={styles.planContainer}>
                 <ScrollView
@@ -185,8 +187,8 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
                     title="Chit Plans"
                     onBack={onClose}
                     showBackButton={true}
-                    headerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0, marginBottom: 12 }}
-                    titleStyle={{ color: '#FFFFFF', fontSize: 19, fontWeight: '700' }}
+                    headerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0, marginBottom: 8 }}
+                    titleStyle={{ color: '#FFFFFF' }}
                     backIconFill="#FFFFFF"
                     showDivider={false}
                     rightComponent={(
@@ -197,99 +199,57 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
                             onPress={() => scrollToPlan(index)}
                             style={[
                               styles.paginationDot,
-                              currentPlan === index && [styles.paginationDotActive, { backgroundColor: planItem.color }],
+                              currentPlan === index && styles.paginationDotActive,
                             ]}
-                            hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                           />
                         ))}
                       </View>
                     )}
                   />
-
-                  {/* --- Home Page Styled Sliding Master Card --- */}
-                  <View style={[styles.homeMasterCard, { backgroundColor: planItem.color }]}>
-                    {/* Badge */}
-                    {planItem.badge && (
-                      <View style={styles.homeBadge}>
-                        <Text style={styles.homeBadgeText}>{planItem.badge}</Text>
-                      </View>
-                    )}
-
-                    {/* Decorative Background Circles */}
-                    <View style={styles.decorativeCircle} />
-                    <View style={styles.decorativeCircleSmall} />
-
-                    {/* Floating Lottie Coin Animation */}
-                    <LottieView
-                      source={planItem.lottie}
-                      autoPlay
-                      loop
-                      cacheComposition={true}
-                      renderMode="HARDWARE"
-                      style={[
-                        styles.homeCardLottieCoin,
-                        planItem.id !== 3 && { top: 28 },
-                        planItem.id === 1 && { top: 16 },
-                        planItem.id === 4 && { width: 130, height: 130, top: 18, right: -4 },
-                      ]}
-                      pointerEvents="none"
-                    />
-
-                    {/* Top Content */}
-                    <View style={styles.homeCardTop}>
-                      {/* Plan Title */}
-                      <Text style={styles.homePlanTitle}>{planItem.name}</Text>
-
-                      {/* Amount Row */}
-                      <View style={styles.homeAmountRow}>
-                        <Text style={styles.homeMainAmount}>{planItem.amount}</Text>
-                        <Text style={styles.homeTotalLabel}>(TOTAL VALUE)</Text>
-                      </View>
-
-                      {/* Monthly Info */}
-                      <Text style={styles.homeMonthlyInfo}>
-                        {planItem.monthly} per month for {planItem.duration}
-                      </Text>
-                    </View>
-
-                    {/* Return Info - Bottom Footer */}
-                    <View style={styles.homeReturnSection}>
-                      <Text style={styles.homeReturnLabel}>Expected Return</Text>
-                      <Text style={styles.homeReturnAmount}>{planItem.return}</Text>
-                    </View>
-                  </View>
-
-                  {/* --- Detailed Breakdown Glass Container --- */}
+                  {/* Ultra Transparent Glass Main Card */}
                   <View style={styles.singleMainCard}>
-                    {/* Quick Stats Grid */}
-                    <View style={styles.statsGrid}>
-                      <View style={styles.statCard}>
-                        <MaterialCommunityIcons name="wallet-outline" size={18} color="#FFD700" style={{ marginBottom: 4 }} />
-                        <Text style={styles.statValue}>{planItem.monthly}</Text>
-                        <Text style={styles.statLabel}>Monthly</Text>
-                      </View>
-                      <View style={styles.statCard}>
-                        <MaterialCommunityIcons name="calendar-clock" size={18} color="#FFD700" style={{ marginBottom: 4 }} />
-                        <Text style={styles.statValue}>{planItem.duration}</Text>
-                        <Text style={styles.statLabel}>Duration</Text>
-                      </View>
-                      <View style={styles.statCard}>
-                        <MaterialCommunityIcons name="account-group" size={18} color="#FFD700" style={{ marginBottom: 4 }} />
-                        <Text style={styles.statValue}>{planItem.members}</Text>
-                        <Text style={styles.statLabel}>Members</Text>
-                      </View>
-                    </View>
+                    {/* Plan Hero Header */}
+                    <View style={styles.heroSection}>
+                      <Text style={styles.planAmount}>
+                        {planItem.amount}
+                      </Text>
+                      <Text style={styles.planDescription}>
+                        {planItem.description}
+                      </Text>
 
-                    {/* Plan Summary Description */}
-                    <View style={styles.descContainer}>
-                      <MaterialCommunityIcons name="information-outline" size={16} color="#FFD700" style={{ marginTop: 2 }} />
-                      <Text style={styles.planDescription}>{planItem.description}</Text>
+                      {/* Quick Stats */}
+                      <View style={styles.statsGrid}>
+                        <View style={styles.statCard}>
+                          <Text style={styles.statValue}>
+                            {planItem.monthly}
+                          </Text>
+                          <Text style={styles.statLabel}>
+                            Monthly
+                          </Text>
+                        </View>
+                        <View style={styles.statCard}>
+                          <Text style={styles.statValue}>
+                            {planItem.duration}
+                          </Text>
+                          <Text style={styles.statLabel}>
+                            Duration
+                          </Text>
+                        </View>
+                        <View style={styles.statCard}>
+                          <Text style={styles.statValue}>
+                            {planItem.members}
+                          </Text>
+                          <Text style={styles.statLabel}>
+                            Members
+                          </Text>
+                        </View>
+                      </View>
                     </View>
 
                     {/* Ideal For */}
                     <View style={styles.sectionBlock}>
                       <View style={styles.cardHeader}>
-                        <View style={[styles.cardHeaderIconBg, { backgroundColor: 'rgba(255, 255, 255, 0.18)' }]}>
+                        <View style={styles.cardHeaderIconBg}>
                           <MaterialCommunityIcons
                             name="account-group"
                             size={18}
@@ -315,7 +275,7 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
                     {/* Key Highlights */}
                     <View style={styles.sectionBlock}>
                       <View style={styles.cardHeader}>
-                        <View style={[styles.cardHeaderIconBg, { backgroundColor: 'rgba(255, 255, 255, 0.18)' }]}>
+                        <View style={styles.cardHeaderIconBg}>
                           <MaterialCommunityIcons
                             name="star"
                             size={18}
@@ -326,7 +286,10 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
                       </View>
                       <View style={styles.highlightsContainer}>
                         {planItem.highlights.map((highlight, i) => (
-                          <View key={i} style={styles.highlightItem}>
+                          <View
+                            key={i}
+                            style={styles.highlightItem}
+                          >
                             <View style={styles.highlightIcon}>
                               <MaterialCommunityIcons
                                 name="check"
@@ -343,7 +306,7 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
                     {/* Payment Breakdown */}
                     <View style={styles.sectionBlock}>
                       <View style={styles.cardHeader}>
-                        <View style={[styles.cardHeaderIconBg, { backgroundColor: 'rgba(255, 255, 255, 0.18)' }]}>
+                        <View style={styles.cardHeaderIconBg}>
                           <MaterialCommunityIcons
                             name="clock-outline"
                             size={18}
@@ -369,7 +332,7 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
                         </View>
                         <View style={styles.paymentRowHighlight}>
                           <Text style={styles.paymentLabelBold}>
-                            Total Pool Value
+                            Total Pool Amount
                           </Text>
                           <Text style={styles.paymentValueBold}>
                             {planItem.amount}
@@ -378,10 +341,10 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
                       </View>
                     </View>
 
-                    {/* Why This Plan? */}
+                    {/* Benefits */}
                     <View style={[styles.sectionBlock, { marginBottom: 0 }]}>
                       <View style={styles.cardHeader}>
-                        <View style={[styles.cardHeaderIconBg, { backgroundColor: 'rgba(255, 255, 255, 0.18)' }]}>
+                        <View style={styles.cardHeaderIconBg}>
                           <MaterialCommunityIcons
                             name="shield-check"
                             size={18}
@@ -393,40 +356,40 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
                       <View style={styles.benefitsContainer}>
                         <View style={styles.benefitItem}>
                           <MaterialCommunityIcons
-                            name="check-decagram"
-                            size={22}
+                            name="check-circle"
+                            size={20}
                             color="#10B981"
                           />
                           <View style={styles.benefitContent}>
-                            <Text style={styles.benefitTitle}>Safe & RBI Regulated</Text>
+                            <Text style={styles.benefitTitle}>Safe & Regulated</Text>
                             <Text style={styles.benefitDescription}>
-                              Strictly adheres to Chit Funds Act with 100% legal compliance.
+                              Complies with Chit Funds Act
                             </Text>
                           </View>
                         </View>
                         <View style={styles.benefitItem}>
                           <MaterialCommunityIcons
                             name="trending-up"
-                            size={22}
-                            color="#38BDF8"
+                            size={20}
+                            color="#3B82F6"
                           />
                           <View style={styles.benefitContent}>
-                            <Text style={styles.benefitTitle}>High Dividend & Returns</Text>
+                            <Text style={styles.benefitTitle}>Higher Returns</Text>
                             <Text style={styles.benefitDescription}>
-                              Maximize return up to {planItem.return} with reduced monthly bidding discounts.
+                              Better than traditional savings
                             </Text>
                           </View>
                         </View>
                         <View style={styles.benefitItem}>
                           <MaterialCommunityIcons
-                            name="shield-lock-outline"
-                            size={22}
+                            name="account-multiple"
+                            size={20}
                             color="#A855F7"
                           />
                           <View style={styles.benefitContent}>
-                            <Text style={styles.benefitTitle}>Zero Hassle Payouts</Text>
+                            <Text style={styles.benefitTitle}>Community Trust</Text>
                             <Text style={styles.benefitDescription}>
-                              Direct bank deposit upon successful monthly auction verification.
+                              Build relationships while investing
                             </Text>
                           </View>
                         </View>
@@ -444,18 +407,16 @@ const ChitPlans = ({ onClose, initialPlanIndex = 0 }) => {
           <TouchableOpacity
             style={[styles.navArrow, styles.navArrowLeft]}
             onPress={() => scrollToPlan(currentPlan - 1)}
-            activeOpacity={0.8}
           >
-            <MaterialCommunityIcons name="chevron-left" size={26} color="#FFFFFF" />
+            <MaterialCommunityIcons name="chevron-left" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         )}
         {currentPlan < plans.length - 1 && (
           <TouchableOpacity
             style={[styles.navArrow, styles.navArrowRight]}
             onPress={() => scrollToPlan(currentPlan + 1)}
-            activeOpacity={0.8}
           >
-            <MaterialCommunityIcons name="chevron-right" size={26} color="#FFFFFF" />
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         )}
       </View>
@@ -530,164 +491,18 @@ const styles = StyleSheet.create({
     color: '#E2E8F0',
     marginTop: 2,
   },
-  // Home Page Sliding Card replica in ChitPlans screen
-  homeMasterCard: {
-    borderRadius: 22,
-    padding: 18,
-    paddingTop: 16,
-    paddingBottom: 16,
-    height: 180,
-    position: 'relative',
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  homeBadge: {
-    position: 'absolute',
-    top: 14,
-    right: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 999,
-    zIndex: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-  },
-  homeBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  decorativeCircle: {
-    position: 'absolute',
-    top: -30,
-    left: -30,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  decorativeCircleSmall: {
-    position: 'absolute',
-    bottom: -20,
-    right: -20,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  homeCardLottieCoin: {
-    position: 'absolute',
-    top: 15,
-    right: 4,
-    width: 115,
-    height: 115,
-    zIndex: 5,
-  },
-  homeCardTop: {
-    zIndex: 6,
-  },
-  homePlanTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
-    letterSpacing: 0.2,
-  },
-  homeAmountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    marginBottom: 2,
-  },
-  homeMainAmount: {
-    fontSize: 27,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
-    letterSpacing: 0.5,
-  },
-  homeTotalLabel: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontWeight: '600',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginLeft: 8,
-  },
-  homeMonthlyInfo: {
-    fontSize: 12.5,
-    color: 'rgba(255, 255, 255, 0.88)',
-    marginTop: 6,
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
-    lineHeight: 17,
-  },
-  homeReturnSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 6,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    zIndex: 6,
-  },
-  homeReturnLabel: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
-  },
-  homeReturnAmount: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#FEF08A',
-    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
-  },
   singleMainCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
-    borderRadius: 24,
-    padding: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)', // Completely outline-free see-through main card
+    borderRadius: 26,
+    padding: 24,
     paddingBottom: 24,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.22)',
-  },
-  descContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 14,
-    padding: 12,
-    gap: 8,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  planDescription: {
-    fontSize: 13.5,
-    fontWeight: '500',
-    color: '#E2E8F0',
-    lineHeight: 20,
-    flex: 1,
+    marginBottom: 16,
   },
   heroSection: {
     marginBottom: 24,
   },
   sectionBlock: {
-    marginBottom: 22,
+    marginBottom: 24,
   },
   heroCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.12)',
@@ -715,6 +530,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
   },
+  planDescription: {
+    fontSize: 14.5,
+    fontWeight: '500',
+    color: '#E2E8F0',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+    maxWidth: '92%',
+    alignSelf: 'center',
+  },
   planAmount: {
     fontSize: 40,
     fontWeight: '800',
@@ -731,9 +556,8 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     justifyContent: 'space-between',
-    marginBottom: 16,
   },
   statCard: {
     flex: 0,

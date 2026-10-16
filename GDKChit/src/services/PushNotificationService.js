@@ -143,9 +143,12 @@ class PushNotificationService {
    * Listen for background notification click events from native Android
    */
   setupNotificationClickListener() {
-    if (this.eventSubscription) {
-      this.eventSubscription.remove();
-    }
+    try {
+      if (this.eventSubscription && typeof this.eventSubscription.remove === 'function') {
+        this.eventSubscription.remove();
+        this.eventSubscription = null;
+      }
+    } catch (_) {}
 
     this.eventSubscription = DeviceEventEmitter.addListener('onNotificationOpened', (data) => {
       console.log('📲 [PushNotificationService] Notification opened from background:', data);
