@@ -20,10 +20,16 @@ class ApiService {
     this.refreshToken = refreshToken;
   }
 
-  // Get access token from hardware-backed Keychain/Keystore
+  // Get access token from storage (AsyncStorage first, SecureStorage fallback)
   async getAccessToken() {
     if (!this.accessToken) {
-      this.accessToken = await SecureStorage.getAccessToken();
+      this.accessToken = await AsyncStorage.getItem('accessToken');
+      if (!this.accessToken) {
+        this.accessToken = await SecureStorage.getAccessToken().catch(() => null);
+        if (this.accessToken) {
+          await AsyncStorage.setItem('accessToken', this.accessToken).catch(() => {});
+        }
+      }
     }
     return this.accessToken;
   }
@@ -33,23 +39,37 @@ class ApiService {
     return await this.getAccessToken();
   }
 
-  // Get refresh token from hardware-backed Keychain/Keystore
+  // Get refresh token from storage (AsyncStorage first, SecureStorage fallback)
   async getRefreshToken() {
     if (!this.refreshToken) {
-      this.refreshToken = await SecureStorage.getRefreshToken();
+      this.refreshToken = await AsyncStorage.getItem('refreshToken');
+      if (!this.refreshToken) {
+        this.refreshToken = await SecureStorage.getRefreshToken().catch(() => null);
+        if (this.refreshToken) {
+          await AsyncStorage.setItem('refreshToken', this.refreshToken).catch(() => {});
+        }
+      }
     }
     return this.refreshToken;
   }
 
-  // Save tokens to hardware-backed Keychain/Keystore
+  // Save tokens to AsyncStorage and hardware-backed storage
   async saveTokens(accessToken, refreshToken) {
-    await SecureStorage.saveTokens(accessToken, refreshToken);
+    if (accessToken) {
+      await AsyncStorage.setItem('accessToken', accessToken);
+    }
+    if (refreshToken) {
+      await AsyncStorage.setItem('refreshToken', refreshToken);
+    }
+    await SecureStorage.saveTokens(accessToken, refreshToken).catch(() => {});
     this.setTokens(accessToken, refreshToken);
   }
 
-  // Clear tokens from hardware-backed Keychain/Keystore
+  // Clear tokens from AsyncStorage and hardware-backed storage
   async clearTokens() {
-    await SecureStorage.clearTokens();
+    await AsyncStorage.removeItem('accessToken');
+    await AsyncStorage.removeItem('refreshToken');
+    await SecureStorage.clearTokens().catch(() => {});
     this.accessToken = null;
     this.refreshToken = null;
   }
