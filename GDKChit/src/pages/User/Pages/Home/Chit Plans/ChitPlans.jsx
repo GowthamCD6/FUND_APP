@@ -13,8 +13,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Header from '../../../../../components/HeaderComponent/Header';
+import { getCloudinaryAsset } from '../../../../../utils/cloudinaryAssetHelper';
 
-const plansBG = require('../../../../../assets/UserHomePage/PlansBG.jpeg');
+const plansBG = getCloudinaryAsset('PlansBG.jpeg', require('../../../../../assets/UserHomePage/PlansBG.jpeg'));
 
 // Helper to decide if a hex color is light or dark
 const isLightColor = (hex) => {

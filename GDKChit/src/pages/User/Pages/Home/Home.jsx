@@ -26,6 +26,7 @@ import ChitPlans from '../Home/Chit Plans/ChitPlans';
 import ApiService from '../../../../services/ApiService';
 import styles from './Homesty';
 import { useLanguage } from '../../../../utils/LanguageContext';
+import { getCloudinaryAsset } from '../../../../utils/cloudinaryAssetHelper';
 
 const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 47 : (StatusBar.currentHeight || 0);
 
@@ -780,13 +781,13 @@ const Home = () => {
 
           {/* Background Rangoli */}
           <Image
-            source={require('../../../../assets/UserHomePage/ZoomRangoli.png')}
+            source={getCloudinaryAsset('ZoomRangoli.png', require('../../../../assets/UserHomePage/ZoomRangoli.png'))}
             style={styles.backgroundRangoliImage}
             resizeMode="cover"
             pointerEvents="none"
           />
           <Animated.Image
-            source={require('../../../../assets/UserHomePage/ZoomGoldenRangoli.png')}
+            source={getCloudinaryAsset('ZoomGoldenRangoli.png', require('../../../../assets/UserHomePage/ZoomGoldenRangoli.png'))}
             style={[
               styles.backgroundRangoliImage,
               {
@@ -804,12 +805,12 @@ const Home = () => {
           {/* Bottom Right Rangoli */}
           <View style={styles.bottomRangoliContainer} pointerEvents="none">
             <Image
-              source={require('../../../../assets/UserHomePage/rangoli.png')}
+              source={getCloudinaryAsset('rangoli.png', require('../../../../assets/UserHomePage/rangoli.png'))}
               style={styles.bottomRangoliImage}
               resizeMode="contain"
             />
             <Animated.Image
-              source={require('../../../../assets/UserHomePage/GoldenRangoli.png')}
+              source={getCloudinaryAsset('GoldenRangoli.png', require('../../../../assets/UserHomePage/GoldenRangoli.png'))}
               style={[
                 styles.bottomRangoliImage,
                 {
@@ -970,12 +971,12 @@ const Home = () => {
                   <Image
                     source={
                       stat.icon === 'star-circle'
-                        ? require('../../../../assets/UserHomePage/trust.png')
+                        ? getCloudinaryAsset('trust.png', require('../../../../assets/UserHomePage/trust.png'))
                         : stat.icon === 'account-group'
-                          ? require('../../../../assets/UserHomePage/ActiveMembers.png')
+                          ? getCloudinaryAsset('ActiveMembers.png', require('../../../../assets/UserHomePage/ActiveMembers.png'))
                           : stat.icon === 'calendar-check'
-                            ? require('../../../../assets/UserHomePage/YearsLegacy.png')
-                            : require('../../../../assets/UserHomePage/FundManagement.png')
+                            ? getCloudinaryAsset('YearsLegacy.png', require('../../../../assets/UserHomePage/YearsLegacy.png'))
+                            : getCloudinaryAsset('FundManagement.png', require('../../../../assets/UserHomePage/FundManagement.png'))
                     }
                     style={{
                       width: stat.icon === 'currency-inr' ? 115 : stat.icon === 'calendar-check' ? 100 : 90,
@@ -1019,12 +1020,12 @@ const Home = () => {
                   <Image
                     source={
                       feature.icon === 'map-pin'
-                        ? require('../../../../assets/UserHomePage/Location.png')
+                        ? getCloudinaryAsset('Location.png', require('../../../../assets/UserHomePage/Location.png'))
                         : feature.icon === 'fingerprint'
-                          ? require('../../../../assets/UserHomePage/Biometric.png')
+                          ? getCloudinaryAsset('Biometric.png', require('../../../../assets/UserHomePage/Biometric.png'))
                           : feature.icon === 'credit-card'
-                            ? require('../../../../assets/UserHomePage/OnlineTransation.png')
-                            : require('../../../../assets/UserHomePage/DuelLanguage.png')
+                            ? getCloudinaryAsset('OnlineTransation.png', require('../../../../assets/UserHomePage/OnlineTransation.png'))
+                            : getCloudinaryAsset('DuelLanguage.png', require('../../../../assets/UserHomePage/DuelLanguage.png'))
                     }
                     style={{
                       width: feature.icon === 'map-pin' ? 125 : 100,
@@ -1096,17 +1097,17 @@ const Home = () => {
             contentContainerStyle={styles.instagramBannersScroll}
           >
             <Image
-              source={require('../../../../assets/UserHomePage/gold_graph_banner.jpg')}
+              source={getCloudinaryAsset('gold_graph_banner.jpg', require('../../../../assets/UserHomePage/gold_graph_banner.jpg'))}
               style={styles.instagramBannerImage}
               resizeMode="cover"
             />
             <Image
-              source={require('../../../../assets/UserHomePage/gold_rupee_banner.jpg')}
+              source={getCloudinaryAsset('gold_rupee_banner.jpg', require('../../../../assets/UserHomePage/gold_rupee_banner.jpg'))}
               style={styles.instagramBannerImage}
               resizeMode="cover"
             />
             <Image
-              source={require('../../../../assets/UserHomePage/gold_ripped_banner.jpg')}
+              source={getCloudinaryAsset('gold_ripped_banner.jpg', require('../../../../assets/UserHomePage/gold_ripped_banner.jpg'))}
               style={styles.instagramBannerImage}
               resizeMode="cover"
             />
@@ -1157,7 +1158,7 @@ const Home = () => {
 
           {/* Vault image - bottom right */}
           <Image
-            source={require('../../../../assets/UserHomePage/banklocker.png')}
+            source={getCloudinaryAsset('banklocker.png', require('../../../../assets/UserHomePage/banklocker.png'))}
             style={styles.vaultImage}
             resizeMode="contain"
           />
