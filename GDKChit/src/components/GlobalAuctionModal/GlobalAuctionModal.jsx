@@ -20,7 +20,11 @@ const GlobalAuctionModal = () => {
       const userId = await AsyncStorage.getItem('userId');
       if (userId) {
         // Send join auction event
-        AuctionWebSocketService.joinAuction(groupId, userId);
+        if (typeof AuctionWebSocketService.joinAuction === 'function') {
+          AuctionWebSocketService.joinAuction(groupId, userId);
+        } else if (typeof AuctionWebSocketService.userJoinedAuction === 'function') {
+          AuctionWebSocketService.userJoinedAuction(groupId, userId);
+        }
       }
       clearAuctionAlert();
       // Navigate to the user auction screen
@@ -31,6 +35,7 @@ const GlobalAuctionModal = () => {
       });
     } catch (error) {
       console.error('Error joining auction:', error);
+      clearAuctionAlert();
     }
   };
 

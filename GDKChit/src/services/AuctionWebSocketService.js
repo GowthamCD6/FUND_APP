@@ -243,6 +243,11 @@ class AuctionWebSocketService {
     this.send('reset_auction', { groupId });
   }
 
+  joinAuction(groupId, userId) {
+    this.send('join_auction', { groupId, userId });
+    this.send('user_joined_auction', { groupId, userId });
+  }
+
   userJoinedAuction(groupId, userId) {
     this.send('user_joined_auction', { groupId, userId });
   }

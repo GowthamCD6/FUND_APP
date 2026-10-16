@@ -77,13 +77,23 @@ wss.on('connection', (ws, req) => {
         data: { clientId, userType: verifiedRole }
       }));
 
-      // Check for active or setup auctions for this user in the database on connection
+      // Auto-expire any stale auctions older than 2 hours in setup, active or paused status
+      db.promise().query(
+        `UPDATE group_auctions 
+         SET status = 'ended' 
+         WHERE status IN ('setup', 'active', 'paused') 
+           AND created_at < NOW() - INTERVAL 2 HOUR`
+      ).catch(err => console.error('Error auto-expiring stale auctions on connect:', err));
+
+      // Check for active or setup auctions for this user in the database on connection (only within last 2 hours)
       db.promise().query(
         `SELECT ga.id as auction_id, ga.group_id, ga.auction_type, ga.initial_amount, ga.duration, ga.status, g.group_name, gap.joined_status
          FROM group_auctions ga
          JOIN \`groups\` g ON ga.group_id = g.id
          JOIN group_auction_participants gap ON ga.id = gap.auction_id
-         WHERE gap.user_id = ? AND ga.status IN ('setup', 'active')`,
+         WHERE gap.user_id = ? 
+           AND ga.status IN ('setup', 'active')
+           AND ga.created_at >= NOW() - INTERVAL 2 HOUR`,
         [finalUserId]
       ).then(async ([rows]) => {
         for (const row of rows) {
