@@ -23,16 +23,12 @@ import { useLanguage } from '../../../../utils/LanguageContext';
 import styles from './NotificationStyles';
 
 const CACHE_KEY = 'cached_user_notifications';
-const READ_IDS_KEY = 'read_notification_ids';
-const CLEARED_IDS_KEY = 'cleared_notification_ids';
 
 const NotificationScreen = () => {
   const navigation = useNavigation();
   const { t } = useLanguage();
 
   const [notifications, setNotifications] = useState([]);
-  const [readNotifIds, setReadNotifIds] = useState(new Set());
-  const [clearedNotifIds, setClearedNotifIds] = useState(new Set());
   const [selectedFilter, setSelectedFilter] = useState('ALL'); // 'ALL' | 'UNREAD' | 'PAYMENTS' | 'OTP' | 'ANNOUNCEMENTS'
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -60,32 +56,14 @@ const NotificationScreen = () => {
     return () => sub.remove();
   }, [navigation]);
 
-  // Load cached notifications and stored read/cleared states instantly (< 5ms)
+  // Load cached notifications immediately on mount (< 5ms) for instant display
   useEffect(() => {
     let isMounted = true;
 
     const loadLocalCache = async () => {
       try {
-        const [cachedData, storedRead, storedCleared] = await Promise.all([
-          AsyncStorage.getItem(CACHE_KEY),
-          AsyncStorage.getItem(READ_IDS_KEY),
-          AsyncStorage.getItem(CLEARED_IDS_KEY),
-        ]);
-
-        if (!isMounted) return;
-
-        if (storedRead) {
-          try {
-            setReadNotifIds(new Set(JSON.parse(storedRead)));
-          } catch (_) {}
-        }
-        if (storedCleared) {
-          try {
-            setClearedNotifIds(new Set(JSON.parse(storedCleared)));
-          } catch (_) {}
-        }
-
-        if (cachedData) {
+        const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+        if (cachedData && isMounted) {
           try {
             const parsed = JSON.parse(cachedData);
             if (Array.isArray(parsed) && parsed.length > 0) {
@@ -100,7 +78,7 @@ const NotificationScreen = () => {
 
     loadLocalCache();
 
-    // Concurrently fetch the latest fresh data from the server in background
+    // Fetch fresh database notifications concurrently in the background
     fetchFreshNotifications(false);
 
     return () => {
@@ -108,7 +86,7 @@ const NotificationScreen = () => {
     };
   }, []);
 
-  // Fetch live notifications securely from backend with JWT authentication
+  // Fetch live notifications from the MySQL database via backend API
   const fetchFreshNotifications = async (showLoadingIndicator = false) => {
     if (showLoadingIndicator) setLoading(true);
 
@@ -120,7 +98,7 @@ const NotificationScreen = () => {
         DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
       }
     } catch (error) {
-      console.warn('⚠️ [NotificationScreen] Error fetching notifications:', error?.message);
+      console.warn('⚠️ [NotificationScreen] Error fetching notifications from DB:', error?.message);
     } finally {
       if (showLoadingIndicator) setLoading(false);
     }
@@ -139,11 +117,11 @@ const NotificationScreen = () => {
     const realtimeSub = DeviceEventEmitter.addListener('REALTIME_NOTIFICATION_RECEIVED', (newItem) => {
       if (!newItem) return;
       setNotifications((prev) => {
-        const existingIdx = prev.findIndex((n) => n.id === newItem.id);
+        const existingIdx = prev.findIndex((n) => n.id === newItem.id || n.notification_key === newItem.notification_key);
         let updated;
         if (existingIdx !== -1) {
           updated = [...prev];
-          updated[existingIdx] = newItem;
+          updated[existingIdx] = { ...updated[existingIdx], ...newItem };
         } else {
           updated = [newItem, ...prev];
         }
@@ -163,47 +141,68 @@ const NotificationScreen = () => {
     };
   }, []);
 
-  // Mark all visible notifications as read
+  // Mark all visible notifications as read (persisted in DB)
   const handleMarkAllAsRead = async () => {
+    // 1. Optimistic UI update: convert all cards to normal read state
+    const updated = notifications.map((n) => ({ ...n, is_read: true }));
+    setNotifications(updated);
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(updated)).catch(() => {});
+    DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
+
+    // 2. Persist in MySQL database
     try {
-      const allIds = new Set(readNotifIds);
-      notifications.forEach((n, idx) => {
-        const id = n.id || `notif-${idx}`;
-        allIds.add(id);
-      });
-      setReadNotifIds(allIds);
-      await AsyncStorage.setItem(READ_IDS_KEY, JSON.stringify([...allIds]));
-      DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
+      await ApiService.markNotificationRead(null, true);
     } catch (e) {
-      console.warn('Error marking all notifications as read:', e);
+      console.warn('⚠️ [NotificationScreen] Failed to mark all as read in DB:', e?.message);
     }
   };
 
-  // Mark single notification as read
+  // Mark single notification as read (persisted in DB)
   const handleMarkSingleAsRead = async (id) => {
-    if (!id || readNotifIds.has(id)) return;
+    if (!id) return;
+
+    // 1. Optimistic UI update: convert this card to normal read state
+    const updated = notifications.map((n) => {
+      if (String(n.id) === String(id) || n.notification_key === id) {
+        return { ...n, is_read: true };
+      }
+      return n;
+    });
+
+    setNotifications(updated);
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(updated)).catch(() => {});
+    DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
+
+    // 2. Persist in MySQL database
     try {
-      const updated = new Set(readNotifIds);
-      updated.add(id);
-      setReadNotifIds(updated);
-      await AsyncStorage.setItem(READ_IDS_KEY, JSON.stringify([...updated]));
-      DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
-    } catch (e) {}
+      await ApiService.markNotificationRead(id, false);
+    } catch (e) {
+      console.warn('⚠️ [NotificationScreen] Failed to mark notification as read in DB:', e?.message);
+    }
   };
 
-  // Clear a single notification
+  // Clear a single notification (persisted in DB)
   const handleClearSingleNotification = async (id) => {
     if (!id) return;
+
+    // 1. Optimistic UI update: remove card from page
+    const updated = notifications.filter(
+      (n) => String(n.id) !== String(id) && n.notification_key !== id
+    );
+
+    setNotifications(updated);
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(updated)).catch(() => {});
+    DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
+
+    // 2. Persist in MySQL database (sets is_cleared = 1)
     try {
-      const updated = new Set(clearedNotifIds);
-      updated.add(id);
-      setClearedNotifIds(updated);
-      await AsyncStorage.setItem(CLEARED_IDS_KEY, JSON.stringify([...updated]));
-      DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
-    } catch (e) {}
+      await ApiService.clearNotifications(id, false);
+    } catch (e) {
+      console.warn('⚠️ [NotificationScreen] Failed to clear notification in DB:', e?.message);
+    }
   };
 
-  // Prompt confirmation before clearing all notifications
+  // Prompt confirmation before clearing all notifications (persisted in DB)
   const handleConfirmClearAll = () => {
     Alert.alert(
       t('Clear all notifications?') || 'Clear all notifications?',
@@ -215,16 +214,17 @@ const NotificationScreen = () => {
           text: t('Clear all') || 'Clear all',
           style: 'destructive',
           onPress: async () => {
+            // 1. Optimistic UI update: empty the list
+            setNotifications([]);
+            await AsyncStorage.setItem(CACHE_KEY, JSON.stringify([])).catch(() => {});
+            DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
+
+            // 2. Persist in MySQL database (sets is_cleared = 1 for all user notifications)
             try {
-              const allCleared = new Set(clearedNotifIds);
-              notifications.forEach((n, idx) => {
-                const id = n.id || `notif-${idx}`;
-                allCleared.add(id);
-              });
-              setClearedNotifIds(allCleared);
-              await AsyncStorage.setItem(CLEARED_IDS_KEY, JSON.stringify([...allCleared]));
-              DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
-            } catch (e) {}
+              await ApiService.clearNotifications(null, true);
+            } catch (e) {
+              console.warn('⚠️ [NotificationScreen] Failed to clear all notifications in DB:', e?.message);
+            }
           },
         },
       ]
@@ -255,20 +255,10 @@ const NotificationScreen = () => {
     }
   };
 
-  // Calculate unread count and filter notifications
-  const visibleNotifications = useMemo(() => {
-    return notifications.filter((n, idx) => {
-      const id = n.id || `notif-${idx}`;
-      return !clearedNotifIds.has(id);
-    });
-  }, [notifications, clearedNotifIds]);
-
+  // Calculate unread count from notifications
   const unreadCount = useMemo(() => {
-    return visibleNotifications.filter((n, idx) => {
-      const id = n.id || `notif-${idx}`;
-      return !readNotifIds.has(id);
-    }).length;
-  }, [visibleNotifications, readNotifIds]);
+    return notifications.filter((n) => !n.is_read).length;
+  }, [notifications]);
 
   // Counts by category
   const counts = useMemo(() => {
@@ -277,10 +267,8 @@ const NotificationScreen = () => {
     let otp = 0;
     let announcements = 0;
 
-    visibleNotifications.forEach((n, idx) => {
-      const id = n.id || `notif-${idx}`;
-      const isUnread = !readNotifIds.has(id);
-      if (isUnread) unread += 1;
+    notifications.forEach((n) => {
+      if (!n.is_read) unread += 1;
 
       const type = String(n.type || '').toLowerCase();
       const title = String(n.title || '').toLowerCase();
@@ -294,19 +282,17 @@ const NotificationScreen = () => {
       }
     });
 
-    return { all: visibleNotifications.length, unread, payments, otp, announcements };
-  }, [visibleNotifications, readNotifIds]);
+    return { all: notifications.length, unread, payments, otp, announcements };
+  }, [notifications]);
 
   // Filtered list based on active tab and search query
   const filteredNotifications = useMemo(() => {
-    return visibleNotifications.filter((n, idx) => {
-      const id = n.id || `notif-${idx}`;
-      const isRead = readNotifIds.has(id);
+    return notifications.filter((n) => {
       const type = String(n.type || '').toLowerCase();
       const title = String(n.title || '').toLowerCase();
       const message = String(n.message || '').toLowerCase();
 
-      // Search filter
+      // Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matches = title.includes(q) || message.includes(q);
@@ -315,7 +301,7 @@ const NotificationScreen = () => {
 
       // Tab Category filter
       if (selectedFilter === 'UNREAD') {
-        return !isRead;
+        return !n.is_read;
       } else if (selectedFilter === 'PAYMENTS') {
         return type === 'danger' || type === 'warning' || title.includes('payment') || title.includes('due');
       } else if (selectedFilter === 'OTP') {
@@ -326,7 +312,7 @@ const NotificationScreen = () => {
 
       return true; // 'ALL'
     });
-  }, [visibleNotifications, selectedFilter, searchQuery, readNotifIds]);
+  }, [notifications, selectedFilter, searchQuery]);
 
   // Format relative timestamp
   const formatTimestamp = (dateString) => {
@@ -357,20 +343,21 @@ const NotificationScreen = () => {
   };
 
   // Helper for notification styling tokens
+  // If is_read is true: card appears NORMAL (clean white card, standard border, neutral tag, no unread dot)
   const getNotificationTheme = (notif, isRead) => {
     const type = String(notif.type || '').toLowerCase();
     const title = String(notif.title || '').toLowerCase();
 
     if (type === 'otp_request' || notif.otpRequestId) {
       return {
-        cardStyle: styles.cardOtp,
+        cardStyle: isRead ? {} : styles.cardOtp,
         iconBg: '#F3E8FF',
         iconName: 'shield-key-outline',
         iconColor: '#411E73',
-        titleColor: isRead ? '#475569' : '#1E293B',
-        tagText: 'Security OTP',
-        tagBg: '#F3E8FF',
-        tagColor: '#411E73',
+        titleColor: '#1E293B',
+        tagText: isRead ? 'Read' : 'Security OTP',
+        tagBg: isRead ? '#F1F5F9' : '#F3E8FF',
+        tagColor: isRead ? '#64748B' : '#411E73',
         actionLabel: 'View OTP',
         actionIcon: 'arrow-right',
       };
@@ -378,14 +365,14 @@ const NotificationScreen = () => {
 
     if (type === 'danger' || title.includes('overdue')) {
       return {
-        cardStyle: styles.cardOverdue,
+        cardStyle: isRead ? {} : styles.cardOverdue,
         iconBg: '#FEE2E2',
         iconName: 'alert-circle',
         iconColor: '#DC2626',
-        titleColor: isRead ? '#475569' : '#991B1B',
-        tagText: 'Overdue',
-        tagBg: '#FEE2E2',
-        tagColor: '#991B1B',
+        titleColor: isRead ? '#1E293B' : '#991B1B',
+        tagText: isRead ? 'Read' : 'Overdue',
+        tagBg: isRead ? '#F1F5F9' : '#FEE2E2',
+        tagColor: isRead ? '#64748B' : '#991B1B',
         actionLabel: 'Pay Now',
         actionIcon: 'chevron-right',
       };
@@ -393,14 +380,14 @@ const NotificationScreen = () => {
 
     if (type === 'warning' || title.includes('due') || title.includes('reminder')) {
       return {
-        cardStyle: styles.cardWarning,
+        cardStyle: isRead ? {} : styles.cardWarning,
         iconBg: '#FEF3C7',
         iconName: 'clock-alert-outline',
         iconColor: '#D97706',
-        titleColor: isRead ? '#475569' : '#92400E',
-        tagText: 'Due Soon',
-        tagBg: '#FEF3C7',
-        tagColor: '#B45309',
+        titleColor: isRead ? '#1E293B' : '#92400E',
+        tagText: isRead ? 'Read' : 'Due Soon',
+        tagBg: isRead ? '#F1F5F9' : '#FEF3C7',
+        tagColor: isRead ? '#64748B' : '#B45309',
         actionLabel: 'View Due',
         actionIcon: 'chevron-right',
       };
@@ -411,16 +398,16 @@ const NotificationScreen = () => {
       iconBg: '#F3E8FF',
       iconName: 'bullhorn-outline',
       iconColor: '#411E73',
-      titleColor: isRead ? '#475569' : '#1E293B',
-      tagText: 'Announcement',
-      tagBg: '#F3E8FF',
-      tagColor: '#411E73',
+      titleColor: '#1E293B',
+      tagText: isRead ? 'Read' : 'New',
+      tagBg: isRead ? '#F1F5F9' : '#F3E8FF',
+      tagColor: isRead ? '#64748B' : '#411E73',
       actionLabel: null,
       actionIcon: null,
     };
   };
 
-  // Header right component with search, mark-all, and clear-all
+  // Header right action component
   const renderHeaderRight = () => (
     <View style={styles.headerActions}>
       {unreadCount > 0 && (
@@ -447,7 +434,7 @@ const NotificationScreen = () => {
         />
       </TouchableOpacity>
 
-      {visibleNotifications.length > 0 && (
+      {notifications.length > 0 && (
         <>
           <TouchableOpacity
             style={styles.headerIconBtn}
@@ -479,7 +466,7 @@ const NotificationScreen = () => {
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Standard App Header */}
+      {/* Official App Header */}
       <Header
         title={t('Notifications')}
         onBack={() => navigation.goBack()}
@@ -662,8 +649,8 @@ const NotificationScreen = () => {
 
         {filteredNotifications.length > 0 ? (
           filteredNotifications.map((notif, index) => {
-            const notifId = notif.id || `notif-${index}`;
-            const isRead = readNotifIds.has(notifId);
+            const notifId = notif.id || notif.notification_key || `notif-${index}`;
+            const isRead = Boolean(notif.is_read);
             const theme = getNotificationTheme(notif, isRead);
 
             return (
@@ -671,7 +658,7 @@ const NotificationScreen = () => {
                 key={notifId}
                 activeOpacity={0.85}
                 onPress={() => handleNotificationPress(notif, notifId)}
-                style={[styles.card, theme.cardStyle, isRead && { opacity: 0.82 }]}
+                style={[styles.card, theme.cardStyle, isRead && { opacity: 0.88 }]}
               >
                 {/* Card Header */}
                 <View style={styles.cardHeader}>

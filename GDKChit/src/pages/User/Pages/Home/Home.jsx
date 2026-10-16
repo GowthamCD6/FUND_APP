@@ -397,6 +397,9 @@ const Home = () => {
 
   const unreadCount = visibleNotifications.filter((n, idx) => {
     const id = n.id || `notif-${idx}`;
+    if (typeof n.is_read === 'boolean') {
+      return !n.is_read;
+    }
     return !readNotifIds.has(id);
   }).length;
 

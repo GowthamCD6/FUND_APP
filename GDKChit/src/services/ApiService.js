@@ -436,6 +436,32 @@ class ApiService {
     }
   }
 
+  async markNotificationRead(id, all = false) {
+    try {
+      const response = await this.makeRequest('/user/notifications/read', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, all }),
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async clearNotifications(id = null, all = false) {
+    try {
+      const response = await this.makeRequest('/user/notifications/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, all }),
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
   // Check if user is authenticated
   async isAuthenticated() {
     const accessToken = await this.getAccessToken();
