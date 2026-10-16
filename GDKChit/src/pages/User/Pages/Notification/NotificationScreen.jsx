@@ -17,6 +17,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import Header from '../../../../components/HeaderComponent/Header';
 import ApiService from '../../../../services/ApiService';
 import { useLanguage } from '../../../../utils/LanguageContext';
 import styles from './NotificationStyles';
@@ -40,11 +41,11 @@ const NotificationScreen = () => {
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Fade-in entrance animation
+  // Entrance animation
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 300,
+      duration: 250,
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
@@ -115,9 +116,7 @@ const NotificationScreen = () => {
       const response = await ApiService.getNotifications();
       if (response && response.success && Array.isArray(response.data)) {
         setNotifications(response.data);
-        // Update fast local cache
         await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(response.data)).catch(() => {});
-        // Notify other screens (e.g. Home bell counter)
         DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
       }
     } catch (error) {
@@ -189,9 +188,7 @@ const NotificationScreen = () => {
       setReadNotifIds(updated);
       await AsyncStorage.setItem(READ_IDS_KEY, JSON.stringify([...updated]));
       DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
-    } catch (e) {
-      console.warn('Error marking notification as read:', e);
-    }
+    } catch (e) {}
   };
 
   // Clear a single notification
@@ -203,9 +200,7 @@ const NotificationScreen = () => {
       setClearedNotifIds(updated);
       await AsyncStorage.setItem(CLEARED_IDS_KEY, JSON.stringify([...updated]));
       DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
-    } catch (e) {
-      console.warn('Error clearing notification:', e);
-    }
+    } catch (e) {}
   };
 
   // Prompt confirmation before clearing all notifications
@@ -229,9 +224,7 @@ const NotificationScreen = () => {
               setClearedNotifIds(allCleared);
               await AsyncStorage.setItem(CLEARED_IDS_KEY, JSON.stringify([...allCleared]));
               DeviceEventEmitter.emit('NOTIFICATIONS_UPDATED');
-            } catch (e) {
-              console.warn('Error clearing all notifications:', e);
-            }
+            } catch (e) {}
           },
         },
       ]
@@ -371,13 +364,13 @@ const NotificationScreen = () => {
     if (type === 'otp_request' || notif.otpRequestId) {
       return {
         cardStyle: styles.cardOtp,
-        iconBg: '#EEF2FF',
-        iconName: 'shield-key',
-        iconColor: '#4F46E5',
-        titleColor: isRead ? '#4B5563' : '#312E81',
+        iconBg: '#F3E8FF',
+        iconName: 'shield-key-outline',
+        iconColor: '#411E73',
+        titleColor: isRead ? '#475569' : '#1E293B',
         tagText: 'Security OTP',
-        tagBg: '#E0E7FF',
-        tagColor: '#3730A3',
+        tagBg: '#F3E8FF',
+        tagColor: '#411E73',
         actionLabel: 'View OTP',
         actionIcon: 'arrow-right',
       };
@@ -386,10 +379,10 @@ const NotificationScreen = () => {
     if (type === 'danger' || title.includes('overdue')) {
       return {
         cardStyle: styles.cardOverdue,
-        iconBg: '#FEF2F2',
+        iconBg: '#FEE2E2',
         iconName: 'alert-circle',
         iconColor: '#DC2626',
-        titleColor: isRead ? '#4B5563' : '#991B1B',
+        titleColor: isRead ? '#475569' : '#991B1B',
         tagText: 'Overdue',
         tagBg: '#FEE2E2',
         tagColor: '#991B1B',
@@ -401,10 +394,10 @@ const NotificationScreen = () => {
     if (type === 'warning' || title.includes('due') || title.includes('reminder')) {
       return {
         cardStyle: styles.cardWarning,
-        iconBg: '#FFFBEB',
+        iconBg: '#FEF3C7',
         iconName: 'clock-alert-outline',
         iconColor: '#D97706',
-        titleColor: isRead ? '#4B5563' : '#92400E',
+        titleColor: isRead ? '#475569' : '#92400E',
         tagText: 'Due Soon',
         tagBg: '#FEF3C7',
         tagColor: '#B45309',
@@ -415,97 +408,94 @@ const NotificationScreen = () => {
 
     return {
       cardStyle: isRead ? {} : styles.cardUnread,
-      iconBg: '#F3F4F6',
+      iconBg: '#F3E8FF',
       iconName: 'bullhorn-outline',
-      iconColor: '#6B46C1',
-      titleColor: isRead ? '#4B5563' : '#111827',
+      iconColor: '#411E73',
+      titleColor: isRead ? '#475569' : '#1E293B',
       tagText: 'Announcement',
       tagBg: '#F3E8FF',
-      tagColor: '#6B46C1',
+      tagColor: '#411E73',
       actionLabel: null,
       actionIcon: null,
     };
   };
 
-  return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      {/* Header Bar */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <MaterialCommunityIcons name="arrow-left" size={22} color="#111827" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('Notifications')}</Text>
-          {unreadCount > 0 && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadBadgeText}>
-                {unreadCount} {t('New') || 'New'}
-              </Text>
-            </View>
-          )}
+  // Header right component with search, mark-all, and clear-all
+  const renderHeaderRight = () => (
+    <View style={styles.headerActions}>
+      {unreadCount > 0 && (
+        <View style={styles.unreadHeaderBadge}>
+          <Text style={styles.unreadHeaderBadgeText}>
+            {unreadCount} {t('New') || 'New'}
+          </Text>
         </View>
+      )}
 
-        <View style={styles.headerActions}>
+      <TouchableOpacity
+        style={[styles.headerIconBtn, isSearching && styles.headerIconBtnActive]}
+        onPress={() => {
+          setIsSearching((prev) => !prev);
+          if (isSearching) setSearchQuery('');
+        }}
+        activeOpacity={0.7}
+        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+      >
+        <MaterialCommunityIcons
+          name={isSearching ? 'close' : 'magnify'}
+          size={20}
+          color={isSearching ? '#411E73' : '#475569'}
+        />
+      </TouchableOpacity>
+
+      {visibleNotifications.length > 0 && (
+        <>
           <TouchableOpacity
-            style={[styles.headerActionButton, isSearching && styles.headerActionButtonActive]}
-            onPress={() => {
-              setIsSearching((prev) => !prev);
-              if (isSearching) setSearchQuery('');
-            }}
+            style={styles.headerIconBtn}
+            onPress={handleMarkAllAsRead}
             activeOpacity={0.7}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
             <MaterialCommunityIcons
-              name={isSearching ? 'close' : 'magnify'}
+              name="check-all"
               size={20}
-              color={isSearching ? '#4F46E5' : '#4B5563'}
+              color={unreadCount > 0 ? '#411E73' : '#94A3B8'}
             />
           </TouchableOpacity>
 
-          {visibleNotifications.length > 0 && (
-            <>
-              <TouchableOpacity
-                style={styles.headerActionButton}
-                onPress={handleMarkAllAsRead}
-                activeOpacity={0.7}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              >
-                <MaterialCommunityIcons
-                  name="check-all"
-                  size={20}
-                  color={unreadCount > 0 ? '#4F46E5' : '#9CA3AF'}
-                />
-              </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.headerIconBtn}
+            onPress={handleConfirmClearAll}
+            activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <MaterialCommunityIcons name="trash-can-outline" size={19} color="#EF4444" />
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  );
 
-              <TouchableOpacity
-                style={styles.headerActionButton}
-                onPress={handleConfirmClearAll}
-                activeOpacity={0.7}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              >
-                <MaterialCommunityIcons name="trash-can-outline" size={20} color="#EF4444" />
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
+  return (
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* Standard App Header */}
+      <Header
+        title={t('Notifications')}
+        onBack={() => navigation.goBack()}
+        showBackButton={true}
+        rightComponent={renderHeaderRight()}
+      />
 
       {/* Expandable Search Input */}
       {isSearching && (
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
-            <MaterialCommunityIcons name="magnify" size={18} color="#9CA3AF" />
+            <MaterialCommunityIcons name="magnify" size={18} color="#94A3B8" />
             <TextInput
               style={styles.searchInput}
               placeholder={t('Search notifications...') || 'Search notifications...'}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#94A3B8"
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus={true}
@@ -513,14 +503,14 @@ const NotificationScreen = () => {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <MaterialCommunityIcons name="close-circle" size={18} color="#9CA3AF" />
+                <MaterialCommunityIcons name="close-circle" size={18} color="#94A3B8" />
               </TouchableOpacity>
             )}
           </View>
         </View>
       )}
 
-      {/* Filter Tabs (Horizontal Chips) */}
+      {/* Category Chips Bar */}
       <View style={styles.chipsScrollView}>
         <ScrollView
           horizontal
@@ -659,14 +649,14 @@ const NotificationScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#6B46C1']}
-            tintColor="#6B46C1"
+            colors={['#411E73']}
+            tintColor="#411E73"
           />
         }
       >
         {loading && (
           <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-            <ActivityIndicator size="small" color="#6B46C1" />
+            <ActivityIndicator size="small" color="#411E73" />
           </View>
         )}
 
@@ -681,7 +671,7 @@ const NotificationScreen = () => {
                 key={notifId}
                 activeOpacity={0.85}
                 onPress={() => handleNotificationPress(notif, notifId)}
-                style={[styles.card, theme.cardStyle, isRead && { opacity: 0.8 }]}
+                style={[styles.card, theme.cardStyle, isRead && { opacity: 0.82 }]}
               >
                 {/* Card Header */}
                 <View style={styles.cardHeader}>
@@ -707,7 +697,7 @@ const NotificationScreen = () => {
                     onPress={() => handleClearSingleNotification(notifId)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <MaterialCommunityIcons name="close" size={18} color="#9CA3AF" />
+                    <MaterialCommunityIcons name="close" size={18} color="#94A3B8" />
                   </TouchableOpacity>
                 </View>
 
@@ -748,7 +738,7 @@ const NotificationScreen = () => {
           /* Empty State */
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <MaterialCommunityIcons name="bell-sleep-outline" size={42} color="#9CA3AF" />
+              <MaterialCommunityIcons name="bell-sleep-outline" size={42} color="#411E73" />
             </View>
             <Text style={styles.emptyTitle}>
               {searchQuery

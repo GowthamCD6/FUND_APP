@@ -5,90 +5,72 @@ const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFC',
+    backgroundColor: '#F8FAFC',
   },
-  header: {
+  
+  // Right action controls in the Header
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 12 : 8,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    gap: 8,
   },
-  headerLeft: {
-    flexDirection: 'row',
+  headerIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
   },
-  backButton: {
-    padding: 8,
-    marginRight: 6,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+  headerIconBtnActive: {
+    backgroundColor: '#F3E8FF',
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.3,
-  },
-  unreadBadge: {
-    marginLeft: 8,
-    backgroundColor: '#6B46C1',
+  unreadHeaderBadge: {
+    backgroundColor: '#411E73',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 12,
   },
-  unreadBadgeText: {
+  unreadHeaderBadgeText: {
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerActionButton: {
-    padding: 8,
-    marginLeft: 4,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-  },
-  headerActionButtonActive: {
-    backgroundColor: '#EEF2FF',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
 
-  // Search Bar
+  // Search Bar Section
   searchContainer: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 42,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 14,
-    color: '#111827',
+    color: '#1E293B',
+    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
     paddingVertical: 0,
   },
 
-  // Categories / Chips
+  // Category Filter Chips
   chipsScrollView: {
     backgroundColor: '#FFFFFF',
-    paddingBottom: 10,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#E2E8F0',
   },
   chipsContainer: {
     paddingHorizontal: 16,
@@ -100,31 +82,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    borderRadius: 999,
+    backgroundColor: '#F1F5F9',
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   chipActive: {
-    backgroundColor: '#6B46C1',
+    backgroundColor: '#411E73',
+    borderColor: '#411E73',
   },
   chipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#4B5563',
+    color: '#64748B',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'System',
   },
   chipTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
   },
   chipBadge: {
     marginLeft: 6,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 10,
   },
   chipBadgeInactive: {
     marginLeft: 6,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#E2E8F0',
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 10,
@@ -133,36 +120,38 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
   chipBadgeTextInactive: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#4B5563',
+    color: '#475569',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
 
-  // Notification List
+  // Notification Cards List
   listContent: {
     padding: 16,
     paddingBottom: 40,
   },
 
-  // Notification Card
+  // Notification Card Item
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    elevation: 2,
-    shadowColor: '#000000',
+    borderColor: '#E2E8F0',
+    shadowColor: '#411E73',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 6,
+    elevation: 2,
   },
   cardUnread: {
-    borderColor: '#C7D2FE',
-    backgroundColor: '#FAFAFF',
+    borderColor: '#D8B4FE',
+    backgroundColor: '#FAF5FF',
   },
   cardOverdue: {
     borderColor: '#FECACA',
@@ -173,9 +162,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFDF5',
   },
   cardOtp: {
-    borderColor: '#C7D2FE',
-    backgroundColor: '#F5F7FF',
+    borderColor: '#E9D5FF',
+    backgroundColor: '#FAF5FF',
   },
+
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -189,9 +179,9 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -200,25 +190,27 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#6B46C1',
+    backgroundColor: '#411E73',
     marginRight: 6,
   },
   cardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#111827',
+    color: '#1E293B',
     flex: 1,
     lineHeight: 20,
-  },
-  cardMessage: {
-    fontSize: 13,
-    color: '#4B5563',
-    lineHeight: 19,
-    marginBottom: 10,
-    paddingLeft: 46,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
   dismissButton: {
     padding: 4,
+  },
+  cardMessage: {
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 19,
+    marginBottom: 12,
+    paddingLeft: 48,
+    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
 
   // Card Footer
@@ -226,37 +218,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingLeft: 46,
+    paddingLeft: 48,
   },
   timestampText: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: '#94A3B8',
     fontWeight: '500',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'System',
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#6B46C1',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
+    backgroundColor: '#411E73',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
   actionButtonText: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     marginRight: 4,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
-
-  // Status Badge
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
     borderRadius: 8,
   },
   statusBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
 
   // Empty State
@@ -270,38 +263,41 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F3E8FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#374151',
+    color: '#1E293B',
     marginBottom: 6,
     textAlign: 'center',
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
   emptySubtitle: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#64748B',
     textAlign: 'center',
     lineHeight: 19,
     marginBottom: 20,
+    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'System',
   },
   refreshButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#6B46C1',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    backgroundColor: '#411E73',
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 999,
   },
   refreshButtonText: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     marginLeft: 6,
+    fontFamily: Platform.OS === 'android' ? 'Roboto-Bold' : 'System',
   },
 });
 
