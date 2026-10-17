@@ -16,6 +16,62 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Top Header with Back Navigation ── */
+.bu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.bu-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bu-back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.bu-back-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  transform: translateX(-2px);
+}
+
+.bu-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.bu-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
 /* ── Block User Header & Action Bar Layout ── */
 .bu-header-container {
   background: #ffffff;
@@ -219,6 +275,14 @@
   justify-content: center;
   border: 1px solid #cbd5e1;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.bu-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  object-fit: cover;
 }
 
 .bu-info {
@@ -449,21 +513,39 @@
 }
 
 .bu-modal-footer {
-  padding: 20px 24px 24px;
+  padding: 18px 24px 24px;
   border-top: 1px solid #f1f5f9;
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
+}
+
+.bu-btn-cancel {
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 650;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bu-btn-cancel:hover {
+  background: #f1f5f9;
+  color: #1e293b;
 }
 
 .bu-btn-confirm {
-  width: 100%;
+  flex: 1;
   background-color: #ef4444;
   color: #ffffff;
   border: none;
-  padding: 14px;
+  padding: 12px 20px;
   border-radius: 12px;
   font-weight: 750;
-  font-size: 15px;
+  font-size: 14.5px;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
@@ -551,6 +633,10 @@
 
 /* ── Responsive breakpoints ── */
 @media (max-width: 768px) {
+  .bu-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
   .bu-toolbar-row {
     flex-direction: column;
     align-items: stretch;
@@ -561,8 +647,5 @@
   }
   .bu-search-container {
     width: 100%;
-  }
-  .bu-refresh-btn {
-    justify-content: center;
   }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import { 
   Ban as RiBanLine, 
@@ -7,10 +8,10 @@ import {
   Loader2 as RiLoader4Line, 
   AlertTriangle as RiAlertLine, 
   Search as RiSearchLine, 
-  RefreshCw as RiRefreshLine, 
   UserCheck as RiUserCheckLine, 
   UserX as RiUserXLine,
-  Phone as RiPhoneLine
+  Phone as RiPhoneLine,
+  ArrowLeft
 } from 'lucide-react';
 import './BlockUser.css';
 import Lottie from 'lottie-react';
@@ -37,6 +38,7 @@ const BlockUserSkeleton = () => (
 );
 
 const BlockUser = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('blocked'); // 'blocked' | 'all'
@@ -141,6 +143,24 @@ const BlockUser = () => {
 
   return (
     <div className={`bu-page ${activeTab === 'blocked' ? 'tab-blocked' : 'tab-active'}`}>
+      {/* ── TOP HEADER WITH BACK BUTTON ── */}
+      <div className="bu-header">
+        <div className="bu-header-left">
+          <button
+            type="button"
+            className="bu-back-btn"
+            onClick={() => navigate('/admin/admintool')}
+            title="Back to Admin Tools"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 className="bu-title">Access Control & Blocking</h1>
+            <p className="bu-subtitle">Manage member account privileges, apply security suspensions, or reinstate account access</p>
+          </div>
+        </div>
+      </div>
+
       <div className="bu-header-container">
         <div className="bu-toolbar-row">
           {/* Tab Bar */}
@@ -165,7 +185,7 @@ const BlockUser = () => {
             </button>
           </div>
 
-          {/* Search & Refresh */}
+          {/* Search Bar (Refresh Button Removed) */}
           <div className="bu-filters-wrapper">
             <div className="bu-search-container">
               <RiSearchLine size={16} className="bu-search-icon" />
@@ -186,16 +206,6 @@ const BlockUser = () => {
                 </button>
               )}
             </div>
-
-            <button 
-              className="bu-refresh-btn" 
-              onClick={fetchUsers} 
-              disabled={loading}
-              title="Refresh"
-            >
-              <RiRefreshLine size={16} className={loading ? 'spin-anim' : ''} />
-              <span>Refresh</span>
-            </button>
           </div>
         </div>
       </div>
@@ -223,7 +233,15 @@ const BlockUser = () => {
               <div key={user.id} className="bu-card">
                 <div className="bu-card-left">
                   <div className="bu-avatar">
-                    {(user.name || 'U').substring(0, 2).toUpperCase()}
+                    {user.profile_image || user.avatar ? (
+                      <img 
+                        src={user.profile_image || user.avatar} 
+                        alt={user.name} 
+                        className="bu-avatar-img"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : null}
+                    {(!user.profile_image && !user.avatar) && (user.name || 'U').substring(0, 2).toUpperCase()}
                   </div>
                   <div className="bu-info">
                     <h4 className="bu-name">{user.name}</h4>
@@ -285,7 +303,15 @@ const BlockUser = () => {
             <div className="bu-modal-body">
               <div className="bu-modal-user">
                 <div className="bu-avatar">
-                  {(selectedUser.name || 'U').substring(0, 2).toUpperCase()}
+                  {selectedUser.profile_image || selectedUser.avatar ? (
+                    <img 
+                      src={selectedUser.profile_image || selectedUser.avatar} 
+                      alt={selectedUser.name} 
+                      className="bu-avatar-img"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : null}
+                  {(!selectedUser.profile_image && !selectedUser.avatar) && (selectedUser.name || 'U').substring(0, 2).toUpperCase()}
                 </div>
                 <div>
                   <h4>{selectedUser.name}</h4>
@@ -308,6 +334,15 @@ const BlockUser = () => {
             </div>
             <div className="bu-modal-footer">
               <button 
+                type="button"
+                className="bu-btn-cancel" 
+                onClick={() => setShowBlockModal(false)}
+                disabled={updatingId === selectedUser.id}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
                 className="bu-btn-confirm" 
                 onClick={confirmBlock}
                 disabled={updatingId === selectedUser.id}
