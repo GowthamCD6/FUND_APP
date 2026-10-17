@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import {
   Users as RiGroupLine, Clock as RiTimeLine, Calendar as RiCalendarLine,
   Check as RiCheckLine, Loader2 as RiLoader4Line, Zap as RiZapLine, BarChart3 as RiBarChartBoxLine,
-  Layers, Lightbulb, CheckCircle2, X
+  Layers, Lightbulb, CheckCircle2, X, ArrowRight, ShieldCheck, Sparkles
 } from 'lucide-react';
 import './CreateGroup.css';
 
@@ -18,6 +18,8 @@ const PLAN_PRESETS = [
 
 const formatCur = n => n ? `₹${Number(n).toLocaleString('en-IN')}` : '--';
 
+const getTodayString = () => new Date().toISOString().split('T')[0];
+
 const CreateGroup = () => {
   const navigate = useNavigate();
   const [selectedPreset, setSelectedPreset] = useState('1 Lakh Plan');
@@ -26,31 +28,79 @@ const CreateGroup = () => {
     totalMembers: '20', 
     groupAmount: '100000', 
     duration: '20', 
-    startDate: '' 
+    startDate: getTodayString() 
   });
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState({ text: '', success: false });
+  const [createdGroup, setCreatedGroup] = useState(null);
 
   const applyPreset = (preset) => {
     setSelectedPreset(preset.label);
     if (preset.label !== 'Custom') {
       setGroupData(p => ({ 
-        ...p, 
         groupName: preset.label, 
         totalMembers: String(preset.members), 
         groupAmount: String(preset.amount), 
-        duration: String(preset.duration) 
+        duration: String(preset.duration),
+        startDate: p.startDate || getTodayString()
       }));
     } else {
-      setGroupData({ groupName: '', totalMembers: '', groupAmount: '', duration: '', startDate: '' });
+      setGroupData(p => ({ 
+        groupName: '', 
+        totalMembers: '', 
+        groupAmount: '', 
+        duration: '', 
+        startDate: p.startDate || getTodayString() 
+      }));
     }
   };
 
-  const updateField = e => setGroupData(p => ({ ...p, [e.target.name]: e.target.value }));
+  const updateField = e => {
+    const { name, value } = e.target;
+    setGroupData(p => {
+      const updated = { ...p, [name]: value };
+      // In custom mode, if totalMembers is changed and duration was matching or empty, auto-sync duration
+      if (name === 'totalMembers' && selectedPreset === 'Custom') {
+        if (!p.duration || p.duration === p.totalMembers) {
+          updated.duration = value;
+        }
+      }
+      return updated;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setNotice({ text: '', success: false });
+    setCreatedGroup(null);
+
+    // Client validations
+    const cleanName = (groupData.groupName || '').trim();
+    const membersNum = Number(groupData.totalMembers);
+    const amountNum = Number(groupData.groupAmount);
+    const durationNum = Number(groupData.duration);
+
+    if (cleanName.length < 3) {
+      setNotice({ text: 'Group name must be at least 3 characters long', success: false });
+      return;
+    }
+    if (!membersNum || membersNum < 2 || membersNum > 500) {
+      setNotice({ text: 'Total members must be between 2 and 500', success: false });
+      return;
+    }
+    if (!amountNum || amountNum <= 0) {
+      setNotice({ text: 'Group amount must be greater than ₹0', success: false });
+      return;
+    }
+    if (!durationNum || durationNum < 1 || durationNum > 120) {
+      setNotice({ text: 'Duration must be between 1 and 120 months', success: false });
+      return;
+    }
+    if (!groupData.startDate) {
+      setNotice({ text: 'Please select a start date for the plan', success: false });
+      return;
+    }
+
     setLoading(true);
     try {
       let formattedDate = groupData.startDate;
@@ -61,24 +111,30 @@ const CreateGroup = () => {
       const res = await makeRequest('/admin/groups/createGroup', {
         method: 'POST',
         body: JSON.stringify({ 
-          groupName: groupData.groupName, 
-          totalMembers: Number(groupData.totalMembers), 
-          groupAmount: Number(groupData.groupAmount), 
-          duration: Number(groupData.duration), 
+          groupName: cleanName, 
+          totalMembers: membersNum, 
+          groupAmount: amountNum, 
+          duration: durationNum, 
           startDate: formattedDate 
         }),
       });
       const data = await safeJson(res);
       if (!res.ok || !data?.success) throw new Error(data?.message || 'Failed to create group');
-      setNotice({ text: `Group "${data.data?.group_name || groupData.groupName}" created successfully!`, success: true });
-      // Reset form but keep a generic default or clear completely
-      setGroupData({ groupName: '', totalMembers: '', groupAmount: '', duration: '', startDate: '' });
-      setSelectedPreset('Custom');
+
+      const createdObj = data.data || { group_name: cleanName, group_code: 'NEW' };
+      setCreatedGroup(createdObj);
+      setNotice({ text: `Plan "${createdObj.group_name || cleanName}" created successfully!`, success: true });
     } catch (err) {
       setNotice({ text: err?.message || 'Failed to create group', success: false });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResetForNew = () => {
+    setCreatedGroup(null);
+    setNotice({ text: '', success: false });
+    applyPreset(PLAN_PRESETS[0]);
   };
 
   const monthly = groupData.totalMembers && groupData.groupAmount
@@ -109,7 +165,7 @@ const CreateGroup = () => {
                 ) : (
                   <>
                     <p className="cg-preset-sub" style={{ color: isActive ? '#2E7D32' : '#1B3322' }}>Set your own</p>
-                    <p className="cg-preset-desc">Any values</p>
+                    <p className="cg-preset-desc">Any custom values</p>
                   </>
                 )}
                 <div className="cg-preset-radio" />
@@ -120,13 +176,13 @@ const CreateGroup = () => {
 
         {/* Form Details */}
         <div className="cg-section-title">
-          <Layers size={14} /> GROUP DETAILS
+          <Layers size={14} /> PLAN & GROUP SPECIFICATIONS
         </div>
         
         <form className="cg-form" onSubmit={handleSubmit}>
           
           <div className="cg-input-group">
-            <label className="cg-label"><span style={{ fontSize: 14 }}>T</span> Group Name <span className="cg-label-req">*</span></label>
+            <label className="cg-label"><span style={{ fontSize: 14 }}>T</span> Plan Name <span className="cg-label-req">*</span></label>
             <input 
               name="groupName" 
               value={groupData.groupName} 
@@ -134,8 +190,9 @@ const CreateGroup = () => {
               className="cg-input"
               placeholder="e.g. 1 Lakh Plan" 
               required 
+              disabled={loading || Boolean(createdGroup)}
             />
-            <p className="cg-input-help">Give your group a recognizable name</p>
+            <p className="cg-input-help">Give your chit scheme a recognizable name</p>
           </div>
           
           <div className="cg-form-row">
@@ -145,13 +202,14 @@ const CreateGroup = () => {
                 name="totalMembers" 
                 type="number" 
                 min="2" 
-                max="100" 
+                max="500" 
                 value={groupData.totalMembers} 
                 onChange={updateField} 
                 className="cg-input"
                 required 
+                disabled={loading || Boolean(createdGroup)}
               />
-              <p className="cg-input-help">Min 2, Max 100</p>
+              <p className="cg-input-help">Total subscriber seats (2 - 500)</p>
             </div>
             
             <div className="cg-input-group">
@@ -160,19 +218,20 @@ const CreateGroup = () => {
                 name="duration" 
                 type="number" 
                 min="1" 
-                max="60" 
+                max="120" 
                 value={groupData.duration} 
                 onChange={updateField} 
                 className="cg-input"
                 required 
+                disabled={loading || Boolean(createdGroup)}
               />
-              <p className="cg-input-help">Min 1, Max 60 months</p>
+              <p className="cg-input-help">Number of monthly auction cycles (1 - 120)</p>
             </div>
           </div>
           
           <div className="cg-form-row">
             <div className="cg-input-group">
-              <label className="cg-label"><span style={{ fontWeight: 700 }}>₹</span> Group Amount (₹) <span className="cg-label-req">*</span></label>
+              <label className="cg-label"><span style={{ fontWeight: 700 }}>₹</span> Total Chit Pool (₹) <span className="cg-label-req">*</span></label>
               <input 
                 name="groupAmount" 
                 type="number" 
@@ -180,10 +239,11 @@ const CreateGroup = () => {
                 value={groupData.groupAmount} 
                 onChange={updateField} 
                 className="cg-input"
-                placeholder="1,000" 
+                placeholder="100000" 
                 required 
+                disabled={loading || Boolean(createdGroup)}
               />
-              <p className="cg-input-help">Total chit fund pool value</p>
+              <p className="cg-input-help">Total chit fund prize value</p>
             </div>
             
             <div className="cg-input-group">
@@ -195,8 +255,9 @@ const CreateGroup = () => {
                 onChange={updateField} 
                 className="cg-input"
                 required 
+                disabled={loading || Boolean(createdGroup)}
               />
-              <p className="cg-input-help">When the group auction begins</p>
+              <p className="cg-input-help">Date of the 1st monthly auction</p>
             </div>
           </div>
 
@@ -212,27 +273,97 @@ const CreateGroup = () => {
               </div>
             </div>
             <div className="cg-summary-right">
-              <p className="cg-summary-title">Total Pool</p>
+              <p className="cg-summary-title">Total Pool Value</p>
               <p className="cg-summary-val">{formatCur(groupData.groupAmount || 0)}</p>
             </div>
           </div>
 
+          {/* Notice & Post-Creation Banner */}
           {notice.text && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px', borderRadius: '6px', background: notice.success ? '#d1fae5' : '#fee2e2', color: notice.success ? '#065f46' : '#991b1b', fontWeight: 600, fontSize: 13, marginBottom: 12 }}>
-              {notice.success ? <RiCheckLine size={16} /> : <RiLoader4Line size={16} />} {notice.text}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              gap: 8, 
+              padding: '14px 16px', 
+              borderRadius: '8px', 
+              background: notice.success ? '#d1fae5' : '#fee2e2', 
+              color: notice.success ? '#065f46' : '#991b1b', 
+              border: notice.success ? '1px solid #a7f3d0' : '1px solid #fecaca',
+              marginBottom: 16 
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 14 }}>
+                {notice.success ? <CheckCircle2 size={18} color="#059669" /> : <X size={18} color="#dc2626" />} 
+                {notice.text}
+              </div>
+
+              {createdGroup && (
+                <div style={{ 
+                  marginTop: 6, 
+                  paddingTop: 10, 
+                  borderTop: '1px solid #a7f3d0',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 10
+                }}>
+                  <div style={{ fontSize: 13, color: '#047857' }}>
+                    Group Code: <strong>#{createdGroup.group_code}</strong> · Ready for member enrollment.
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/admin/manage-groups', { state: { groupId: createdGroup.id, groupName: createdGroup.group_name } })}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        background: '#059669',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontWeight: 700,
+                        fontSize: 12,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Open & Assign Members <ArrowRight size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetForNew}
+                      style={{
+                        background: '#ffffff',
+                        color: '#047857',
+                        border: '1px solid #059669',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontWeight: 700,
+                        fontSize: 12,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Create Another
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="cg-actions">
-            <button type="button" className="cg-btn-cancel" onClick={() => navigate('/admin/admintool')}>
-              <X size={18} /> Cancel
-            </button>
-            <button type="submit" className="cg-btn-primary" disabled={loading}>
-              {loading ? <RiLoader4Line size={18} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={18} />}
-              {loading ? 'Creating...' : 'Create Group'}
-            </button>
-          </div>
+          {!createdGroup && (
+            <div className="cg-actions">
+              <button type="button" className="cg-btn-cancel" onClick={() => navigate('/admin/admintool')}>
+                <X size={18} /> Cancel
+              </button>
+              <button type="submit" className="cg-btn-primary" disabled={loading}>
+                {loading ? <RiLoader4Line size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={18} />}
+                {loading ? 'Creating Plan...' : 'Create New Plan'}
+              </button>
+            </div>
+          )}
 
         </form>
       </div>
@@ -243,13 +374,13 @@ const CreateGroup = () => {
         
         {/* Preview Card */}
         <div className="cg-side-card">
-          <h3 className="cg-side-title">GROUP PREVIEW</h3>
+          <h3 className="cg-side-title">PLAN PREVIEW</h3>
           <div className="cg-preview-icon">
             <Layers size={28} />
           </div>
-          <p className="cg-preview-name">{groupData.groupName || 'Untitled Group'}</p>
+          <p className="cg-preview-name">{groupData.groupName || 'Untitled Plan'}</p>
           <div className="cg-preview-badge">
-            <CheckCircle2 size={14} /> Active Group
+            <CheckCircle2 size={14} /> {createdGroup ? 'Plan Created' : 'Ready to Launch'}
           </div>
           
           <div className="cg-preview-grid">
@@ -276,13 +407,13 @@ const CreateGroup = () => {
         <div className="cg-side-card">
           <h3 className="cg-side-title">WHAT HAPPENS NEXT</h3>
           <div className="cg-steps">
-            <div className="cg-step active">
+            <div className={`cg-step ${!createdGroup ? 'active' : ''}`}>
               <div className="cg-step-num">1</div>
-              <div className="cg-step-text">Fill in group details</div>
+              <div className="cg-step-text">Configure plan & pool details</div>
             </div>
-            <div className="cg-step">
+            <div className={`cg-step ${createdGroup ? 'active' : ''}`}>
               <div className="cg-step-num">2</div>
-              <div className="cg-step-text">Group gets created</div>
+              <div className="cg-step-text">Plan & broadcast chat room created</div>
             </div>
             <div className="cg-step">
               <div className="cg-step-num">3</div>
@@ -290,7 +421,7 @@ const CreateGroup = () => {
             </div>
             <div className="cg-step">
               <div className="cg-step-num">4</div>
-              <div className="cg-step-text">Auction begins on start date</div>
+              <div className="cg-step-text">Monthly auction commences</div>
             </div>
           </div>
         </div>
@@ -303,11 +434,15 @@ const CreateGroup = () => {
           </div>
           <div className="cg-tip">
             <CheckCircle2 size={14} color="#10B981" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p className="cg-tip-text">Duration must match total member count</p>
+            <p className="cg-tip-text">Duration should match total subscriber seats</p>
           </div>
           <div className="cg-tip">
             <CheckCircle2 size={14} color="#10B981" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p className="cg-tip-text">Monthly contribution = Amount ÷ Members</p>
+            <p className="cg-tip-text">Monthly installment = Total Pool ÷ Members</p>
+          </div>
+          <div className="cg-tip">
+            <CheckCircle2 size={14} color="#10B981" style={{ flexShrink: 0, marginTop: 1 }} />
+            <p className="cg-tip-text">Created plans automatically get default settings & broadcast room</p>
           </div>
         </div>
 

@@ -3,8 +3,8 @@ const db = require('../config/db');
 const logAuditEvent = async (req, { actionType, tableName, recordId, oldValues = null, newValues = null }) => {
     try {
         const userId = req && req.user ? (req.user.userId || req.user.id) : null;
-        const ipAddress = req ? (req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress) : null;
-        const deviceInfo = req ? req.headers['user-agent'] : null;
+        const ipAddress = req ? (req.ip || req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress) : null;
+        const deviceInfo = req?.headers?.['user-agent'] || null;
 
         const sql = `
             INSERT INTO audit_logs 
