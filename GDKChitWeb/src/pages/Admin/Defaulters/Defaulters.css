@@ -8,12 +8,104 @@
   background: #f8faf8;
 }
 
+/* ── Summary Statistics Cards Grid ── */
+.def-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.def-stat-card {
+  background: #ffffff;
+  border: 1px solid #DCE3DC;
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+}
+
+.def-stat-card:hover {
+  border-color: #2E7D32;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.def-stat-card.active {
+  border-color: #2E7D32;
+  background: #F4FAF5;
+  box-shadow: 0 0 0 1px #2E7D32;
+}
+
+.def-stat-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.def-stat-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.def-stat-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.def-stat-value {
+  font-size: 19px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.def-stat-sub {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #6B7A6E;
+  margin-top: 2px;
+}
+
 /* Group & Month */
 .def-group-name {
   font-size: 13.5px;
   font-weight: 700;
   color: #0f172a;
   margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.def-group-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.def-group-link-btn:hover {
+  color: #2E7D32;
+  text-decoration: underline;
 }
 
 .def-month-lbl {
@@ -45,6 +137,11 @@
   color: #dc2626;
 }
 
+.def-badge.critical {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
 .def-due-date {
   font-size: 12px;
   color: #64748b;
@@ -74,52 +171,96 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
+}
+
+.def-accept-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: #E8F5E9;
+  color: #1B5E20;
+  border: 1px solid #C8E6C9;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.def-accept-btn:hover {
+  background: #2E7D32;
+  color: #ffffff;
+  border-color: #2E7D32;
+  box-shadow: 0 2px 6px rgba(46, 125, 50, 0.25);
 }
 
 .def-reminder-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 7px 14px;
-  background: #2E7D32;
-  color: #ffffff;
-  border: 1px solid #2E7D32;
+  gap: 5px;
+  padding: 6px 12px;
+  background: #ffffff;
+  color: #1B3322;
+  border: 1px solid #DCE3DC;
   border-radius: 8px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(46, 125, 50, 0.2);
   transition: all 0.18s ease;
   white-space: nowrap;
 }
 
 .def-reminder-btn:hover {
-  background: #1B5E20;
-  border-color: #1B5E20;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(46, 125, 50, 0.25);
+  background: #F4FAF5;
+  border-color: #2E7D32;
+  color: #2E7D32;
 }
 
 .def-whatsapp-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   border: 1px solid #DCE3DC;
   background: #ffffff;
   color: #25D366;
   cursor: pointer;
   transition: all 0.18s ease;
+  flex-shrink: 0;
 }
 
 .def-whatsapp-icon-btn:hover {
   background: #E8F5E9;
   border-color: #81C784;
   color: #1EBE5D;
+}
+
+.def-link-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #DCE3DC;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.def-link-icon-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
 }
 
 /* Modal Overlay & Styling */
@@ -186,3 +327,4 @@
   border-top: 1px solid #E8ECE8;
   background: #FAFCFA;
 }
+
