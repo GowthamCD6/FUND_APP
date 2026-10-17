@@ -7,6 +7,7 @@ import {
 import './AuctionSettingsPage.css';
 
 const DEFAULT_AUCTION_CONFIG = {
+  defaultDurationMinutes: 5,
   defaultDurationSeconds: 300,
   minBidStep: 1000,
   maxDiscountPercent: 30,
@@ -26,7 +27,14 @@ const AuctionSettingsPage = () => {
     const stored = localStorage.getItem('admin_auction_settings');
     if (stored) {
       try {
-        setSettings({ ...DEFAULT_AUCTION_CONFIG, ...JSON.parse(stored) });
+        const parsed = JSON.parse(stored);
+        const mins = parsed.defaultDurationMinutes || Math.round((parsed.defaultDurationSeconds || 300) / 60);
+        setSettings({
+          ...DEFAULT_AUCTION_CONFIG,
+          ...parsed,
+          defaultDurationMinutes: mins,
+          defaultDurationSeconds: mins * 60
+        });
       } catch (e) {}
     }
   }, []);
@@ -36,11 +44,22 @@ const AuctionSettingsPage = () => {
     setIsDirty(true);
   };
 
+  const handleDurationMinutesChange = (mins) => {
+    const validMins = Math.max(1, Math.min(60, mins));
+    setSettings(prev => ({
+      ...prev,
+      defaultDurationMinutes: validMins,
+      defaultDurationSeconds: validMins * 60
+    }));
+    setIsDirty(true);
+  };
+
   const handleSave = (e) => {
     e.preventDefault();
 
-    if (settings.defaultDurationSeconds < 60 || settings.defaultDurationSeconds > 3600) {
-      alert('Auction duration must be between 60 seconds (1 min) and 3600 seconds (60 mins).');
+    const durationMins = settings.defaultDurationMinutes || Math.round(settings.defaultDurationSeconds / 60);
+    if (durationMins < 1 || durationMins > 60) {
+      alert('Auction duration must be between 1 minute and 60 minutes.');
       return;
     }
     if (settings.minBidStep < 100) {
@@ -56,7 +75,13 @@ const AuctionSettingsPage = () => {
       return;
     }
 
-    localStorage.setItem('admin_auction_settings', JSON.stringify(settings));
+    const payload = {
+      ...settings,
+      defaultDurationMinutes: durationMins,
+      defaultDurationSeconds: durationMins * 60
+    };
+
+    localStorage.setItem('admin_auction_settings', JSON.stringify(payload));
     setSavedMsg(true);
     setIsDirty(false);
     setTimeout(() => {
@@ -138,18 +163,33 @@ const AuctionSettingsPage = () => {
           <div className="asp-form-body">
             <div className="asp-field">
               <label className="asp-label">
-                Default Auction Duration (Seconds)
-                <span className="asp-hint">{Math.round(settings.defaultDurationSeconds / 60)} minutes total</span>
+                Default Auction Duration (Minutes)
+                <span className="asp-hint">{(settings.defaultDurationMinutes || 5) * 60} seconds total</span>
               </label>
-              <input
-                type="number"
-                min="60"
-                max="3600"
-                step="30"
-                className="asp-input"
-                value={settings.defaultDurationSeconds}
-                onChange={e => handleChange('defaultDurationSeconds', Number(e.target.value))}
-              />
+              <div className="asp-input-wrapper">
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  step="1"
+                  className="asp-input"
+                  value={settings.defaultDurationMinutes || 5}
+                  onChange={e => handleDurationMinutesChange(Number(e.target.value))}
+                />
+                <span className="asp-unit-tag">min</span>
+              </div>
+              <div className="asp-preset-pills">
+                {[3, 5, 10, 15, 20, 30].map(mins => (
+                  <button
+                    key={mins}
+                    type="button"
+                    className={`asp-pill ${(settings.defaultDurationMinutes || 5) === mins ? 'active' : ''}`}
+                    onClick={() => handleDurationMinutesChange(mins)}
+                  >
+                    {mins} mins {mins === 5 ? '(Standard)' : ''}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="asp-field">
@@ -161,22 +201,41 @@ const AuctionSettingsPage = () => {
                 />
                 <div>
                   <strong>Enable Dynamic Clock Extension (Anti-Sniping)</strong>
-                  <p>Extends remaining timer if a bid is placed in final 15 seconds</p>
+                  <p>Extends remaining timer by {settings.extendSeconds}s if a bid is placed in closing seconds</p>
                 </div>
               </label>
             </div>
 
             {settings.autoExtendOnLastSeconds && (
               <div className="asp-field">
-                <label className="asp-label">Extension Duration (Seconds)</label>
-                <input
-                  type="number"
-                  min="10"
-                  max="120"
-                  className="asp-input"
-                  value={settings.extendSeconds}
-                  onChange={e => handleChange('extendSeconds', Number(e.target.value))}
-                />
+                <label className="asp-label">
+                  Extension Duration (Seconds)
+                  <span className="asp-hint">+{settings.extendSeconds}s per late bid</span>
+                </label>
+                <div className="asp-input-wrapper">
+                  <input
+                    type="number"
+                    min="10"
+                    max="120"
+                    step="5"
+                    className="asp-input"
+                    value={settings.extendSeconds}
+                    onChange={e => handleChange('extendSeconds', Number(e.target.value))}
+                  />
+                  <span className="asp-unit-tag">sec</span>
+                </div>
+                <div className="asp-preset-pills">
+                  {[15, 30, 45, 60].map(secs => (
+                    <button
+                      key={secs}
+                      type="button"
+                      className={`asp-pill ${settings.extendSeconds === secs ? 'active' : ''}`}
+                      onClick={() => handleChange('extendSeconds', secs)}
+                    >
+                      +{secs}s {secs === 30 ? '(Recommended)' : ''}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
