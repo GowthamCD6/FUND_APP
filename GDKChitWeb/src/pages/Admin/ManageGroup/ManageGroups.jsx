@@ -8,7 +8,7 @@ import {
   Check as RiCheckLine, AlertTriangle as RiAlertLine, Search as RiSearchLine, RefreshCw as RiRefreshLine,
   Phone as RiPhoneLine, Clock as RiTimeLine, CircleDollarSign as RiMoneyDollarCircleLine,
   Pencil as RiPencilLine, Trophy as RiTrophyLine, ChevronLeft as RiChevronLeftLine, ChevronRight as RiChevronRightLine,
-  Calendar as RiCalendarLine
+  Calendar as RiCalendarLine, PlayCircle as RiPlayCircleLine
 } from 'lucide-react';
 import './ManageGroups.css';
 import EditModal from './Modal/EditModal.jsx';
@@ -70,6 +70,7 @@ const ManageGroups = () => {
 
   const [showAuctionModal, setShowAuctionModal] = useState(false);
   const [isAuctionSaving, setIsAuctionSaving] = useState(false);
+  const [activatingGroupId, setActivatingGroupId] = useState(null);
 
   // ── Month offset calculation helpers ───────────────────────
   const getPeriodFromOffset = useCallback((offset) => {
@@ -117,7 +118,10 @@ const ManageGroups = () => {
       const res = await makeRequest(`/admin/groups/getMembers?groupId=${groupId}`);
       const data = await safeJson(res);
       if (res.ok && data?.success) {
-        setGroupMembers(data.members || data.data || []);
+        const mems = data.members || data.data || [];
+        setGroupMembers(mems);
+        setSelectedGroup(prev => prev && prev.id === groupId ? { ...prev, currentMembers: mems.length } : prev);
+        setGroups(prev => prev.map(g => g.id === groupId ? { ...g, currentMembers: mems.length } : g));
       } else {
         setGroupMembers([]);
       }
@@ -126,6 +130,28 @@ const ManageGroups = () => {
       setGroupMembers([]);
     }
   }, []);
+
+  // ── Calculate days until next chit date (matches mobile app) ─
+  const calculateDaysToNextChit = useCallback((groupObj) => {
+    const target = groupObj || selectedGroup;
+    if (!target) return 0;
+    const dateStr = target.startDate || target.createdDate;
+    if (!dateStr) return 0;
+    const startDate = new Date(dateStr);
+    if (isNaN(startDate.getTime())) return 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let nextChitDate = new Date(today.getFullYear(), today.getMonth(), startDate.getDate());
+
+    if (today > nextChitDate) {
+      nextChitDate.setMonth(nextChitDate.getMonth() + 1);
+    }
+
+    const diffTime = nextChitDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  }, [selectedGroup]);
 
   // Load snapshot when group or month changes
   useEffect(() => {
@@ -202,14 +228,19 @@ const ManageGroups = () => {
           id: g.id,
           name: g.name || g.group_name || 'Untitled',
           status,
-          totalMembers: g.totalMembers !== undefined ? g.totalMembers : (g.total_members !== undefined ? g.total_members : 0),
+          totalMembers: g.totalMembers !== undefined ? Number(g.totalMembers) : (g.total_members !== undefined ? Number(g.total_members) : 0),
+          currentMembers: g.currentMembers !== undefined ? Number(g.currentMembers) : (g.current_members !== undefined ? Number(g.current_members) : 0),
           duration: g.duration || totalNum || 20,
-          groupAmount: g.groupAmount || g.group_amount || 0,
+          groupAmount: Number(g.groupAmount || g.group_amount) || 0,
+          monthlyAmount: Number(g.monthlyAmount || g.monthly_amount) || (totalNum > 0 ? Math.round((Number(g.groupAmount || g.group_amount || 0)) / totalNum) : 0),
           startDate: g.startDate || g.start_date,
           endDate: g.endDate || g.end_date,
           createdDate: g.createdDate || g.created_at,
-          groupCode: g.groupCode || '',
+          groupCode: g.groupCode || g.group_code || '',
           completedCycles: completed,
+          collectedAmount: Number(g.collectedAmount) || 0,
+          remainingAmount: Number(g.remainingAmount) || 0,
+          currentMonthDisplay: g.currentMonthDisplay || '',
         };
       });
       setGroups(mapped);
@@ -256,13 +287,84 @@ const ManageGroups = () => {
     setSelectedGroup(prev => prev && prev.id === groupId ? { ...prev, totalMembers: newCount } : prev);
   };
 
-  // ── Delete group (local only; add API if available) ──────
-  const confirmDelete = (g) => { setDelTarget(g); setShowDeleteConfirm(true); };
+  // ── Activate group (matches mobile app executeActivation) ──
+  const handleActivateGroup = async (groupToActivate) => {
+    const target = groupToActivate || selectedGroup;
+    if (!target) return;
+
+    if (Number(target.currentMembers || 0) === 0) {
+      const proceed = window.confirm(
+        `Warning: Zero Members\n"${target.name}" currently has 0 members enrolled. Are you sure you want to activate it?`
+      );
+      if (!proceed) return;
+    } else {
+      const proceed = window.confirm(
+        `Activate Group\nAre you sure you want to activate "${target.name}"? This will officially start the group.`
+      );
+      if (!proceed) return;
+    }
+
+    setActivatingGroupId(target.id);
+    setNotice(null);
+    try {
+      const res = await makeRequest('/admin/groups/activate', {
+        method: 'POST',
+        body: JSON.stringify({ groupId: target.id }),
+      });
+      const data = await safeJson(res);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'Failed to activate group');
+      }
+
+      setGroups(prev => prev.map(g => g.id === target.id ? { ...g, status: 'Active' } : g));
+      if (selectedGroup?.id === target.id) {
+        setSelectedGroup(prev => ({ ...prev, status: 'Active' }));
+      }
+      setNotice({ text: `Group "${target.name}" activated successfully!`, success: true });
+    } catch (err) {
+      console.error('Error activating group:', err);
+      setNotice({ text: err.message || 'Failed to activate group', success: false });
+    } finally {
+      setActivatingGroupId(null);
+    }
+  };
+
+  // ── Delete group (matches mobile app handleDeleteGroup) ────
+  const confirmDelete = (g) => {
+    if (g.status === 'Active' && (Number(g.collectedAmount) > 0 || Number(g.completedCycles) > 0)) {
+      alert(`Cannot Delete Active Group:\n"${g.name}" is currently active with ongoing payments or completed cycles. You cannot delete active financial groups directly.`);
+      return;
+    }
+    setDelTarget(g);
+    setShowDeleteConfirm(true);
+  };
+
   const doDelete = async () => {
-    setGroups(prev => prev.filter(g => g.id !== delTarget.id));
-    setShowDeleteConfirm(false);
-    setDelTarget(null);
-    if (selectedGroup?.id === delTarget?.id) { setSelectedGroup(null); setViewMode(null); }
+    if (!delTarget) return;
+    try {
+      setNotice(null);
+      const res = await makeRequest('/admin/groups/delete', {
+        method: 'POST',
+        body: JSON.stringify({ groupId: delTarget.id }),
+      });
+      const data = await safeJson(res);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'Failed to delete group');
+      }
+
+      setGroups(prev => prev.filter(g => g.id !== delTarget.id));
+      setShowDeleteConfirm(false);
+      if (selectedGroup?.id === delTarget.id) {
+        setSelectedGroup(null);
+        setViewMode(null);
+      }
+      setNotice({ text: `Group "${delTarget.name}" deleted successfully`, success: true });
+      setDelTarget(null);
+    } catch (err) {
+      console.error('Error deleting group:', err);
+      setNotice({ text: err.message || 'Failed to delete group', success: false });
+      setShowDeleteConfirm(false);
+    }
   };
 
   // ── Save Group Info (Edit Group Modal) ──────────────────────
@@ -327,6 +429,7 @@ const ManageGroups = () => {
           currentMonthAmount: Number(paymentData.currentMonthAmount) || 0,
           elathThalupadi: Number(paymentData.elathThalupadi) || 0,
           commission: Number(paymentData.commission) || 0,
+          deadlineDate: paymentData.deadlineDate || null,
           notes: paymentData.notes || '',
         }),
       });
@@ -583,6 +686,48 @@ const ManageGroups = () => {
                       }}>
                         <RiCalendarLine size={11} /> {g.currentMonthDisplay || (g.duration ? `1st Month of ${g.duration}` : '1st Month')}
                       </span>
+                      <span style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: 4, 
+                        background: '#ecfdf5', 
+                        color: '#047857', 
+                        border: '1px solid #a7f3d0', 
+                        padding: '2px 8px', 
+                        borderRadius: 100, 
+                        fontSize: 11, 
+                        fontWeight: 700 
+                      }}>
+                        Next Chit: {calculateDaysToNextChit(g)} Days
+                      </span>
+                      {(g.status === 'Not Started' || g.status === 'not-started') && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleActivateGroup(g);
+                          }}
+                          disabled={activatingGroupId === g.id}
+                          title="Activate this chit group"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            background: '#10b981',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '2px 8px',
+                            borderRadius: '100px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxShadow: '0 1px 2px rgba(16, 185, 129, 0.25)',
+                          }}
+                        >
+                          <RiPlayCircleLine size={12} />
+                          <span>{activatingGroupId === g.id ? 'Starting...' : 'Activate'}</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                   <button className="gc-arrow-btn" onClick={(e) => { e.stopPropagation(); openGroupDetails(g); }} title="View Group Details">
@@ -596,9 +741,9 @@ const ManageGroups = () => {
                   <div className="mg-card-metrics-grid">
                     <div className="mg-metric-item">
                       <span className="mg-metric-lbl">
-                        <RiGroupLine size={13} color="#64748b" /> Total Members
+                        <RiGroupLine size={13} color="#64748b" /> Enrolled Members
                       </span>
-                      <strong className="mg-metric-val">{g.totalMembers} Members</strong>
+                      <strong className="mg-metric-val">{g.currentMembers || 0} / {g.totalMembers} Enrolled</strong>
                     </div>
 
                     <div className="mg-metric-item">
@@ -658,10 +803,15 @@ const ManageGroups = () => {
             {/* Panel Header */}
             <div className="mg2-panel-head">
               <div>
-                <h3 style={{ margin: '0 0 4px', fontSize: 17, fontWeight: 800, color: '#030712' }}>{selectedGroup.name}</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#030712' }}>{selectedGroup.name}</h3>
+                  {selectedGroup.groupCode && (
+                    <span className="mg-code-chip">#{selectedGroup.groupCode}</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
                   <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
-                    {formatCurrency(selectedGroup.groupAmount)}/month · {selectedGroup.totalMembers} members
+                    {formatCurrency(selectedGroup.monthlyAmount || Math.round((selectedGroup.groupAmount || 0) / (selectedGroup.duration || 20)))}/mo · {selectedGroup.currentMembers || 0}/{selectedGroup.totalMembers} enrolled
                   </p>
                   <span style={{ 
                     display: 'inline-flex', 
@@ -679,9 +829,23 @@ const ManageGroups = () => {
                   </span>
                 </div>
               </div>
-              <button className="rp-close" onClick={() => { setSelectedGroup(null); setViewMode(null); setNotice(''); }}>
-                <RiCloseLine size={16} />
-              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* Next Chit In Badge (matching mobile header rightComponent) */}
+                <div style={{ 
+                  backgroundColor: '#ECFDF5', 
+                  padding: '4px 12px', 
+                  borderRadius: 8, 
+                  border: '1px solid #D1FAE5',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: 9, color: '#047857', marginBottom: 1, textTransform: 'uppercase', fontWeight: '800', letterSpacing: '0.4px' }}>Next Chit In</div>
+                  <div style={{ color: '#059669', fontWeight: '900', fontSize: 13 }}>{calculateDaysToNextChit(selectedGroup)} Days</div>
+                </div>
+                <button className="rp-close" onClick={() => { setSelectedGroup(null); setViewMode(null); setNotice(''); }}>
+                  <RiCloseLine size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Panel Tabs */}
@@ -714,7 +878,19 @@ const ManageGroups = () => {
                 <div className="mg2-section-card">
                   <div className="mg2-card-header">
                     <h4 className="mg2-card-title"><RiGroupLine size={16} /> Group Info</h4>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {(selectedGroup.status === 'Not Started' || selectedGroup.status === 'not-started') && (
+                        <button
+                          className="mg2-icon-edit-btn"
+                          style={{ borderColor: '#86efac', background: '#f0fdf4', color: '#15803d', fontWeight: 700 }}
+                          onClick={() => handleActivateGroup(selectedGroup)}
+                          disabled={activatingGroupId === selectedGroup.id}
+                          title="Activate this chit group"
+                        >
+                          <RiPlayCircleLine size={14} />
+                          <span>{activatingGroupId === selectedGroup.id ? 'Starting...' : 'Activate Group'}</span>
+                        </button>
+                      )}
                       <button className="mg2-icon-edit-btn" onClick={() => setShowEditModal(true)} title="Edit Group Info">
                         <RiPencilLine size={14} />
                         <span>Edit</span>
@@ -737,11 +913,15 @@ const ManageGroups = () => {
                       </strong>
                     </div>
                     <div className="rn-detail-row">
-                      <span>Total Members</span>
-                      <strong>{selectedGroup.totalMembers || '--'}</strong>
+                      <span>Enrolled Members</span>
+                      <strong>{selectedGroup.currentMembers || 0} / {selectedGroup.totalMembers || '--'} Members</strong>
                     </div>
                     <div className="rn-detail-row">
-                      <span>Group Amount</span>
+                      <span>Monthly Amount</span>
+                      <strong>{formatCurrency(selectedGroup.monthlyAmount || Math.round((selectedGroup.groupAmount || 0) / (selectedGroup.duration || 20)))} / month</strong>
+                    </div>
+                    <div className="rn-detail-row">
+                      <span>Total Fund Pool</span>
                       <strong>{formatCurrency(selectedGroup.groupAmount)}</strong>
                     </div>
                     <div className="rn-detail-row">
@@ -921,6 +1101,14 @@ const ManageGroups = () => {
                                 )}
                               </strong>
                             </div>
+                            {monthlySnapshot.payment.deadlineDate && (
+                              <div className="rn-detail-row">
+                                <span>Payment Due Date</span>
+                                <strong style={{ color: '#d97706' }}>
+                                  {formatDate(monthlySnapshot.payment.deadlineDate)}
+                                </strong>
+                              </div>
+                            )}
                             {monthlySnapshot.payment.notes && (
                               <div style={{ marginTop: 10, fontSize: 12, color: '#64748b', background: '#f8fafc', padding: 8, borderRadius: 6, border: '1px solid #e2e8f0' }}>
                                 <strong>Notes:</strong> {monthlySnapshot.payment.notes}
@@ -995,14 +1183,16 @@ const ManageGroups = () => {
       {showDeleteConfirm && (
         <div className="rn-modal-backdrop" onClick={() => setShowDeleteConfirm(false)}>
           <div className="rn-modal" onClick={e => e.stopPropagation()}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#dc2626', fontWeight: 800 }}>
-              <RiDeleteBinLine size={20} /> Delete Group?
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#dc2626', fontWeight: 800, margin: '0 0 10px' }}>
+              <RiDeleteBinLine size={20} /> Delete Group & Chat Room?
             </h3>
-            <p style={{ color: '#334155', fontSize: 14 }}>Are you sure you want to delete <strong>{delTarget?.name}</strong>?</p>
-            <div className="rn-form-row" style={{ marginTop: 16 }}>
-              <button style={{ padding: 12, borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: 700, cursor: 'pointer', flex: 1 }} onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
-              <button className="rn-primary rn-danger" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 12, borderRadius: '6px', border: 'none', fontWeight: 700, cursor: 'pointer' }} onClick={doDelete}>
-                <RiDeleteBinLine size={15} /> Delete
+            <p style={{ color: '#475569', fontSize: 13.5, lineHeight: 1.5, margin: 0 }}>
+              Are you sure you want to delete <strong>"{delTarget?.name}"</strong>? Deleting this group will permanently remove it and its linked chat room for all members. This action cannot be undone.
+            </p>
+            <div className="rn-form-row" style={{ marginTop: 20 }}>
+              <button style={{ padding: '10px 16px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: 700, cursor: 'pointer', flex: 1 }} onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
+              <button className="rn-primary rn-danger" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 16px', borderRadius: '6px', border: 'none', fontWeight: 700, cursor: 'pointer', background: '#dc2626', color: '#ffffff' }} onClick={doDelete}>
+                <RiDeleteBinLine size={15} /> Delete Group
               </button>
             </div>
           </div>

@@ -142,6 +142,42 @@ const AuctionW = ({ isOpen, onClose, initialData, onSave, isSaving = false, grou
         </div>
 
         <form onSubmit={handleSubmit}>
+          {groupMembers && groupMembers.length > 0 && (
+            <div className="mg2-input-group" style={{ marginBottom: 14 }}>
+              <label className="mg2-input-label" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                Select From Enrolled Members (Quick Pick)
+              </label>
+              <select
+                className="mg2-form-input"
+                onChange={(e) => {
+                  const selectedId = e.target.value;
+                  if (!selectedId) return;
+                  const match = groupMembers.find(m => String(m.userId || m.id) === String(selectedId));
+                  if (match) {
+                    setForm(prev => ({
+                      ...prev,
+                      chitWinnerName: match.name || match.user_name || '',
+                      chitWinnerMemberId: match.phone ? String(match.phone).trim() : '',
+                    }));
+                  }
+                }}
+                disabled={isSaving}
+                defaultValue=""
+              >
+                <option value="" disabled>-- Choose a group member --</option>
+                {groupMembers.map(m => {
+                  const mId = m.userId || m.id;
+                  const hasTaken = Boolean(m.hasWonAuction || m.has_taken_auction_amount);
+                  return (
+                    <option key={mId} value={mId} disabled={hasTaken}>
+                      {m.name || 'Unnamed'} ({m.phone || 'No phone'}) {hasTaken ? '⛔ [ALREADY WON]' : '✓ Eligible'}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
+
           <div className="mg2-input-group" style={{ marginBottom: 14 }}>
             <label className="mg2-input-label" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>Winner Name *</label>
             <input
