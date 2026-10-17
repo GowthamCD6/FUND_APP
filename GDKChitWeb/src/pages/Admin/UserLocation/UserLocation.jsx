@@ -18,23 +18,39 @@ import {
 } from 'lucide-react';
 import './UserLocation.css';
 
-// Loading skeleton for locations
+// Loading skeleton for locations table
 const UserLocationSkeleton = () => (
-  <div className="ul-list-container skeleton-pulse">
-    <div className="ul-list">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="ul-card-skeleton">
-          <div className="ul-card-left">
-            <div className="ul-avatar-skeleton" />
-            <div className="ul-text-skeleton">
-              <div className="ul-line-title" />
-              <div className="ul-line-sub" />
-            </div>
-          </div>
-          <div className="ul-body-skeleton" />
-          <div className="ul-btn-skeleton" />
-        </div>
-      ))}
+  <div className="ul-table-container skeleton-pulse">
+    <div className="ul-table-wrapper">
+      <table className="ul-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Phone</th>
+            <th>Physical Address</th>
+            <th>GPS Status</th>
+            <th style={{ width: 60, textAlign: 'center' }}>Map</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <tr key={i}>
+              <td>
+                <div className="ul-cell-member">
+                  <div className="ul-avatar-skeleton" />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+                    <div className="ul-line-title" style={{ width: 120 }} />
+                  </div>
+                </div>
+              </td>
+              <td><div className="ul-line-sub" style={{ width: 90 }} /></td>
+              <td><div className="ul-line-sub" style={{ width: '85%' }} /></td>
+              <td><div className="ul-btn-skeleton" style={{ width: 80, height: 24, borderRadius: 6 }} /></td>
+              <td><div className="ul-btn-skeleton" style={{ width: 32, height: 32, borderRadius: 8, margin: '0 auto' }} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   </div>
 );
@@ -209,8 +225,8 @@ const UserLocation = () => {
         ) : (
           <div className="ul-content-layout">
             
-            {/* LEFT PANE: List of Users */}
-            <div className="ul-list-container">
+            {/* LEFT PANE: Table of Users */}
+            <div className="ul-table-container">
               {filteredUsers.length === 0 ? (
                 <div className="ul-empty-state" style={{ padding: '40px 20px' }}>
                   <RiSearchLine size={32} color="#D1D5DB" />
@@ -218,71 +234,95 @@ const UserLocation = () => {
                   <p style={{ margin: 0, fontSize: 13 }}>Try searching for a different name, city, or phone number.</p>
                 </div>
               ) : (
-                <div className="ul-list">
-                  {filteredUsers.map((user) => {
-                    const hasGPS = Boolean(user.latitude && user.longitude);
-                    const hasAddress = Boolean(user.address && user.address.trim() !== '');
-                    const isActive = selectedUser?.id === user.id;
+                <div className="ul-table-wrapper">
+                  <table className="ul-table">
+                    <thead>
+                      <tr>
+                        <th>Member</th>
+                        <th>Phone</th>
+                        <th>Physical Address</th>
+                        <th>GPS Status</th>
+                        <th style={{ width: 50, textAlign: 'center' }}>Map</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredUsers.map((user) => {
+                        const hasGPS = Boolean(user.latitude && user.longitude);
+                        const hasAddress = Boolean(user.address && user.address.trim() !== '');
+                        const isActive = selectedUser?.id === user.id;
 
-                    return (
-                      <div 
-                        key={user.id} 
-                        className={`ul-card ${isActive ? 'active' : ''}`}
-                        onClick={() => setSelectedUser(user)}
-                      >
-                        <div className="ul-card-body">
-                          <div className="ul-avatar-area">
-                            <div className="ul-avatar">
-                              {user.profile_image || user.avatar ? (
-                                <img 
-                                  src={user.profile_image || user.avatar} 
-                                  alt={user.name} 
-                                  className="ul-avatar-img"
-                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                />
-                              ) : null}
-                              {(!user.profile_image && !user.avatar) && (user.name || 'U').substring(0, 2).toUpperCase()}
-                            </div>
-                            <div className="ul-info">
-                              <h4 className="ul-member-name">{user.name}</h4>
-                              <p className="ul-member-phone">
+                        return (
+                          <tr 
+                            key={user.id} 
+                            className={`ul-table-row ${isActive ? 'active' : ''}`}
+                            onClick={() => setSelectedUser(user)}
+                          >
+                            <td>
+                              <div className="ul-cell-member">
+                                <div className="ul-avatar">
+                                  {user.profile_image || user.avatar ? (
+                                    <img 
+                                      src={user.profile_image || user.avatar} 
+                                      alt={user.name} 
+                                      className="ul-avatar-img"
+                                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                    />
+                                  ) : null}
+                                  {(!user.profile_image && !user.avatar) && (user.name || 'U').substring(0, 2).toUpperCase()}
+                                </div>
+                                <div className="ul-cell-name-info">
+                                  <span className="ul-cell-name">{user.name}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <span className="ul-cell-phone">
                                 <RiPhoneLine size={12} />
-                                {user.phone || 'No phone number'}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="ul-address-area">
-                            <RiMapPinLine size={14} className="ul-pin-icon" style={!hasAddress ? { color: '#94a3b8' } : {}} />
-                            <p className="ul-address-text" style={!hasAddress ? { color: '#94a3b8', fontStyle: 'italic' } : {}}>
-                              {user.address || 'No physical address registered'}
-                            </p>
-                          </div>
-
-                          <div className="ul-footer">
-                            {hasGPS ? (
-                              <span className="ul-badge gps">
-                                <span className="dot pulse" />
-                                GPS Lock
+                                {user.phone || 'No phone'}
                               </span>
-                            ) : hasAddress ? (
-                              <span className="ul-badge address">
-                                Address Shared
-                              </span>
-                            ) : (
-                              <span className="ul-badge missing">
-                                No Address
-                              </span>
-                            )}
-
-                            <span className="ul-card-nav-indicator">
-                              Details &rarr;
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                            </td>
+                            <td>
+                              <div className="ul-cell-address">
+                                <RiMapPinLine size={13} className="ul-pin-icon" style={!hasAddress ? { color: '#94a3b8' } : {}} />
+                                <span className="ul-address-text" style={!hasAddress ? { color: '#94a3b8', fontStyle: 'italic' } : {}}>
+                                  {user.address || 'No physical address registered'}
+                                </span>
+                              </div>
+                            </td>
+                            <td>
+                              {hasGPS ? (
+                                <span className="ul-badge gps">
+                                  <span className="dot pulse" />
+                                  GPS Lock
+                                </span>
+                              ) : hasAddress ? (
+                                <span className="ul-badge address">
+                                  Address
+                                </span>
+                              ) : (
+                                <span className="ul-badge missing">
+                                  Missing
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <button 
+                                type="button" 
+                                className={`ul-row-btn ${isActive ? 'active' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedUser(user);
+                                }}
+                                title="View on map"
+                              >
+                                <RiMapLine size={15} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
