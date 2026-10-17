@@ -458,23 +458,25 @@ exports.getUserLocations = async (req, res) => {
                 u.id, 
                 u.name, 
                 u.phone,
+                up.user_image AS profile_image,
                 ul.latitude, 
                 ul.longitude,
                 COALESCE(ul.address, CONCAT_WS(', ', NULLIF(up.street_address, ''), NULLIF(up.city, ''), NULLIF(up.state, ''))) AS address
             FROM users u
             LEFT JOIN user_locations ul ON u.id = ul.user_id AND ul.deleted_at IS NULL
             LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
-            WHERE u.role = 'User' AND u.deleted_at IS NULL
+            WHERE LOWER(u.role) = 'user' AND u.deleted_at IS NULL
         `;
         const [rows] = await db.promise().query(query);
         
         const userLocations = rows
-            .filter(row => row.address && row.address.trim() !== '')
             .map(row => ({
                 id: String(row.id),
                 name: row.name,
                 phone: row.phone,
-                address: row.address,
+                avatar: row.profile_image,
+                profile_image: row.profile_image,
+                address: row.address || '',
                 latitude: row.latitude ? Number(row.latitude) : null,
                 longitude: row.longitude ? Number(row.longitude) : null,
             }));

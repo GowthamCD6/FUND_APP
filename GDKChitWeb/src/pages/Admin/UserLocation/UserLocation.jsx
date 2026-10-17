@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import { 
   MapPin as RiMapPinLine, 
@@ -12,7 +13,8 @@ import {
   Compass as RiCompassLine,
   Info as RiInfoLine,
   CheckCircle2 as RiCheckCircleLine,
-  Map as RiMapLine
+  Map as RiMapLine,
+  ArrowLeft
 } from 'lucide-react';
 import './UserLocation.css';
 
@@ -38,6 +40,7 @@ const UserLocationSkeleton = () => (
 );
 
 const UserLocation = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -162,8 +165,16 @@ const UserLocation = () => {
         </div>
       </div>
 
-      {/* ── Search Toolbar ── */}
+      {/* ── Search Toolbar with Inline Back Button ── */}
       <div className="ul-toolbar">
+        <button
+          type="button"
+          className="ul-back-btn"
+          onClick={() => navigate('/admin/admintool')}
+          title="Back to Admin Tools"
+        >
+          <ArrowLeft size={18} />
+        </button>
         <div className="ul-search-wrapper">
           <RiSearchLine size={18} className="ul-search-icon" />
           <input
@@ -222,7 +233,15 @@ const UserLocation = () => {
                         <div className="ul-card-body">
                           <div className="ul-avatar-area">
                             <div className="ul-avatar">
-                              {(user.name || 'U').substring(0, 2).toUpperCase()}
+                              {user.profile_image || user.avatar ? (
+                                <img 
+                                  src={user.profile_image || user.avatar} 
+                                  alt={user.name} 
+                                  className="ul-avatar-img"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
+                              ) : null}
+                              {(!user.profile_image && !user.avatar) && (user.name || 'U').substring(0, 2).toUpperCase()}
                             </div>
                             <div className="ul-info">
                               <h4 className="ul-member-name">{user.name}</h4>
@@ -251,7 +270,7 @@ const UserLocation = () => {
                                 Address Shared
                               </span>
                             ) : (
-                              <span className="ul-badge missing" style={{ backgroundColor: '#fff5f5', color: '#e11d48', border: '1px solid rgba(225, 29, 72, 0.1)' }}>
+                              <span className="ul-badge missing">
                                 No Address
                               </span>
                             )}
@@ -273,16 +292,31 @@ const UserLocation = () => {
               {selectedUser ? (
                 <>
                   <div className="ul-map-preview-header">
-                    <h3 className="ul-map-preview-title">{selectedUser.name}</h3>
-                    <p className="ul-map-preview-sub">
-                      {selectedUser.latitude && selectedUser.longitude ? (
-                        <span style={{ color: '#10b981', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                          <span className="dot pulse" /> GPS Lock Connected
-                        </span>
-                      ) : (
-                        <span style={{ color: '#f59e0b', fontWeight: 700 }}>Address Search Match</span>
-                      )}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div className="ul-avatar">
+                        {selectedUser.profile_image || selectedUser.avatar ? (
+                          <img 
+                            src={selectedUser.profile_image || selectedUser.avatar} 
+                            alt={selectedUser.name} 
+                            className="ul-avatar-img"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        ) : null}
+                        {(!selectedUser.profile_image && !selectedUser.avatar) && (selectedUser.name || 'U').substring(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="ul-map-preview-title">{selectedUser.name}</h3>
+                        <p className="ul-map-preview-sub">
+                          {selectedUser.latitude && selectedUser.longitude ? (
+                            <span style={{ color: '#2e7d32', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                              <span className="dot pulse" /> GPS Lock Connected
+                            </span>
+                          ) : (
+                            <span style={{ color: '#a3704c', fontWeight: 700 }}>Address Search Match</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Google Maps Embed Iframe */}
