@@ -16,7 +16,6 @@ import Header from '../../../../../components/HeaderComponent/Header';
 export default function AddUser({ onBack }) {
   const [formData, setFormData] = useState({
     name: '',
-    nickname: '',
     phoneNumber: '',
     yearOfBirth: '',
     role: 'user',
@@ -37,11 +36,6 @@ export default function AddUser({ onBack }) {
     const clean = text.replace(/[<>&'"]/g, '');
     setFormData((s) => ({ ...s, name: clean }));
     if (errors.name) setErrors((e) => ({ ...e, name: '' }));
-  };
-
-  const handleNicknameChange = (text) => {
-    const clean = text.replace(/[<>&'"]/g, '');
-    setFormData((s) => ({ ...s, nickname: clean }));
   };
 
   const handlePhoneChange = (text) => {
@@ -81,7 +75,6 @@ export default function AddUser({ onBack }) {
         method: 'POST',
         body: JSON.stringify({
           name: formData.name.trim(),
-          nickname: formData.nickname.trim() || null,
           phoneNumber: formData.phoneNumber.trim(),
           yearOfBirth: formData.yearOfBirth.trim(),
           dateOfBirth: `${formData.yearOfBirth.trim()}-01-01`,
@@ -109,7 +102,7 @@ export default function AddUser({ onBack }) {
           {
             text: 'OK',
             onPress: () => {
-              setFormData({ name: '', nickname: '', phoneNumber: '', yearOfBirth: '', role: 'user' });
+              setFormData({ name: '', phoneNumber: '', yearOfBirth: '', role: 'user' });
               setErrors({});
               if (onBack) onBack();
             }
@@ -152,14 +145,6 @@ export default function AddUser({ onBack }) {
                 icon="account-outline"
                 required
                 error={errors.name}
-              />
-
-              <InputField
-                label="Nickname"
-                placeholder="Short alias (optional)"
-                value={formData.nickname}
-                onChangeText={handleNicknameChange}
-                icon="at"
               />
 
               <InputField
@@ -223,7 +208,7 @@ export default function AddUser({ onBack }) {
 
         <TouchableOpacity
           onPress={() => {
-            setFormData({ name: '', nickname: '', phoneNumber: '', yearOfBirth: '', role: 'user' });
+            setFormData({ name: '', phoneNumber: '', yearOfBirth: '', role: 'user' });
             setErrors({});
           }}
           activeOpacity={0.8}
@@ -332,4 +317,3 @@ const RoleDropdown = ({ label, value, onChangeRole, icon, required = false }) =>
     </View>
   );
 };
-

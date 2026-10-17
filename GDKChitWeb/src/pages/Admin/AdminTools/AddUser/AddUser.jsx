@@ -10,20 +10,6 @@ import {
 } from 'lucide-react';
 import './AddUser.css';
 
-// Safe date of birth formatter for preview
-const formatDOB = (dobStr) => {
-  if (!dobStr) return '';
-  const clean = String(dobStr).split('T')[0];
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const ymd = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (ymd) {
-    const [, y, m, d] = ymd;
-    const mIdx = parseInt(m, 10) - 1;
-    if (mIdx >= 0 && mIdx < 12) return `${d} ${months[mIdx]} ${y}`;
-  }
-  return clean;
-};
-
 const AddUser = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', phoneNumber: '', dateOfBirth: '', yearOfBirth: '', role: 'user', nickname: '' });
@@ -37,9 +23,10 @@ const AddUser = () => {
   // Calculate completion percentage
   useEffect(() => {
     let fields = 0;
-    if (formData.name.trim()) fields++;
-    if (formData.phoneNumber.trim().length === 10) fields++;
+    if (formData.name) fields++;
+    if (formData.phoneNumber) fields++;
     if (formData.dateOfBirth || formData.yearOfBirth) fields++;
+    // Role is always set
     setCompletion(Math.round((fields / 3) * 100));
   }, [formData]);
 
@@ -58,9 +45,6 @@ const AddUser = () => {
         }
         return { ...p, yearOfBirth: clean, dateOfBirth: newDob };
       });
-    } else if (name === 'name') {
-      const clean = value.replace(/[<>&'"]/g, '');
-      setFormData(p => ({ ...p, name: clean }));
     } else {
       setFormData(p => ({ ...p, [name]: value }));
     }
@@ -75,7 +59,6 @@ const AddUser = () => {
       dateOfBirth: val,
       yearOfBirth: y || p.yearOfBirth
     }));
-    if (errors.dateOfBirth) setErrors(p => ({ ...p, dateOfBirth: '' }));
     if (errors.yearOfBirth) setErrors(p => ({ ...p, yearOfBirth: '' }));
   };
 
@@ -84,16 +67,13 @@ const AddUser = () => {
     if (!formData.name.trim()) errs.name = 'Full name is required';
     const cleanPhone = formData.phoneNumber.replace(/\D/g, '');
     if (!cleanPhone) errs.phoneNumber = 'Phone number is required';
-    else if (cleanPhone.length !== 10) errs.phoneNumber = 'Enter a valid 10-digit mobile number';
-
-    const yobToValidate = formData.yearOfBirth || (formData.dateOfBirth ? formData.dateOfBirth.substring(0, 4) : '');
-    const currentYear = new Date().getFullYear();
-    if (!yobToValidate) {
-      errs.yearOfBirth = 'Date or year of birth is required';
-    } else {
-      const y = parseInt(yobToValidate, 10);
-      if (!/^\d{4}$/.test(yobToValidate) || y < 1900 || y > currentYear) {
-        errs.yearOfBirth = `Enter a valid 4-digit year (1900 - ${currentYear})`;
+    else if (cleanPhone.length !== 10) errs.phoneNumber = 'Enter a valid 10-digit number';
+    if (!formData.dateOfBirth && !formData.yearOfBirth) errs.yearOfBirth = 'Birth date/year is required';
+    else if (formData.yearOfBirth) { 
+      const y = parseInt(formData.yearOfBirth, 10); 
+      const currentYear = new Date().getFullYear();
+      if (!/^\d{4}$/.test(formData.yearOfBirth) || y < 1900 || y > currentYear) {
+        errs.yearOfBirth = 'Enter a valid year (e.g. 1990)'; 
       }
     }
     return errs;
@@ -108,7 +88,7 @@ const AddUser = () => {
     try {
       const finalYob = formData.yearOfBirth || (formData.dateOfBirth ? formData.dateOfBirth.substring(0, 4) : '');
       const finalDob = formData.dateOfBirth || (finalYob ? `${finalYob}-01-01` : null);
-      const res = await makeRequest('/admin/users/addUser', { 
+      const res  = await makeRequest('/admin/users/addUser', { 
         method: 'POST', 
         body: JSON.stringify({
           name: formData.name.trim(),
@@ -121,7 +101,7 @@ const AddUser = () => {
       });
       const data = await safeJson(res);
       if (!res.ok || !data?.success) throw new Error(data?.message || 'Failed to add user');
-      setNotice({ text: `Member "${formData.name.trim()}" added successfully!`, success: true });
+      setNotice({ text: `User "${formData.name}" added successfully!`, success: true });
       setFormData({ name: '', phoneNumber: '', dateOfBirth: '', yearOfBirth: '', role: 'user', nickname: '' });
       setErrors({});
     } catch (err) {
@@ -159,13 +139,13 @@ const AddUser = () => {
             </div>
             
             <div className="au-input-group">
-              <label className="au-label"><AtSign size={14} /> Nickname / Alias <span style={{ color: '#6B7280', fontSize: 11, fontWeight: 500 }}>(optional)</span></label>
+              <label className="au-label"><AtSign size={14} /> Nickname <span style={{ color: '#6B7280', fontSize: 11, fontWeight: 500 }}>(optional)</span></label>
               <input 
                 name="nickname" 
                 value={formData.nickname} 
                 onChange={updateField} 
                 className="au-input"
-                placeholder="e.g. gowtham_dev" 
+                placeholder="Short name or alias" 
               />
             </div>
           </div>
@@ -192,15 +172,12 @@ const AddUser = () => {
                 type="date"
                 value={formData.dateOfBirth || ''} 
                 onChange={handleDateChange} 
-                className={`au-input ${errors.dateOfBirth ? 'error' : ''}`}
+                className="au-input" 
               />
-              {errors.dateOfBirth && <p className="au-error-text"><RiAlertLine size={12} /> {errors.dateOfBirth}</p>}
             </div>
-          </div>
 
-          <div className="au-form-row">
             <div className="au-input-group">
-              <label className="au-label"><Key size={14}/> Year of Birth (Login PIN) <span className="au-label-req">*</span></label>
+              <label className="au-label"><Calendar size={14}/> Year of Birth <span className="au-label-req">*</span></label>
               <input 
                 name="yearOfBirth" 
                 value={formData.yearOfBirth} 
@@ -211,15 +188,8 @@ const AddUser = () => {
               />
               {errors.yearOfBirth 
                 ? <p className="au-error-text"><RiAlertLine size={12} /> {errors.yearOfBirth}</p>
-                : <p className="au-input-help">Auto-filled from Date of Birth. Used as initial login PIN.</p>
+                : <p className="au-input-help">Used as default PIN for first login</p>
               }
-            </div>
-
-            <div className="au-input-group" style={{ justifyContent: 'center' }}>
-              <div style={{ padding: '10px 14px', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: 12, color: '#64748b' }}>
-                <strong style={{ color: '#334155', display: 'block', marginBottom: 2 }}>Member Security Notice</strong>
-                The year of birth will be securely encrypted with AES & bcrypt as their temporary password upon creation.
-              </div>
             </div>
           </div>
 
@@ -267,52 +237,14 @@ const AddUser = () => {
           </div>
 
           {notice.text && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              padding: '12px 16px',
-              borderRadius: '8px',
-              background: notice.success ? '#ecfdf5' : '#fef2f2',
-              border: notice.success ? '1px solid #a7f3d0' : '1px solid #fecaca',
-              color: notice.success ? '#065f46' : '#991b1b',
-              fontWeight: 600,
-              fontSize: 13,
-              marginBottom: 16
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {notice.success ? <RiCheckLine size={18} color="#059669" /> : <RiAlertLine size={18} color="#dc2626" />}
-                <span>{notice.text}</span>
-              </div>
-              {notice.success && (
-                <button
-                  type="button"
-                  onClick={() => navigate('/admin/manage-users')}
-                  style={{
-                    background: '#059669',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '6px 14px',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                  }}
-                >
-                  Manage Members &rarr;
-                </button>
-              )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px', borderRadius: '6px', background: notice.success ? '#d1fae5' : '#fee2e2', color: notice.success ? '#065f46' : '#991b1b', fontWeight: 600, fontSize: 13, marginBottom: 12 }}>
+              {notice.success ? <RiCheckLine size={16} /> : <RiAlertLine size={16} />} {notice.text}
             </div>
           )}
 
           {/* Action Buttons */}
           <div className="au-actions">
-            <button type="button" className="au-btn-cancel" onClick={() => navigate('/admin/manage-users')}>
+            <button type="button" className="au-btn-cancel" onClick={() => navigate('/admin/admintool')}>
               <X size={18} /> Cancel
             </button>
 
@@ -360,8 +292,8 @@ const AddUser = () => {
           
           <div className="au-preview-info-row">
             <div className="au-preview-info-icon"><Calendar size={14} /></div>
-            <p className={`au-preview-info-text ${formData.dateOfBirth || formData.yearOfBirth ? 'filled' : ''}`}>
-              {formData.dateOfBirth ? formatDOB(formData.dateOfBirth) : (formData.yearOfBirth ? `Born: ${formData.yearOfBirth}` : 'Date of birth not set')}
+            <p className={`au-preview-info-text ${formData.yearOfBirth ? 'filled' : ''}`}>
+              {formData.yearOfBirth || 'Year of birth not set'}
             </p>
           </div>
 
