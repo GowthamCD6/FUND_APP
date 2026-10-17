@@ -335,9 +335,12 @@ const AuctionSettingsPage = () => {
             </div>
           </div>
 
-          <div className="asp-form-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-            <div className="asp-field">
-              <label className="asp-label">Default Monthly Auction Date</label>
+          <div className="asp-form-body">
+            <div className="asp-field" style={{ maxWidth: 440 }}>
+              <label className="asp-label">
+                Default Monthly Auction Date
+                <span className="asp-hint">Recurring monthly bidding day</span>
+              </label>
               <select
                 className="asp-input"
                 value={settings.defaultAuctionDay}
@@ -349,14 +352,6 @@ const AuctionSettingsPage = () => {
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div className="asp-info-note">
-              <Info size={16} color="#1b3322" />
-              <span>
-                These rules are propagated automatically to the live WebSocket engine during reverse auction sessions.
-                Individual scheme rules can override these defaults if explicitly configured during group creation.
-              </span>
             </div>
           </div>
         </div>
