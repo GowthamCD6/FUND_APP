@@ -440,10 +440,6 @@ const CreateGroup = () => {
             <CheckCircle2 size={14} color="#10B981" style={{ flexShrink: 0, marginTop: 1 }} />
             <p className="cg-tip-text">Monthly installment = Total Pool ÷ Members</p>
           </div>
-          <div className="cg-tip">
-            <CheckCircle2 size={14} color="#10B981" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p className="cg-tip-text">Created plans automatically get default settings & broadcast room</p>
-          </div>
         </div>
 
       </div>
