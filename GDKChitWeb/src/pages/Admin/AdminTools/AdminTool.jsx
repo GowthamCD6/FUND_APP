@@ -1,35 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, Settings, UserPlus, UserCog, Zap, ChevronRight,
-  Download, KeyRound, Gavel, MapPin, Key, Ban, Map,
-  Search, ShieldCheck, Database, Layers, Sparkles
+  ChevronRight,
+  Download,
+  KeyRound,
+  Gavel,
+  MapPin,
+  Key,
+  Ban,
+  Map,
+  Search,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import './AdminTool.css';
 
 const TOOL_SECTIONS = [
   {
     id: 'user-ops',
-    title: 'Subscriber & Membership Administration',
+    title: 'Subscriber Security & Access Controls',
     actions: [
-      {
-        id: 'add-user',
-        Icon: UserPlus,
-        title: 'Add New Subscriber',
-        desc: 'Click to access',
-        route: '/admin/admintool/add-user',
-        color: '#2E7D32',
-        bg: '#EBF3ED'
-      },
-      {
-        id: 'manage-users',
-        Icon: UserCog,
-        title: 'Manage Members Directory',
-        desc: 'Click to access',
-        route: '/admin/manage-users',
-        color: '#1B3322',
-        bg: '#EBF3ED'
-      },
       {
         id: 'block-members',
         Icon: Ban,
@@ -54,41 +44,23 @@ const TOOL_SECTIONS = [
         title: 'Member Geolocation Radar',
         desc: 'Click to access',
         route: '/admin/user-locations',
-        color: '#A3704C',
-        bg: '#FDF6F0'
+        color: '#2E7D32',
+        bg: '#EBF3ED'
       }
     ]
   },
   {
     id: 'chit-ops',
-    title: 'Chit Scheme & Pool Operations',
+    title: 'Chit Scheme & Auction Operations',
     actions: [
-      {
-        id: 'create-group',
-        Icon: Plus,
-        title: 'Create New Chit Plan',
-        desc: 'Click to access',
-        route: '/admin/create-group',
-        color: '#2E7D32',
-        bg: '#EBF3ED'
-      },
-      {
-        id: 'manage-groups',
-        Icon: Layers,
-        title: 'Manage Chit Groups',
-        desc: 'Click to access',
-        route: '/admin/manage-groups',
-        color: '#1B3322',
-        bg: '#EBF3ED'
-      },
       {
         id: 'auction-settings',
         Icon: Gavel,
         title: 'Auction Engine Configuration',
         desc: 'Click to access',
         route: '/admin/admintool/auction-settings',
-        color: '#A3704C',
-        bg: '#FDF6F0'
+        color: '#2E7D32',
+        bg: '#EBF3ED'
       }
     ]
   },
