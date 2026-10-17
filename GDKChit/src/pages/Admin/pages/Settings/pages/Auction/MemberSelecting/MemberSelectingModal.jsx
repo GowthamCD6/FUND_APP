@@ -31,39 +31,27 @@ const MemberSelectingModal = ({
   const { t } = useLanguage();
   const [isOverridingCompletedMonth, setIsOverridingCompletedMonth] = useState(false);
 
+  // Chronologically sorted completed auctions with strictly 1-to-1 cycle assignment
+  const sortedCompletedAuctions = (completedAuctions && completedAuctions.length > 0)
+    ? [...completedAuctions].sort((a, b) => {
+        const dateA = new Date(a.auction_date || a.collection_period || 0).getTime();
+        const dateB = new Date(b.auction_date || b.collection_period || 0).getTime();
+        return dateA - dateB;
+      })
+    : [];
+
   const getWinnerForCycle = (cycleNum) => {
-    if (!completedAuctions || completedAuctions.length === 0) return null;
-    const byCycle = completedAuctions.find(ca => Number(ca.cycle_month) === Number(cycleNum));
-    if (byCycle) return byCycle;
+    if (!sortedCompletedAuctions || sortedCompletedAuctions.length === 0) return null;
 
-    const startDt = selectedGroup?.startDate ? new Date(selectedGroup.startDate) : null;
-    if (startDt && !isNaN(startDt.getTime())) {
-      const targetDate = new Date(startDt.getFullYear(), startDt.getMonth() + (cycleNum - 1), 1);
-      const targetYear = targetDate.getFullYear();
-      const targetMonth = targetDate.getMonth();
-      const padMonth = String(targetMonth + 1).padStart(2, '0');
-      const targetPeriodStr = `${targetYear}-${padMonth}`;
-
-      const dateMatch = completedAuctions.find(ca => {
-        if (!ca.collection_period) return false;
-        const cpStr = String(ca.collection_period);
-        if (cpStr.includes(targetPeriodStr)) return true;
-        const cpDt = new Date(ca.collection_period);
-        if (!isNaN(cpDt.getTime())) {
-          return (
-            (cpDt.getFullYear() === targetYear && cpDt.getMonth() === targetMonth) ||
-            (cpDt.getUTCFullYear() === targetYear && cpDt.getUTCMonth() === targetMonth)
-          );
-        }
-        return false;
-      });
-      if (dateMatch) return dateMatch;
+    const num = Number(cycleNum);
+    if (!num || num < 1 || num > sortedCompletedAuctions.length) {
+      return null;
     }
 
-    if (completedAuctions[cycleNum - 1]) {
-      return completedAuctions[cycleNum - 1];
-    }
-    return null;
+    const byExplicitCycle = sortedCompletedAuctions.find(ca => Number(ca.cycle_month) === num);
+    if (byExplicitCycle) return byExplicitCycle;
+
+    return sortedCompletedAuctions[num - 1] || null;
   };
 
   const activeCycleMonth = selectedCycleMonth || (selectedGroup?.completedCycles ? selectedGroup.completedCycles + 1 : 1);

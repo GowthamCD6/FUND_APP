@@ -299,45 +299,34 @@ const Auction = () => {
     }
   }, []);
 
+  // Chronologically sorted completed auctions with strictly 1-to-1 cycle assignment
+  const sortedCompletedAuctions = useMemo(() => {
+    if (!completedAuctions || completedAuctions.length === 0) return [];
+    return [...completedAuctions].sort((a, b) => {
+      const dateA = new Date(a.auction_date || a.collection_period || 0).getTime();
+      const dateB = new Date(b.auction_date || b.collection_period || 0).getTime();
+      return dateA - dateB;
+    });
+  }, [completedAuctions]);
+
   const getWinnerForCycle = useCallback((cycleNum) => {
-    if (!completedAuctions || completedAuctions.length === 0) return null;
+    if (!sortedCompletedAuctions || sortedCompletedAuctions.length === 0) return null;
 
-    // 1. Direct cycle_month match if present
-    const byCycle = completedAuctions.find(ca => Number(ca.cycle_month) === Number(cycleNum));
-    if (byCycle) return byCycle;
-
-    // 2. Match by calculated collection_period from group start date
-    const startDt = selectedGroup?.startDate ? new Date(selectedGroup.startDate) : null;
-    if (startDt && !isNaN(startDt.getTime())) {
-      const targetDate = new Date(startDt.getFullYear(), startDt.getMonth() + (cycleNum - 1), 1);
-      const targetYear = targetDate.getFullYear();
-      const targetMonth = targetDate.getMonth();
-      const padMonth = String(targetMonth + 1).padStart(2, '0');
-      const targetPeriodStr = `${targetYear}-${padMonth}`;
-
-      const dateMatch = completedAuctions.find(ca => {
-        if (!ca.collection_period) return false;
-        const cpStr = String(ca.collection_period);
-        if (cpStr.includes(targetPeriodStr)) return true;
-        const cpDt = new Date(ca.collection_period);
-        if (!isNaN(cpDt.getTime())) {
-          return (
-            (cpDt.getFullYear() === targetYear && cpDt.getMonth() === targetMonth) ||
-            (cpDt.getUTCFullYear() === targetYear && cpDt.getUTCMonth() === targetMonth)
-          );
-        }
-        return false;
-      });
-      if (dateMatch) return dateMatch;
+    const num = Number(cycleNum);
+    if (!num || num < 1 || num > sortedCompletedAuctions.length) {
+      return null;
     }
 
-    // 3. Fallback: match by sequential index
-    if (completedAuctions[cycleNum - 1]) {
-      return completedAuctions[cycleNum - 1];
-    }
+    // Direct cycle_month match if explicitly given by backend and in range
+    const byExplicitCycle = sortedCompletedAuctions.find(ca => Number(ca.cycle_month) === num);
+    if (byExplicitCycle) return byExplicitCycle;
 
-    return null;
-  }, [completedAuctions, selectedGroup?.startDate]);
+    // Strict 1-to-1 sequential mapping:
+    // Cycle 1 -> sortedCompletedAuctions[0]
+    // Cycle 2 -> sortedCompletedAuctions[1]
+    // Cycle N -> sortedCompletedAuctions[N - 1]
+    return sortedCompletedAuctions[num - 1] || null;
+  }, [sortedCompletedAuctions]);
 
   const firstPendingMonth = useMemo(() => {
     const duration = Number(selectedGroup?.duration || 20);
