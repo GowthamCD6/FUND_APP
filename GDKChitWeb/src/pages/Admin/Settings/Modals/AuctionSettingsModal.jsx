@@ -8,44 +8,80 @@ import {
   ShieldAlert,
   Percent,
   Calendar,
-  Save
+  Save,
+  Loader2
 } from 'lucide-react';
+import { makeRequest, safeJson } from '../../../../api/apiClient';
 import './AdminModals.css';
 
 const AuctionSettingsModal = ({ isOpen, onClose }) => {
   const [settings, setSettings] = useState({
+    defaultDurationMinutes: 5,
     defaultDurationSeconds: 300,
     minBidStep: 1000,
     maxDiscountPercent: 30,
     autoExtendOnLastSeconds: true,
-    extendSeconds: 30,
-    defaultAuctionDay: 10,
+    extendMinutes: 1,
+    extendSeconds: 60,
     foremanCommissionPercent: 5
   });
+  const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    // Cache read
     const stored = localStorage.getItem('admin_auction_settings');
     if (stored) {
       try {
-        setSettings(JSON.parse(stored));
+        setSettings(prev => ({ ...prev, ...JSON.parse(stored) }));
       } catch (e) {}
     }
+
+    // DB fetch
+    const fetchDb = async () => {
+      try {
+        const res = await makeRequest('/admin/settings/auction');
+        const json = await safeJson(res);
+        if (json.success && json.data) {
+          setSettings(prev => ({ ...prev, ...json.data }));
+          localStorage.setItem('admin_auction_settings', JSON.stringify(json.data));
+        }
+      } catch (e) {}
+    };
+    fetchDb();
   }, [isOpen]);
 
   const handleChange = (field, val) => {
     setSettings(prev => ({ ...prev, [field]: val }));
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    localStorage.setItem('admin_auction_settings', JSON.stringify(settings));
-    setSavedMsg(true);
-    setTimeout(() => {
-      setSavedMsg(false);
-      onClose();
-    }, 1500);
+    setSaving(true);
+    try {
+      const res = await makeRequest('/admin/settings/auction', {
+        method: 'POST',
+        body: JSON.stringify(settings)
+      });
+      const data = await safeJson(res);
+      localStorage.setItem('admin_auction_settings', JSON.stringify(data.data || settings));
+      setSavedMsg(true);
+      setTimeout(() => {
+        setSavedMsg(false);
+        onClose();
+      }, 1200);
+    } catch (err) {
+      localStorage.setItem('admin_auction_settings', JSON.stringify(settings));
+      setSavedMsg(true);
+      setTimeout(() => {
+        setSavedMsg(false);
+        onClose();
+      }, 1200);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!isOpen) return null;

@@ -113,6 +113,7 @@ async function checkAndInitializeDatabase() {
       'user_preferences',
       'app_ratings',
       'otp_requests',
+      'system_settings',
     ];
 
     const existingTables = new Set(tables.map(t => t.TABLE_NAME));
@@ -198,6 +199,16 @@ async function checkAndInitializeDatabase() {
         UNIQUE KEY uk_usr_del_room (user_id, room_id),
         CONSTRAINT fk_del_room_usr FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         CONSTRAINT fk_del_room_chat FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        setting_key VARCHAR(100) PRIMARY KEY,
+        setting_value JSON NOT NULL,
+        description VARCHAR(255) NULL,
+        updated_by BIGINT UNSIGNED NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 

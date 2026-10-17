@@ -7,6 +7,7 @@ const groupMessaging = require('../controllers/admin/groupMessaging');
 const monthlyCollection = require('../controllers/admin/monthlyCollection');
 const userManagement = require('../controllers/admin/userManagement');
 const reportsController = require('../controllers/admin/reportsController');
+const settingsController = require('../controllers/admin/settingsController');
 const { otpRateLimiter, authAttemptRateLimiter } = require('../middleware/rateLimiter');
 const {
   validateCreateGroupPayload,
@@ -79,5 +80,9 @@ router.post(
   validateVerifyOtpPayload,
   reportsController.verifyPaymentOTP,
 );
+
+// System Settings (Auction Engine Configuration)
+router.get('/settings/auction', authenticateToken, requireAdmin, settingsController.getAuctionSettings);
+router.post('/settings/auction', authenticateToken, requireAdmin, settingsController.saveAuctionSettings);
 
 module.exports = router;

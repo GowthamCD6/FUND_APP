@@ -406,6 +406,21 @@
   color: #2e7d32;
 }
 
+.asp-save-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.asp-spin {
+  animation: aspSpin 1s linear infinite;
+}
+
+@keyframes aspSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 768px) {
   .asp-header {
     flex-direction: column;

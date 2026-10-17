@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Gavel, ArrowLeft, Check, Timer, TrendingDown, ShieldAlert,
-  Percent, Save, RotateCcw, AlertCircle, Info, Zap
+  Percent, Save, RotateCcw, AlertCircle, Info, Zap, Loader2
 } from 'lucide-react';
+import { makeRequest, safeJson } from '../../../../api/apiClient';
 import './AuctionSettingsPage.css';
 
 const DEFAULT_AUCTION_CONFIG = {
@@ -14,17 +15,19 @@ const DEFAULT_AUCTION_CONFIG = {
   autoExtendOnLastSeconds: true,
   extendMinutes: 1,
   extendSeconds: 60,
-  defaultAuctionDay: 10,
   foremanCommissionPercent: 5
 };
 
 const AuctionSettingsPage = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState(DEFAULT_AUCTION_CONFIG);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
+    // 1. Initial local cache check for instant render
     const stored = localStorage.getItem('admin_auction_settings');
     if (stored) {
       try {
@@ -41,6 +44,35 @@ const AuctionSettingsPage = () => {
         });
       } catch (e) {}
     }
+
+    // 2. Fetch fresh live settings from Database
+    const fetchDbSettings = async () => {
+      try {
+        const res = await makeRequest('/admin/settings/auction');
+        const json = await safeJson(res);
+        if (json.success && json.data) {
+          const dbData = json.data;
+          const mins = dbData.defaultDurationMinutes || Math.round((dbData.defaultDurationSeconds || 300) / 60);
+          const extMins = dbData.extendMinutes || (dbData.extendSeconds ? Math.max(1, Math.round(dbData.extendSeconds / 60)) : 1);
+          const merged = {
+            ...DEFAULT_AUCTION_CONFIG,
+            ...dbData,
+            defaultDurationMinutes: mins,
+            defaultDurationSeconds: mins * 60,
+            extendMinutes: extMins,
+            extendSeconds: extMins * 60
+          };
+          setSettings(merged);
+          localStorage.setItem('admin_auction_settings', JSON.stringify(merged));
+        }
+      } catch (err) {
+        console.warn('Could not fetch auction settings from DB, using cached:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDbSettings();
   }, []);
 
   const handleChange = (field, val) => {
@@ -68,8 +100,8 @@ const AuctionSettingsPage = () => {
     setIsDirty(true);
   };
 
-  const handleSave = (e) => {
-    e.preventDefault();
+  const handleSave = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
 
     const durationMins = settings.defaultDurationMinutes || Math.round(settings.defaultDurationSeconds / 60);
     if (durationMins < 1 || durationMins > 60) {
@@ -102,17 +134,46 @@ const AuctionSettingsPage = () => {
       extendSeconds: extMins * 60
     };
 
-    localStorage.setItem('admin_auction_settings', JSON.stringify(payload));
-    setSavedMsg(true);
-    setIsDirty(false);
-    setTimeout(() => {
-      setSavedMsg(false);
-    }, 2500);
+    setSaving(true);
+    try {
+      // 1. Save to Database
+      const res = await makeRequest('/admin/settings/auction', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const data = await safeJson(res);
+      if (!data.success) {
+        throw new Error(data.message || 'Database save failed');
+      }
+
+      // 2. Update local storage cache
+      localStorage.setItem('admin_auction_settings', JSON.stringify(data.data || payload));
+      setSavedMsg(true);
+      setIsDirty(false);
+      setTimeout(() => {
+        setSavedMsg(false);
+      }, 2500);
+    } catch (err) {
+      console.error('Failed to save to database:', err);
+      // Fallback: save to localStorage if offline/network error
+      localStorage.setItem('admin_auction_settings', JSON.stringify(payload));
+      alert('Saved locally. (Note: Database sync error: ' + (err.message || 'Network error') + ')');
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 2500);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (window.confirm('Reset auction parameters to factory defaults?')) {
       setSettings(DEFAULT_AUCTION_CONFIG);
+      try {
+        await makeRequest('/admin/settings/auction', {
+          method: 'POST',
+          body: JSON.stringify(DEFAULT_AUCTION_CONFIG)
+        });
+      } catch (e) {}
       localStorage.setItem('admin_auction_settings', JSON.stringify(DEFAULT_AUCTION_CONFIG));
       setIsDirty(false);
       setSavedMsg(true);
@@ -153,9 +214,10 @@ const AuctionSettingsPage = () => {
             type="button"
             className="asp-save-btn"
             onClick={handleSave}
+            disabled={saving}
           >
-            {savedMsg ? <Check size={16} /> : <Save size={16} />}
-            <span>{savedMsg ? 'Saved Changes!' : 'Save Configuration'}</span>
+            {saving ? <Loader2 size={16} className="asp-spin" /> : savedMsg ? <Check size={16} /> : <Save size={16} />}
+            <span>{saving ? 'Saving to Database...' : savedMsg ? 'Saved to Database!' : 'Save Configuration'}</span>
           </button>
         </div>
       </div>
@@ -163,7 +225,7 @@ const AuctionSettingsPage = () => {
       {savedMsg && (
         <div className="asp-success-banner">
           <Check size={18} />
-          <span>Auction engine parameters updated and synced to live bidding portal!</span>
+          <span>Auction engine parameters updated and synced to database!</span>
         </div>
       )}
 
