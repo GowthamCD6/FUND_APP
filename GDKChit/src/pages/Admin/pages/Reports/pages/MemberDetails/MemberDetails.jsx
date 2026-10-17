@@ -174,6 +174,14 @@ class MemberDetails extends Component {
   formatDate = (dateString) => {
     if (!dateString) return 'N/A';
 
+    if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateString)) {
+      const [y, m, d] = dateString.split('T')[0].split('-').map(Number);
+      if (y && m && d) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${String(d).padStart(2, '0')} ${months[m - 1]} ${y}`;
+      }
+    }
+
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return 'N/A';
 
@@ -478,9 +486,10 @@ class MemberDetails extends Component {
     return (
       <TouchableOpacity
         style={styles.memberCard}
+        onPress={() => this.openPaymentEditor(item)}
         onLongPress={() => this.openPaymentEditor(item)}
         delayLongPress={400}
-        activeOpacity={0.9}
+        activeOpacity={0.85}
       >
         <View style={styles.memberHeader}>
           <View style={styles.memberAvatarContainer}>

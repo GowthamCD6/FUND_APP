@@ -44,7 +44,7 @@ const buildDefaultDueDate = (year, month) => {
   if (!Number.isInteger(y) || !Number.isInteger(m) || m < 0 || m > 11) {
     return null;
   }
-  return new Date(y, m, 15);
+  return `${y}-${String(m + 1).padStart(2, '0')}-15`;
 };
 
 const generateReceiptNumber = (groupId, userId, year, month) => {
@@ -54,6 +54,12 @@ const generateReceiptNumber = (groupId, userId, year, month) => {
 
 const getPeriodKey = (dateVal) => {
   if (!dateVal) return '';
+  if (typeof dateVal === 'string') {
+    const parts = dateVal.split('T')[0].split('-');
+    if (parts.length >= 2) {
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-01`;
+    }
+  }
   const d = new Date(dateVal);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 };
@@ -225,11 +231,11 @@ exports.getGroupMemberPayments = async (req, res) => {
         mc.user_id,
         MONTH(mc.collection_period) - 1 AS month,
         YEAR(mc.collection_period) AS year,
-        mc.collection_period,
+        DATE_FORMAT(mc.collection_period, '%Y-%m-%d') AS collection_period,
         mc.amount,
         mc.status,
-        mc.due_date,
-        mc.paid_date,
+        DATE_FORMAT(mc.due_date, '%Y-%m-%d') AS due_date,
+        DATE_FORMAT(mc.paid_date, '%Y-%m-%d %H:%i:%s') AS paid_date,
         mc.receipt_number,
         mc.customer_notes AS notes,
         mc.updated_at
@@ -252,7 +258,7 @@ exports.getGroupMemberPayments = async (req, res) => {
 
     const [[auctionWinner]] = await db.promise().query(
       `
-      SELECT winner_name, winner_member_phone, amount_taken, auction_date
+      SELECT winner_name, winner_member_phone, amount_taken, DATE_FORMAT(auction_date, '%Y-%m-%d') AS auction_date
       FROM group_auction_winners
       WHERE group_id = ? AND collection_period = ? AND deleted_at IS NULL
       LIMIT 1
@@ -262,7 +268,7 @@ exports.getGroupMemberPayments = async (req, res) => {
 
     const [allGroupWinners] = await db.promise().query(
       `
-      SELECT winner_user_id, winner_name, winner_member_phone, amount_taken, auction_date, collection_period
+      SELECT winner_user_id, winner_name, winner_member_phone, amount_taken, DATE_FORMAT(auction_date, '%Y-%m-%d') AS auction_date, DATE_FORMAT(collection_period, '%Y-%m-%d') AS collection_period
       FROM group_auction_winners
       WHERE group_id = ? AND deleted_at IS NULL
       `,
@@ -496,14 +502,16 @@ exports.updateMemberPaymentStatus = async (req, res) => {
     );
 
     const amount = Number.isFinite(Number(req.body.amount)) ? Number(req.body.amount) : computedAmount;
-    const dueDate = req.body.dueDate ? new Date(req.body.dueDate) : buildDefaultDueDate(year, month);
+    const dueDate = req.body.dueDate
+      ? (typeof req.body.dueDate === 'string' && req.body.dueDate.includes('T') ? req.body.dueDate.split('T')[0] : req.body.dueDate)
+      : buildDefaultDueDate(year, month);
     const paidDate = status === 'paid' ? new Date() : null;
     const receiptNumber = status === 'paid' ? (req.body.receiptNumber || generateReceiptNumber(groupId, userId, year, month)) : null;
     const notes = req.body.notes ? String(req.body.notes) : null;
 
     const creatorId = req.user ? (req.user.userId || req.user.id) : null;
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const deviceInfo = req.headers['user-agent'];
+    const ipAddress = req.ip || req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || null;
+    const deviceInfo = req.headers?.['user-agent'] || null;
 
     // 1. Insert/update monthly_collections
     await connection.query(
@@ -563,27 +571,50 @@ exports.updateMemberPaymentStatus = async (req, res) => {
 
     // 2. If status is paid, create/update record in payment_transactions table
     if (status === 'paid') {
-      const txSql = `
-        INSERT INTO payment_transactions
-        (collection_id, amount, payment_method, transaction_reference, receipt_number, status, paid_at, created_by)
-        VALUES (?, ?, ?, ?, ?, 'success', ?, ?)
-        ON DUPLICATE KEY UPDATE
-          amount = VALUES(amount),
-          payment_method = VALUES(payment_method),
-          transaction_reference = VALUES(transaction_reference),
-          paid_at = VALUES(paid_at),
-          updated_by = VALUES(created_by),
-          version = version + 1
-      `;
-      await connection.query(txSql, [
-        collectionId,
-        amount,
-        paymentMethod || 'cash',
-        transactionReference || null,
-        receiptNumber,
-        paidDate,
-        creatorId ? Number(creatorId) : null
-      ]);
+      const [[existingTx]] = await connection.query(
+        'SELECT id, receipt_number FROM payment_transactions WHERE collection_id = ? AND deleted_at IS NULL ORDER BY id DESC LIMIT 1',
+        [collectionId]
+      );
+      
+      const txReceiptNumber = receiptNumber || existingTx?.receipt_number || generateReceiptNumber(groupId, userId, year, month);
+
+      if (existingTx) {
+        await connection.query(
+          `UPDATE payment_transactions
+           SET amount = ?, payment_method = ?, transaction_reference = ?, receipt_number = ?, status = 'success', paid_at = ?, updated_by = ?, version = version + 1, updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?`,
+          [
+            amount,
+            paymentMethod || 'cash',
+            transactionReference || null,
+            txReceiptNumber,
+            paidDate,
+            creatorId ? Number(creatorId) : null,
+            existingTx.id
+          ]
+        );
+      } else {
+        await connection.query(
+          `INSERT INTO payment_transactions
+           (collection_id, amount, payment_method, transaction_reference, receipt_number, status, paid_at, created_by)
+           VALUES (?, ?, ?, ?, ?, 'success', ?, ?)`,
+          [
+            collectionId,
+            amount,
+            paymentMethod || 'cash',
+            transactionReference || null,
+            txReceiptNumber,
+            paidDate,
+            creatorId ? Number(creatorId) : null
+          ]
+        );
+      }
+    } else {
+      // If status changed from paid to pending/overdue, mark transactions as failed
+      await connection.query(
+        `UPDATE payment_transactions SET status = 'failed', updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE collection_id = ? AND status = 'success'`,
+        [creatorId ? Number(creatorId) : null, collectionId]
+      );
     }
 
     // 3. Log Audit Event
@@ -661,11 +692,11 @@ exports.getMemberChitCard = async (req, res) => {
         id,
         MONTH(collection_period) - 1 AS month,
         YEAR(collection_period) AS year,
-        collection_period,
+        DATE_FORMAT(collection_period, '%Y-%m-%d') AS collection_period,
         amount,
         status,
-        due_date,
-        paid_date,
+        DATE_FORMAT(due_date, '%Y-%m-%d') AS due_date,
+        DATE_FORMAT(paid_date, '%Y-%m-%d %H:%i:%s') AS paid_date,
         receipt_number
       FROM monthly_collections
       WHERE group_id = ? AND user_id = ? AND deleted_at IS NULL
@@ -677,7 +708,7 @@ exports.getMemberChitCard = async (req, res) => {
     const [monthMetaRows] = await db.promise().query(
       `
       SELECT
-        gmd.collection_period,
+        DATE_FORMAT(gmd.collection_period, '%Y-%m-%d') AS collection_period,
         MONTH(gmd.collection_period) - 1 AS month,
         YEAR(gmd.collection_period) AS year,
         gmd.monthly_amount,

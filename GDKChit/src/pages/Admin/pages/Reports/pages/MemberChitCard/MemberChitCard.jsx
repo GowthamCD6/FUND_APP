@@ -189,6 +189,13 @@ const ChitCard = ({ selectedGroup, selectedMember, onBack, onPaymentMarkedPaid }
 
   const formatDate = (dateValue) => {
     if (!dateValue) return 'N/A';
+    if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateValue)) {
+      const [y, m, d] = dateValue.split('T')[0].split('-').map(Number);
+      if (y && m && d) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${String(d).padStart(2, '0')} ${months[m - 1]} ${y}`;
+      }
+    }
     const date = new Date(dateValue);
     if (Number.isNaN(date.getTime())) return 'N/A';
     return date.toLocaleDateString('en-IN', {

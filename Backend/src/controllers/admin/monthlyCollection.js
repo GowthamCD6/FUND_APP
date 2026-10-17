@@ -15,8 +15,8 @@ exports.getMemberPaymentHistory = async (req, res) => {
                 YEAR(mc.collection_period) AS year,
                 mc.amount,
                 mc.status,
-                mc.due_date,
-                mc.paid_date,
+                DATE_FORMAT(mc.due_date, '%Y-%m-%d') AS due_date,
+                DATE_FORMAT(mc.paid_date, '%Y-%m-%d %H:%i:%s') AS paid_date,
                 mc.receipt_number,
                 g.group_name,
                 u.name as user_name
@@ -56,7 +56,7 @@ exports.getGlobalDefaulters = async (req, res) => {
                 YEAR(mc.collection_period) AS year,
                 mc.amount,
                 mc.status,
-                mc.due_date,
+                DATE_FORMAT(mc.due_date, '%Y-%m-%d') as due_date,
                 g.group_name,
                 u.name as user_name,
                 u.phone as user_phone,
@@ -128,6 +128,7 @@ exports.getGlobalDefaulters = async (req, res) => {
 
                         if (!paidRow || paidRow.status !== 'paid') {
                             const isPastMonth = cYear < currentYear || (cYear === currentYear && cMonth < currentMonth);
+                            const dueDateStr = `${cYear}-${String(cMonth + 1).padStart(2, '0')}-15`;
                             const dueDate = new Date(cYear, cMonth, 15);
                             const isOverdue = isPastMonth || (cYear === currentYear && cMonth === currentMonth && currentDate > 15);
                             const daysDiff = Math.max(0, Math.floor((now - dueDate) / (1000 * 60 * 60 * 24)));
@@ -140,7 +141,7 @@ exports.getGlobalDefaulters = async (req, res) => {
                                 year: cYear,
                                 amount: monthlyAmount,
                                 status: isOverdue ? 'overdue' : 'pending',
-                                due_date: dueDate.toISOString(),
+                                due_date: dueDateStr,
                                 group_name: g.group_name,
                                 user_name: member.user_name,
                                 user_phone: member.user_phone,

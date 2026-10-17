@@ -424,21 +424,38 @@ const MemberDetailsPanel = ({ group, onClose, onRefreshParent }) => {
       // Update locally immediately for instantaneous UI response
       setMembers(prev => prev.map(m => {
         if (Number(m.id || m.userId) !== Number(memberId)) return m;
-        const updatedHistory = (m.paymentHistory || []).map(p => {
-          if (Number(p.month) !== Number(selMonth) || Number(p.year) !== Number(selYear)) return p;
-          return {
-            ...p,
-            status: newStatus,
-            paidDate: newStatus === 'paid' ? new Date().toISOString() : null,
-            receiptNumber: data.data?.receiptNumber || (newStatus === 'paid' ? `RCP-${group.id}-${memberId}` : null),
-          };
-        });
+        const existingHistory = m.paymentHistory || [];
+        const hasEntry = existingHistory.some(p => Number(p.month) === Number(selMonth) && Number(p.year) === Number(selYear));
+        const updatedHistory = hasEntry
+          ? existingHistory.map(p => {
+              if (Number(p.month) !== Number(selMonth) || Number(p.year) !== Number(selYear)) return p;
+              return {
+                ...p,
+                status: newStatus,
+                paidDate: newStatus === 'paid' ? (data.data?.paidDate || new Date().toISOString()) : null,
+                receiptNumber: data.data?.receiptNumber || (newStatus === 'paid' ? `RCP-${group.id}-${memberId}` : null),
+              };
+            })
+          : [
+              {
+                month: selMonth,
+                year: selYear,
+                monthName: `${MONTHS[selMonth]} ${selYear}`,
+                amount: customAmount || monthlyAmt,
+                status: newStatus,
+                dueDate: `${selYear}-${String(selMonth + 1).padStart(2, '0')}-15`,
+                paidDate: newStatus === 'paid' ? (data.data?.paidDate || new Date().toISOString()) : null,
+                receiptNumber: data.data?.receiptNumber || (newStatus === 'paid' ? `RCP-${group.id}-${memberId}` : null),
+              },
+              ...existingHistory,
+            ];
+
         return {
           ...m,
           currentPayment: {
             ...(m.currentPayment || {}),
             status: newStatus,
-            paidDate: newStatus === 'paid' ? new Date().toISOString() : null,
+            paidDate: newStatus === 'paid' ? (data.data?.paidDate || new Date().toISOString()) : null,
             receiptNumber: data.data?.receiptNumber || null,
           },
           paymentHistory: updatedHistory,
