@@ -25,7 +25,8 @@ import {
   Phone as RiPhoneLine,
   MapPin as RiMapPinLine,
   Download as RiDownloadLine,
-  Paperclip as RiPaperclipLine
+  Paperclip as RiPaperclipLine,
+  Mic as RiMicLine
 } from 'lucide-react';
 
 const EMOJIS = ['👍', '❤️', '😊', '🙏', '🔥', '🎉', '💰', '💵', '💳', '✅', '⚠️', '🤝', '👏', '⭐', '📍', '📞'];
@@ -61,6 +62,13 @@ const ChatScreen = ({ chat, onBack }) => {
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordDuration, setRecordDuration] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordTimerRef = useRef(null);
 
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
@@ -224,6 +232,93 @@ const ChatScreen = ({ chat, onBack }) => {
     } finally {
       setIsUploading(false);
       if (e.target) e.target.value = '';
+    }
+  };
+
+  const formatRecordTime = (secs) => {
+    const mins = Math.floor(secs / 60);
+    const rem = secs % 60;
+    return `${String(mins).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+  };
+
+  const uploadVoiceNote = async (audioBlob) => {
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('file', audioBlob, `voice_note_${Date.now()}.webm`);
+
+      const token = tokenStore.getAccessToken();
+      const res = await fetch(`${API_URL}/chats/upload-file`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success && data.fileUrl) {
+        await sendRawMessage(`Audio: Voice Note | ${data.fileUrl}`);
+      } else {
+        alert(data.message || 'Failed to send voice note');
+      }
+    } catch (err) {
+      console.error('Voice upload error:', err);
+      alert('Error sending voice note');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const startVoiceRecording = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Microphone access is not supported by your browser.');
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        if (audioBlob.size > 0 && audioChunksRef.current.length > 0) {
+          await uploadVoiceNote(audioBlob);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordDuration(0);
+      recordTimerRef.current = setInterval(() => {
+        setRecordDuration(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Microphone error:', err);
+      alert('Could not access microphone: ' + err.message);
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const cancelVoiceRecording = () => {
+    if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+    if (mediaRecorderRef.current && isRecording) {
+      audioChunksRef.current = [];
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
     }
   };
 
@@ -417,6 +512,16 @@ const ChatScreen = ({ chat, onBack }) => {
 
       {/* Header */}
       <div className="chat-screen-header">
+        {onBack && (
+          <button 
+            type="button" 
+            className="chat-back-btn" 
+            onClick={onBack} 
+            title="Back to conversations"
+          >
+            <RiArrowLeftLine size={20} />
+          </button>
+        )}
         <div className="chat-screen-header-info" onClick={() => { if (chat.isGroup) { fetchGroupMembers(); setShowGroupInfo(true); } }}>
           <div className="chat-screen-avatar">
             {chat.chatAvatar && typeof chat.chatAvatar === 'string' && (chat.chatAvatar.startsWith('http') || chat.chatAvatar.startsWith('/uploads')) ? (
@@ -618,47 +723,88 @@ const ChatScreen = ({ chat, onBack }) => {
         </div>
       )}
 
-      {/* Input Area (Redesigned Pill) */}
+      {/* Input Area (Pill Redesign with Voice Recording) */}
       <div className="chat-screen-input-container">
-        <form className="chat-screen-input-wrapper" onSubmit={handleSendMessage}>
-          <button 
-            type="button" 
-            className="chat-input-action-btn"
-            onClick={() => { setShowAttachments(v => !v); setShowEmojis(false); }}
-            title="Attach file, contact or location"
-            style={{ color: showAttachments ? '#2E7D32' : '#6B7A6E' }}
-          >
-            <RiPlusLine size={22} />
-          </button>
-          
-          <input 
-            type="text" 
-            className="chat-input-box-redesign" 
-            placeholder={isUploading ? "Uploading attachment..." : "Type a message..."} 
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            disabled={isUploading}
-          />
+        {isRecording ? (
+          <div className="chat-recording-wrapper">
+            <div className="chat-recording-indicator">
+              <div className="chat-rec-dot" />
+              <span>Recording voice note {formatRecordTime(recordDuration)}</span>
+            </div>
+            <div className="chat-rec-actions">
+              <button 
+                type="button" 
+                className="chat-rec-cancel-btn"
+                onClick={cancelVoiceRecording}
+                title="Discard recording"
+              >
+                <RiDeleteBinLine size={20} />
+              </button>
+              <button 
+                type="button" 
+                className="chat-rec-send-btn"
+                onClick={stopVoiceRecording}
+                title="Send voice note"
+              >
+                <RiSendLine size={18} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form className="chat-screen-input-wrapper" onSubmit={handleSendMessage}>
+            <button 
+              type="button" 
+              className="chat-input-action-btn"
+              onClick={() => { setShowAttachments(v => !v); setShowEmojis(false); }}
+              title="Attach file, contact or location"
+              style={{ color: showAttachments ? '#2E7D32' : '#6B7A6E' }}
+            >
+              <RiPlusLine size={22} />
+            </button>
+            
+            <input 
+              type="text" 
+              className="chat-input-box-redesign" 
+              placeholder={isUploading ? "Uploading attachment..." : "Type a message..."} 
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              disabled={isUploading}
+            />
 
-          <button 
-            type="button" 
-            className="chat-input-action-btn secondary"
-            onClick={() => { setShowEmojis(v => !v); setShowAttachments(false); }}
-            title="Emoji"
-            style={{ color: showEmojis ? '#2E7D32' : '#94A3B8' }}
-          >
-            <RiSmileLine size={22} />
-          </button>
-          
-          <button 
-            type="submit" 
-            className="chat-send-btn-redesign"
-            disabled={!messageText.trim() || isUploading}
-            style={{ background: '#2E7D32' }}
-          >
-            <RiSendLine size={18} />
-          </button>
-        </form>
+            <button 
+              type="button" 
+              className="chat-input-action-btn secondary"
+              onClick={() => { setShowEmojis(v => !v); setShowAttachments(false); }}
+              title="Emoji"
+              style={{ color: showEmojis ? '#2E7D32' : '#94A3B8' }}
+            >
+              <RiSmileLine size={22} />
+            </button>
+            
+            {messageText.trim() ? (
+              <button 
+                type="submit" 
+                className="chat-send-btn-redesign"
+                disabled={isUploading}
+                style={{ background: '#2E7D32' }}
+                title="Send Message"
+              >
+                <RiSendLine size={18} />
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                className="chat-send-btn-redesign mic"
+                onClick={startVoiceRecording}
+                disabled={isUploading}
+                style={{ background: '#2E7D32' }}
+                title="Record Voice Note"
+              >
+                <RiMicLine size={18} />
+              </button>
+            )}
+          </form>
+        )}
       </div>
 
       {/* Share Contact Dialog */}

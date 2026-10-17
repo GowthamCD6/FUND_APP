@@ -17,7 +17,7 @@ const Chat = () => {
   }, [location.state]);
 
   return (
-    <div className="chat-container">
+    <div className={`chat-container ${selectedChat ? 'has-active-chat' : ''}`}>
       <div className="chat-sidebar">
         <ChatList 
           onSelectChat={setSelectedChat} 
