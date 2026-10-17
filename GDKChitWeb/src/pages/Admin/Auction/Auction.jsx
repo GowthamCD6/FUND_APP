@@ -72,6 +72,7 @@ const Auction = () => {
   const [showDiceResult, setShowDiceResult] = useState(false);
   const [drawMode, setDrawMode] = useState('random'); // 'random' | 'manual'
   const [selectedWinnerId, setSelectedWinnerId] = useState(null);
+  const [auctionCycleMonth, setAuctionCycleMonth] = useState(1);
 
   const unsubscribeRef = useRef([]);
   const timerRef = useRef(null);
@@ -248,6 +249,8 @@ const Auction = () => {
     setSelectedGroup(group);
     setLoadingMembers(true);
     setSelectedMembers([]);
+    const initialCycle = group?.completedCycles ? Number(group.completedCycles) + 1 : 1;
+    setAuctionCycleMonth(initialCycle);
     setPoolAmount(group?.groupAmount ? String(group.groupAmount) : '');
     try {
       const res = await makeRequest(`/admin/groups/getMembers?groupId=${group.id}`);
@@ -479,17 +482,29 @@ const Auction = () => {
   // ──── Save Winner ────
   const saveWinner = async () => {
     if (!auctionResult) return;
+
+    if (auctionResult.winner?.hasWonAuction) {
+      alert(`Cannot save winner: ${auctionResult.winner.name} has already taken or won an auction prize for this group.`);
+      return;
+    }
+
     setSavingWinner(true);
     try {
+      const startDt = selectedGroup?.startDate ? new Date(selectedGroup.startDate) : new Date();
+      const targetDate = !isNaN(startDt.getTime())
+        ? new Date(startDt.getFullYear(), startDt.getMonth() + (auctionCycleMonth - 1), 1)
+        : new Date();
+
       const payload = {
         groupId: selectedGroup.id,
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
+        month: targetDate.getMonth(), // 0-11 for backend
+        year: targetDate.getFullYear(),
         chitWinnerName: auctionResult.winner.name,
         chitWinnerMemberId: String(auctionResult.winner.userId || auctionResult.winner.id || ''),
         amountTaken: auctionResult.amountTaken,
         datePicked: new Date().toISOString(),
         winnerUserId: auctionResult.winner.userId || auctionResult.winner.id,
+        cycleMonth: auctionCycleMonth,
       };
 
       const res = await makeRequest('/admin/groups/saveAuctionWinner', {
@@ -950,6 +965,45 @@ const Auction = () => {
               Configure Auction
             </h4>
 
+            {/* Month Cycle Selector (1, 2, 3...) */}
+            <div style={{ marginBottom: 16, background: '#faf5ff', padding: '12px 14px', borderRadius: 10, border: '1px solid #e9d5ff' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#6b46c1', letterSpacing: '0.4px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <RiCalendarLine size={14} />
+                  AUCTION CYCLE: MONTH {auctionCycleMonth} OF {selectedGroup.duration || 20}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#7c3aed' }}>
+                  Select Cycle Month
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+                {Array.from({ length: Number(selectedGroup.duration || 20) }, (_, i) => i + 1).map(cycleNum => {
+                  const isSelected = auctionCycleMonth === cycleNum;
+                  return (
+                    <button
+                      key={cycleNum}
+                      type="button"
+                      onClick={() => setAuctionCycleMonth(cycleNum)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: 6,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        border: isSelected ? '1px solid #5b21b6' : '1px solid #e2e8f0',
+                        background: isSelected ? '#6b46c1' : '#ffffff',
+                        color: isSelected ? '#ffffff' : '#475569',
+                        boxShadow: isSelected ? '0 1px 3px rgba(107, 70, 193, 0.2)' : 'none'
+                      }}
+                    >
+                      Month {cycleNum}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Auction Type Selection */}
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1B3322', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -1150,19 +1204,24 @@ const Auction = () => {
               <>
                 <div className="auc-modal-header">
                   <h3>
-                    {auctionResult.type === 'betting' ? 'Auction Result' : '🎉 Lucky Winner!'}
+                    {auctionResult.type === 'betting' ? `Auction Result - Month ${auctionCycleMonth}` : `🎉 Month ${auctionCycleMonth} Lucky Winner!`}
                   </h3>
                   <button className="auc-modal-close" onClick={() => setShowResultModal(false)}>
                     <RiCloseLine size={20} />
                   </button>
                 </div>
                 <div className="auc-modal-body">
-                  <div className="auc-winner-hero">
-                    <div className="auc-w-avatar">
+                  <div className="auc-winner-hero" style={auctionResult.winner?.hasWonAuction ? { background: '#fef2f2', border: '1px solid #fecdd3', borderRadius: 12, padding: '16px' } : undefined}>
+                    <div className="auc-w-avatar" style={auctionResult.winner?.hasWonAuction ? { background: '#fee2e2', color: '#b91c1c' } : undefined}>
                       {(auctionResult.winner.name || 'U').substring(0, 2).toUpperCase()}
                     </div>
-                    <h4>{auctionResult.winner.name}</h4>
+                    <h4 style={{ color: auctionResult.winner?.hasWonAuction ? '#991b1b' : undefined }}>{auctionResult.winner.name}</h4>
                     <p>{auctionResult.winner.phone}</p>
+                    {auctionResult.winner?.hasWonAuction && (
+                      <div style={{ marginTop: 8, background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 800 }}>
+                        ⛔ NOT ELIGIBLE - AUCTION PRIZE ALREADY TAKEN
+                      </div>
+                    )}
                   </div>
 
                   <div className="auc-results-box">
@@ -1215,14 +1274,22 @@ const Auction = () => {
                   </button>
                   <button 
                     className="auc-btn-confirm" 
-                    style={{ flex: 1, margin: 0, padding: '12px 16px', borderRadius: 8, fontWeight: 700 }}
+                    style={{ 
+                      flex: 1, 
+                      margin: 0, 
+                      padding: '12px 16px', 
+                      borderRadius: 8, 
+                      fontWeight: 700,
+                      background: auctionResult.winner?.hasWonAuction ? '#94a3b8' : undefined,
+                      cursor: auctionResult.winner?.hasWonAuction ? 'not-allowed' : undefined
+                    }}
                     onClick={saveWinner}
-                    disabled={savingWinner}
+                    disabled={savingWinner || auctionResult.winner?.hasWonAuction}
                   >
                     {savingWinner ? (
                       <RiLoader4Line size={16} className="spin-anim" />
                     ) : (
-                      'Fix the Auction'
+                      `Confirm Month ${auctionCycleMonth} Winner`
                     )}
                   </button>
                 </div>

@@ -54,6 +54,7 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [selectingGroupId, setSelectingGroupId] = useState(null);
   const [savingWinner, setSavingWinner] = useState(false);
+  const [auctionCycleMonth, setAuctionCycleMonth] = useState(1);
 
   // Fetch groups and connect WebSocket on component mount
   useEffect(() => {
@@ -169,17 +170,33 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
       return;
     }
 
+    if (winner.hasWonAuction) {
+      Alert.alert(
+        'Member Ineligible',
+        `${winner.name} has already won or received an auction prize for this group and cannot win again.`
+      );
+      return;
+    }
+
     try {
       setSavingWinner(true);
+
+      const startDt = new Date(selectedGroup.startDate || selectedGroup.createdDate || new Date());
+      const targetDate = !isNaN(startDt.getTime())
+        ? new Date(startDt.getFullYear(), startDt.getMonth() + (auctionCycleMonth - 1), 1)
+        : new Date();
       
       const payload = {
         groupId: selectedGroup.id,
+        month: targetDate.getMonth(),
+        year: targetDate.getFullYear(),
         chitWinnerName: String(winner.name).trim(),
         chitWinnerMemberId: String(winner.phone || winner.id || '').trim(),
         amountTaken: (winner.bid !== undefined && winner.bid > 0)
           ? winner.bid
           : (auctionResult?.amount !== undefined ? auctionResult.amount : selectedGroup.groupAmount),
         datePicked: new Date().toISOString().split('T')[0],
+        cycleMonth: auctionCycleMonth,
       };
       
       // Emit event so GroupInfo can catch it and populate the modal
@@ -187,7 +204,7 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
         DeviceEventEmitter.emit('auctionWinnerSelected', payload);
       });
 
-      Alert.alert('Success', `${winner.name} has been selected!`);
+      Alert.alert('Success', `${winner.name} has been selected for Month ${auctionCycleMonth}!`);
       setShowResultModal(false);
       resetAuction();
       
@@ -217,6 +234,10 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
     setSelectedGroup(group);
     setSelectedMembers([]);
     setParticipants([]);
+    const initialCycle = (group.completedCycles !== undefined && group.completedCycles !== null)
+      ? Number(group.completedCycles) + 1
+      : (group.currentMonthNum || 1);
+    setAuctionCycleMonth(initialCycle);
     setShowMemberModal(true);
     if (!group.members || group.members.length === 0) {
       await fetchGroupMembers(group.id);
@@ -482,45 +503,77 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
             color="#FFD700" 
           />
           <Text style={styles.resultTitle}>
-            {auctionResult?.type === 'betting' ? 'Auction Result' : 'Lucky Winner!'}
+            {auctionResult?.type === 'betting' 
+              ? `Auction Result - Month ${auctionCycleMonth}` 
+              : `🎉 Month ${auctionCycleMonth} Winner!`}
           </Text>
         </View>
         
         {auctionResult?.type === 'betting' ? (
           <View style={styles.winnerListSection}>
-            <Text style={styles.winnerListTitle}>Lowest Bidders</Text>
+            <Text style={styles.winnerListTitle}>Lowest Bidders (Select 1 Winner)</Text>
             <ScrollView style={styles.winnerList}>
               {participants
                 .sort((a, b) => a.bid - b.bid) // Sort by lowest bid
-                .map((participant) => (
-                  <TouchableOpacity
-                    key={participant.id}
-                    style={[
-                      styles.winnerOption,
-                      adminSelectedWinner?.id === participant.id && styles.selectedWinner
-                    ]}
-                    onPress={() => setAdminSelectedWinner(participant)}
-                  >
-                    <View style={styles.winnerAvatar}>
-                      <Text style={styles.winnerAvatarText}>{participant.avatar}</Text>
-                    </View>
-                    <View style={styles.winnerDetails}>
-                      <Text style={styles.winnerName}>{participant.name}</Text>
-                      <Text style={styles.winnerBid}>{formatCurrency(participant.bid)}</Text>
-                    </View>
-                    {adminSelectedWinner?.id === participant.id && (
-                      <MaterialCommunityIcons name="check-circle" size={24} color="#10B981" />
-                    )}
-                  </TouchableOpacity>
-                ))}
+                .map((participant) => {
+                  const isIneligible = Boolean(participant.hasWonAuction);
+                  return (
+                    <TouchableOpacity
+                      key={participant.id}
+                      style={[
+                        styles.winnerOption,
+                        adminSelectedWinner?.id === participant.id && styles.selectedWinner,
+                        isIneligible && { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }
+                      ]}
+                      onPress={() => {
+                        if (isIneligible) {
+                          Alert.alert(
+                            'Member Ineligible',
+                            `${participant.name} has already won or taken the auction prize for this group and cannot win again.`
+                          );
+                          return;
+                        }
+                        setAdminSelectedWinner(participant);
+                      }}
+                      activeOpacity={isIneligible ? 0.9 : 0.7}
+                    >
+                      <View style={[styles.winnerAvatar, isIneligible && { backgroundColor: '#FEE2E2' }]}>
+                        <Text style={[styles.winnerAvatarText, isIneligible && { color: '#EF4444' }]}>{participant.avatar}</Text>
+                      </View>
+                      <View style={styles.winnerDetails}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+                          <Text style={[styles.winnerName, isIneligible && { color: '#991B1B' }]}>{participant.name}</Text>
+                          {isIneligible && (
+                            <View style={{ backgroundColor: '#FEE2E2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#FCA5A5' }}>
+                              <Text style={{ fontSize: 9, fontWeight: '800', color: '#B91C1C' }}>NOT ELIGIBLE</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.winnerBid}>{formatCurrency(participant.bid)}</Text>
+                      </View>
+                      {adminSelectedWinner?.id === participant.id && (
+                        <MaterialCommunityIcons name="check-circle" size={24} color="#10B981" />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
             </ScrollView>
           </View>
         ) : (
           <View style={styles.winnerSection}>
-            <View style={styles.winnerAvatar}>
-              <Text style={styles.winnerAvatarText}>{auctionResult?.winner?.avatar}</Text>
+            <View style={[styles.winnerAvatar, auctionResult?.winner?.hasWonAuction && { backgroundColor: '#FEE2E2' }]}>
+              <Text style={[styles.winnerAvatarText, auctionResult?.winner?.hasWonAuction && { color: '#EF4444' }]}>
+                {auctionResult?.winner?.avatar}
+              </Text>
             </View>
-            <Text style={styles.winnerName}>{auctionResult?.winner?.name}</Text>
+            <Text style={[styles.winnerName, auctionResult?.winner?.hasWonAuction && { color: '#991B1B' }]}>
+              {auctionResult?.winner?.name}
+            </Text>
+            {auctionResult?.winner?.hasWonAuction && (
+              <View style={{ backgroundColor: '#FEE2E2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#FCA5A5', marginTop: 4 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#B91C1C' }}>⚠️ NOT ELIGIBLE - PRIZE ALREADY TAKEN</Text>
+              </View>
+            )}
             <Text style={styles.diceResult}>Dice Value: {auctionResult?.diceValue}</Text>
           </View>
         )}
@@ -609,6 +662,8 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
         loading={loadingMembers}
         selectedGroup={selectedGroup}
         selectedMembers={selectedMembers}
+        selectedCycleMonth={auctionCycleMonth}
+        onSelectCycleMonth={setAuctionCycleMonth}
         onClose={() => setShowMemberModal(false)}
         onMemberToggle={toggleMemberSelection}
         onProceed={() => {

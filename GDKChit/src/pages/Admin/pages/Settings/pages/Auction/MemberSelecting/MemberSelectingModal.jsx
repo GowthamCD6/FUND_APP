@@ -9,6 +9,7 @@ import {
   Dimensions,
   Platform,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useLanguage } from '../../../../../../../utils/LanguageContext';
@@ -20,6 +21,8 @@ const MemberSelectingModal = ({
   loading = false,
   selectedGroup,
   selectedMembers,
+  selectedCycleMonth,
+  onSelectCycleMonth,
   onClose,
   onMemberToggle,
   onProceed,
@@ -136,6 +139,51 @@ const MemberSelectingModal = ({
             <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
               <MaterialCommunityIcons name="close" size={24} color="#4B5563" />
             </TouchableOpacity>
+          </View>
+
+          {/* Month Cycle Selector (1, 2, 3...) */}
+          <View style={styles.modalCycleContainer}>
+            <View style={styles.modalCycleHeader}>
+              <View style={styles.modalCycleBadge}>
+                <MaterialCommunityIcons name="calendar-clock" size={15} color="#6B46C1" />
+                <Text style={styles.modalCycleBadgeText}>
+                  {t('AUCTION CYCLE')}: {t('MONTH')} {selectedCycleMonth || (selectedGroup?.completedCycles ? selectedGroup.completedCycles + 1 : 1)} {t('OF')} {selectedGroup?.duration || selectedGroup?.totalMembers || 20}
+                </Text>
+              </View>
+              <Text style={styles.modalCycleHint}>
+                {t('Select Month')}
+              </Text>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.modalMonthPillsScroll}
+              style={{ marginBottom: 2 }}
+            >
+              {Array.from({ length: Number(selectedGroup?.duration || selectedGroup?.totalMembers || 20) }, (_, i) => i + 1).map((cycleNum) => {
+                const activeMonth = selectedCycleMonth || (selectedGroup?.completedCycles ? selectedGroup.completedCycles + 1 : 1);
+                const isSelected = activeMonth === cycleNum;
+                return (
+                  <TouchableOpacity
+                    key={cycleNum}
+                    style={[
+                      styles.modalMonthPill,
+                      isSelected && styles.modalMonthPillActive
+                    ]}
+                    onPress={() => onSelectCycleMonth && onSelectCycleMonth(cycleNum)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.modalMonthPillText,
+                      isSelected && styles.modalMonthPillTextActive
+                    ]}>
+                      Month {cycleNum}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
 
           <View style={styles.statsAndSelectAllRow}>
@@ -279,6 +327,67 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#6B46C1',
+  },
+
+  // Modal Cycle Bar
+  modalCycleContainer: {
+    backgroundColor: '#FAF5FF',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9D5FF',
+  },
+  modalCycleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalCycleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EDE9FE',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+  },
+  modalCycleBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#6B46C1',
+    letterSpacing: 0.5,
+  },
+  modalCycleHint: {
+    fontSize: 11,
+    color: '#7C3AED',
+    fontWeight: '600',
+  },
+  modalMonthPillsScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  modalMonthPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  modalMonthPillActive: {
+    backgroundColor: '#6B46C1',
+    borderColor: '#5B21B6',
+  },
+  modalMonthPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  modalMonthPillTextActive: {
+    color: '#FFFFFF',
   },
 
   // Members List

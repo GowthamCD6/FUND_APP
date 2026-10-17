@@ -161,11 +161,26 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     loadMonthSnapshot();
   }, [loadMonthSnapshot]);
 
+  const totalGroupDuration = Number(group.duration || formData.totalMembers || group.totalMembers || 20);
+  const parsedStartDt = new Date(formData.createdDate || group.createdDate || group.start_date || group.startDate || new Date());
+
+  const selectCycleMonth = useCallback((cycleNum) => {
+    if (isNaN(parsedStartDt.getTime())) return;
+    const now = new Date();
+    const targetAbsoluteMonth = (parsedStartDt.getFullYear() * 12 + parsedStartDt.getMonth()) + (cycleNum - 1);
+    const todayAbsoluteMonth = (now.getFullYear() * 12 + now.getMonth());
+    const targetOffset = targetAbsoluteMonth - todayAbsoluteMonth;
+    setCurrentMonth(targetOffset);
+  }, [parsedStartDt]);
+
   // Listener for returning from Live Auction
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('auctionWinnerSelected', (data) => {
       // If the event is for this group
       if (data.groupId === (formData.groupId || group.id)) {
+        if (data.cycleMonth) {
+          selectCycleMonth(data.cycleMonth);
+        }
         setFormData(prev => ({
           ...prev,
           chitWinnerName: data.chitWinnerName,
@@ -180,7 +195,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     return () => {
       subscription.remove();
     };
-  }, [formData.groupId, group.id]);
+  }, [formData.groupId, group.id, selectCycleMonth]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -546,10 +561,7 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     return diffDays;
   };
 
-  const totalGroupDuration = Number(group.duration || formData.totalMembers || group.totalMembers || 20);
-  const parsedStartDt = new Date(formData.createdDate || group.createdDate || group.start_date || group.startDate || new Date());
   const currentNow = new Date();
-  
   const viewPeriod = getPeriodFromOffset(currentMonth);
   const viewingCycleMonth = !isNaN(parsedStartDt.getTime())
     ? Math.max(1, (viewPeriod.year - parsedStartDt.getFullYear()) * 12 + (viewPeriod.month - parsedStartDt.getMonth()) + 1)
@@ -558,14 +570,6 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
   const maxElapsedCycle = !isNaN(parsedStartDt.getTime())
     ? Math.max(1, (currentNow.getFullYear() - parsedStartDt.getFullYear()) * 12 + (currentNow.getMonth() - parsedStartDt.getMonth()) + 1)
     : 1;
-
-  const selectCycleMonth = (cycleNum) => {
-    if (isNaN(parsedStartDt.getTime())) return;
-    const targetAbsoluteMonth = (parsedStartDt.getFullYear() * 12 + parsedStartDt.getMonth()) + (cycleNum - 1);
-    const todayAbsoluteMonth = (currentNow.getFullYear() * 12 + currentNow.getMonth());
-    const targetOffset = targetAbsoluteMonth - todayAbsoluteMonth;
-    setCurrentMonth(targetOffset);
-  };
 
   return (
     <View style={styles.container}>
