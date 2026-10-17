@@ -143,37 +143,29 @@ const BlockUser = () => {
 
   return (
     <div className={`bu-page ${activeTab === 'blocked' ? 'tab-blocked' : 'tab-active'}`}>
-      {/* ── TOP HEADER WITH BACK BUTTON ── */}
-      <div className="bu-header">
-        <div className="bu-header-left">
-          <button
-            type="button"
-            className="bu-back-btn"
-            onClick={() => navigate('/admin/admintool')}
-            title="Back to Admin Tools"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="bu-title">Access Control & Blocking</h1>
-            <p className="bu-subtitle">Manage member account privileges, apply security suspensions, or reinstate account access</p>
-          </div>
-        </div>
-      </div>
-
       <div className="bu-header-container">
         <div className="bu-toolbar-row">
-          {/* Tab Bar */}
-          <div className="bu-tabs-wrapper">
-            <button 
-              className={`bu-tab-btn ${activeTab === 'blocked' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab('blocked');
-                setSearchQuery('');
-              }}
+          <div className="bu-toolbar-left">
+            <button
+              type="button"
+              className="bu-back-btn"
+              onClick={() => navigate('/admin/admintool')}
+              title="Back to Admin Tools"
             >
-              Blocked Members ({blockedUsers.length})
+              <ArrowLeft size={18} />
             </button>
+
+            {/* Tab Bar */}
+            <div className="bu-tabs-wrapper">
+              <button 
+                className={`bu-tab-btn ${activeTab === 'blocked' ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveTab('blocked');
+                  setSearchQuery('');
+                }}
+              >
+                Blocked Members ({blockedUsers.length})
+              </button>
             <button 
               className={`bu-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
               onClick={() => {
@@ -184,8 +176,9 @@ const BlockUser = () => {
               Active Members ({activeUsers.length})
             </button>
           </div>
+        </div>
 
-          {/* Search Bar (Refresh Button Removed) */}
+        {/* Search Bar (Refresh Button Removed) */}
           <div className="bu-filters-wrapper">
             <div className="bu-search-container">
               <RiSearchLine size={16} className="bu-search-icon" />

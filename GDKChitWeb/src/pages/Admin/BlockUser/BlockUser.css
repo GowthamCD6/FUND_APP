@@ -16,29 +16,17 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Top Header with Back Navigation ── */
-.bu-header {
+/* ── Block User Header & Action Bar Layout ── */
+.bu-toolbar-left {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 18px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-}
-
-.bu-header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .bu-back-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
   color: #1e293b;
@@ -54,22 +42,6 @@
   background: #f1f5f9;
   border-color: #cbd5e1;
   color: #0f172a;
-  transform: translateX(-2px);
-}
-
-.bu-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 4px;
-  letter-spacing: -0.01em;
-}
-
-.bu-subtitle {
-  font-size: 13px;
-  color: #64748b;
-  margin: 0;
-  font-weight: 500;
 }
 
 /* ── Block User Header & Action Bar Layout ── */
@@ -633,13 +605,17 @@
 
 /* ── Responsive breakpoints ── */
 @media (max-width: 768px) {
-  .bu-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
   .bu-toolbar-row {
     flex-direction: column;
     align-items: stretch;
+  }
+  .bu-toolbar-left {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+  }
+  .bu-tabs-wrapper {
+    flex: 1;
   }
   .bu-filters-wrapper {
     flex-direction: column;
