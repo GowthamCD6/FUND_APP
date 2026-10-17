@@ -340,9 +340,12 @@ exports.resetPassword = async (req, res) => {
     }
 
     try {
-        // Get user's year of birth (stored during creation or from profile)
+        // Get user's year of birth from profile date_of_birth
         const [userRows] = await db.promise().query(
-            'SELECT id, year_of_birth FROM users WHERE id = ? AND deleted_at IS NULL',
+            `SELECT u.id, YEAR(up.date_of_birth) AS year_of_birth, DATE_FORMAT(up.date_of_birth, '%Y-%m-%d') AS date_of_birth
+             FROM users u
+             LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
+             WHERE u.id = ? AND u.deleted_at IS NULL`,
             [userId]
         );
 
@@ -350,9 +353,9 @@ exports.resetPassword = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const yob = userRows[0].year_of_birth;
+        const yob = userRows[0].year_of_birth || (userRows[0].date_of_birth ? String(userRows[0].date_of_birth).substring(0, 4) : null);
         if (!yob) {
-            return res.status(400).json({ success: false, message: 'User year of birth not found. Cannot reset password.' });
+            return res.status(400).json({ success: false, message: 'User year of birth not found. Cannot reset password without DOB.' });
         }
 
         // Hash the YOB as the default password

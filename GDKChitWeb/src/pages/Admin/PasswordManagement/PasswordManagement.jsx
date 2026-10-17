@@ -414,6 +414,15 @@ const PasswordManagement = () => {
             </div>
             <div className="pm-modal-footer">
               <button 
+                type="button"
+                className="pm-btn-cancel" 
+                onClick={handleCloseModal}
+                disabled={updating}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
                 className="pm-btn-confirm" 
                 onClick={handleUpdatePassword}
                 disabled={updating}
