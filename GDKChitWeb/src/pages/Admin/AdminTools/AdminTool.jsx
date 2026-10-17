@@ -11,7 +11,8 @@ import {
   Map,
   Search,
   ShieldCheck,
-  Zap
+  Zap,
+  Smartphone
 } from 'lucide-react';
 import './AdminTool.css';
 
@@ -20,6 +21,15 @@ const TOOL_SECTIONS = [
     id: 'user-ops',
     title: 'Subscriber Security & Access Controls',
     actions: [
+      {
+        id: 'device-revocation',
+        Icon: Smartphone,
+        title: 'Device Access & Session Revocation',
+        desc: 'Single-device binding & session reset',
+        route: '/admin/admintool/device-revocation',
+        color: '#1B3322',
+        bg: '#EBF3ED'
+      },
       {
         id: 'block-members',
         Icon: Ban,

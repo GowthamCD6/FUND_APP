@@ -166,10 +166,17 @@ const Login = () => {
             }
         } catch (error) {
             console.error('Login error:', error);
-            showErrorModal(
-                "Invalid Credentials ❌",
-                error.message || "The mobile number or password you entered is incorrect. Please check your details and try again."
-            );
+            if (error.code === 'DEVICE_BOUND_MISMATCH') {
+                showErrorModal(
+                    "Device Restricted 🔒",
+                    error.message || "This account is already registered on another device. Please contact your Admin to revoke access before switching devices."
+                );
+            } else {
+                showErrorModal(
+                    "Invalid Credentials ❌",
+                    error.message || "The mobile number or password you entered is incorrect. Please check your details and try again."
+                );
+            }
         } finally {
             setLoading(false);
         }

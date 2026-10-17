@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SecureStorage from './SecureStorage';
 import { API_URL } from '../utils/env';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { reset as resetNavigation } from '../utils/navigation';
 
 class ApiService {
@@ -237,16 +237,38 @@ class ApiService {
   //   } catch (error) {
   //     throw error;
   //   }
-  // }
+  async getOrCreateDeviceId() {
+    try {
+      let deviceId = await AsyncStorage.getItem('@gdk_mobile_device_id');
+      if (!deviceId) {
+        deviceId = `${Platform.OS}_` + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 11);
+        await AsyncStorage.setItem('@gdk_mobile_device_id', deviceId);
+      }
+      return deviceId;
+    } catch (e) {
+      return `${Platform.OS}_fallback_${Date.now()}`;
+    }
+  }
 
   async login(phone, password) {
     try {
+      const deviceId = await this.getOrCreateDeviceId();
+      const devicePlatform = Platform.OS === 'ios' ? 'iOS' : 'Android';
+      const deviceName = `${Platform.OS === 'ios' ? 'Apple iPhone' : 'Android Phone'}`;
+
       const response = await fetch(`${this.baseURL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phone, password }),
+        body: JSON.stringify({ 
+          phone, 
+          password,
+          deviceId,
+          deviceName,
+          devicePlatform,
+          deviceModel: Platform.OS
+        }),
       });
 
       const responseText = await response.text();
@@ -261,7 +283,10 @@ class ApiService {
         await this.saveTokens(data.data.accessToken, data.data.refreshToken);
         return data;
       } else {
-        throw new Error(data.message || 'Login failed');
+        const error = new Error(data.message || 'Login failed');
+        error.code = data.code;
+        error.data = data.data;
+        throw error;
       }
     } catch (error) {
       throw error;

@@ -8,6 +8,7 @@ const monthlyCollection = require('../controllers/admin/monthlyCollection');
 const userManagement = require('../controllers/admin/userManagement');
 const reportsController = require('../controllers/admin/reportsController');
 const settingsController = require('../controllers/admin/settingsController');
+const deviceController = require('../controllers/admin/deviceController');
 const { otpRateLimiter, authAttemptRateLimiter } = require('../middleware/rateLimiter');
 const {
   validateCreateGroupPayload,
@@ -84,5 +85,10 @@ router.post(
 // System Settings (Auction Engine Configuration)
 router.get('/settings/auction', authenticateToken, requireAdmin, settingsController.getAuctionSettings);
 router.post('/settings/auction', authenticateToken, requireAdmin, settingsController.saveAuctionSettings);
+
+// Single-Device Security & Session Revocation
+router.get('/devices/bindings', authenticateToken, requireAdmin, deviceController.getDeviceBindings);
+router.post('/devices/revoke', authenticateToken, requireAdmin, deviceController.revokeDeviceBinding);
+router.get('/devices/logs', authenticateToken, requireAdmin, deviceController.getDeviceRevocationLogs);
 
 module.exports = router;

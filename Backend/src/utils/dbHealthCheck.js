@@ -114,6 +114,7 @@ async function checkAndInitializeDatabase() {
       'app_ratings',
       'otp_requests',
       'system_settings',
+      'device_revocation_logs',
     ];
 
     const existingTables = new Set(tables.map(t => t.TABLE_NAME));
@@ -128,7 +129,14 @@ async function checkAndInitializeDatabase() {
       "ALTER TABLE chat_messages ADD COLUMN is_forwarded TINYINT(1) NOT NULL DEFAULT 0",
       "ALTER TABLE chat_messages ADD COLUMN deleted_for_everyone TINYINT(1) NOT NULL DEFAULT 0",
       "ALTER TABLE users ADD COLUMN is_online TINYINT(1) NOT NULL DEFAULT 0",
-      "ALTER TABLE users ADD COLUMN last_seen TIMESTAMP NULL DEFAULT NULL"
+      "ALTER TABLE users ADD COLUMN last_seen TIMESTAMP NULL DEFAULT NULL",
+      "ALTER TABLE users ADD COLUMN bound_device_id VARCHAR(255) NULL",
+      "ALTER TABLE users ADD COLUMN device_name VARCHAR(255) NULL",
+      "ALTER TABLE users ADD COLUMN device_platform VARCHAR(50) NULL",
+      "ALTER TABLE users ADD COLUMN device_model VARCHAR(100) NULL",
+      "ALTER TABLE users ADD COLUMN device_bound_at TIMESTAMP NULL",
+      "ALTER TABLE users ADD COLUMN device_last_login TIMESTAMP NULL",
+      "ALTER TABLE users ADD COLUMN device_status ENUM('UNBOUND', 'BOUND', 'REVOKED') NOT NULL DEFAULT 'UNBOUND'"
     ];
 
     for (const q of alterQueries) {
@@ -209,6 +217,20 @@ async function checkAndInitializeDatabase() {
         description VARCHAR(255) NULL,
         updated_by BIGINT UNSIGNED NULL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS device_revocation_logs (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        revoked_device_id VARCHAR(255) NULL,
+        revoked_device_name VARCHAR(255) NULL,
+        revoked_by BIGINT UNSIGNED NULL,
+        reason VARCHAR(255) NULL,
+        revoked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_drl_user (user_id),
+        CONSTRAINT fk_drl_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 

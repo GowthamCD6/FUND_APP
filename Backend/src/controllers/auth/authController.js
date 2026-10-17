@@ -54,13 +54,18 @@ exports.register = async (req, res) => {
 // User Login
 exports.login = async (req, res) => {
   try {
-    const { phone, password } = req.body;
+    const { phone, password, deviceId, deviceName, devicePlatform, deviceModel } = req.body;
 
     if (!phone || !password) {
       return res.status(400).json({ success: false, message: 'Phone and password are required' });
     }
 
-    const findUserSql = 'SELECT id, name as username, phone, role, password, is_active FROM users WHERE phone = ? AND deleted_at IS NULL';
+    const findUserSql = `
+      SELECT id, name as username, phone, role, password, is_active,
+             bound_device_id, device_name, device_platform, device_model, device_bound_at, device_status
+      FROM users 
+      WHERE phone = ? AND deleted_at IS NULL
+    `;
     const [results] = await db.promise().query(findUserSql, [phone]);
 
     if (results.length === 0) {
@@ -79,6 +84,58 @@ exports.login = async (req, res) => {
 
     if (!isPasswordValid) {
       return res.status(401).json({ success: false, message: 'Invalid phone or password' });
+    }
+
+    // ── SINGLE DEVICE BINDING ENFORCEMENT ──
+    if (user.role === 'User') {
+      const incomingDeviceId = deviceId ? String(deviceId).trim() : null;
+
+      if (incomingDeviceId) {
+        if (!user.bound_device_id || user.device_status === 'UNBOUND' || user.device_status === 'REVOKED') {
+          // Case 1: First login or device session was revoked by Admin -> Bind new device
+          const cleanDeviceName = deviceName || deviceModel || (devicePlatform ? `${devicePlatform} Device` : 'Mobile App Device');
+          await db.promise().query(
+            `UPDATE users 
+             SET bound_device_id = ?, device_name = ?, device_platform = ?, device_model = ?, 
+                 device_bound_at = NOW(), device_last_login = NOW(), device_status = 'BOUND' 
+             WHERE id = ?`,
+            [incomingDeviceId, cleanDeviceName, devicePlatform || 'Mobile', deviceModel || null, user.id]
+          );
+        } else if (user.bound_device_id === incomingDeviceId) {
+          // Case 2: Same device logging in (even after logging out) -> Allow and update timestamp
+          await db.promise().query(
+            `UPDATE users SET device_last_login = NOW() WHERE id = ?`,
+            [user.id]
+          );
+        } else {
+          // Case 3: Different device attempting to log in with same credentials -> BLOCK
+          const currentBoundName = user.device_name || user.device_platform || 'Authorized Device';
+          return res.status(403).json({
+            success: false,
+            code: 'DEVICE_BOUND_MISMATCH',
+            message: `This account is already registered on another device (${currentBoundName}). For your security, multi-device login is restricted. Please contact your Chit Administrator to revoke access before switching to this phone.`,
+            data: {
+              isDeviceLocked: true,
+              boundDeviceName: currentBoundName,
+              boundDevicePlatform: user.device_platform,
+              boundAt: user.device_bound_at
+            }
+          });
+        }
+      } else if (user.bound_device_id && user.device_status === 'BOUND') {
+        // Device is bound, but request omitted deviceId -> Block
+        return res.status(403).json({
+          success: false,
+          code: 'DEVICE_ID_REQUIRED',
+          message: 'Device verification identifier is required to access your registered account.'
+        });
+      }
+    } else if (user.role === 'Admin' && deviceId) {
+      // Record admin last device info
+      await db.promise().query(
+        `UPDATE users SET device_last_login = NOW() WHERE id = ?`,
+        [user.id]
+      );
     }
 
     // Generate JWT tokens
