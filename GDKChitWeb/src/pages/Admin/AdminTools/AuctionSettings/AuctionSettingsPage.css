@@ -7,17 +7,20 @@
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  font-family: inherit;
 }
 
+/* ── HEADER ── */
 .asp-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  border: 1px solid #e8efea;
+  border-radius: 16px;
   padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .asp-header-left {
@@ -27,28 +30,31 @@
 }
 
 .asp-back-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
-  color: #1e293b;
+  color: #1b3322;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .asp-back-btn:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background: #ebf3ed;
+  border-color: #c8e6c9;
+  color: #1b3322;
+  transform: translateX(-2px);
 }
 
 .asp-title {
   font-size: 20px;
   font-weight: 800;
-  color: #0f172a;
+  color: #1b3322;
   margin: 0 0 4px;
   letter-spacing: -0.01em;
 }
@@ -57,74 +63,102 @@
   font-size: 13px;
   color: #64748b;
   margin: 0;
+  line-height: 1.4;
 }
 
 .asp-reset-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 10px 18px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1.5px solid #e2e8f0;
   background: #ffffff;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #64748b;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .asp-reset-btn:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
+  color: #334155;
 }
 
 .asp-save-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
+  padding: 10px 20px;
   border-radius: 10px;
   border: none;
-  background: #2563eb;
+  background: linear-gradient(135deg, #1b3322 0%, #2e7d32 100%);
   color: #ffffff;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 10px rgba(27, 51, 34, 0.22);
 }
 
 .asp-save-btn:hover {
-  background: #1d4ed8;
+  background: linear-gradient(135deg, #162a1c 0%, #276b2b 100%);
   transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(27, 51, 34, 0.28);
 }
 
+.asp-save-btn:active {
+  transform: translateY(0);
+}
+
+/* ── BANNER ── */
 .asp-success-banner {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 18px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  border-radius: 10px;
-  color: #059669;
+  padding: 14px 20px;
+  background: #ebf3ed;
+  border: 1px solid #c8e6c9;
+  border-radius: 12px;
+  color: #1b3322;
   font-size: 13.5px;
   font-weight: 600;
+  box-shadow: 0 2px 6px rgba(27, 51, 34, 0.04);
+  animation: aspFadeIn 0.3s ease;
 }
 
+@keyframes aspFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── FORM GRID & CARDS ── */
 .asp-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-  gap: 24px;
+  gap: 20px;
 }
 
 .asp-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  border: 1px solid #e8efea;
+  border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.asp-card:hover {
+  border-color: #d3e2d7;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
 }
 
 .asp-card-header {
@@ -139,17 +173,22 @@
 .asp-icon-badge {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.asp-card:hover .asp-icon-badge {
+  transform: scale(1.05);
 }
 
 .asp-card-title {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: #1b3322;
   margin: 0 0 4px;
 }
 
@@ -157,6 +196,7 @@
   font-size: 12.5px;
   color: #64748b;
   margin: 0;
+  line-height: 1.4;
 }
 
 .asp-form-body {
@@ -188,60 +228,79 @@
 
 .asp-input {
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1.5px solid #e2e8f0;
   background: #ffffff;
   font-size: 14px;
   color: #0f172a;
   outline: none;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .asp-input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #1b3322;
+  box-shadow: 0 0 0 3px rgba(27, 51, 34, 0.08);
 }
 
 .asp-checkbox-label {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  padding: 14px 16px;
+  background: #f8faf9;
+  border: 1.5px solid #e8efea;
+  border-radius: 12px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.asp-checkbox-label:hover {
+  background: #f1f6f2;
+  border-color: #c8e6c9;
 }
 
 .asp-checkbox-label input {
   margin-top: 3px;
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   cursor: pointer;
+  accent-color: #1b3322;
 }
 
 .asp-checkbox-label strong {
   display: block;
   font-size: 13px;
-  color: #0f172a;
+  color: #1b3322;
   margin-bottom: 2px;
+  font-weight: 700;
 }
 
 .asp-checkbox-label p {
   margin: 0;
   font-size: 12px;
   color: #64748b;
+  line-height: 1.4;
 }
 
 .asp-info-note {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 14px;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 16px;
+  background: #ebf3ed;
+  border: 1px solid #c8e6c9;
+  border-radius: 12px;
   font-size: 12.5px;
-  color: #1e40af;
+  color: #1b3322;
   line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .asp-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .asp-form-grid {
+    grid-template-columns: 1fr;
+  }
 }

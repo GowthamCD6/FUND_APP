@@ -55,7 +55,7 @@ const AuctionSettingsModal = ({ isOpen, onClose }) => {
       <div className="adm-modal-card" style={{ maxWidth: 580 }} onClick={e => e.stopPropagation()}>
         <div className="adm-modal-header">
           <div className="adm-modal-title-group">
-            <div className="adm-modal-icon-badge" style={{ background: '#f5f3ff', color: '#7c3aed' }}>
+            <div className="adm-modal-icon-badge" style={{ background: '#ebf3ed', color: '#1b3322' }}>
               <Gavel size={20} />
             </div>
             <div>

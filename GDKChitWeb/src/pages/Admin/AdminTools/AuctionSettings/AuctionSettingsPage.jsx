@@ -38,6 +38,24 @@ const AuctionSettingsPage = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
+
+    if (settings.defaultDurationSeconds < 60 || settings.defaultDurationSeconds > 3600) {
+      alert('Auction duration must be between 60 seconds (1 min) and 3600 seconds (60 mins).');
+      return;
+    }
+    if (settings.minBidStep < 100) {
+      alert('Minimum bid decrement step cannot be less than ₹100.');
+      return;
+    }
+    if (settings.foremanCommissionPercent < 1 || settings.foremanCommissionPercent > 10) {
+      alert('Statutory Foreman Commission must be between 1% and 10%.');
+      return;
+    }
+    if (settings.maxDiscountPercent < 5 || settings.maxDiscountPercent > 40) {
+      alert('Maximum permissible discount cap must be between 5% and 40%.');
+      return;
+    }
+
     localStorage.setItem('admin_auction_settings', JSON.stringify(settings));
     setSavedMsg(true);
     setIsDirty(false);
@@ -51,6 +69,8 @@ const AuctionSettingsPage = () => {
       setSettings(DEFAULT_AUCTION_CONFIG);
       localStorage.setItem('admin_auction_settings', JSON.stringify(DEFAULT_AUCTION_CONFIG));
       setIsDirty(false);
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 2000);
     }
   };
 
@@ -106,7 +126,7 @@ const AuctionSettingsPage = () => {
         {/* Card 1: Bidding & Time Parameters */}
         <div className="asp-card">
           <div className="asp-card-header">
-            <div className="asp-icon-badge" style={{ background: '#eff6ff', color: '#2563eb' }}>
+            <div className="asp-icon-badge" style={{ background: '#ebf3ed', color: '#1b3322' }}>
               <Timer size={20} />
             </div>
             <div>
@@ -165,7 +185,7 @@ const AuctionSettingsPage = () => {
         {/* Card 2: Financial & Commission Rules */}
         <div className="asp-card">
           <div className="asp-card-header">
-            <div className="asp-icon-badge" style={{ background: '#ecfdf5', color: '#059669' }}>
+            <div className="asp-icon-badge" style={{ background: '#f0fdf4', color: '#2e7d32' }}>
               <Percent size={20} />
             </div>
             <div>
@@ -226,7 +246,7 @@ const AuctionSettingsPage = () => {
         {/* Card 3: Cycle Scheduling */}
         <div className="asp-card" style={{ gridColumn: '1 / -1' }}>
           <div className="asp-card-header">
-            <div className="asp-icon-badge" style={{ background: '#f5f3ff', color: '#7c3aed' }}>
+            <div className="asp-icon-badge" style={{ background: '#fdf6f0', color: '#a3704c' }}>
               <Calendar size={20} />
             </div>
             <div>
@@ -252,7 +272,7 @@ const AuctionSettingsPage = () => {
             </div>
 
             <div className="asp-info-note">
-              <Info size={16} color="#4f46e5" />
+              <Info size={16} color="#1b3322" />
               <span>
                 These rules are propagated automatically to the live WebSocket engine during reverse auction sessions.
                 Individual scheme rules can override these defaults if explicitly configured during group creation.
