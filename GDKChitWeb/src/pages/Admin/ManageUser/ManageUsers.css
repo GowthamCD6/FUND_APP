@@ -869,3 +869,119 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ─── Add Member Button ─── */
+.mu-add-user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #15803d;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(21, 128, 61, 0.25);
+  margin-left: auto;
+}
+
+.mu-add-user-btn:hover {
+  background: #166534;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(21, 128, 61, 0.35);
+}
+
+.mu-add-user-btn:active {
+  transform: translateY(0);
+}
+
+/* ─── Generic Modal Backdrop & Box ─── */
+.mu-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: muFadeIn 0.2s ease;
+}
+
+@keyframes muFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mu-modal-box {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: muScaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes muScaleUp {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.mu-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mu-modal-header h3 {
+  margin: 0;
+  font-size: 16.5px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mu-modal-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.mu-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.mu-modal-body {
+  padding: 22px;
+  overflow-y: auto;
+}
+
+.mu-modal-footer {
+  padding: 16px 22px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #f8fafc;
+}
+

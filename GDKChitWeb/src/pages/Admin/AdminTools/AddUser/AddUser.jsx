@@ -12,7 +12,7 @@ import './AddUser.css';
 
 const AddUser = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ name: '', phoneNumber: '', yearOfBirth: '', role: 'user', nickname: '' });
+  const [formData, setFormData] = useState({ name: '', phoneNumber: '', dateOfBirth: '', yearOfBirth: '', role: 'user', nickname: '' });
   const [errors, setErrors]   = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice]   = useState({ text: '', success: false });
@@ -29,7 +29,7 @@ const AddUser = () => {
     let fields = 0;
     if (formData.name) fields++;
     if (formData.phoneNumber) fields++;
-    if (formData.yearOfBirth) fields++;
+    if (formData.dateOfBirth || formData.yearOfBirth) fields++;
     // Role is always set
     setCompletion(Math.round((fields / 3) * 100));
   }, [formData]);
@@ -44,8 +44,8 @@ const AddUser = () => {
     if (!formData.name.trim()) errs.name = 'Full name is required';
     if (!formData.phoneNumber) errs.phoneNumber = 'Phone number is required';
     else if (!/^[0-9]{10}$/.test(formData.phoneNumber.replace(/\s/g, ''))) errs.phoneNumber = 'Enter a valid 10-digit number';
-    if (!formData.yearOfBirth) errs.yearOfBirth = 'Year of birth is required';
-    else { 
+    if (!formData.dateOfBirth && !formData.yearOfBirth) errs.yearOfBirth = 'Birth date/year is required';
+    else if (formData.yearOfBirth) { 
       const y = parseInt(formData.yearOfBirth, 10); 
       if (!/^\d{4}$/.test(formData.yearOfBirth) || y < 1900 || y > new Date().getFullYear()) {
         errs.yearOfBirth = 'Enter a valid year (e.g. 1990)'; 
@@ -61,11 +61,20 @@ const AddUser = () => {
     setSubmitting(true);
     setNotice({ text: '', success: false });
     try {
-      const res  = await makeRequest('/admin/users/addUser', { method: 'POST', body: JSON.stringify(formData) });
+      const finalYob = formData.yearOfBirth || (formData.dateOfBirth ? formData.dateOfBirth.substring(0, 4) : '');
+      const finalDob = formData.dateOfBirth || (finalYob ? `${finalYob}-01-01` : null);
+      const res  = await makeRequest('/admin/users/addUser', { 
+        method: 'POST', 
+        body: JSON.stringify({
+          ...formData,
+          yearOfBirth: finalYob,
+          dateOfBirth: finalDob
+        }) 
+      });
       const data = await safeJson(res);
       if (!res.ok || !data?.success) throw new Error(data?.message || 'Failed to add user');
       setNotice({ text: `User "${formData.name}" added successfully!`, success: true });
-      setFormData({ name: '', phoneNumber: '', yearOfBirth: '', role: 'user', nickname: '' });
+      setFormData({ name: '', phoneNumber: '', dateOfBirth: '', yearOfBirth: '', role: 'user', nickname: '' });
       setErrors({});
     } catch (err) {
       setNotice({ text: err?.message || 'Failed to add user', success: false });
@@ -128,6 +137,25 @@ const AddUser = () => {
               {errors.phoneNumber && <p className="au-error-text"><RiAlertLine size={12} /> {errors.phoneNumber}</p>}
             </div>
             
+            <div className="au-input-group">
+              <label className="au-label"><Calendar size={14}/> Date of Birth <span className="au-label-req">*</span></label>
+              <input 
+                name="dateOfBirth" 
+                type="date"
+                value={formData.dateOfBirth || ''} 
+                onChange={e => {
+                  const val = e.target.value;
+                  setFormData(p => ({
+                    ...p,
+                    dateOfBirth: val,
+                    yearOfBirth: val && val.length >= 4 ? val.substring(0, 4) : p.yearOfBirth
+                  }));
+                  if (errors.yearOfBirth) setErrors(p => ({ ...p, yearOfBirth: '' }));
+                }} 
+                className="au-input" 
+              />
+            </div>
+
             <div className="au-input-group">
               <label className="au-label"><Calendar size={14}/> Year of Birth <span className="au-label-req">*</span></label>
               <input 

@@ -388,13 +388,46 @@ const Auction = () => {
     });
   };
 
+  const eligibleMembers = useMemo(() => {
+    return members.filter(m => !m.hasWonAuction);
+  }, [members]);
+
+  const isLastSingleMember = eligibleMembers.length === 1;
+
+  useEffect(() => {
+    if (isLastSingleMember && selectedMembers.length === 0 && eligibleMembers[0]) {
+      setSelectedMembers(eligibleMembers);
+    }
+  }, [isLastSingleMember, selectedMembers.length, eligibleMembers]);
+
   const toggleSelectAllMembers = () => {
-    const eligibleMembers = members.filter(m => !m.hasWonAuction);
     setSelectedMembers(prev => prev.length === eligibleMembers.length ? [] : [...eligibleMembers]);
   };
 
   // ──── START AUCTION SETUP (both modes) ────
   const startAuctionSetup = () => {
+    if (isLastSingleMember) {
+      if (selectedMembers.length !== 1) {
+        showToast({
+          title: 'Selection Required',
+          text: 'Please select the remaining member to confirm default winner.',
+          type: 'warning'
+        });
+        return;
+      }
+      const defaultWinner = selectedMembers[0];
+      setAuctionResult({
+        type: auctionType || 'random',
+        isDefaultWinner: true,
+        winner: defaultWinner,
+        amountTaken: parseFloat(poolAmount) || Number(selectedGroup?.groupAmount) || 0,
+        dividend: 0,
+        diceValue: null,
+      });
+      setShowResultModal(true);
+      return;
+    }
+
     if (selectedMembers.length < 2) {
       showToast({ title: 'Selection Required', text: 'Please select at least 2 members for the auction.', type: 'warning' });
       return;
@@ -1439,13 +1472,14 @@ const Auction = () => {
                 {/* Select All Row */}
                 <div className="mg2-picker-select-all-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   {(() => {
-                    const eligibleMembers = members.filter(m => !m.hasWonAuction);
                     const allSelected = eligibleMembers.length > 0 && eligibleMembers.every(em => selectedMembers.some(sm => sm.userId === em.userId));
                     return (
                       <>
                         <button className="mg2-picker-select-all-btn" onClick={toggleSelectAllMembers}>
                           <RiUserCheckLine size={14} /> 
-                          {allSelected ? 'Deselect All' : `Select All Eligible (${eligibleMembers.length})`}
+                          {allSelected 
+                            ? 'Deselect All' 
+                            : (isLastSingleMember ? 'Select Default Winner' : `Select All Eligible (${eligibleMembers.length})`)}
                         </button>
                         {members.some(m => m.hasWonAuction) && (
                           <span style={{ fontSize: 12, fontWeight: 600, color: '#dc2626' }}>
@@ -1456,6 +1490,42 @@ const Auction = () => {
                     );
                   })()}
                 </div>
+
+                {isLastSingleMember && (
+                  <div style={{
+                    background: '#ecfdf5',
+                    border: '1px solid #a7f3d0',
+                    borderRadius: 10,
+                    padding: '12px 16px',
+                    marginBottom: 14,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12
+                  }}>
+                    <div style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: '50%',
+                      backgroundColor: '#dcfce7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#16a34a',
+                      fontSize: 18,
+                      flexShrink: 0
+                    }}>
+                      👑
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: '#065f46' }}>
+                        Final Cycle (Month {auctionCycleMonth}) • Default Winner
+                      </div>
+                      <div style={{ fontSize: 12.5, color: '#047857', marginTop: 2 }}>
+                        Only 1 eligible member remains ({eligibleMembers[0]?.name}). In this final cycle, this member is automatically awarded as the default winner.
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Members Picker Checklist */}
                 <div style={{ flex: 1, overflowY: 'auto', marginBottom: 20 }}>
@@ -1550,16 +1620,32 @@ const Auction = () => {
                 {/* Sticky Action Footer */}
                 <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 600, color: '#475569' }}>
-                    {selectedMembers.length} of {members.filter(m => !m.hasWonAuction).length} eligible selected
-                    {members.some(m => m.hasWonAuction) ? ` (${members.filter(m => m.hasWonAuction).length} ineligible)` : ''}
+                    {isLastSingleMember ? (
+                      <span style={{ color: '#059669', fontWeight: 700 }}>
+                        1 remaining member ({eligibleMembers[0]?.name}) ready to confirm
+                      </span>
+                    ) : (
+                      <>
+                        {selectedMembers.length} of {eligibleMembers.length} eligible selected
+                        {members.some(m => m.hasWonAuction) ? ` (${members.filter(m => m.hasWonAuction).length} ineligible)` : ''}
+                      </>
+                    )}
                   </div>
                   <button 
                     className="mg2-modal-save-btn" 
-                    style={{ flex: 'none', padding: '10px 24px' }}
-                    disabled={selectedMembers.length < 2}
+                    style={{ 
+                      flex: 'none', 
+                      padding: '10px 24px',
+                      backgroundColor: isLastSingleMember ? '#059669' : undefined
+                    }}
+                    disabled={isLastSingleMember ? selectedMembers.length !== 1 : selectedMembers.length < 2}
                     onClick={startAuctionSetup}
                   >
-                    <span>Start {auctionType === 'betting' ? 'Bidding' : 'Draw'}</span>
+                    <span>
+                      {isLastSingleMember 
+                        ? 'Confirm Default Winner' 
+                        : `Start ${auctionType === 'betting' ? 'Bidding' : 'Draw'}`}
+                    </span>
                     <RiChevronRightLine size={16} />
                   </button>
                 </div>
@@ -1586,7 +1672,9 @@ const Auction = () => {
               <>
                 <div className="auc-modal-header">
                   <h3>
-                    {auctionResult.type === 'betting' ? `Auction Result - Month ${auctionCycleMonth}` : `🎉 Month ${auctionCycleMonth} Lucky Winner!`}
+                    {auctionResult.isDefaultWinner
+                      ? `👑 Month ${auctionCycleMonth} Final Cycle Winner!`
+                      : (auctionResult.type === 'betting' ? `Auction Result - Month ${auctionCycleMonth}` : `🎉 Month ${auctionCycleMonth} Lucky Winner!`)}
                   </h3>
                   <button className="auc-modal-close" onClick={() => setShowResultModal(false)}>
                     <RiCloseLine size={20} />
@@ -1604,6 +1692,11 @@ const Auction = () => {
                         ⛔ NOT ELIGIBLE - AUCTION PRIZE ALREADY TAKEN
                       </div>
                     )}
+                    {auctionResult.isDefaultWinner && (
+                      <div style={{ marginTop: 8, background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 800 }}>
+                        👑 DEFAULT WINNER (FINAL CYCLE)
+                      </div>
+                    )}
                   </div>
 
                   <div className="auc-results-box">
@@ -1615,13 +1708,19 @@ const Auction = () => {
                       <span>{auctionResult.type === 'betting' ? 'Winner Bid Amount:' : 'Winner Receives:'}</span>
                       <strong style={{ color: '#2563eb' }}>{formatCurrency(auctionResult.amountTaken)}</strong>
                     </div>
+                    {auctionResult.isDefaultWinner && (
+                      <div className="auc-res-row">
+                        <span>Selection Method:</span>
+                        <strong style={{ color: '#059669' }}>Final Cycle Default Winner</strong>
+                      </div>
+                    )}
                     {auctionResult.type === 'betting' && auctionResult.dividend > 0 && (
                       <div className="auc-res-row">
                         <span>Dividend Collected:</span>
                         <strong style={{ color: '#10b981' }}>+ {formatCurrency(auctionResult.dividend)}</strong>
                       </div>
                     )}
-                    {auctionResult.type === 'random' && auctionResult.diceValue && (
+                    {!auctionResult.isDefaultWinner && auctionResult.type === 'random' && auctionResult.diceValue && (
                       <div className="auc-res-row">
                         <span>Dice Value:</span>
                         <strong>{auctionResult.diceValue}</strong>

@@ -371,12 +371,17 @@ exports.updateProfile = async (req, res) => {
     if (typeof dateOfBirth === 'string') {
       const trimmedDate = dateOfBirth.trim();
       if (trimmedDate) {
-        const normalizedDate = trimmedDate.includes('/')
+        const cleanDate = trimmedDate.split('T')[0];
+        const normalizedDate = cleanDate.includes('/')
           ? (() => {
-              const [month, day, year] = trimmedDate.split('/');
-              return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              const parts = cleanDate.split('/');
+              if (parts.length === 3) {
+                const [day, month, year] = parts;
+                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              }
+              return cleanDate;
             })()
-          : trimmedDate;
+          : cleanDate;
         profileUpdates.push('date_of_birth = ?');
         profileValues.push(normalizedDate);
       } else {

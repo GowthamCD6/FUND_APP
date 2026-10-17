@@ -57,7 +57,9 @@ const AdminProfileModal = ({ isOpen, onClose, onUpdated }) => {
           name: p.name || u.name || u.username || '',
           email: p.email || u.email || '',
           phone: u.phone || '',
-          dateOfBirth: p.dateOfBirth ? p.dateOfBirth.slice(0, 10) : '',
+          dateOfBirth: p.dateOfBirth
+            ? (p.dateOfBirth.includes('T') ? new Date(p.dateOfBirth).toLocaleDateString('en-CA') : p.dateOfBirth.slice(0, 10))
+            : '',
           streetAddress: p.streetAddress || '',
           city: p.city || 'Tiruppur',
           state: p.state || 'Tamil Nadu'

@@ -60,7 +60,15 @@ const MemberSelectingModal = ({
   const allMembers = selectedGroup?.members || [];
   const eligibleMembers = allMembers.filter(m => !m.hasWonAuction);
   const ineligibleCount = allMembers.filter(m => m.hasWonAuction).length;
+  const isLastSingleMember = eligibleMembers.length === 1;
+  const canProceed = isLastSingleMember ? selectedMembers.length === 1 : selectedMembers.length >= 2;
   const allEligibleSelected = eligibleMembers.length > 0 && eligibleMembers.every(em => selectedMembers.some(sm => sm.id === em.id));
+
+  React.useEffect(() => {
+    if (visible && isLastSingleMember && selectedMembers.length === 0 && eligibleMembers[0]) {
+      onMemberToggle(eligibleMembers[0]);
+    }
+  }, [visible, isLastSingleMember, selectedMembers.length, eligibleMembers]);
 
   const handleSelectAllEligible = () => {
     if (allEligibleSelected) {
@@ -402,8 +410,11 @@ const MemberSelectingModal = ({
               <View style={styles.statsAndSelectAllRow}>
                 <View style={styles.memberCountBadge}>
                   <Text style={styles.memberCountText}>
-                    {t('Selected:')} {selectedMembers.length}/{eligibleMembers.length} {t('Eligible')}
-                    {ineligibleCount > 0 ? ` • ${ineligibleCount} ${t('Ineligible')}` : ''}
+                    {isLastSingleMember ? (
+                      `${t('Selected:')} ${selectedMembers.length}/1 ${t('Default Winner')}`
+                    ) : (
+                      `${t('Selected:')} ${selectedMembers.length}/${eligibleMembers.length} ${t('Eligible')}${ineligibleCount > 0 ? ` • ${ineligibleCount} ${t('Ineligible')}` : ''}`
+                    )}
                   </Text>
                 </View>
 
@@ -414,11 +425,20 @@ const MemberSelectingModal = ({
                     activeOpacity={0.7}
                   >
                     <Text style={styles.selectAllBtnText}>
-                      {allEligibleSelected ? t('Deselect All') : t('Select Eligible')}
+                      {allEligibleSelected ? t('Deselect All') : (isLastSingleMember ? t('Select Winner') : t('Select Eligible'))}
                     </Text>
                   </TouchableOpacity>
                 )}
               </View>
+
+              {isLastSingleMember && (
+                <View style={styles.defaultWinnerBanner}>
+                  <MaterialCommunityIcons name="crown" size={20} color="#D97706" />
+                  <Text style={styles.defaultWinnerBannerText}>
+                    {t('Final Month: Only 1 eligible member remaining')} ({eligibleMembers[0]?.name}). {t('This member is automatically awarded as the default winner.')}
+                  </Text>
+                </View>
+              )}
 
               {loading ? (
                 <View style={styles.modalLoadingContainer}>
@@ -447,13 +467,16 @@ const MemberSelectingModal = ({
                 <TouchableOpacity
                   style={[
                     styles.proceedModalButton,
-                    (loading || selectedMembers.length < 2) && styles.disabledButton,
+                    isLastSingleMember && { backgroundColor: '#10B981' },
+                    (loading || !canProceed) && styles.disabledButton,
                   ]}
                   onPress={onProceed}
-                  disabled={loading || selectedMembers.length < 2}
+                  disabled={loading || !canProceed}
                 >
                   <Text style={styles.proceedModalButtonText}>
-                    {t('Start Auction')} ({selectedMembers.length})
+                    {isLastSingleMember
+                      ? t('Confirm Default Winner')
+                      : `${t('Start Auction')} (${selectedMembers.length})`}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -772,6 +795,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B46C1',
     fontWeight: '500',
+  },
+  defaultWinnerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginHorizontal: 20,
+    marginBottom: 10,
+    gap: 8,
+  },
+  defaultWinnerBannerText: {
+    flex: 1,
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#92400E',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Medium' : 'Poppins-Medium',
   },
 });
 

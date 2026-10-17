@@ -9,9 +9,53 @@ import {
   ChevronLeft, ChevronRight, Hash, AtSign, Loader2 as RiLoader4Line, AlertTriangle as RiAlertLine,
   Clock as RiTimeLine, ChevronRight as RiArrowRightSLine, RefreshCw as RiRefreshLine,
   Copy as RiCopyLine, Key as RiKeyLine, Ban as RiBanLine, UserCheck as RiUserCheckLine,
-  MessageSquare as RiMessageLine, ExternalLink as RiExternalLinkLine, ShieldAlert
+  MessageSquare as RiMessageLine, ExternalLink as RiExternalLinkLine, ShieldAlert,
+  UserPlus, Lock as RiLockLine, Eye as RiEyeLine, EyeOff as RiEyeOffLine, MapPin as RiMapPinLine
 } from 'lucide-react';
 import './ManageUsers.css';
+
+// Safe date of birth formatter without UTC day-shift
+const formatDOB = (dobStr) => {
+  if (!dobStr || dobStr === 'N/A' || dobStr === 'null' || dobStr === 'undefined') return '--';
+  const str = String(dobStr).trim();
+  if (!str) return '--';
+
+  // If ISO string with timestamp (e.g. 2007-01-31T18:30:00.000Z), convert via Date object so local timezone (+05:30) is preserved
+  if (str.includes('T')) {
+    const d = new Date(str);
+    if (!Number.isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const day = String(d.getDate()).padStart(2, '0');
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${day} ${months[d.getMonth()]} ${year}`;
+    }
+  }
+
+  const clean = str.split('T')[0];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // Match YYYY-MM-DD
+  const ymdMatch = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymdMatch) {
+    const [, y, m, d] = ymdMatch;
+    const monthIndex = parseInt(m, 10) - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      return `${d} ${months[monthIndex]} ${y}`;
+    }
+  }
+
+  // Match DD-MM-YYYY or DD/MM/YYYY
+  const dmyMatch = clean.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+  if (dmyMatch) {
+    const [, d, m, y] = dmyMatch;
+    const monthIndex = parseInt(m, 10) - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      return `${d} ${months[monthIndex]} ${y}`;
+    }
+  }
+
+  return clean;
+};
 
 const UserTableSkeleton = () => (
   <div className="mu-table-container skeleton-pulse">
@@ -21,7 +65,8 @@ const UserTableSkeleton = () => (
           <tr>
             <th>Member</th>
             <th>Phone</th>
-            <th>Role</th>
+            <th>Role & Status</th>
+            <th>Date of Birth</th>
             <th>Joined Date</th>
             <th>Groups</th>
             <th style={{ width: 60 }}></th>
@@ -41,6 +86,7 @@ const UserTableSkeleton = () => (
               </td>
               <td><div style={{ width: 100, height: 12, background: '#e2e8f0', borderRadius: 4 }} /></td>
               <td><div style={{ width: 60, height: 16, background: '#e2e8f0', borderRadius: 100 }} /></td>
+              <td><div style={{ width: 80, height: 12, background: '#e2e8f0', borderRadius: 4 }} /></td>
               <td><div style={{ width: 90, height: 12, background: '#e2e8f0', borderRadius: 4 }} /></td>
               <td><div style={{ width: 50, height: 12, background: '#e2e8f0', borderRadius: 4 }} /></td>
               <td><div style={{ width: 32, height: 32, background: '#e2e8f0', borderRadius: 6 }} /></td>
@@ -61,16 +107,29 @@ const ManageUsers = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
-  const [viewMode, setViewMode] = useState(null); // 'view'|'edit'|'delete'
+  const [viewMode, setViewMode] = useState(null); // 'view'|'edit'|'password'|'delete'
 
   // Edit form state
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editRole, setEditRole] = useState('user');
   const [editNickname, setEditNickname] = useState('');
+  const [editDob, setEditDob] = useState('');
   const [editYear, setEditYear] = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const [notice, setNotice] = useState(null); // {text, success}
+
+  // Add Member Modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({ name: '', phone: '', nickname: '', dob: '', yob: '', role: 'user' });
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState('');
+
+  // Password Management inside drawer
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPasswordText, setShowPasswordText] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // Groups for user
   const [userGroups, setUserGroups] = useState([]);
@@ -115,12 +174,19 @@ const ManageUsers = () => {
     setSelectedUser(user);
     setViewMode(mode);
     setNotice(null);
-    if (mode === 'edit' || mode === 'view') {
+    setNewPassword('');
+    setConfirmPassword('');
+    if (mode === 'edit' || mode === 'view' || mode === 'password') {
       setEditName(user.name || user.nickname || '');
       setEditPhone(user.phone || '');
       setEditRole(String(user.type || 'user').toLowerCase());
       setEditNickname(user.nickname || '');
-      setEditYear(user.yearOfBirth || '');
+      const rawDob = user.dateOfBirth && user.dateOfBirth !== 'N/A' ? String(user.dateOfBirth).split('T')[0] : '';
+      const rawYob = user.yearOfBirth && user.yearOfBirth !== 'N/A'
+        ? String(user.yearOfBirth)
+        : (rawDob.length >= 4 ? rawDob.substring(0, 4) : '');
+      setEditDob(rawDob);
+      setEditYear(rawYob);
     }
     if (mode === 'view') {
       loadUserGroups(user);
@@ -163,6 +229,9 @@ const ManageUsers = () => {
     setEditLoading(true);
     setNotice(null);
     try {
+      const finalYob = editYear ? editYear.trim() : (editDob ? editDob.substring(0, 4) : '');
+      const finalDob = editDob || (finalYob ? `${finalYob}-01-01` : null);
+
       const res = await makeRequest('/admin/users/updateUser', {
         method: 'POST',
         body: JSON.stringify({
@@ -171,17 +240,34 @@ const ManageUsers = () => {
           phone: editPhone.trim(),
           type: editRole,
           nickname: editNickname.trim(),
-          yearOfBirth: editYear.trim(),
+          yearOfBirth: finalYob,
+          dateOfBirth: finalDob,
         }),
       });
       const data = await safeJson(res);
       if (res.ok && data?.success) {
         setUsers(prev => prev.map(u =>
           u.id === selectedUser.id
-            ? { ...u, name: editName, phone: editPhone, type: editRole, nickname: editNickname, yearOfBirth: editYear }
+            ? { 
+                ...u, 
+                name: editName.trim(), 
+                phone: editPhone.trim(), 
+                type: editRole, 
+                nickname: editNickname.trim(), 
+                yearOfBirth: finalYob,
+                dateOfBirth: finalDob
+              }
             : u
         ));
-        setSelectedUser(prev => ({ ...prev, name: editName, phone: editPhone, type: editRole, nickname: editNickname, yearOfBirth: editYear }));
+        setSelectedUser(prev => ({ 
+          ...prev, 
+          name: editName.trim(), 
+          phone: editPhone.trim(), 
+          type: editRole, 
+          nickname: editNickname.trim(), 
+          yearOfBirth: finalYob,
+          dateOfBirth: finalDob
+        }));
         setNotice({ text: 'User details updated successfully!', success: true });
         setTimeout(() => { 
           setViewMode('view');
@@ -194,6 +280,89 @@ const ManageUsers = () => {
       setNotice({ text: 'Network error: Failed to update user', success: false });
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  // ── Add New Member with Real API ─────────────────────────
+  const handleAddMember = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!addForm.name.trim()) {
+      setAddError('Full name is required');
+      return;
+    }
+    const phoneClean = addForm.phone.replace(/\s+/g, '');
+    if (!phoneClean || !/^[0-9]{10}$/.test(phoneClean)) {
+      setAddError('Please enter a valid 10-digit phone number');
+      return;
+    }
+    const finalYob = addForm.yob ? addForm.yob.trim() : (addForm.dob ? addForm.dob.substring(0, 4) : '');
+    if (!finalYob || finalYob.length !== 4) {
+      setAddError('Please enter a valid 4-digit Year of Birth');
+      return;
+    }
+
+    setAddLoading(true);
+    setAddError('');
+    try {
+      const res = await makeRequest('/admin/users/addUser', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: addForm.name.trim(),
+          phoneNumber: phoneClean,
+          role: addForm.role,
+          yearOfBirth: finalYob,
+          dateOfBirth: addForm.dob || `${finalYob}-01-01`,
+          nickname: addForm.nickname.trim(),
+        }),
+      });
+      const data = await safeJson(res);
+      if (res.ok && data?.success) {
+        setShowAddModal(false);
+        setAddForm({ name: '', phone: '', nickname: '', dob: '', yob: '', role: 'user' });
+        loadUsers();
+      } else {
+        setAddError(data?.message || 'Failed to add member');
+      }
+    } catch (err) {
+      setAddError('Network error: Failed to add member');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  // ── Custom Password Update with Real API ─────────────────
+  const handleChangePassword = async () => {
+    if (!selectedUser) return;
+    if (!newPassword || newPassword.length < 4) {
+      setNotice({ text: 'Password must be at least 4 characters long', success: false });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setNotice({ text: 'Passwords do not match', success: false });
+      return;
+    }
+    setPasswordLoading(true);
+    setNotice(null);
+    try {
+      const res = await makeRequest('/admin/users/updatePassword', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          newPassword: newPassword.trim(),
+        }),
+      });
+      const data = await safeJson(res);
+      if (res.ok && data?.success) {
+        setNotice({ text: `Password for ${selectedUser.name || 'user'} updated successfully!`, success: true });
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setNotice({ text: data?.message || 'Failed to update password', success: false });
+      }
+    } catch (err) {
+      setNotice({ text: 'Network error: Could not update password', success: false });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -314,6 +483,7 @@ const ManageUsers = () => {
     all: users.length,
     admin: users.filter(u => String(u.type || '').toLowerCase() === 'admin').length,
     user: users.filter(u => String(u.type || '').toLowerCase() !== 'admin').length,
+    blocked: users.filter(u => Number(u.isActive) === 0).length,
   }), [users]);
 
   const filteredUsers = useMemo(() => {
@@ -321,6 +491,8 @@ const ManageUsers = () => {
     if (activeFilter !== 'all') {
       if (activeFilter === 'admin') {
         list = list.filter(u => String(u.type || '').toLowerCase() === 'admin');
+      } else if (activeFilter === 'blocked') {
+        list = list.filter(u => Number(u.isActive) === 0);
       } else {
         list = list.filter(u => String(u.type || '').toLowerCase() !== 'admin');
       }
@@ -410,7 +582,31 @@ const ManageUsers = () => {
               <span>Admins</span>
               <span className="mu-role-pill-count">{counts.admin}</span>
             </button>
+            <button
+              className={`mu-role-pill-btn ${activeFilter === 'blocked' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveFilter('blocked');
+                setCurrentPage(1);
+              }}
+              style={counts.blocked > 0 ? { color: activeFilter === 'blocked' ? undefined : '#dc2626' } : undefined}
+            >
+              <RiBanLine size={15} />
+              <span>Blocked</span>
+              <span className="mu-role-pill-count" style={counts.blocked > 0 ? { background: '#fee2e2', color: '#b91c1c' } : undefined}>
+                {counts.blocked}
+              </span>
+            </button>
           </div>
+
+          {/* Add Member Shortcut Action */}
+          <button 
+            className="mu-add-user-btn"
+            onClick={() => navigate('/admin/admintool/add-user')}
+            title="Go to Add Member Page"
+          >
+            <UserPlus size={16} />
+            <span>Add Member</span>
+          </button>
         </div>
       </div>
 
@@ -441,7 +637,8 @@ const ManageUsers = () => {
                   <tr>
                     <th>Member</th>
                     <th>Phone</th>
-                    <th>Role</th>
+                    <th>Role & Status</th>
+                    <th>Date of Birth</th>
                     <th>Joined Date</th>
                     <th>Groups</th>
                     <th style={{ width: 60 }}></th>
@@ -450,6 +647,7 @@ const ManageUsers = () => {
                 <tbody>
                   {currentUsers.map(user => {
                     const isAdmin = String(user.type || '').toLowerCase() === 'admin';
+                    const isBlocked = Number(user.isActive) === 0;
                     return (
                       <tr key={user.id} onClick={() => openUser(user, 'view')}>
                         <td>
@@ -457,15 +655,15 @@ const ManageUsers = () => {
                             <div 
                               className="mu-cell-avatar" 
                               style={{ 
-                                background: isAdmin ? 'var(--primary-light)' : 'var(--success-bg)', 
-                                color: isAdmin ? 'var(--primary)' : 'var(--success)',
-                                border: `1px solid ${isAdmin ? 'rgba(40, 66, 196, 0.15)' : 'rgba(16, 185, 129, 0.15)'}`
+                                background: isBlocked ? '#fee2e2' : (isAdmin ? 'var(--primary-light)' : 'var(--success-bg)'), 
+                                color: isBlocked ? '#b91c1c' : (isAdmin ? 'var(--primary)' : 'var(--success)'),
+                                border: `1px solid ${isBlocked ? '#fca5a5' : (isAdmin ? 'rgba(40, 66, 196, 0.15)' : 'rgba(16, 185, 129, 0.15)')}`
                               }}
                             >
                               {initials(user)}
                             </div>
                             <div className="mu-cell-name-info">
-                              <span className="mu-cell-name">{user.name || 'Unnamed'}</span>
+                              <span className="mu-cell-name" style={{ color: isBlocked ? '#991b1b' : undefined }}>{user.name || 'Unnamed'}</span>
                               <span className="mu-cell-sub">{user.nickname ? `@${user.nickname}` : '--'}</span>
                             </div>
                           </div>
@@ -477,9 +675,29 @@ const ManageUsers = () => {
                           </span>
                         </td>
                         <td>
-                          <span className={`mu-role-badge ${isAdmin ? 'admin' : 'user'}`}>
-                            {isAdmin ? <RiShieldUserLine size={10} /> : <RiUserLine size={10} />}
-                            {isAdmin ? 'Admin' : 'User'}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span className={`mu-role-badge ${isAdmin ? 'admin' : 'user'}`}>
+                              {isAdmin ? <RiShieldUserLine size={10} /> : <RiUserLine size={10} />}
+                              {isAdmin ? 'Admin' : 'User'}
+                            </span>
+                            {isBlocked && (
+                              <span style={{ 
+                                fontSize: 10, 
+                                fontWeight: 800, 
+                                color: '#b91c1c', 
+                                background: '#fee2e2', 
+                                border: '1px solid #fca5a5', 
+                                borderRadius: 4, 
+                                padding: '1px 6px' 
+                              }}>
+                                BLOCKED
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <span style={{ color: '#334155', fontSize: 13, fontWeight: 500 }}>
+                            {formatDOB(user.dateOfBirth)}
                           </span>
                         </td>
                         <td>
@@ -577,6 +795,12 @@ const ManageUsers = () => {
                 <RiEditLine size={14} /> Edit
               </button>
               <button 
+                className={`mg2-panel-tab ${viewMode === 'password' ? 'active' : ''}`} 
+                onClick={() => setViewMode('password')}
+              >
+                <RiKeyLine size={14} /> Password
+              </button>
+              <button 
                 className={`mg2-panel-tab ${viewMode === 'delete' ? 'active' : ''}`} 
                 onClick={() => setViewMode('delete')}
               >
@@ -668,11 +892,26 @@ const ManageUsers = () => {
                         </div>
                         <div className="mu-shortcut-info">
                           <span className="mu-shortcut-name">Edit Profile</span>
-                          <span className="mu-shortcut-desc">Update name, phone, role</span>
+                          <span className="mu-shortcut-desc">Update name, phone, DOB</span>
                         </div>
                       </button>
 
-                      {/* Reset Password */}
+                      {/* Password Management */}
+                      <button 
+                        className="mu-shortcut-card"
+                        onClick={() => setViewMode('password')}
+                        title="Manage or change member password"
+                      >
+                        <div className="mu-shortcut-icon key">
+                          <RiLockLine size={16} />
+                        </div>
+                        <div className="mu-shortcut-info">
+                          <span className="mu-shortcut-name">Password</span>
+                          <span className="mu-shortcut-desc">Change or reset password</span>
+                        </div>
+                      </button>
+
+                      {/* Reset to YOB */}
                       <button 
                         className="mu-shortcut-card"
                         onClick={handleResetPassword}
@@ -683,8 +922,8 @@ const ManageUsers = () => {
                           {resetLoading ? <RiLoader4Line size={16} className="spin-anim" /> : <RiKeyLine size={16} />}
                         </div>
                         <div className="mu-shortcut-info">
-                          <span className="mu-shortcut-name">Reset Password</span>
-                          <span className="mu-shortcut-desc">Reset to birth year</span>
+                          <span className="mu-shortcut-name">Reset to YOB</span>
+                          <span className="mu-shortcut-desc">Default: {selectedUser.yearOfBirth || 'YOB'}</span>
                         </div>
                       </button>
 
@@ -711,6 +950,24 @@ const ManageUsers = () => {
                           <span className="mu-shortcut-desc">
                             {Number(selectedUser.isActive) === 0 ? 'Restore login access' : 'Restrict system access'}
                           </span>
+                        </div>
+                      </button>
+
+                      {/* Member Location */}
+                      <button 
+                        className="mu-shortcut-card"
+                        onClick={() => {
+                          closePanel();
+                          navigate('/admin/user-locations');
+                        }}
+                        title="View user location tracking"
+                      >
+                        <div className="mu-shortcut-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
+                          <RiMapPinLine size={16} />
+                        </div>
+                        <div className="mu-shortcut-info">
+                          <span className="mu-shortcut-name">User Location</span>
+                          <span className="mu-shortcut-desc">Track member location</span>
                         </div>
                       </button>
 
@@ -790,8 +1047,17 @@ const ManageUsers = () => {
                       </div>
 
                       <div className="rn-detail-row">
+                        <span>Date of Birth</span>
+                        <div className="mu-detail-value-wrapper">
+                          <strong>{formatDOB(selectedUser.dateOfBirth)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="rn-detail-row">
                         <span>Year of Birth</span>
-                        <strong>{selectedUser.yearOfBirth || selectedUser.dateOfBirth || '--'}</strong>
+                        <div className="mu-detail-value-wrapper">
+                          <strong>{selectedUser.yearOfBirth || (selectedUser.dateOfBirth ? String(selectedUser.dateOfBirth).substring(0, 4) : '--')}</strong>
+                        </div>
                       </div>
 
                       <div className="rn-detail-row">
@@ -955,7 +1221,22 @@ const ManageUsers = () => {
                     />
                   </div>
                   <div className="mu-form-group">
-                    <label className="mu-form-label">Year of Birth</label>
+                    <label className="mu-form-label">Date of Birth</label>
+                    <input 
+                      type="date"
+                      className="mu-form-input" 
+                      value={editDob} 
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEditDob(val);
+                        if (val && val.length >= 4) {
+                          setEditYear(val.substring(0, 4));
+                        }
+                      }} 
+                    />
+                  </div>
+                  <div className="mu-form-group">
+                    <label className="mu-form-label">Year of Birth (Default Password)</label>
                     <input 
                       className="mu-form-input" 
                       value={editYear} 
@@ -988,6 +1269,116 @@ const ManageUsers = () => {
                       <><RiCheckLine size={16} /> Save Changes</>
                     )}
                   </button>
+                </div>
+              )}
+
+              {viewMode === 'password' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Reset to Year of Birth Card */}
+                  <div style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 12,
+                    padding: 16,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <div style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        background: '#eff6ff',
+                        color: '#2563eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <RiKeyLine size={16} />
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Quick Reset to YOB</h4>
+                        <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>
+                          Sets password to birth year: <strong>{selectedUser.yearOfBirth || (selectedUser.dateOfBirth ? String(selectedUser.dateOfBirth).substring(0, 4) : 'YYYY')}</strong>
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      className="mu-shortcut-card"
+                      style={{ width: '100%', marginTop: 8, justifyContent: 'center', background: '#ffffff' }}
+                      onClick={handleResetPassword}
+                      disabled={resetLoading}
+                    >
+                      {resetLoading ? <RiLoader4Line size={15} className="spin-anim" /> : <RiRefreshLine size={15} />}
+                      <span style={{ fontWeight: 600, fontSize: 13, color: '#1e293b' }}>
+                        {resetLoading ? 'Resetting...' : 'Reset Password to Year of Birth'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Custom Password Form */}
+                  <div style={{
+                    background: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 12,
+                    padding: 16,
+                  }}>
+                    <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <RiLockLine size={16} color="#4f46e5" /> Set Custom Password
+                    </h4>
+                    
+                    <div className="mu-form-group" style={{ marginBottom: 12 }}>
+                      <label className="mu-form-label">New Password</label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type={showPasswordText ? 'text' : 'password'}
+                          className="mu-form-input"
+                          value={newPassword}
+                          onChange={e => setNewPassword(e.target.value)}
+                          placeholder="Min 4 characters"
+                          style={{ paddingRight: 38 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswordText(!showPasswordText)}
+                          style={{
+                            position: 'absolute',
+                            right: 10,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#94a3b8'
+                          }}
+                        >
+                          {showPasswordText ? <RiEyeOffLine size={16} /> : <RiEyeLine size={16} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mu-form-group" style={{ marginBottom: 16 }}>
+                      <label className="mu-form-label">Confirm New Password</label>
+                      <input
+                        type={showPasswordText ? 'text' : 'password'}
+                        className="mu-form-input"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        placeholder="Re-enter password"
+                      />
+                    </div>
+
+                    <button
+                      className="mu-btn-edit"
+                      onClick={handleChangePassword}
+                      disabled={passwordLoading || !newPassword}
+                      style={{ width: '100%' }}
+                    >
+                      {passwordLoading ? (
+                        <><RiLoader4Line size={16} className="spin-anim" /> Updating...</>
+                      ) : (
+                        <><RiCheckLine size={16} /> Update Password</>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1051,6 +1442,179 @@ const ManageUsers = () => {
               )}
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Member Modal ── */}
+      {showAddModal && (
+        <div className="mu-modal-backdrop" onClick={() => setShowAddModal(false)}>
+          <div className="mu-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="mu-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: 'var(--primary-light, #eff6ff)',
+                  color: 'var(--primary, #2563eb)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <UserPlus size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Add New Member</h3>
+                  <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>Create member account & set birth details</p>
+                </div>
+              </div>
+              <button 
+                className="rp-close" 
+                onClick={() => setShowAddModal(false)}
+                type="button"
+              >
+                <RiCloseLine size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddMember}>
+              <div className="mu-modal-body">
+                {addError && (
+                  <div style={{
+                    background: '#fee2e2',
+                    border: '1px solid #fca5a5',
+                    color: '#991b1b',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginBottom: 14
+                  }}>
+                    <RiAlertLine size={15} />
+                    <span>{addError}</span>
+                  </div>
+                )}
+
+                <div className="mu-form-group" style={{ marginBottom: 12 }}>
+                  <label className="mu-form-label">Full Name *</label>
+                  <input
+                    type="text"
+                    className="mu-form-input"
+                    value={addForm.name}
+                    onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter member's full legal name"
+                    required
+                  />
+                </div>
+
+                <div className="mu-form-group" style={{ marginBottom: 12 }}>
+                  <label className="mu-form-label">Phone Number *</label>
+                  <input
+                    type="tel"
+                    className="mu-form-input"
+                    value={addForm.phone}
+                    onChange={e => setAddForm(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="10-digit mobile number"
+                    maxLength={10}
+                    required
+                  />
+                </div>
+
+                <div className="mu-form-group" style={{ marginBottom: 12 }}>
+                  <label className="mu-form-label">Nickname / Handle (Optional)</label>
+                  <input
+                    type="text"
+                    className="mu-form-input"
+                    value={addForm.nickname}
+                    onChange={e => setAddForm(prev => ({ ...prev, nickname: e.target.value }))}
+                    placeholder="e.g. john_doe"
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div className="mu-form-group">
+                    <label className="mu-form-label">Date of Birth *</label>
+                    <input
+                      type="date"
+                      className="mu-form-input"
+                      value={addForm.dob}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setAddForm(prev => ({
+                          ...prev,
+                          dob: val,
+                          yob: val && val.length >= 4 ? val.substring(0, 4) : prev.yob
+                        }));
+                      }}
+                      required
+                    />
+                  </div>
+                  <div className="mu-form-group">
+                    <label className="mu-form-label">Year of Birth (YOB) *</label>
+                    <input
+                      type="text"
+                      className="mu-form-input"
+                      value={addForm.yob}
+                      onChange={e => setAddForm(prev => ({ ...prev, yob: e.target.value }))}
+                      placeholder="e.g. 1995"
+                      maxLength={4}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="mu-form-group" style={{ marginBottom: 12 }}>
+                  <label className="mu-form-label">Role</label>
+                  <select
+                    className="mu-form-select"
+                    value={addForm.role}
+                    onChange={e => setAddForm(prev => ({ ...prev, role: e.target.value }))}
+                  >
+                    <option value="user">Regular User (Member)</option>
+                    <option value="admin">System Admin</option>
+                  </select>
+                </div>
+
+                <div style={{
+                  background: '#f1f5f9',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  fontSize: 12,
+                  color: '#475569',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}>
+                  <RiKeyLine size={14} color="#64748b" />
+                  <span>The user's initial login password will default to their <strong>Year of Birth</strong>.</span>
+                </div>
+              </div>
+
+              <div className="mu-modal-footer">
+                <button
+                  type="button"
+                  className="mu-btn-cancel"
+                  onClick={() => setShowAddModal(false)}
+                  disabled={addLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="mu-btn-edit"
+                  disabled={addLoading}
+                >
+                  {addLoading ? (
+                    <><RiLoader4Line size={15} className="spin-anim" /> Adding...</>
+                  ) : (
+                    <><RiCheckLine size={15} /> Create Member</>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

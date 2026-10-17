@@ -40,14 +40,24 @@ const parseStoredDate = (value) => {
 		return null;
 	}
 
-	const normalizedValue = value.trim().split('T')[0];
+	const str = value.trim();
+
+	// If ISO string with timestamp (e.g. 2007-01-31T18:30:00.000Z), convert via Date object so local timezone (+05:30) is preserved
+	if (str.includes('T')) {
+		const d = new Date(str);
+		if (!Number.isNaN(d.getTime())) {
+			return d;
+		}
+	}
+
+	const normalizedValue = str.split('T')[0];
 	let parsedDate = null;
 
 	if (/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
 		const [year, month, day] = normalizedValue.split('-').map(Number);
 		parsedDate = new Date(year, month - 1, day);
 	} else if (/^\d{2}\/\d{2}\/\d{4}$/.test(normalizedValue)) {
-		const [month, day, year] = normalizedValue.split('/').map(Number);
+		const [day, month, year] = normalizedValue.split('/').map(Number);
 		parsedDate = new Date(year, month - 1, day);
 	} else if (/^\d{2}-\d{2}-\d{4}$/.test(normalizedValue)) {
 		const [day, month, year] = normalizedValue.split('-').map(Number);

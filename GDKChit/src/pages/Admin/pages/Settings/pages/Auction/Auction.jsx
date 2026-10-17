@@ -291,6 +291,26 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
       Alert.alert('Error', 'Please select a group first');
       return;
     }
+
+    const currentEligible = (selectedGroup.members || []).filter(m => !m.hasWonAuction);
+    const isLastSingleMember = currentEligible.length === 1;
+
+    if (isLastSingleMember) {
+      if (selectedMembers.length !== 1) {
+        Alert.alert('Selection Required', 'Please select the remaining member to confirm default winner');
+        return;
+      }
+      const defaultWinner = selectedMembers[0];
+      setAuctionResult({
+        winner: defaultWinner,
+        amount: selectedGroup.groupAmount || 0,
+        isDefaultWinner: true,
+        type: activeTab || 'random'
+      });
+      setShowResultModal(true);
+      return;
+    }
+
     if (selectedMembers.length < 2) {
       Alert.alert('Error', 'Please select at least 2 members for the auction');
       return;
@@ -516,14 +536,16 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
       <View style={styles.resultModal}>
         <View style={styles.resultHeader}>
           <MaterialCommunityIcons 
-            name={auctionResult?.type === 'betting' ? "trophy" : "dice-6"} 
+            name={auctionResult?.isDefaultWinner ? "crown" : (auctionResult?.type === 'betting' ? "trophy" : "dice-6")} 
             size={50} 
             color="#FFD700" 
           />
           <Text style={styles.resultTitle}>
-            {auctionResult?.type === 'betting' 
-              ? `Auction Result - Month ${auctionCycleMonth}` 
-              : `🎉 Month ${auctionCycleMonth} Winner!`}
+            {auctionResult?.isDefaultWinner
+              ? `🎉 Month ${auctionCycleMonth} Default Winner!`
+              : (auctionResult?.type === 'betting' 
+                  ? `Auction Result - Month ${auctionCycleMonth}` 
+                  : `🎉 Month ${auctionCycleMonth} Winner!`)}
           </Text>
         </View>
         
@@ -592,7 +614,13 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
                 <Text style={{ fontSize: 11, fontWeight: '800', color: '#B91C1C' }}>⚠️ NOT ELIGIBLE - PRIZE ALREADY TAKEN</Text>
               </View>
             )}
-            <Text style={styles.diceResult}>Dice Value: {auctionResult?.diceValue}</Text>
+            {auctionResult?.isDefaultWinner ? (
+              <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#FDE68A', marginTop: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#92400E' }}>👑 Final Month Default Winner</Text>
+              </View>
+            ) : (
+              <Text style={styles.diceResult}>Dice Value: {auctionResult?.diceValue}</Text>
+            )}
           </View>
         )}
 
@@ -686,7 +714,9 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
         onClose={() => setShowMemberModal(false)}
         onMemberToggle={toggleMemberSelection}
         onProceed={() => {
-          if (selectedMembers.length >= 2) {
+          const isLastSingleMember = (selectedGroup?.members || []).filter(m => !m.hasWonAuction).length === 1;
+          const canProceed = isLastSingleMember ? selectedMembers.length === 1 : selectedMembers.length >= 2;
+          if (canProceed) {
             startAuctionSetup();
             setShowMemberModal(false);
           }

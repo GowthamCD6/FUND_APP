@@ -98,7 +98,13 @@ const MoreModal = ({ visible, onClose }) => {
         visible={visible}
         onRequestClose={handleManageUserBack}
       >
-        <ManageU onBack={handleManageUserBack} />
+        <ManageU 
+          onBack={handleManageUserBack} 
+          onNavigateToAddUser={() => {
+            setShowManageUser(false);
+            setShowAddUser(true);
+          }}
+        />
       </Modal>
     );
   }

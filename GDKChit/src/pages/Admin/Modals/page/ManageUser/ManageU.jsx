@@ -18,6 +18,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../../../../services/ApiService';
 import Header from '../../../../../components/HeaderComponent/Header';
+import AddUser from '../AddUser/AddU.jsx';
 
 const getAvatarUrl = (avatarPath) => {
   if (!avatarPath || typeof avatarPath !== 'string') return null;
@@ -29,6 +30,48 @@ const getAvatarUrl = (avatarPath) => {
   const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   const base = (ApiService.baseURL || 'http://localhost:5000').replace(/\/+$/, '').replace(/\/api\/?$/, '');
   return `${base}${cleanPath}`;
+};
+
+const formatDOB = (dobStr) => {
+  if (!dobStr || dobStr === 'N/A' || dobStr === 'null' || dobStr === 'undefined') return 'N/A';
+  const str = String(dobStr).trim();
+  if (!str) return 'N/A';
+
+  // If ISO string with timestamp (e.g. 2007-01-31T18:30:00.000Z), convert via Date object so local timezone (+05:30) is preserved
+  if (str.includes('T')) {
+    const d = new Date(str);
+    if (!Number.isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const day = String(d.getDate()).padStart(2, '0');
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${day} ${months[d.getMonth()]} ${year}`;
+    }
+  }
+
+  const clean = str.split('T')[0];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // Match YYYY-MM-DD
+  const ymdMatch = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymdMatch) {
+    const [, y, m, d] = ymdMatch;
+    const monthIndex = parseInt(m, 10) - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      return `${d} ${months[monthIndex]} ${y}`;
+    }
+  }
+
+  // Match DD-MM-YYYY or DD/MM/YYYY
+  const dmyMatch = clean.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+  if (dmyMatch) {
+    const [, d, m, y] = dmyMatch;
+    const monthIndex = parseInt(m, 10) - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      return `${d} ${months[monthIndex]} ${y}`;
+    }
+  }
+
+  return clean;
 };
 
 const SkeletonBox = ({ width, height, borderRadius = 6, style }) => {
@@ -82,7 +125,8 @@ const UserRowSkeleton = () => (
   </View>
 );
 
-const ManageU = ({onBack}) => {
+const ManageU = ({onBack, onNavigateToAddUser}) => {
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -180,6 +224,104 @@ const ManageU = ({onBack}) => {
     setShowViewModal(true);
   };
 
+  const handleResetPassword = () => {
+    if (!selectedUser?.id) return;
+    setShowMenu(false);
+    const yob = selectedUser.yearOfBirth || (selectedUser.dateOfBirth ? String(selectedUser.dateOfBirth).substring(0, 4) : 'YOB');
+    Alert.alert(
+      'Reset Password',
+      `Are you sure you want to reset password for ${selectedUser.name || 'this user'} to their year of birth (${yob})?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await ApiService.makeRequest('/admin/users/resetPassword', {
+                method: 'POST',
+                body: JSON.stringify({ userId: selectedUser.id }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                Alert.alert('Success', `Password reset to default Year of Birth (${yob}) successfully.`);
+              } else {
+                Alert.alert('Error', data.message || 'Failed to reset password');
+              }
+            } catch (err) {
+              Alert.alert('Error', 'Network error: could not reset password');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleToggleBlock = () => {
+    if (!selectedUser?.id) return;
+    setShowMenu(false);
+    const isCurrentlyBlocked = Number(selectedUser.isActive ?? selectedUser.is_active) === 0;
+    
+    if (isCurrentlyBlocked) {
+      Alert.alert(
+        'Unblock User',
+        `Unblock ${selectedUser.name || 'this user'} and restore login access?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Unblock',
+            onPress: async () => {
+              try {
+                const res = await ApiService.makeRequest('/admin/users/unblockUser', {
+                  method: 'POST',
+                  body: JSON.stringify({ userId: selectedUser.id }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, isActive: 1, is_active: 1, blockReason: null, block_reason: null } : u));
+                  Alert.alert('Success', 'User unblocked successfully');
+                } else {
+                  Alert.alert('Error', data.message || 'Failed to unblock user');
+                }
+              } catch (err) {
+                Alert.alert('Error', 'Network error: could not unblock user');
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Block User',
+        `Are you sure you want to block ${selectedUser.name || 'this user'}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Block',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const res = await ApiService.makeRequest('/admin/users/blockUser', {
+                  method: 'POST',
+                  body: JSON.stringify({ userId: selectedUser.id, reason: 'Administrative block' }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, isActive: 0, is_active: 0, blockReason: 'Administrative block', block_reason: 'Administrative block' } : u));
+                  Alert.alert('Success', 'User blocked successfully');
+                } else {
+                  Alert.alert('Error', data.message || 'Failed to block user');
+                }
+              } catch (err) {
+                Alert.alert('Error', 'Network error: could not block user');
+              }
+            },
+          },
+        ]
+      );
+    }
+  };
+
   const confirmEdit = async () => {
     if (!selectedUser?.id) return;
     if (!editedPhone || editedPhone.trim().length !== 10) {
@@ -251,10 +393,37 @@ const ManageU = ({onBack}) => {
     }
   };
 
+  const handleAddUserPress = () => {
+    if (onNavigateToAddUser) {
+      onNavigateToAddUser();
+    } else {
+      setShowAddUserModal(true);
+    }
+  };
+
+  if (showAddUserModal) {
+    return (
+      <AddUser onBack={() => { setShowAddUserModal(false); fetchUsers(); }} />
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
-      <Header title="Manage Users" onBack={onBack} />
+      <Header 
+        title="Manage Users" 
+        onBack={onBack}
+        rightComponent={
+          <TouchableOpacity
+            style={customStyles.headerAddBtn}
+            onPress={handleAddUserPress}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons name="account-plus" size={16} color="#FFFFFF" />
+            <Text style={customStyles.headerAddBtnText}>Add User</Text>
+          </TouchableOpacity>
+        }
+      />
 
       {/* Search Bar */}
       <View style={customStyles.searchContainer}>
@@ -323,7 +492,14 @@ const ManageU = ({onBack}) => {
                     )}
                   </View>
                   <View>
-                    <Text style={customStyles.userName}>{displayName}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={customStyles.userName}>{displayName}</Text>
+                      {Number(user.isActive ?? user.is_active) === 0 && (
+                        <View style={{ backgroundColor: '#FEE2E2', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                          <Text style={{ color: '#DC2626', fontSize: 10, fontWeight: '700' }}>BLOCKED</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={customStyles.userPhone}>{displayPhone}</Text>
                   </View>
                 </View>
@@ -387,6 +563,32 @@ const ManageU = ({onBack}) => {
               />
               <Text style={[customStyles.menuText, { color: '#3B82F6' }]}>
                 Edit User
+              </Text>
+            </TouchableOpacity>
+            <View style={customStyles.menuDivider} />
+            <TouchableOpacity
+              style={customStyles.menuItem}
+              onPress={handleResetPassword}>
+              <MaterialCommunityIcons
+                name="key-outline"
+                size={20}
+                color="#F59E0B"
+              />
+              <Text style={[customStyles.menuText, { color: '#F59E0B' }]}>
+                Reset Password (YOB)
+              </Text>
+            </TouchableOpacity>
+            <View style={customStyles.menuDivider} />
+            <TouchableOpacity
+              style={customStyles.menuItem}
+              onPress={handleToggleBlock}>
+              <MaterialCommunityIcons
+                name={Number(selectedUser?.isActive ?? selectedUser?.is_active) === 0 ? "account-check-outline" : "account-cancel-outline"}
+                size={20}
+                color={Number(selectedUser?.isActive ?? selectedUser?.is_active) === 0 ? "#10B981" : "#DC2626"}
+              />
+              <Text style={[customStyles.menuText, { color: Number(selectedUser?.isActive ?? selectedUser?.is_active) === 0 ? "#10B981" : "#DC2626" }]}>
+                {Number(selectedUser?.isActive ?? selectedUser?.is_active) === 0 ? "Unblock User" : "Block User"}
               </Text>
             </TouchableOpacity>
             <View style={customStyles.menuDivider} />
@@ -696,7 +898,7 @@ const ManageU = ({onBack}) => {
                 </View>
               </View>
 
-              {/* Birth Year / Date of Birth */}
+              {/* Date of Birth */}
               <View style={customStyles.inputGroup}>
                 <View style={customStyles.labelContainer}>
                   <MaterialCommunityIcons
@@ -704,13 +906,28 @@ const ManageU = ({onBack}) => {
                     size={20}
                     color="#000000"
                   />
-                  <Text style={styles.inputLabel}>Date of Birth / Year</Text>
+                  <Text style={styles.inputLabel}>Date of Birth</Text>
                 </View>
                 <View style={customStyles.viewDataContainer}>
                   <Text style={customStyles.viewDataText}>
-                    {selectedUser?.dateOfBirth && selectedUser.dateOfBirth !== 'N/A'
-                      ? selectedUser.dateOfBirth.split('T')[0]
-                      : 'N/A'}
+                    {formatDOB(selectedUser?.dateOfBirth)}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Year of Birth */}
+              <View style={customStyles.inputGroup}>
+                <View style={customStyles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="calendar-range"
+                    size={20}
+                    color="#000000"
+                  />
+                  <Text style={styles.inputLabel}>Year of Birth (Default Password)</Text>
+                </View>
+                <View style={customStyles.viewDataContainer}>
+                  <Text style={customStyles.viewDataText}>
+                    {selectedUser?.yearOfBirth || (selectedUser?.dateOfBirth ? String(selectedUser.dateOfBirth).substring(0, 4) : 'N/A')}
                   </Text>
                 </View>
               </View>
@@ -801,6 +1018,15 @@ const ManageU = ({onBack}) => {
           </View>
         </View>
       </Modal>
+
+      {/* Floating Add User Button */}
+      <TouchableOpacity
+        style={customStyles.fabAddUser}
+        onPress={handleAddUserPress}
+        activeOpacity={0.8}
+      >
+        <MaterialCommunityIcons name="account-plus" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -1144,6 +1370,39 @@ const customStyles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     backgroundColor: '#0066FF',
+  },
+  headerAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0066FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+    marginTop: -8,
+  },
+  headerAddBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
+  },
+  fabAddUser: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#0066FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    zIndex: 99,
   },
 });
 

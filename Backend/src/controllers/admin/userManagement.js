@@ -6,10 +6,11 @@ const { addUserToGlobalCommunity } = require('../../utils/communityHelper');
 const fcmPushService = require('../../services/fcmPushService');
 
 exports.addUser = async (req, res) => {
-    const { name, phoneNumber, yearOfBirth, role } = req.body;
+    const { name, phoneNumber, yearOfBirth, dateOfBirth, role } = req.body;
     const adminId = req.user ? (req.user.userId || req.user.id) : null;
     const phone = phoneNumber || null;
-    const yob = yearOfBirth || null;
+    const rawDob = dateOfBirth || yearOfBirth || null;
+    const yob = yearOfBirth || (rawDob && String(rawDob).length >= 4 ? String(rawDob).substring(0, 4) : null);
 
     try {
         if (!phone) {
@@ -46,13 +47,17 @@ exports.addUser = async (req, res) => {
 
         // Insert into user_profiles for date of birth tracking
         try {
-            const dobDate = `${yob}-01-01`;
-            await db.promise().query(
-                `INSERT INTO user_profiles (user_id, name, date_of_birth, created_by)
-                 VALUES (?, ?, ?, ?)
-                 ON DUPLICATE KEY UPDATE date_of_birth = VALUES(date_of_birth), name = VALUES(name)`,
-                [userId, name || 'User', dobDate, adminId ? Number(adminId) : null]
-            );
+            const dobDate = dateOfBirth 
+                ? String(dateOfBirth).split('T')[0] 
+                : (yob ? `${yob}-01-01` : null);
+            if (dobDate) {
+                await db.promise().query(
+                    `INSERT INTO user_profiles (user_id, name, date_of_birth, created_by)
+                     VALUES (?, ?, ?, ?)
+                     ON DUPLICATE KEY UPDATE date_of_birth = VALUES(date_of_birth), name = VALUES(name)`,
+                    [userId, name || 'User', dobDate, adminId ? Number(adminId) : null]
+                );
+            }
         } catch (profileErr) {
             console.error('Error inserting user_profile on addUser:', profileErr);
         }
@@ -92,7 +97,9 @@ exports.getAllUsers = async (req, res) => {
         const query = `
             SELECT 
                 u.id, u.name, u.nick_name, u.phone, u.mail, u.role, u.created_at, u.is_active, u.block_reason,
-                up.date_of_birth, up.user_image AS profile_image,
+                DATE_FORMAT(up.date_of_birth, '%Y-%m-%d') AS date_of_birth,
+                YEAR(up.date_of_birth) AS year_of_birth,
+                up.user_image AS profile_image,
                 (
                     SELECT GROUP_CONCAT(g.group_name SEPARATOR ', ')
                     FROM user_grouping ug
@@ -115,10 +122,14 @@ exports.getAllUsers = async (req, res) => {
             avatar: user.profile_image,
             profile_image: user.profile_image,
             joinedDate: formatDateString(user.created_at),
-            dateOfBirth: user.date_of_birth ? formatDateString(user.date_of_birth) : 'N/A',
+            dateOfBirth: user.date_of_birth || 'N/A',
+            yearOfBirth: user.year_of_birth ? String(user.year_of_birth) : (user.date_of_birth ? String(user.date_of_birth).substring(0, 4) : 'N/A'),
             contributedGroups: user.contributed_groups || 'None',
             isActive: user.is_active,
-            blockReason: user.block_reason
+            is_active: user.is_active,
+            blockReason: user.block_reason,
+            block_reason: user.block_reason,
+            created_at: user.created_at,
         }));
         
         return res.status(200).json({ success: true, data: users });
@@ -206,9 +217,8 @@ exports.updateUser = async (req, res) => {
         await db.promise().query(sql, params);
 
         // Update user_profiles date_of_birth
-        const dobInput = dateOfBirth || yearOfBirth;
-        if (dobInput) {
-            const formattedDob = String(dobInput).length === 4 ? `${dobInput}-01-01` : String(dobInput);
+        if (dateOfBirth) {
+            const formattedDob = String(dateOfBirth).split('T')[0];
             await db.promise().query(`
                 INSERT INTO user_profiles (user_id, name, date_of_birth, created_by)
                 VALUES (?, ?, ?, ?)
@@ -217,6 +227,27 @@ exports.updateUser = async (req, res) => {
                     name = VALUES(name),
                     updated_at = NOW()
             `, [targetUserId, name || oldUser.name || 'User', formattedDob, adminId ? Number(adminId) : null]);
+        } else if (yearOfBirth) {
+            const cleanYob = String(yearOfBirth).trim();
+            if (cleanYob.length === 4) {
+                const [[existingProfile]] = await db.promise().query(
+                    "SELECT DATE_FORMAT(date_of_birth, '%Y-%m-%d') AS date_of_birth FROM user_profiles WHERE user_id = ? AND deleted_at IS NULL",
+                    [targetUserId]
+                );
+                let newDob = `${cleanYob}-01-01`;
+                if (existingProfile && existingProfile.date_of_birth) {
+                    const [, m, d] = existingProfile.date_of_birth.split('-');
+                    newDob = `${cleanYob}-${m}-${d}`;
+                }
+                await db.promise().query(`
+                    INSERT INTO user_profiles (user_id, name, date_of_birth, created_by)
+                    VALUES (?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        date_of_birth = VALUES(date_of_birth),
+                        name = VALUES(name),
+                        updated_at = NOW()
+                `, [targetUserId, name || oldUser.name || 'User', newDob, adminId ? Number(adminId) : null]);
+            }
         }
 
         await logAuditEvent(req, {
@@ -352,7 +383,9 @@ exports.getUserPasswordDetails = async (req, res) => {
 
     try {
         const query = `
-            SELECT u.id, u.name, u.phone, u.role, u.password, u.created_at, u.updated_at, up.date_of_birth
+            SELECT u.id, u.name, u.phone, u.role, u.password, u.created_at, u.updated_at, 
+                   DATE_FORMAT(up.date_of_birth, '%Y-%m-%d') AS date_of_birth,
+                   YEAR(up.date_of_birth) AS year_of_birth
             FROM users u
             LEFT JOIN user_profiles up ON u.id = up.user_id AND up.deleted_at IS NULL
             WHERE u.id = ? AND u.deleted_at IS NULL
@@ -367,8 +400,8 @@ exports.getUserPasswordDetails = async (req, res) => {
         
         // Determine password display representation
         let displayPassword = 'Modified (Secure Hashed)';
-        if (user.date_of_birth) {
-            const yob = new Date(user.date_of_birth).getFullYear();
+        const yob = user.year_of_birth || (user.date_of_birth ? String(user.date_of_birth).substring(0, 4) : null);
+        if (yob) {
             const encryptedYOB = passwordEncryptAES(String(yob));
             const isDefault = await bcrypt.compare(encryptedYOB, user.password);
             if (isDefault) {
