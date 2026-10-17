@@ -30,6 +30,7 @@ router.post('/groups/activate', authenticateToken, requireAdmin, groupManagement
 router.post('/groups/delete', authenticateToken, requireAdmin, groupManagement.deleteGroup);
 router.post('/groups/saveMonthlyDetails', authenticateToken, requireAdmin, groupManagement.saveGroupMonthlyDetails);
 router.post('/groups/saveAuctionWinner', authenticateToken, requireAdmin, groupManagement.saveAuctionWinner);
+router.post('/groups/toggleMemberAuctionPrize', authenticateToken, requireAdmin, groupManagement.toggleMemberAuctionPrize);
 router.post('/groups/notifyAuctionMembers', authenticateToken, groupManagement.notifyAuctionMembers);
 router.get('/groups/getMonthlySnapshot', authenticateToken, groupManagement.getGroupMonthSnapshot);
 router.get('/groups/getCompletedAuctions', authenticateToken, groupManagement.getCompletedAuctions);

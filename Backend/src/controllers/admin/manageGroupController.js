@@ -143,24 +143,60 @@ exports.getGroups = async (req, res) => {
                 group.startDate = group.start_date;
                 group.members = [];
                 
-                // --- Dynamic Next Due Date Logic ---
+                // --- Dynamic Month & Next Due Date Logic ---
+                const duration = Math.max(1, Number(group.duration) || Number(group.total_members) || 20);
+                group.duration = duration;
+                group.totalCycles = duration;
+
+                const getOrdinalSuffix = (n) => {
+                    const s = ['th', 'st', 'nd', 'rd'];
+                    const v = n % 100;
+                    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                };
+
                 if (group.start_date) {
                     const st = new Date(group.start_date);
                     const now = new Date();
+                    st.setHours(0, 0, 0, 0);
+                    now.setHours(0, 0, 0, 0);
+
                     let elapsedMonths = (now.getFullYear() - st.getFullYear()) * 12 + (now.getMonth() - st.getMonth());
                     if (now.getDate() >= st.getDate()) {
                         elapsedMonths += 1;
                     }
-                    const maxDuration = group.duration || group.total_members || 1;
-                    elapsedMonths = Math.min(elapsedMonths, maxDuration);
-                    const nextDueDate = new Date(st.getFullYear(), st.getMonth() + elapsedMonths, st.getDate());
+                    const maxDuration = duration;
+                    const clampedMonths = Math.min(Math.max(1, elapsedMonths), maxDuration);
+                    const nextDueDate = new Date(st.getFullYear(), st.getMonth() + clampedMonths, st.getDate());
                     
                     const n_dd = String(nextDueDate.getDate()).padStart(2, '0');
                     const n_mm = String(nextDueDate.getMonth() + 1).padStart(2, '0');
                     const n_yyyy = nextDueDate.getFullYear();
                     group.nextDueDate = `${n_yyyy}-${n_mm}-${n_dd}`;
+
+                    if (now < st) {
+                        group.currentMonthNum = 1;
+                        group.currentMonthOrdinal = '1st Month';
+                        group.currentMonthDisplay = `Upcoming (1st Month of ${duration})`;
+                        group.monthStatus = 'upcoming';
+                    } else if (elapsedMonths > duration) {
+                        group.currentMonthNum = duration;
+                        group.currentMonthOrdinal = `${getOrdinalSuffix(duration)} Month`;
+                        group.currentMonthDisplay = `Completed (${getOrdinalSuffix(duration)} of ${duration})`;
+                        group.monthStatus = 'completed';
+                    } else {
+                        const mNum = Math.max(1, elapsedMonths);
+                        const ord = `${getOrdinalSuffix(mNum)} Month`;
+                        group.currentMonthNum = mNum;
+                        group.currentMonthOrdinal = ord;
+                        group.currentMonthDisplay = `${ord} of ${duration}`;
+                        group.monthStatus = 'active';
+                    }
                 } else {
                     group.nextDueDate = null;
+                    group.currentMonthNum = 1;
+                    group.currentMonthOrdinal = '1st Month';
+                    group.currentMonthDisplay = `1st Month of ${duration}`;
+                    group.monthStatus = 'not-started';
                 }
 
                 // Format to standard YYYY-MM-DD so Date inputs and new Date() constructors don't fail

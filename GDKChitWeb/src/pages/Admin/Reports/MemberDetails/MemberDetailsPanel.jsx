@@ -175,16 +175,49 @@ const MemberCard = ({ member, monthlyAmount, selMonth, selYear, onChitCard, onEd
             <div className="md-avatar" style={{ background: `${color}18`, color, width: 44, height: 44, fontSize: 16, fontWeight: 700, border: `1.5px solid ${color}33` }}>
               {initials}
             </div>
-            <div style={{ minWidth: 0 }}>
-              <h3 className="gc-name" style={{ margin: '0 0 4px', fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {member.name || 'Unknown'}
-              </h3>
-              <span className="gc-badge" style={{ background: color }}>
-                <StatusIcon status={status} size={10} /> {status.toUpperCase()}
-              </span>
+              <div style={{ minWidth: 0 }}>
+                <h3 className="gc-name" style={{ margin: '0 0 4px', fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {member.name || 'Unknown'}
+                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span className="gc-badge" style={{ background: color }}>
+                    <StatusIcon status={status} size={10} /> {status.toUpperCase()}
+                  </span>
+                  {member.hasWonAuction ? (
+                    <span style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: 4, 
+                      background: '#fef3c7', 
+                      color: '#b45309', 
+                      border: '1px solid #fde68a', 
+                      padding: '2px 8px', 
+                      borderRadius: 100, 
+                      fontSize: 10, 
+                      fontWeight: 700 
+                    }}>
+                      <ShieldCheck size={11} color="#d97706" /> Prize Received {member.auctionPrize?.amountTaken ? `(₹${Number(member.auctionPrize.amountTaken).toLocaleString('en-IN')})` : ''}
+                    </span>
+                  ) : (
+                    <span style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: 4, 
+                      background: '#f1f5f9', 
+                      color: '#64748b', 
+                      border: '1px solid #e2e8f0', 
+                      padding: '2px 8px', 
+                      borderRadius: 100, 
+                      fontSize: 10, 
+                      fontWeight: 600 
+                    }}>
+                      Eligible for Auction
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Content */}
         <div className="gc-content" style={{ padding: '0 20px 16px' }}>

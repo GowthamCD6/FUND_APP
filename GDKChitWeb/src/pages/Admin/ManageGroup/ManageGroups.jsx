@@ -515,10 +515,24 @@ const ManageGroups = () => {
                         <span className="mg-code-chip">{g.groupCode}</span>
                       )}
                     </div>
-                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <span className="gc-badge" style={{ background: color }}>
                         <StatusIcon status={g.status} size={10} />
                         {g.status.toUpperCase()}
+                      </span>
+                      <span style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: 4, 
+                        background: '#eff6ff', 
+                        color: '#1d4ed8', 
+                        border: '1px solid #bfdbfe', 
+                        padding: '2px 8px', 
+                        borderRadius: 100, 
+                        fontSize: 11, 
+                        fontWeight: 700 
+                      }}>
+                        <RiCalendarLine size={11} /> {g.currentMonthDisplay || (g.duration ? `1st Month of ${g.duration}` : '1st Month')}
                       </span>
                     </div>
                   </div>
@@ -596,7 +610,25 @@ const ManageGroups = () => {
             <div className="mg2-panel-head">
               <div>
                 <h3 style={{ margin: '0 0 4px', fontSize: 17, fontWeight: 800, color: '#030712' }}>{selectedGroup.name}</h3>
-                <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>{formatCurrency(selectedGroup.groupAmount)}/month · {selectedGroup.totalMembers} members</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
+                    {formatCurrency(selectedGroup.groupAmount)}/month · {selectedGroup.totalMembers} members
+                  </p>
+                  <span style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: 4, 
+                    background: '#eff6ff', 
+                    color: '#1d4ed8', 
+                    border: '1px solid #bfdbfe', 
+                    padding: '2px 8px', 
+                    borderRadius: 100, 
+                    fontSize: 11, 
+                    fontWeight: 700 
+                  }}>
+                    <RiCalendarLine size={11} /> {selectedGroup.currentMonthDisplay || `${selectedGroup.duration || 20} Months`}
+                  </span>
+                </div>
               </div>
               <button className="rp-close" onClick={() => { setSelectedGroup(null); setViewMode(null); setNotice(''); }}>
                 <RiCloseLine size={16} />
@@ -666,6 +698,12 @@ const ManageGroups = () => {
                     <div className="rn-detail-row">
                       <span>Duration</span>
                       <strong>{selectedGroup.duration || selectedGroup.totalMembers || '--'} months</strong>
+                    </div>
+                    <div className="rn-detail-row">
+                      <span>Current Month Cycle</span>
+                      <strong style={{ color: '#1d4ed8', fontWeight: 800 }}>
+                        {selectedGroup.currentMonthDisplay || `1st Month of ${selectedGroup.duration || 20}`}
+                      </strong>
                     </div>
                     <div className="rn-detail-row">
                       <span>Start Date</span>

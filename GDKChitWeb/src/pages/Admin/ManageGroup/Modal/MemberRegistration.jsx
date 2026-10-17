@@ -8,9 +8,12 @@ import {
   Trash2 as RiDeleteBinLine,
   Loader2 as RiLoader4Line,
   Phone as RiPhoneLine,
-  AlertTriangle as RiAlertLine
+  AlertTriangle as RiAlertLine,
+  Trophy as RiTrophyLine,
+  CheckCircle2 as RiCheckCircleLine
 } from 'lucide-react';
 import { makeRequest, safeJson } from '../../../../api/apiClient.js';
+import { formatCurrency } from '../../../../utils/formatters.js';
 
 const MAX_MEMBERS = 20;
 
@@ -18,6 +21,7 @@ const MemberRegistration = ({ isOpen, onClose, group, onMembersUpdate, inline = 
   const [allUsers, setAllUsers] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
+  const [updatingPrizeUserId, setUpdatingPrizeUserId] = useState(null);
   
   // Member picker modal states
   const [showMemberPicker, setShowMemberPicker] = useState(false);
@@ -135,6 +139,61 @@ const MemberRegistration = ({ isOpen, onClose, group, onMembersUpdate, inline = 
     }
   };
 
+  // Handle toggling whether this member received the auction amount
+  const handleToggleAuctionPrize = async (member) => {
+    const isCurrentlyWon = Boolean(member.hasWonAuction);
+    const targetState = !isCurrentlyWon;
+    let prizeAmount = member.amountTaken || group?.groupAmount || 100000;
+
+    if (targetState) {
+      const promptVal = window.prompt(
+        `Enter the auction amount received by ${member.name || 'this member'} (₹):`,
+        String(prizeAmount)
+      );
+      if (promptVal === null) return; // Cancelled
+      prizeAmount = Number(promptVal) || prizeAmount;
+    } else {
+      if (!window.confirm(`Are you sure you want to remove the Auction Prize Taken flag for ${member.name || 'this member'}?`)) {
+        return;
+      }
+    }
+
+    setUpdatingPrizeUserId(member.userId || member.id);
+    setNotice(null);
+    try {
+      const res = await makeRequest('/admin/groups/toggleMemberAuctionPrize', {
+        method: 'POST',
+        body: JSON.stringify({
+          groupId: group.id,
+          userId: member.userId || member.id,
+          hasWon: targetState,
+          amountTaken: prizeAmount,
+        }),
+      });
+      const data = await safeJson(res);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'Failed to update auction prize status');
+      }
+
+      setGroupMembers(prev => prev.map(m => {
+        if (String(m.userId || m.id) === String(member.userId || member.id)) {
+          return {
+            ...m,
+            hasWonAuction: targetState,
+            amountTaken: targetState ? prizeAmount : null,
+          };
+        }
+        return m;
+      }));
+
+      setNotice({ text: data.message || 'Auction prize status updated successfully', success: true });
+    } catch (err) {
+      setNotice({ text: err.message || 'Error updating auction prize status', success: false });
+    } finally {
+      setUpdatingPrizeUserId(null);
+    }
+  };
+
   // Memoized lists of available users
   const usersNotInGroup = useMemo(() => {
     const existing = new Set(groupMembers.map(m => m.userId));
@@ -193,15 +252,87 @@ const MemberRegistration = ({ isOpen, onClose, group, onMembersUpdate, inline = 
           </div>
         ) : (
           groupMembers.map(m => (
-            <div key={m.userId || m.id} className="mg2-mem-row">
+            <div key={m.userId || m.id} className="mg2-mem-row" style={{ alignItems: 'flex-start', padding: '12px 14px' }}>
               <div className="mg2-mem-avatar">{String(m.name || m.nickname || '?').charAt(0).toUpperCase()}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="mg2-mem-name">{m.name || m.nickname || 'Unnamed'}</p>
-                <p className="mg2-mem-phone" style={{ display: 'flex', alignItems: 'center', gap: 4 }}><RiPhoneLine size={11} /> {m.phone || '--'}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <p className="mg2-mem-name" style={{ margin: 0 }}>{m.name || m.nickname || 'Unnamed'}</p>
+                  {m.hasWonAuction ? (
+                    <span style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: 4, 
+                      background: '#fef3c7', 
+                      color: '#b45309', 
+                      border: '1px solid #fde68a', 
+                      padding: '2px 8px', 
+                      borderRadius: 100, 
+                      fontSize: 11, 
+                      fontWeight: 700 
+                    }}>
+                      <RiTrophyLine size={12} color="#d97706" /> Prize Received: {formatCurrency(m.amountTaken || group?.groupAmount || 0)}
+                    </span>
+                  ) : (
+                    <span style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: 4, 
+                      background: '#f1f5f9', 
+                      color: '#475569', 
+                      border: '1px solid #e2e8f0', 
+                      padding: '2px 8px', 
+                      borderRadius: 100, 
+                      fontSize: 11, 
+                      fontWeight: 600 
+                    }}>
+                      Eligible for Auction
+                    </span>
+                  )}
+                </div>
+                <p className="mg2-mem-phone" style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, marginBottom: 0 }}>
+                  <RiPhoneLine size={11} /> {m.phone || '--'}
+                </p>
               </div>
-              <button className="mg2-rem-btn" onClick={() => removeMember(m)} title="Remove Member">
-                <RiDeleteBinLine size={14} />
-              </button>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <button
+                  type="button"
+                  onClick={() => handleToggleAuctionPrize(m)}
+                  disabled={updatingPrizeUserId === (m.userId || m.id)}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: 6,
+                    border: m.hasWonAuction ? '1px solid #fde68a' : '1px solid #cbd5e1',
+                    background: m.hasWonAuction ? '#fffbeb' : '#ffffff',
+                    color: m.hasWonAuction ? '#b45309' : '#0f172a',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    transition: 'all 0.15s ease',
+                  }}
+                  title={m.hasWonAuction ? 'Click to revoke prize flag' : 'Mark that this user received auction prize'}
+                >
+                  {updatingPrizeUserId === (m.userId || m.id) ? (
+                    <RiLoader4Line size={12} className="spin-anim" />
+                  ) : m.hasWonAuction ? (
+                    <>
+                      <RiCheckCircleLine size={12} color="#10b981" />
+                      <span>Prize Claimed</span>
+                    </>
+                  ) : (
+                    <>
+                      <RiTrophyLine size={12} color="#64748b" />
+                      <span>Set Prize Taken</span>
+                    </>
+                  )}
+                </button>
+                <button className="mg2-rem-btn" onClick={() => removeMember(m)} title="Remove Member">
+                  <RiDeleteBinLine size={14} />
+                </button>
+              </div>
             </div>
           ))
         )}

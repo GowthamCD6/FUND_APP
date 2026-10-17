@@ -91,10 +91,24 @@ const GroupCard = ({ group, onViewMembers }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <h3 className="gc-name" style={{ margin: 0 }}>{group.name}</h3>
           </div>
-          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span className="gc-badge" style={{ background: color }}>
               <StatusIcon status={group.status} size={10} />
               {String(group.status || 'Active').toUpperCase()}
+            </span>
+            <span style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: 4, 
+              background: '#eff6ff', 
+              color: '#1d4ed8', 
+              border: '1px solid #bfdbfe', 
+              padding: '2px 8px', 
+              borderRadius: 100, 
+              fontSize: 11, 
+              fontWeight: 700 
+            }}>
+              <RiCalendarLine size={11} /> {group.currentMonthDisplay || (group.duration ? `1st Month of ${group.duration}` : '1st Month')}
             </span>
           </div>
         </div>

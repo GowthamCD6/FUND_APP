@@ -60,13 +60,30 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
       <View style={styles.groupCardHeader}>
         <View style={styles.groupNameContainer}>
           <Text style={[styles.groupName, language === 'ta' && { fontSize: 16 }]}>{group.name}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(group.status) }]}>
-            <MaterialCommunityIcons
-              name={getStatusIcon(group.status)}
-              size={12}
-              color="#FFFFFF"
-            />
-            <Text style={[styles.statusText, language === 'ta' && { fontSize: 9 }]}>{t(group.status).toUpperCase()}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(group.status) }]}>
+              <MaterialCommunityIcons
+                name={getStatusIcon(group.status)}
+                size={12}
+                color="#FFFFFF"
+              />
+              <Text style={[styles.statusText, language === 'ta' && { fontSize: 9 }]}>{t(group.status).toUpperCase()}</Text>
+            </View>
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              backgroundColor: '#EFF6FF', 
+              paddingHorizontal: 8, 
+              paddingVertical: 2, 
+              borderRadius: 12, 
+              borderWidth: 1, 
+              borderColor: '#BFDBFE' 
+            }}>
+              <MaterialCommunityIcons name="calendar-clock" size={11} color="#1D4ED8" style={{ marginRight: 3 }} />
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#1D4ED8' }}>
+                {group.currentMonthDisplay || (group.duration ? `1st Month of ${group.duration}` : '1st Month')}
+              </Text>
+            </View>
           </View>
         </View>
         <TouchableOpacity

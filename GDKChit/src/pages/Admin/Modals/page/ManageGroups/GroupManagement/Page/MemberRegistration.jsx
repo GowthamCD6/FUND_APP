@@ -107,6 +107,9 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
             memberId: m.userId,
             name: m.name || m.nickname || 'Unnamed',
             phone: m.phone || 'N/A',
+            hasWonAuction: Boolean(m.hasWonAuction),
+            amountTaken: m.amountTaken,
+            auctionDate: m.auctionDate,
           }));
           setMemberMappings(mappings);
           setInitialMemberMappings(mappings);
@@ -322,6 +325,92 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
     });
   };
 
+  const handleToggleAuctionPrize = (member) => {
+    const isCurrentlyWon = Boolean(member.hasWonAuction);
+    const targetState = !isCurrentlyWon;
+    const defaultAmount = Number(group?.groupAmount || group?.group_amount || 100000);
+
+    if (targetState) {
+      Alert.alert(
+        'Set Auction Prize',
+        `Mark "${member.name}" as having received the auction amount for this group?\n(Amount: ₹${defaultAmount.toLocaleString('en-IN')})`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Confirm & Mark',
+            onPress: async () => {
+              try {
+                const groupIdNum = getGroupDbId();
+                const resp = await ApiService.makeRequest('/admin/groups/toggleMemberAuctionPrize', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    groupId: groupIdNum,
+                    userId: member.memberId,
+                    hasWon: true,
+                    amountTaken: defaultAmount,
+                  }),
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) {
+                  throw new Error(data.message || 'Failed to update prize status');
+                }
+                setMemberMappings(prev =>
+                  prev.map(m =>
+                    m.memberId === member.memberId
+                      ? { ...m, hasWonAuction: true, amountTaken: defaultAmount }
+                      : m
+                  )
+                );
+                Alert.alert('Success', `"${member.name}" marked as auction prize recipient!`);
+              } catch (err) {
+                Alert.alert('Error', err.message || 'Failed to update auction prize status');
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Remove Auction Prize Flag',
+        `Are you sure you want to remove the auction prize flag for "${member.name}"?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove Flag',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const groupIdNum = getGroupDbId();
+                const resp = await ApiService.makeRequest('/admin/groups/toggleMemberAuctionPrize', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    groupId: groupIdNum,
+                    userId: member.memberId,
+                    hasWon: false,
+                  }),
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) {
+                  throw new Error(data.message || 'Failed to update prize status');
+                }
+                setMemberMappings(prev =>
+                  prev.map(m =>
+                    m.memberId === member.memberId
+                      ? { ...m, hasWonAuction: false, amountTaken: null }
+                      : m
+                  )
+                );
+                Alert.alert('Success', `Auction prize flag removed for "${member.name}".`);
+              } catch (err) {
+                Alert.alert('Error', err.message || 'Failed to update auction prize status');
+              }
+            },
+          },
+        ]
+      );
+    }
+  };
+
   const handleSave = () => {
     onSave(memberMappings);
     onClose();
@@ -434,24 +523,88 @@ const MemberRegistration = ({ visible, onClose, group, onSave, onMembersUpdate }
                           color="#6B46C1"
                         />
                       </View>
-                      <View style={styles.selectedMemberText}>
-                        <Text style={styles.selectedMemberName}>
-                          {member.name}
-                        </Text>
+                      <View style={[styles.selectedMemberText, { flex: 1 }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 2 }}>
+                          <Text style={styles.selectedMemberName}>
+                            {member.name}
+                          </Text>
+                          {member.hasWonAuction ? (
+                            <View style={{ 
+                              flexDirection: 'row', 
+                              alignItems: 'center', 
+                              backgroundColor: '#FEF3C7', 
+                              paddingHorizontal: 6, 
+                              paddingVertical: 2, 
+                              borderRadius: 8, 
+                              borderWidth: 1, 
+                              borderColor: '#FDE68A' 
+                            }}>
+                              <MaterialCommunityIcons name="trophy" size={11} color="#D97706" style={{ marginRight: 2 }} />
+                              <Text style={{ fontSize: 10, fontWeight: '700', color: '#B45309' }}>
+                                Prize Won {member.amountTaken ? `(₹${Number(member.amountTaken).toLocaleString('en-IN')})` : ''}
+                              </Text>
+                            </View>
+                          ) : (
+                            <View style={{ 
+                              flexDirection: 'row', 
+                              alignItems: 'center', 
+                              backgroundColor: '#F1F5F9', 
+                              paddingHorizontal: 6, 
+                              paddingVertical: 2, 
+                              borderRadius: 8, 
+                              borderWidth: 1, 
+                              borderColor: '#E2E8F0' 
+                            }}>
+                              <Text style={{ fontSize: 10, fontWeight: '600', color: '#475569' }}>
+                                Eligible
+                              </Text>
+                            </View>
+                          )}
+                        </View>
                         <Text style={styles.selectedMemberPhone}>
                           Phone: {member.phone}
                         </Text>
                       </View>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => removeMemberMapping(member.memberId)}
-                      style={styles.removeButton}>
-                      <MaterialCommunityIcons
-                        name="delete"
-                        size={20}
-                        color="#EF4444"
-                      />
-                    </TouchableOpacity>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <TouchableOpacity
+                        onPress={() => handleToggleAuctionPrize(member)}
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 6,
+                          borderRadius: 6,
+                          backgroundColor: member.hasWonAuction ? '#FEF3C7' : '#F3F4F6',
+                          borderWidth: 1,
+                          borderColor: member.hasWonAuction ? '#FDE68A' : '#D1D5DB',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 3,
+                        }}>
+                        <MaterialCommunityIcons
+                          name={member.hasWonAuction ? "trophy" : "trophy-outline"}
+                          size={13}
+                          color={member.hasWonAuction ? "#D97706" : "#4B5563"}
+                        />
+                        <Text style={{
+                          fontSize: 11,
+                          fontWeight: '700',
+                          color: member.hasWonAuction ? "#B45309" : "#374151"
+                        }}>
+                          {member.hasWonAuction ? "Prize Taken" : "Set Prize"}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() => removeMemberMapping(member.memberId)}
+                        style={styles.removeButton}>
+                        <MaterialCommunityIcons
+                          name="delete"
+                          size={20}
+                          color="#EF4444"
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               ))

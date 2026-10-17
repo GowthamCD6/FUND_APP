@@ -621,6 +621,15 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
                 </View>
               </View>
 
+              <View style={[pageStyles.groupInfoRow, { marginTop: 4 }]}>
+                <View style={pageStyles.groupInfoItem}>
+                  <MaterialCommunityIcons name="calendar-clock" size={16} color="#1D4ED8" />
+                  <Text style={[pageStyles.groupInfoText, { color: '#1D4ED8', fontWeight: '700' }]}>
+                    {group.currentMonthDisplay || (formData.totalMembers ? `1st Month of ${formData.totalMembers}` : '1st Month')}
+                  </Text>
+                </View>
+              </View>
+
               {/* Footer */}
               <View style={pageStyles.groupCardFooter}>
                 <Text style={pageStyles.groupDate}>

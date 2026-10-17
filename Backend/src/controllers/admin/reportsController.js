@@ -260,6 +260,15 @@ exports.getGroupMemberPayments = async (req, res) => {
       [groupId, collectionPeriodStr],
     );
 
+    const [allGroupWinners] = await db.promise().query(
+      `
+      SELECT winner_user_id, winner_name, winner_member_phone, amount_taken, auction_date, collection_period
+      FROM group_auction_winners
+      WHERE group_id = ? AND deleted_at IS NULL
+      `,
+      [groupId],
+    );
+
     const historyByUser = new Map();
     paymentRows.forEach((row) => {
       const userId = Number(row.user_id);
@@ -356,6 +365,12 @@ exports.getGroupMemberPayments = async (req, res) => {
         currentPayment.status = 'overdue';
       }
 
+      const matchedWin = (allGroupWinners || []).find(w => 
+        (w.winner_user_id && Number(w.winner_user_id) === Number(userId)) ||
+        (w.winner_member_phone && member.phone && w.winner_member_phone.trim() === member.phone.trim())
+      );
+      const hasWonAuction = Boolean(matchedWin || member.has_taken_auction_amount == 1);
+
       return {
         id: userId,
         name: member.name,
@@ -363,8 +378,31 @@ exports.getGroupMemberPayments = async (req, res) => {
         currentPayment,
         paymentHistory: fullHistory,
         isOverdue: computedOverdueStatus,
+        hasWonAuction,
+        auctionPrize: matchedWin ? {
+          amountTaken: Number(matchedWin.amount_taken || 0),
+          auctionDate: matchedWin.auction_date,
+          collectionPeriod: matchedWin.collection_period,
+        } : null,
       };
     });
+
+    const getOrdinal = (n) => {
+      const s = ['th', 'st', 'nd', 'rd'];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+
+    let elapsed = 1;
+    if (groupRow.start_date) {
+      const st = new Date(groupRow.start_date);
+      st.setHours(0,0,0,0);
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      let diff = (today.getFullYear() - st.getFullYear()) * 12 + (today.getMonth() - st.getMonth()) + 1;
+      elapsed = Math.min(Math.max(1, diff), duration);
+    }
+    const currentMonthDisplay = `${getOrdinal(elapsed)} Month of ${duration}`;
 
     const data = {
       group: {
@@ -375,6 +413,9 @@ exports.getGroupMemberPayments = async (req, res) => {
         monthlyAmount: monthConfiguredAmount,
         duration: toSafeNumber(groupRow.duration, 0),
         startDate: groupRow.start_date,
+        currentMonthNum: elapsed,
+        currentMonthOrdinal: `${getOrdinal(elapsed)} Month`,
+        currentMonthDisplay,
       },
       month,
       year,

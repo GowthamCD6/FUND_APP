@@ -353,19 +353,36 @@ const ManageGroups = ({ onBack, navigation }) => {
         <View style={styles.groupCardHeader}>
           <View style={styles.groupNameContainer}>
             <Text style={styles.groupName}>{item.name}</Text>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(item.status) },
-              ]}>
-              <MaterialCommunityIcons
-                name={getStatusIcon(item.status)}
-                size={10}
-                color="#FFFFFF"
-              />
-              <Text style={styles.statusText}>
-                {item.status.toUpperCase()}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: getStatusColor(item.status) },
+                ]}>
+                <MaterialCommunityIcons
+                  name={getStatusIcon(item.status)}
+                  size={10}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.statusText}>
+                  {item.status.toUpperCase()}
+                </Text>
+              </View>
+              <View style={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                backgroundColor: '#EFF6FF', 
+                paddingHorizontal: 8, 
+                paddingVertical: 2, 
+                borderRadius: 12, 
+                borderWidth: 1, 
+                borderColor: '#BFDBFE' 
+              }}>
+                <MaterialCommunityIcons name="calendar-clock" size={11} color="#1D4ED8" style={{ marginRight: 3 }} />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#1D4ED8' }}>
+                  {item.currentMonthDisplay || (item.duration ? `1st Month of ${item.duration}` : '1st Month')}
+                </Text>
+              </View>
             </View>
           </View>
           <TouchableOpacity

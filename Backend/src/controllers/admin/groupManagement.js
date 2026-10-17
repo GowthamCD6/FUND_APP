@@ -241,20 +241,58 @@ exports.getGroupMembers = async (req, res) => {
 
     try {
         const sql = `
-            SELECT ug.id AS mappingId, ug.user_id AS userId, u.name, u.nick_name, u.phone
+            SELECT 
+                ug.id AS mappingId, 
+                ug.user_id AS userId, 
+                u.name, 
+                u.nick_name, 
+                u.phone,
+                ug.has_taken_auction_amount,
+                ug.auction_amount_taken,
+                ug.auction_taken_date,
+                gaw.id AS winner_record_id,
+                gaw.amount_taken AS gaw_amount_taken,
+                gaw.auction_date AS gaw_auction_date,
+                gaw.collection_period AS gaw_collection_period
             FROM user_grouping ug
             LEFT JOIN users u ON u.id = ug.user_id
+            LEFT JOIN group_auction_winners gaw ON gaw.group_id = ug.group_id 
+                AND (
+                    (gaw.winner_user_id IS NOT NULL AND gaw.winner_user_id = ug.user_id) 
+                    OR (gaw.winner_member_phone IS NOT NULL AND gaw.winner_member_phone != '' AND gaw.winner_member_phone = u.phone)
+                )
+                AND gaw.deleted_at IS NULL
             WHERE ug.group_id = ? AND u.deleted_at IS NULL
+            ORDER BY u.name ASC
         `;
         const [rows] = await db.promise().query(sql, [groupIdNum]);
-        const members = rows.map(r => ({
-            id: r.userId.toString(),
-            name: r.name || r.nick_name || 'User',
-            phone: r.phone || '',
-            avatar: (r.name || r.nick_name || 'U').substring(0, 2).toUpperCase(),
-            userId: r.userId,
-            mappingId: r.mappingId,
-        }));
+
+        // Deduplicate rows per user (in case multiple prize records exist)
+        const membersMap = new Map();
+        rows.forEach(r => {
+            const uId = r.userId;
+            const hasWon = Boolean(r.has_taken_auction_amount == 1 || r.winner_record_id);
+            const amtTaken = r.auction_amount_taken || r.gaw_amount_taken || null;
+            const actDate = r.auction_taken_date || r.gaw_auction_date || null;
+            const colPeriod = r.gaw_collection_period || null;
+
+            if (!membersMap.has(uId) || (!membersMap.get(uId).hasWonAuction && hasWon)) {
+                membersMap.set(uId, {
+                    id: r.userId.toString(),
+                    name: r.name || r.nick_name || 'User',
+                    phone: r.phone || '',
+                    avatar: (r.name || r.nick_name || 'U').substring(0, 2).toUpperCase(),
+                    userId: r.userId,
+                    mappingId: r.mappingId,
+                    hasWonAuction: hasWon,
+                    amountTaken: amtTaken ? Number(amtTaken) : null,
+                    auctionDate: actDate,
+                    collectionPeriod: colPeriod,
+                });
+            }
+        });
+
+        const members = Array.from(membersMap.values());
         return res.status(200).json({ success: true, members });
     } catch (error) {
         console.error('Error fetching group members:', error);
@@ -729,6 +767,28 @@ exports.saveAuctionWinner = async (req, res) => {
             await connection.query(
                 'UPDATE `groups` SET status = "OnGoing" WHERE id = ?',
                 [groupIdNum]
+            );
+        }
+
+        // Sync winner status to user_grouping
+        if (winnerUserId) {
+            await connection.query(
+                `UPDATE user_grouping 
+                 SET has_taken_auction_amount = 1, 
+                     auction_amount_taken = ?, 
+                     auction_taken_date = ? 
+                 WHERE group_id = ? AND user_id = ?`,
+                [amountTakenNum, auctionDate, groupIdNum, Number(winnerUserId)]
+            );
+        } else if (cleanPhone) {
+            await connection.query(
+                `UPDATE user_grouping ug
+                 JOIN users u ON u.id = ug.user_id
+                 SET ug.has_taken_auction_amount = 1, 
+                     ug.auction_amount_taken = ?, 
+                     ug.auction_taken_date = ? 
+                 WHERE ug.group_id = ? AND u.phone = ?`,
+                [amountTakenNum, auctionDate, groupIdNum, cleanPhone]
             );
         }
 
@@ -1318,5 +1378,118 @@ exports.broadcastAnnouncement = async (req, res) => {
     } catch (err) {
         console.error('Error in broadcastAnnouncement:', err);
         return res.status(500).json({ success: false, message: 'Failed to broadcast announcement' });
+    }
+};
+
+exports.toggleMemberAuctionPrize = async (req, res) => {
+    const { groupId, userId, hasWon, amountTaken, auctionDate, month, year } = req.body;
+    const adminId = req.user ? (req.user.userId || req.user.id) : null;
+    const groupIdNum = Number(groupId);
+    const userIdNum = Number(userId);
+
+    if (Number.isNaN(groupIdNum) || Number.isNaN(userIdNum)) {
+        return res.status(400).json({ success: false, message: 'Invalid groupId or userId' });
+    }
+
+    const connection = await db.promise().getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Fetch member details
+        const [[userRow]] = await connection.query(
+            'SELECT id, name, nick_name, phone FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+            [userIdNum]
+        );
+        if (!userRow) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Member not found' });
+        }
+
+        // 2. Fetch group details
+        const [[groupRow]] = await connection.query(
+            'SELECT id, group_name, group_amount, duration, start_date FROM `groups` WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+            [groupIdNum]
+        );
+        if (!groupRow) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+
+        const now = new Date();
+        const periodYear = Number.isInteger(Number(year)) ? Number(year) : now.getFullYear();
+        const periodMonth = Number.isInteger(Number(month)) ? Number(month) : now.getMonth();
+        const collectionPeriodStr = `${periodYear}-${String(periodMonth + 1).padStart(2, '0')}-01`;
+        const memberName = userRow.name || userRow.nick_name || 'Member';
+        const memberPhone = (userRow.phone || '').trim();
+        const amt = Number(amountTaken) > 0 ? Number(amountTaken) : (Number(groupRow.group_amount) || 0);
+        const actDate = auctionDate ? new Date(auctionDate) : new Date();
+
+        if (hasWon) {
+            // Update user_grouping
+            await connection.query(
+                `UPDATE user_grouping 
+                 SET has_taken_auction_amount = 1, 
+                     auction_amount_taken = ?, 
+                     auction_taken_date = ? 
+                 WHERE group_id = ? AND user_id = ?`,
+                [amt, actDate, groupIdNum, userIdNum]
+            );
+
+            // Upsert in group_auction_winners
+            await connection.query(
+                `INSERT INTO group_auction_winners 
+                 (group_id, collection_period, winner_user_id, winner_name, winner_member_phone, amount_taken, auction_date, created_by, updated_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE 
+                    winner_user_id = VALUES(winner_user_id),
+                    winner_name = VALUES(winner_name),
+                    winner_member_phone = VALUES(winner_member_phone),
+                    amount_taken = VALUES(amount_taken),
+                    auction_date = VALUES(auction_date),
+                    deleted_at = NULL,
+                    updated_by = VALUES(updated_by),
+                    version = version + 1`,
+                [groupIdNum, collectionPeriodStr, userIdNum, memberName, memberPhone, amt, actDate, adminId, adminId]
+            );
+        } else {
+            // Unset flag
+            await connection.query(
+                `UPDATE user_grouping 
+                 SET has_taken_auction_amount = 0, 
+                     auction_amount_taken = NULL, 
+                     auction_taken_date = NULL 
+                 WHERE group_id = ? AND user_id = ?`,
+                [groupIdNum, userIdNum]
+            );
+
+            // Soft-delete any winning records for this member in this group
+            await connection.query(
+                `UPDATE group_auction_winners 
+                 SET deleted_at = CURRENT_TIMESTAMP, updated_by = ? 
+                 WHERE group_id = ? AND (winner_user_id = ? OR (winner_member_phone = ? AND winner_member_phone != '')) AND deleted_at IS NULL`,
+                [adminId, groupIdNum, userIdNum, memberPhone]
+            );
+        }
+
+        await connection.commit();
+        return res.status(200).json({ 
+            success: true, 
+            message: hasWon 
+                ? `Auction prize flag enabled for ${memberName} (₹${amt.toLocaleString('en-IN')})` 
+                : `Auction prize flag removed for ${memberName}`,
+            data: {
+                userId: userIdNum,
+                hasWonAuction: Boolean(hasWon),
+                amountTaken: hasWon ? amt : null,
+                auctionDate: hasWon ? actDate : null,
+                collectionPeriod: collectionPeriodStr,
+            }
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error toggling member auction prize:', error);
+        return res.status(500).json({ success: false, message: 'Failed to update member auction prize status' });
+    } finally {
+        connection.release();
     }
 };
