@@ -107,8 +107,11 @@ exports.revokeDeviceBinding = async (req, res) => {
       [userId, prevDeviceId, prevDeviceName, adminId || null, reason || 'Admin revoked device session for new device login']
     );
 
-    // 3. Clear all active sessions / refresh tokens
+    // 3. Clear all active sessions / refresh tokens & push notification registrations
     await db.promise().query(`DELETE FROM refresh_tokens WHERE user_id = ?`, [userId]);
+    try {
+      await db.promise().query(`DELETE FROM user_fcm_tokens WHERE user_id = ?`, [userId]);
+    } catch (fcmErr) {}
 
     // 4. Reset user device binding status in DB
     await db.promise().query(

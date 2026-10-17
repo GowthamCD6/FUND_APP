@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import SecureStorage from './SecureStorage';
 import { API_URL } from '../utils/env';
 import { Alert, Platform } from 'react-native';
+import DeviceService from './DeviceService';
 import { reset as resetNavigation } from '../utils/navigation';
 
 class ApiService {
@@ -237,24 +238,9 @@ class ApiService {
   //   } catch (error) {
   //     throw error;
   //   }
-  async getOrCreateDeviceId() {
-    try {
-      let deviceId = await AsyncStorage.getItem('@gdk_mobile_device_id');
-      if (!deviceId) {
-        deviceId = `${Platform.OS}_` + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 11);
-        await AsyncStorage.setItem('@gdk_mobile_device_id', deviceId);
-      }
-      return deviceId;
-    } catch (e) {
-      return `${Platform.OS}_fallback_${Date.now()}`;
-    }
-  }
-
   async login(phone, password) {
     try {
-      const deviceId = await this.getOrCreateDeviceId();
-      const devicePlatform = Platform.OS === 'ios' ? 'iOS' : 'Android';
-      const deviceName = `${Platform.OS === 'ios' ? 'Apple iPhone' : 'Android Phone'}`;
+      const devicePayload = await DeviceService.getDevicePayload();
 
       const response = await fetch(`${this.baseURL}/auth/login`, {
         method: 'POST',
@@ -264,10 +250,7 @@ class ApiService {
         body: JSON.stringify({ 
           phone, 
           password,
-          deviceId,
-          deviceName,
-          devicePlatform,
-          deviceModel: Platform.OS
+          ...devicePayload
         }),
       });
 
