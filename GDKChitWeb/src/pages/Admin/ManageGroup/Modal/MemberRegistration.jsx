@@ -56,7 +56,11 @@ const MemberRegistration = ({ isOpen, onClose, group, onMembersUpdate, inline = 
       const res = await makeRequest(`/admin/groups/getMembers?groupId=${group.id}`);
       const data = await safeJson(res);
       if (res.ok && data?.success) {
-        setGroupMembers(data.members || data.data || []);
+        const mems = data.members || data.data || [];
+        setGroupMembers(mems);
+        if (typeof onMembersUpdate === 'function') {
+          onMembersUpdate(group.id, mems.length, mems);
+        }
       } else {
         setGroupMembers([]);
       }
@@ -103,7 +107,7 @@ const MemberRegistration = ({ isOpen, onClose, group, onMembersUpdate, inline = 
       setGroupMembers(updatedMembers);
       
       if (typeof onMembersUpdate === 'function') {
-        onMembersUpdate(group.id, updatedMembers.length);
+        onMembersUpdate(group.id, updatedMembers.length, updatedMembers);
       }
 
       setShowMemberPicker(false);
@@ -130,7 +134,7 @@ const MemberRegistration = ({ isOpen, onClose, group, onMembersUpdate, inline = 
       setGroupMembers(updatedMembers);
       
       if (typeof onMembersUpdate === 'function') {
-        onMembersUpdate(group.id, updatedMembers.length);
+        onMembersUpdate(group.id, updatedMembers.length, updatedMembers);
       }
 
       setNotice({ text: `${member.name || member.nickname || 'Unnamed'} removed from group`, success: true });
@@ -175,7 +179,7 @@ const MemberRegistration = ({ isOpen, onClose, group, onMembersUpdate, inline = 
         throw new Error(data?.message || 'Failed to update auction prize status');
       }
 
-      setGroupMembers(prev => prev.map(m => {
+      const updated = groupMembers.map(m => {
         if (String(m.userId || m.id) === String(member.userId || member.id)) {
           return {
             ...m,
@@ -184,7 +188,11 @@ const MemberRegistration = ({ isOpen, onClose, group, onMembersUpdate, inline = 
           };
         }
         return m;
-      }));
+      });
+      setGroupMembers(updated);
+      if (typeof onMembersUpdate === 'function') {
+        onMembersUpdate(group.id, updated.length, updated);
+      }
 
       setNotice({ text: data.message || 'Auction prize status updated successfully', success: true });
     } catch (err) {

@@ -59,6 +59,7 @@ const ManageGroups = () => {
   const [currentMonth, setCurrentMonth] = useState(0); // 0 = current month, -1 = prev, etc.
   const [monthlySnapshot, setMonthlySnapshot] = useState(null);
   const [snapshotLoading, setSnapshotLoading] = useState(false);
+  const [groupMembers, setGroupMembers] = useState([]);
 
   // Modal visibilities & loading states
   const [showEditModal, setShowEditModal] = useState(false);
@@ -107,12 +108,32 @@ const ManageGroups = () => {
     }
   }, [getPeriodFromOffset]);
 
+  const loadGroupMembers = useCallback(async (groupId) => {
+    if (!groupId) {
+      setGroupMembers([]);
+      return;
+    }
+    try {
+      const res = await makeRequest(`/admin/groups/getMembers?groupId=${groupId}`);
+      const data = await safeJson(res);
+      if (res.ok && data?.success) {
+        setGroupMembers(data.members || data.data || []);
+      } else {
+        setGroupMembers([]);
+      }
+    } catch (err) {
+      console.error('Error fetching group members for modal:', err);
+      setGroupMembers([]);
+    }
+  }, []);
+
   // Load snapshot when group or month changes
   useEffect(() => {
     if (selectedGroup?.id) {
       loadMonthSnapshot(selectedGroup.id, currentMonth);
+      loadGroupMembers(selectedGroup.id);
     }
-  }, [selectedGroup?.id, currentMonth, loadMonthSnapshot]);
+  }, [selectedGroup?.id, currentMonth, loadMonthSnapshot, loadGroupMembers]);
 
   // Reset month offset when selectedGroup changes
   useEffect(() => {
@@ -120,6 +141,7 @@ const ManageGroups = () => {
       setCurrentMonth(0);
     } else {
       setMonthlySnapshot(null);
+      setGroupMembers([]);
     }
   }, [selectedGroup]);
 
@@ -224,7 +246,12 @@ const ManageGroups = () => {
 
 
 
-  const handleMembersUpdate = (groupId, newCount) => {
+  const handleMembersUpdate = (groupId, newCount, updatedList) => {
+    if (updatedList) {
+      setGroupMembers(updatedList);
+    } else if (groupId) {
+      loadGroupMembers(groupId);
+    }
     setGroups(prev => prev.map(g => g.id === groupId ? { ...g, totalMembers: newCount } : g));
     setSelectedGroup(prev => prev && prev.id === groupId ? { ...prev, totalMembers: newCount } : prev);
   };
@@ -356,8 +383,9 @@ const ManageGroups = () => {
       const data = await safeJson(res);
       if (!res.ok || !data?.success) throw new Error(data?.message || 'Failed to save auction winner');
 
-      // Refresh snapshot
+      // Refresh snapshot & group members
       await loadMonthSnapshot(selectedGroup.id, currentMonth);
+      loadGroupMembers(selectedGroup.id);
       setShowAuctionModal(false);
       setNotice({ text: 'Auction winner details saved successfully', success: true });
     } catch (err) {
@@ -1006,7 +1034,7 @@ const ManageGroups = () => {
         initialData={monthlySnapshot?.winner}
         onSave={handleAuctionWinnerSave}
         isSaving={isAuctionSaving}
-        groupMembers={members}
+        groupMembers={groupMembers}
       />
     </div>
   );
