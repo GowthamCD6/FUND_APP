@@ -141,6 +141,10 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
           phone: member.phone || '',
           avatar: (member.name || member.user_name || 'U').substring(0, 2).toUpperCase(),
           currentBid: 0,
+          hasWonAuction: Boolean(member.hasWonAuction),
+          amountTaken: member.amountTaken || null,
+          auctionDate: member.auctionDate || null,
+          collectionPeriod: member.collectionPeriod || null,
         }));
         setSelectedGroup(prev => ({
           ...prev,
@@ -225,6 +229,14 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
   };
 
   const toggleMemberSelection = (member) => {
+    if (member.hasWonAuction) {
+      const amtStr = member.amountTaken ? ` (₹${Number(member.amountTaken).toLocaleString('en-IN')})` : '';
+      Alert.alert(
+        'Member Ineligible',
+        `${member.name} has already received the auction prize${amtStr} and is NOT ELIGIBLE to participate in the auction.`
+      );
+      return;
+    }
     setSelectedMembers(prev => {
       const isSelected = prev.some(m => m.id === member.id);
       if (isSelected) {

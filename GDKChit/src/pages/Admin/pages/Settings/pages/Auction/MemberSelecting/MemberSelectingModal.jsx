@@ -26,26 +26,88 @@ const MemberSelectingModal = ({
 }) => {
   const { t } = useLanguage();
 
+  const allMembers = selectedGroup?.members || [];
+  const eligibleMembers = allMembers.filter(m => !m.hasWonAuction);
+  const ineligibleCount = allMembers.filter(m => m.hasWonAuction).length;
+  const allEligibleSelected = eligibleMembers.length > 0 && eligibleMembers.every(em => selectedMembers.some(sm => sm.id === em.id));
+
+  const handleSelectAllEligible = () => {
+    if (allEligibleSelected) {
+      eligibleMembers.forEach(em => {
+        if (selectedMembers.some(sm => sm.id === em.id)) {
+          onMemberToggle(em);
+        }
+      });
+    } else {
+      eligibleMembers.forEach(em => {
+        if (!selectedMembers.some(sm => sm.id === em.id)) {
+          onMemberToggle(em);
+        }
+      });
+    }
+  };
+
   const renderMemberItem = ({ item }) => {
     const isSelected = selectedMembers.some(m => m.id === item.id);
+    const isIneligible = Boolean(item.hasWonAuction);
+
     return (
       <TouchableOpacity
-        style={[styles.memberCard, isSelected && styles.selectedMember]}
+        style={[
+          styles.memberCard,
+          isSelected && styles.selectedMember,
+          isIneligible && styles.ineligibleMemberCard
+        ]}
         onPress={() => onMemberToggle(item)}
+        activeOpacity={0.7}
       >
-        <View style={styles.memberAvatar}>
-          <Text style={styles.avatarText}>{item.avatar}</Text>
+        <View style={[styles.memberAvatar, isIneligible && styles.ineligibleAvatar]}>
+          <Text style={[styles.avatarText, isIneligible && styles.ineligibleAvatarText]}>
+            {item.avatar}
+          </Text>
         </View>
         <View style={styles.memberInfo}>
-          <Text style={styles.memberName}>{item.name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+            <Text style={[styles.memberName, isIneligible && styles.ineligibleMemberName]} numberOfLines={1}>
+              {item.name}
+            </Text>
+            {isIneligible && (
+              <View style={styles.ineligibleBadge}>
+                <Text style={styles.ineligibleBadgeText}>
+                  {t('NOT ELIGIBLE')}
+                </Text>
+              </View>
+            )}
+          </View>
           <Text style={styles.memberPhone}>{item.phone}</Text>
+          {isIneligible && (
+            <Text style={styles.prizeTakenSubtext}>
+              {t('Prize Taken')}: {item.amountTaken ? `₹${Number(item.amountTaken).toLocaleString('en-IN')}` : t('Claimed')}
+            </Text>
+          )}
         </View>
-        {isSelected && (
+        {isIneligible ? (
+          <View style={styles.ineligibleIconWrapper}>
+            <MaterialCommunityIcons
+              name="cancel"
+              size={22}
+              color="#EF4444"
+            />
+          </View>
+        ) : isSelected ? (
           <View style={styles.checkIcon}>
             <MaterialCommunityIcons
               name="check-circle"
-              size={20}
+              size={22}
               color="#10B981"
+            />
+          </View>
+        ) : (
+          <View style={styles.uncheckedIcon}>
+            <MaterialCommunityIcons
+              name="checkbox-blank-circle-outline"
+              size={20}
+              color="#D1D5DB"
             />
           </View>
         )}
@@ -63,19 +125,38 @@ const MemberSelectingModal = ({
       <View style={styles.modalOverlay}>
         <View style={styles.memberModalContainer}>
           <View style={styles.memberModalHeader}>
-            <Text style={styles.memberModalTitle}>
-              {t('Select Members')} - {selectedGroup?.name}
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.memberModalTitle} numberOfLines={1}>
+                {t('Select Members')} - {selectedGroup?.name}
+              </Text>
+              <Text style={styles.memberModalSubtitle}>
+                {t('Only eligible members who have not won can participate')}
+              </Text>
+            </View>
             <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
               <MaterialCommunityIcons name="close" size={24} color="#4B5563" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.memberCountBadge}>
-            <Text style={styles.memberCountText}>
-              {t('Selected:')} {selectedMembers.length}/
-              {selectedGroup?.members.length || 0}
-            </Text>
+          <View style={styles.statsAndSelectAllRow}>
+            <View style={styles.memberCountBadge}>
+              <Text style={styles.memberCountText}>
+                {t('Selected:')} {selectedMembers.length}/{eligibleMembers.length} {t('Eligible')}
+                {ineligibleCount > 0 ? ` • ${ineligibleCount} ${t('Ineligible')}` : ''}
+              </Text>
+            </View>
+
+            {eligibleMembers.length > 0 && !loading && (
+              <TouchableOpacity 
+                style={styles.selectAllBtn} 
+                onPress={handleSelectAllEligible}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.selectAllBtnText}>
+                  {allEligibleSelected ? t('Deselect All') : t('Select Eligible')}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {loading ? (
@@ -85,7 +166,7 @@ const MemberSelectingModal = ({
             </View>
           ) : (
             <FlatList
-              data={selectedGroup?.members || []}
+              data={allMembers}
               renderItem={renderMemberItem}
               keyExtractor={item => item.id}
               style={styles.membersList}
@@ -159,25 +240,45 @@ const styles = StyleSheet.create({
   },
   memberModalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1F2937',
-    flex: 1,
     fontFamily:
       Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
+  },
+  memberModalSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  statsAndSelectAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
   memberCountBadge: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: '#F3F4F6',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    flex: 1,
   },
   memberCountText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
-    fontFamily:
-      Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
+    color: '#475569',
+  },
+  selectAllBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#EDE9FE',
+  },
+  selectAllBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B46C1',
   },
 
   // Members List
@@ -207,6 +308,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F9FF',
     elevation: 1,
   },
+  ineligibleMemberCard: {
+    borderColor: '#FECDD3',
+    backgroundColor: '#FFF1F2',
+    opacity: 0.9,
+  },
   memberAvatar: {
     width: 44,
     height: 44,
@@ -216,31 +322,66 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  ineligibleAvatar: {
+    backgroundColor: '#FEE2E2',
+  },
   avatarText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#3B82F6',
     fontFamily: Platform.OS === 'android' ? 'Gilroy-Bold' : 'Poppins-Bold',
   },
+  ineligibleAvatarText: {
+    color: '#EF4444',
+  },
   memberInfo: {
     flex: 1,
   },
   memberName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1F2937',
-    marginBottom: 4,
+    marginBottom: 2,
     fontFamily:
       Platform.OS === 'android' ? 'Gilroy-SemiBold' : 'Poppins-SemiBold',
   },
+  ineligibleMemberName: {
+    color: '#991B1B',
+  },
   memberPhone: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
     marginTop: 0,
     fontFamily:
       Platform.OS === 'android' ? 'Gilroy-Regular' : 'Poppins-Regular',
   },
+  ineligibleBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  ineligibleBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#B91C1C',
+    letterSpacing: 0.4,
+  },
+  prizeTakenSubtext: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#DC2626',
+    marginTop: 2,
+  },
   checkIcon: {
+    marginLeft: 12,
+  },
+  uncheckedIcon: {
+    marginLeft: 12,
+  },
+  ineligibleIconWrapper: {
     marginLeft: 12,
   },
 

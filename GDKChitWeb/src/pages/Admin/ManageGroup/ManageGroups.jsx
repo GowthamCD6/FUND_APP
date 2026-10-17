@@ -137,6 +137,27 @@ const ManageGroups = () => {
     return periodYearMonth <= startYearMonth;
   }, [selectedGroup, currentMonth, getPeriodFromOffset]);
 
+  const totalGroupDuration = Number(selectedGroup?.duration || selectedGroup?.totalMembers || 20);
+  const parsedStartDt = selectedGroup?.startDate ? new Date(selectedGroup.startDate) : null;
+  const currentNow = new Date();
+
+  const viewPeriod = getPeriodFromOffset(currentMonth);
+  const viewingCycleMonth = (parsedStartDt && !isNaN(parsedStartDt.getTime()))
+    ? Math.max(1, (viewPeriod.year - parsedStartDt.getFullYear()) * 12 + (viewPeriod.month - parsedStartDt.getMonth()) + 1)
+    : 1;
+
+  const maxElapsedCycle = (parsedStartDt && !isNaN(parsedStartDt.getTime()))
+    ? Math.max(1, (currentNow.getFullYear() - parsedStartDt.getFullYear()) * 12 + (currentNow.getMonth() - parsedStartDt.getMonth()) + 1)
+    : 1;
+
+  const selectCycleMonth = (cycleNum) => {
+    if (!parsedStartDt || isNaN(parsedStartDt.getTime())) return;
+    const targetAbsoluteMonth = (parsedStartDt.getFullYear() * 12 + parsedStartDt.getMonth()) + (cycleNum - 1);
+    const todayAbsoluteMonth = (currentNow.getFullYear() * 12 + currentNow.getMonth());
+    const targetOffset = targetAbsoluteMonth - todayAbsoluteMonth;
+    setCurrentMonth(targetOffset);
+  };
+
   // ── Load groups ──────────────────────────────────────────
   const loadGroups = useCallback(async () => {
     try {
@@ -722,6 +743,52 @@ const ManageGroups = () => {
                   </div>
                 </div>
 
+                {/* ── Month Indicator & Quick Month Pills ── */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ede9fe', padding: '4px 10px', borderRadius: 8, border: '1px solid #ddd6fe' }}>
+                    <RiCalendarLine size={14} color="#6b46c1" />
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#6b46c1', letterSpacing: '0.4px' }}>
+                      MONTH {viewingCycleMonth} OF {totalGroupDuration}
+                    </span>
+                  </div>
+                  {viewingCycleMonth === maxElapsedCycle && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#059669', background: '#ecfdf5', padding: '3px 8px', borderRadius: 6, border: '1px solid #a7f3d0' }}>
+                      Current Active Cycle
+                    </span>
+                  )}
+                </div>
+
+                {/* Quick Month Pills Bar (1, 2, 3...) */}
+                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8, marginBottom: 12 }}>
+                  {Array.from({ length: totalGroupDuration }, (_, i) => i + 1).map(cycleNum => {
+                    const isSelected = viewingCycleMonth === cycleNum;
+                    const isPastOrCurrent = cycleNum <= maxElapsedCycle;
+                    return (
+                      <button
+                        key={cycleNum}
+                        type="button"
+                        onClick={() => selectCycleMonth(cycleNum)}
+                        disabled={snapshotLoading}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 8,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          transition: 'all 0.2s ease',
+                          border: isSelected ? '1px solid #5b21b6' : '1px solid #e2e8f0',
+                          background: isSelected ? '#6b46c1' : (isPastOrCurrent ? '#ffffff' : '#f8fafc'),
+                          color: isSelected ? '#ffffff' : (isPastOrCurrent ? '#334155' : '#94a3b8'),
+                          boxShadow: isSelected ? '0 2px 4px rgba(107, 70, 193, 0.2)' : 'none'
+                        }}
+                      >
+                        Month {cycleNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {/* ── Month Navigation Section ── */}
                 <div className="mg2-month-nav">
                   <button
@@ -736,7 +803,7 @@ const ManageGroups = () => {
                   
                   <div className="mg2-month-display">
                     <span className="mg2-month-label">
-                      {snapshotLoading ? 'Updating Month...' : 'Viewing Month'}
+                      {snapshotLoading ? 'Updating Month...' : `Viewing Month ${viewingCycleMonth} of ${totalGroupDuration}`}
                     </span>
                     <strong className="mg2-month-value" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                       {getMonthLabel(currentMonth)}
@@ -750,7 +817,7 @@ const ManageGroups = () => {
                   <button
                     className="mg2-month-nav-btn"
                     onClick={() => setCurrentMonth(prev => prev + 1)}
-                    disabled={currentMonth >= 0 || snapshotLoading}
+                    disabled={viewingCycleMonth >= totalGroupDuration || snapshotLoading}
                     title="Next Month"
                   >
                     <span>Next</span>
@@ -939,6 +1006,7 @@ const ManageGroups = () => {
         initialData={monthlySnapshot?.winner}
         onSave={handleAuctionWinnerSave}
         isSaving={isAuctionSaving}
+        groupMembers={members}
       />
     </div>
   );

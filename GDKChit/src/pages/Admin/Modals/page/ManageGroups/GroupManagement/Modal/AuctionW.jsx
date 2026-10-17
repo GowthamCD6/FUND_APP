@@ -164,17 +164,47 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
     const normName = normalizeText(name);
     const normId = normalizeText(memberId);
 
-    const allPast = [...pastWinners, ...fetchedPastWinners];
+    if (!normName && !normId) {
+      return { alreadyWon: false, reason: '' };
+    }
 
-    return allPast.some(winner => {
+    // 1. Check in groupMembers array directly (covers DB has_taken_auction_amount and toggle flag)
+    if (groupMembers && groupMembers.length > 0) {
+      const memberInGroup = groupMembers.find(m => {
+        const mName = normalizeText(m.name || m.user_name);
+        const mPhone = normalizeText(m.phone || m.id);
+        const nameMatch = normName && mName && normName === mName;
+        const phoneMatch = normId && mPhone && normId === mPhone;
+        return nameMatch || phoneMatch;
+      });
+
+      if (memberInGroup && (memberInGroup.hasWonAuction || memberInGroup.has_taken_auction_amount)) {
+        const amtStr = memberInGroup.amountTaken ? ` (₹${Number(memberInGroup.amountTaken).toLocaleString('en-IN')})` : '';
+        return {
+          alreadyWon: true,
+          reason: `STRICT RULE: ${memberInGroup.name || name} has ALREADY taken the auction prize${amtStr} for this group and is NOT ELIGIBLE to win again.`
+        };
+      }
+    }
+
+    // 2. Check in past auction records
+    const allPast = [...pastWinners, ...fetchedPastWinners];
+    const pastWinner = allPast.find(winner => {
       const pastName = normalizeText(winner.name || winner.chitWinnerName || winner.winner_name);
       const pastId = normalizeText(winner.memberId || winner.chitWinnerMemberId || winner.winner_member_phone || winner.winner_user_id);
-
       const nameMatch = normName && pastName && normName === pastName;
       const idMatch = normId && pastId && normId === pastId;
-
       return nameMatch || idMatch;
     });
+
+    if (pastWinner) {
+      return {
+        alreadyWon: true,
+        reason: `STRICT RULE: This member has ALREADY won a chit auction in a previous cycle for this group and cannot win again.`
+      };
+    }
+
+    return { alreadyWon: false, reason: '' };
   };
 
   const validateForm = () => {
@@ -195,20 +225,24 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
       newErrors.datePicked = 'Auction date is required';
     }
 
-    // Strict Rule: Prevent members who have already won from winning again
-    if (isUserAlreadyWon(formData.chitWinnerName, formData.chitWinnerMemberId)) {
-      newErrors.chitWinnerName = 'STRICT RULE: This member has ALREADY won a chit auction in a previous cycle for this group and cannot win again.';
+    // Strict Rule: Prevent members who have already won/taken prize from winning again
+    const wonCheck = isUserAlreadyWon(formData.chitWinnerName, formData.chitWinnerMemberId);
+    if (wonCheck.alreadyWon) {
+      newErrors.chitWinnerName = wonCheck.reason;
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    const firstError = Object.values(newErrors)[0] || '';
+    return { isValid, errors: newErrors, errorMessage: firstError };
   };
 
   const handleSave = () => {
-    if (validateForm()) {
+    const validation = validateForm();
+    if (validation.isValid) {
       onSave(formData);
     } else {
-      Alert.alert('Validation Error', errors.chitWinnerName || 'Please fill all required fields correctly.');
+      Alert.alert('Validation Error', validation.errorMessage || 'Please fill all required fields correctly.');
     }
   };
 
@@ -264,6 +298,8 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
     setShowDatePicker(false);
   };
 
+  const winnerEligibility = isUserAlreadyWon(formData.chitWinnerName, formData.chitWinnerMemberId);
+
   return (
     <Modal
       visible={visible}
@@ -311,6 +347,16 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
               )}
             </View>
 
+            {winnerEligibility.alreadyWon && (
+              <View style={styles.ineligibleWarningBox}>
+                <MaterialCommunityIcons name="alert-circle" size={18} color="#DC2626" style={{ marginTop: 2 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.ineligibleWarningTitle}>NOT ELIGIBLE TO WIN</Text>
+                  <Text style={styles.ineligibleWarningText}>{winnerEligibility.reason}</Text>
+                </View>
+              </View>
+            )}
+
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Amount Taken</Text>
               <View style={styles.inputWithIcon}>
@@ -350,7 +396,10 @@ const AuctionW = ({ visible, onClose, initialWinnerData, onSave, groupMembers = 
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <TouchableOpacity 
+              style={[styles.saveButton, winnerEligibility.alreadyWon && styles.disabledSaveButton]} 
+              onPress={handleSave}
+            >
               <MaterialCommunityIcons name="check" size={20} color="#FFFFFF" />
               <Text style={styles.saveButtonText}>Save</Text>
             </TouchableOpacity>
@@ -444,6 +493,33 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 18,
+  },
+  ineligibleWarningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#F87171',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    gap: 10,
+  },
+  ineligibleWarningTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#991B1B',
+    marginBottom: 2,
+    letterSpacing: 0.5,
+  },
+  ineligibleWarningText: {
+    fontSize: 12,
+    color: '#B91C1C',
+    lineHeight: 17,
+  },
+  disabledSaveButton: {
+    backgroundColor: '#9CA3AF',
+    opacity: 0.7,
   },
   label: {
     fontSize: 14,

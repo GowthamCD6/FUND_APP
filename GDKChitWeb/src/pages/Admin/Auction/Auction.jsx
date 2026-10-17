@@ -263,6 +263,14 @@ const Auction = () => {
   };
 
   const toggleMemberSelection = (member) => {
+    if (member.hasWonAuction) {
+      const amtStr = member.amountTaken ? ` (₹${Number(member.amountTaken).toLocaleString('en-IN')})` : '';
+      setPageNotice({
+        text: `⛔ ${member.name} has already received the auction prize${amtStr} and is NOT ELIGIBLE to participate in the auction.`,
+        type: 'error'
+      });
+      return;
+    }
     setSelectedMembers(prev => {
       const isSelected = prev.find(m => m.userId === member.userId);
       return isSelected ? prev.filter(m => m.userId !== member.userId) : [...prev, member];
@@ -270,7 +278,8 @@ const Auction = () => {
   };
 
   const toggleSelectAllMembers = () => {
-    setSelectedMembers(prev => prev.length === members.length ? [] : [...members]);
+    const eligibleMembers = members.filter(m => !m.hasWonAuction);
+    setSelectedMembers(prev => prev.length === eligibleMembers.length ? [] : [...eligibleMembers]);
   };
 
   // ──── START AUCTION SETUP (both modes) ────
@@ -994,11 +1003,24 @@ const Auction = () => {
             </div>
 
             {/* Select All Row */}
-            <div className="mg2-picker-select-all-row">
-              <button className="mg2-picker-select-all-btn" onClick={toggleSelectAllMembers}>
-                <RiUserCheckLine size={14} /> 
-                {selectedMembers.length === members.length ? 'Deselect All' : 'Select All Members'}
-              </button>
+            <div className="mg2-picker-select-all-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {(() => {
+                const eligibleMembers = members.filter(m => !m.hasWonAuction);
+                const allSelected = eligibleMembers.length > 0 && eligibleMembers.every(em => selectedMembers.some(sm => sm.userId === em.userId));
+                return (
+                  <>
+                    <button className="mg2-picker-select-all-btn" onClick={toggleSelectAllMembers}>
+                      <RiUserCheckLine size={14} /> 
+                      {allSelected ? 'Deselect All' : `Select All Eligible (${eligibleMembers.length})`}
+                    </button>
+                    {members.some(m => m.hasWonAuction) && (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#dc2626' }}>
+                        {members.filter(m => m.hasWonAuction).length} prize claimed (ineligible)
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Members Picker Checklist */}
@@ -1024,22 +1046,65 @@ const Auction = () => {
                 <div className="mg2-picker-list" style={{ border: 'none', background: 'transparent', maxHeight: 'none' }}>
                   {filteredMembers.map(m => {
                     const isSelected = selectedMembers.some(sm => sm.userId === m.userId);
+                    const isIneligible = Boolean(m.hasWonAuction);
                     return (
                       <div 
                         key={m.userId}
                         className={`mg2-picker-item ${isSelected ? 'selected' : ''}`}
                         onClick={() => toggleMemberSelection(m)}
-                        style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9' }}
+                        style={{ 
+                          padding: '8px 12px', 
+                          borderBottom: '1px solid #f1f5f9',
+                          background: isIneligible ? '#fff1f2' : undefined,
+                          borderColor: isIneligible ? '#fecdd3' : undefined,
+                          cursor: isIneligible ? 'not-allowed' : 'pointer'
+                        }}
                       >
-                        <div className="mg2-picker-checkbox">
-                          {isSelected && <RiCheckLine size={12} color="#ffffff" />}
+                        <div className="mg2-picker-checkbox" style={{
+                          background: isIneligible ? '#fee2e2' : undefined,
+                          borderColor: isIneligible ? '#f87171' : undefined
+                        }}>
+                          {isIneligible ? (
+                            <RiCloseLine size={12} color="#dc2626" />
+                          ) : isSelected ? (
+                            <RiCheckLine size={12} color="#ffffff" />
+                          ) : null}
                         </div>
-                        <div className="mg2-mem-avatar" style={{ width: 34, height: 34, fontSize: 12 }}>
+                        <div className="mg2-mem-avatar" style={{ 
+                          width: 34, 
+                          height: 34, 
+                          fontSize: 12,
+                          background: isIneligible ? '#fee2e2' : undefined,
+                          color: isIneligible ? '#b91c1c' : undefined
+                        }}>
                           {(m.name || 'U').substring(0, 2).toUpperCase()}
                         </div>
                         <div style={{ flex: 1 }}>
-                          <p className="mg2-mem-name">{m.name}</p>
-                          <p className="mg2-mem-phone">{m.phone}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                            <p className="mg2-mem-name" style={{ color: isIneligible ? '#991b1b' : undefined }}>{m.name}</p>
+                            {isIneligible && (
+                              <span style={{ 
+                                fontSize: 10, 
+                                fontWeight: 800, 
+                                color: '#b91c1c', 
+                                background: '#fee2e2', 
+                                border: '1px solid #fca5a5', 
+                                borderRadius: 4, 
+                                padding: '1px 6px',
+                                letterSpacing: '0.4px'
+                              }}>
+                                NOT ELIGIBLE
+                              </span>
+                            )}
+                          </div>
+                          <p className="mg2-mem-phone">
+                            {m.phone}
+                            {isIneligible && (
+                              <span style={{ color: '#dc2626', fontWeight: 600, marginLeft: 8 }}>
+                                • Prize Taken: {m.amountTaken ? `₹${Number(m.amountTaken).toLocaleString('en-IN')}` : 'Claimed'}
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </div>
                     );
@@ -1051,7 +1116,8 @@ const Auction = () => {
             {/* Sticky Action Footer */}
             <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
               <div style={{ fontSize: 13.5, fontWeight: 600, color: '#475569' }}>
-                {selectedMembers.length} of {members.length} selected
+                {selectedMembers.length} of {members.filter(m => !m.hasWonAuction).length} eligible selected
+                {members.some(m => m.hasWonAuction) ? ` (${members.filter(m => m.hasWonAuction).length} ineligible)` : ''}
               </div>
               <button 
                 className="mg2-modal-save-btn" 

@@ -709,11 +709,33 @@ exports.saveAuctionWinner = async (req, res) => {
             [groupIdNum, collectionPeriodStr, winnerUserId ? Number(winnerUserId) : -1, cleanPhone, cleanName]
         );
 
-        if (alreadyWonRows && alreadyWonRows.length > 0) {
+        // Also check if member has manually taken auction prize flag in user_grouping
+        const [userGroupingWonRows] = await connection.query(
+            `SELECT ug.user_id, u.name, ug.auction_amount_taken 
+             FROM user_grouping ug
+             JOIN users u ON u.id = ug.user_id
+             WHERE ug.group_id = ? 
+               AND ug.has_taken_auction_amount = 1
+               AND (
+                   ug.user_id = ? 
+                   OR (u.phone = ? AND u.phone != '') 
+                   OR (LOWER(u.name) = LOWER(?))
+               )
+             LIMIT 1`,
+            [groupIdNum, winnerUserId ? Number(winnerUserId) : -1, cleanPhone, cleanName]
+        );
+
+        const isCurrentPeriodWinner = oldWinner && (
+            (oldWinner.winner_user_id && Number(oldWinner.winner_user_id) === Number(winnerUserId)) ||
+            (oldWinner.winner_member_phone && oldWinner.winner_member_phone === cleanPhone) ||
+            (oldWinner.winner_name && oldWinner.winner_name.toLowerCase() === cleanName.toLowerCase())
+        );
+
+        if ((alreadyWonRows && alreadyWonRows.length > 0) || (userGroupingWonRows && userGroupingWonRows.length > 0 && !isCurrentPeriodWinner)) {
             connection.release();
             return res.status(400).json({ 
                 success: false, 
-                message: `Member "${cleanName}" has ALREADY won an auction in a previous cycle for this group and cannot win again.` 
+                message: `Member "${cleanName}" has ALREADY taken or won an auction prize for this group and cannot win again.` 
             });
         }
 

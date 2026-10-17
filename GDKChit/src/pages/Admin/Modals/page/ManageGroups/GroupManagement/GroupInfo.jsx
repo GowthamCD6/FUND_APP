@@ -546,6 +546,27 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
     return diffDays;
   };
 
+  const totalGroupDuration = Number(group.duration || formData.totalMembers || group.totalMembers || 20);
+  const parsedStartDt = new Date(formData.createdDate || group.createdDate || group.start_date || group.startDate || new Date());
+  const currentNow = new Date();
+  
+  const viewPeriod = getPeriodFromOffset(currentMonth);
+  const viewingCycleMonth = !isNaN(parsedStartDt.getTime())
+    ? Math.max(1, (viewPeriod.year - parsedStartDt.getFullYear()) * 12 + (viewPeriod.month - parsedStartDt.getMonth()) + 1)
+    : 1;
+
+  const maxElapsedCycle = !isNaN(parsedStartDt.getTime())
+    ? Math.max(1, (currentNow.getFullYear() - parsedStartDt.getFullYear()) * 12 + (currentNow.getMonth() - parsedStartDt.getMonth()) + 1)
+    : 1;
+
+  const selectCycleMonth = (cycleNum) => {
+    if (isNaN(parsedStartDt.getTime())) return;
+    const targetAbsoluteMonth = (parsedStartDt.getFullYear() * 12 + parsedStartDt.getMonth()) + (cycleNum - 1);
+    const todayAbsoluteMonth = (currentNow.getFullYear() * 12 + currentNow.getMonth());
+    const targetOffset = targetAbsoluteMonth - todayAbsoluteMonth;
+    setCurrentMonth(targetOffset);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -668,6 +689,54 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
             </TouchableOpacity>
           </View>
 
+          {/* Month Indicator & Quick Month Selector */}
+          <View style={styles.cycleHeaderBanner}>
+            <View style={styles.cycleBadge}>
+              <MaterialCommunityIcons name="calendar-clock" size={16} color="#6B46C1" />
+              <Text style={styles.cycleBadgeText}>
+                MONTH {viewingCycleMonth} OF {totalGroupDuration}
+              </Text>
+            </View>
+            {viewingCycleMonth === maxElapsedCycle && (
+              <View style={styles.activeCyclePill}>
+                <Text style={styles.activeCyclePillText}>Current Cycle</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Quick Month Pills Bar (Tap 1, 2, 3...) */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={styles.monthPillsScrollContainer}
+            style={styles.monthPillsScrollView}
+          >
+            {Array.from({ length: totalGroupDuration }, (_, i) => i + 1).map((cycleNum) => {
+              const isSelected = viewingCycleMonth === cycleNum;
+              const isPastOrCurrent = cycleNum <= maxElapsedCycle;
+              return (
+                <TouchableOpacity
+                  key={cycleNum}
+                  style={[
+                    styles.cyclePill,
+                    isSelected && styles.cyclePillSelected,
+                    !isPastOrCurrent && styles.cyclePillFuture
+                  ]}
+                  onPress={() => selectCycleMonth(cycleNum)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.cyclePillText,
+                    isSelected && styles.cyclePillTextSelected,
+                    !isPastOrCurrent && styles.cyclePillTextFuture
+                  ]}>
+                    Month {cycleNum}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
           {/* Month Navigation */}
           <View style={styles.monthNavigation}>
             <TouchableOpacity
@@ -680,18 +749,18 @@ const GroupInfoAdmin = ({ group, onBack, onSave }) => {
             </TouchableOpacity>
 
             <View style={styles.monthDisplay}>
-              <Text style={styles.monthLabel}>Viewing Month</Text>
+              <Text style={styles.monthLabel}>Viewing Month {viewingCycleMonth}/{totalGroupDuration}</Text>
               <Text style={styles.monthValue}>{getMonthLabel(currentMonth)}</Text>
               {currentMonth === 0 && <Text style={styles.currentMonthBadge}>(Current)</Text>}
             </View>
 
             <TouchableOpacity
               onPress={() => setCurrentMonth(currentMonth + 1)}
-              disabled={currentMonth >= 0}
-              style={[styles.monthNavButton, currentMonth >= 0 && styles.monthNavButtonDisabled]}
+              disabled={viewingCycleMonth >= totalGroupDuration}
+              style={[styles.monthNavButton, viewingCycleMonth >= totalGroupDuration && styles.monthNavButtonDisabled]}
             >
-              <Text style={[styles.monthNavButtonText, currentMonth >= 0 && { color: '#9CA3AF' }]}>Next</Text>
-              <MaterialCommunityIcons name="chevron-right" size={20} color={currentMonth >= 0 ? "#9CA3AF" : "#6B46C1"} />
+              <Text style={[styles.monthNavButtonText, viewingCycleMonth >= totalGroupDuration && { color: '#9CA3AF' }]}>Next</Text>
+              <MaterialCommunityIcons name="chevron-right" size={20} color={viewingCycleMonth >= totalGroupDuration ? "#9CA3AF" : "#6B46C1"} />
             </TouchableOpacity>
           </View>
 
@@ -1050,6 +1119,86 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#6B46C1',
+  },
+
+  // Month Indicator & Quick Month Pills
+  cycleHeaderBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  cycleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EDE9FE',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+  },
+  cycleBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#6B46C1',
+    letterSpacing: 0.6,
+  },
+  activeCyclePill: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  activeCyclePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  monthPillsScrollView: {
+    marginBottom: 12,
+  },
+  monthPillsScrollContainer: {
+    gap: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 2,
+  },
+  cyclePill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  cyclePillSelected: {
+    backgroundColor: '#6B46C1',
+    borderColor: '#5B21B6',
+    elevation: 2,
+  },
+  cyclePillFuture: {
+    backgroundColor: '#F9FAFB',
+    borderColor: '#F3F4F6',
+  },
+  cyclePillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  cyclePillTextSelected: {
+    color: '#FFFFFF',
+  },
+  cyclePillTextFuture: {
+    color: '#9CA3AF',
   },
 
   // Month Navigation

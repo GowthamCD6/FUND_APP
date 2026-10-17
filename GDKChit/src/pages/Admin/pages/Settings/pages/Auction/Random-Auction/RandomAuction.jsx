@@ -137,10 +137,21 @@ const RandomAuction = ({
         return;
       }
       winner = participants[winnerIdx];
+      if (winner && winner.hasWonAuction) {
+        Alert.alert(t("Ineligible Winner"), t("This participant has already taken an auction prize for this group and is not eligible to win again."));
+        return;
+      }
       finalValue = (winnerIdx % maxParticipants) + 1;
     } else {
-      finalValue = Math.floor(Math.random() * maxParticipants) + 1;
-      winner = participants[finalValue - 1] || participants[0];
+      // For random draw, filter eligible participants if possible
+      const eligible = participants.filter(p => !p.hasWonAuction);
+      if (eligible.length > 0) {
+        finalValue = Math.floor(Math.random() * Math.min(eligible.length, maxParticipants)) + 1;
+        winner = eligible[finalValue - 1] || eligible[0];
+      } else {
+        finalValue = Math.floor(Math.random() * maxParticipants) + 1;
+        winner = participants[finalValue - 1] || participants[0];
+      }
     }
 
     if (selectedGroup?.id) {
@@ -294,16 +305,26 @@ const RandomAuction = ({
           const isJoined = joinedParticipants.has(participant.id.toString());
           const isSelected = drawMode === 'manual' && selectedWinnerId === participantId;
 
+          const isIneligible = Boolean(participant.hasWonAuction);
+
           return (
             <TouchableOpacity 
               key={participant.id || index} 
               style={[
                 styles.tableRow,
-                isSelected && styles.tableRowSelected
+                isSelected && styles.tableRowSelected,
+                isIneligible && { backgroundColor: '#FFF5F5', opacity: 0.85 }
               ]}
               onPress={() => {
                 if (isDiceRolling) return;
                 if (drawMode === 'manual') {
+                  if (isIneligible) {
+                    Alert.alert(
+                      t('Not Eligible'),
+                      `${participant.name} has already received an auction prize and cannot be selected as the winner.`
+                    );
+                    return;
+                  }
                   setSelectedWinnerId(participantId);
                 }
               }}
@@ -311,26 +332,32 @@ const RandomAuction = ({
               activeOpacity={drawMode === 'manual' ? 0.7 : 1}
             >
               <View style={{ flex: 0.18, justifyContent: 'center' }}>
-                <View style={[styles.numberBadge, isSelected && styles.numberBadgeSelected]}>
-                  <Text style={[styles.numberBadgeText, isSelected && styles.numberBadgeTextSelected]}>
+                <View style={[styles.numberBadge, isSelected && styles.numberBadgeSelected, isIneligible && { borderColor: '#FECDD3', backgroundColor: '#FEE2E2' }]}>
+                  <Text style={[styles.numberBadgeText, isSelected && styles.numberBadgeTextSelected, isIneligible && { color: '#EF4444' }]}>
                     {index + 1}
                   </Text>
                 </View>
               </View>
               <View style={styles.tableCellUser}>
-                <View style={[styles.smallAvatar, isSelected && styles.smallAvatarSelected]}>
-                  <Text style={styles.smallAvatarText}>{participant.avatar}</Text>
+                <View style={[styles.smallAvatar, isSelected && styles.smallAvatarSelected, isIneligible && { backgroundColor: '#FEE2E2' }]}>
+                  <Text style={[styles.smallAvatarText, isIneligible && { color: '#EF4444' }]}>{participant.avatar}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.tableUserName, isSelected && styles.tableUserNameSelected]} numberOfLines={1}>
+                  <Text style={[styles.tableUserName, isSelected && styles.tableUserNameSelected, isIneligible && { color: '#991B1B' }]} numberOfLines={1}>
                     {participant.name}
                   </Text>
-                  {isSelected && (
+                  {isIneligible ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#DC2626' }}>
+                        ⛔ {t('NOT ELIGIBLE')}
+                      </Text>
+                    </View>
+                  ) : isSelected ? (
                     <View style={styles.designatedBadge}>
                       <MaterialCommunityIcons name="crown" size={12} color="#047857" />
                       <Text style={styles.designatedBadgeText}>{t('Pre-Selected Winner')}</Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
               </View>
               <View style={{ flex: 0.3, alignItems: 'flex-end', justifyContent: 'center' }}>
