@@ -6,15 +6,18 @@ const { addUserToGlobalCommunity } = require('../../utils/communityHelper');
 const fcmPushService = require('../../services/fcmPushService');
 
 exports.addUser = async (req, res) => {
-    const { name, phoneNumber, yearOfBirth, dateOfBirth, role } = req.body;
+    const { name, phoneNumber, yearOfBirth, dateOfBirth, role, nickname } = req.body;
     const adminId = req.user ? (req.user.userId || req.user.id) : null;
-    const phone = phoneNumber || null;
+    const rawPhone = phoneNumber ? String(phoneNumber).replace(/\D/g, '') : '';
+    const phone = rawPhone.length >= 10 ? rawPhone.slice(-10) : null;
     const rawDob = dateOfBirth || yearOfBirth || null;
     const yob = yearOfBirth || (rawDob && String(rawDob).length >= 4 ? String(rawDob).substring(0, 4) : null);
+    const nick = nickname ? String(nickname).trim() : null;
+    const trimmedName = name ? String(name).trim() : null;
 
     try {
-        if (!phone) {
-            return res.status(400).json({ success: false, message: 'Phone is required' });
+        if (!phone || phone.length !== 10) {
+            return res.status(400).json({ success: false, message: 'Valid 10-digit phone number is required' });
         }
         if (!yob) {
             return res.status(400).json({ success: false, message: 'Year of birth is required' });
@@ -22,7 +25,7 @@ exports.addUser = async (req, res) => {
 
         const [userRows] = await db.promise().query('SELECT id FROM users WHERE phone = ? AND deleted_at IS NULL', [phone]);
         if (userRows.length > 0) {
-            return res.status(409).json({ success: false, message: 'User already exists' });
+            return res.status(409).json({ success: false, message: 'A user with this phone number already exists' });
         }
 
         // Hash plaintext password (YOB) using bcrypt
@@ -35,8 +38,8 @@ exports.addUser = async (req, res) => {
         const [result] = await db
             .promise()
             .query(
-                'INSERT INTO users (name, phone, password, role, created_by) VALUES (?, ?, ?, ?, ?)',
-                [name || null, phone, finalHashedPassword, normalizedRole, adminId ? Number(adminId) : null]
+                'INSERT INTO users (name, nick_name, phone, password, role, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+                [trimmedName, nick, phone, finalHashedPassword, normalizedRole, adminId ? Number(adminId) : null]
             );
 
         if (result.affectedRows === 0) {
@@ -46,8 +49,9 @@ exports.addUser = async (req, res) => {
         const userId = result.insertId;
 
         // Insert into user_profiles for date of birth tracking
+        let dobDate = null;
         try {
-            const dobDate = dateOfBirth 
+            dobDate = dateOfBirth 
                 ? String(dateOfBirth).split('T')[0] 
                 : (yob ? `${yob}-01-01` : null);
             if (dobDate) {
@@ -55,7 +59,7 @@ exports.addUser = async (req, res) => {
                     `INSERT INTO user_profiles (user_id, name, date_of_birth, created_by)
                      VALUES (?, ?, ?, ?)
                      ON DUPLICATE KEY UPDATE date_of_birth = VALUES(date_of_birth), name = VALUES(name)`,
-                    [userId, name || 'User', dobDate, adminId ? Number(adminId) : null]
+                    [userId, trimmedName || 'User', dobDate, adminId ? Number(adminId) : null]
                 );
             }
         } catch (profileErr) {
@@ -67,13 +71,25 @@ exports.addUser = async (req, res) => {
             actionType: 'INSERT',
             tableName: 'users',
             recordId: userId,
-            newValues: { name, phone, role: normalizedRole }
+            newValues: { name: trimmedName, nickname: nick, phone, role: normalizedRole }
         });
 
         // Auto-add new user to Global Community chat room
         await addUserToGlobalCommunity(userId, normalizedRole === 'Admin' ? 'Admin' : 'Member');
 
-        return res.status(200).json({ success: true, message: 'User added successfully' });
+        return res.status(200).json({ 
+            success: true, 
+            message: 'User added successfully',
+            data: {
+                id: userId,
+                name: trimmedName,
+                nickname: nick,
+                phone,
+                role: normalizedRole,
+                yearOfBirth: yob,
+                dateOfBirth: dobDate
+            }
+        });
     } catch (error) {
         console.error('Error adding user:', error);
         return res.status(500).json({ success: false, message: 'Failed to add user' });

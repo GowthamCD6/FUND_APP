@@ -126,6 +126,7 @@ const AppNavigation = () => {
         <Route path="admintool" element={<AdminTool />} />
         <Route path="admintool/create-group" element={<Navigate to="/admin/create-group" replace />} />
         <Route path="admintool/add-user" element={<AddUser />} />
+        <Route path="add-user" element={<Navigate to="/admin/admintool/add-user" replace />} />
         <Route path="admintool/data-export" element={<DataExportPage />} />
         <Route path="admintool/otp-requests" element={<OtpRequestsPage />} />
         <Route path="admintool/auction-settings" element={<AuctionSettingsPage />} />
