@@ -10,7 +10,7 @@ import {
   Play as RiPlayLine, Pause as RiPauseLine, RotateCcw as RiResetLine, Timer as RiTimerLine,
   Trophy as RiTrophyLine, Crown as RiCrownLine, History as RiHistoryLine, Zap as RiZapLine,
   Wifi as RiWifiLine, WifiOff as RiWifiOffLine, UserCheck as RiUserCheckLine,
-  Clock as RiTimeLine, CircleDollarSign as RiMoneyDollarCircleLine
+  Clock as RiTimeLine, CircleDollarSign as RiMoneyDollarCircleLine, Calendar as RiCalendarLine
 } from 'lucide-react';
 import './Auction.css';
 import BettingAuction from './components/BettingAuction.jsx';
