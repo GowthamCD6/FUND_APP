@@ -7,7 +7,7 @@ import {
   X as RiCloseLine, Loader2 as RiLoader4Line, Calendar as RiCalendarLine, Search as RiSearchLine,
   History as RiHistoryLine, Pencil as RiEditLine, ChevronRight as RiArrowRightSLine, Info as RiInformationLine,
   FileText as RiFileListLine, CircleDollarSign as RiMoneyDollarCircleLine, ArrowLeft as RiArrowLeftLine,
-  ChevronDown as RiChevronDown, LayoutGrid as RiLayoutGrid, List as RiList,
+  ChevronDown as RiChevronDown,
 } from 'lucide-react';
 import './Reports.css';
 import MemberDetailsPanel from './MemberDetails/MemberDetailsPanel.jsx';
@@ -194,7 +194,6 @@ const Reports = () => {
   const [groupMembers, setGroupMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('table');
 
   const loadGroups = useCallback(async () => {
     try {
@@ -353,81 +352,17 @@ const Reports = () => {
                   <span>Refresh</span>
                 </button>
 
-                {/* View Toggle */}
-                <div className="rp-view-toggle">
-                  <button
-                    type="button"
-                    className={`rp-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
-                    onClick={() => setViewMode('table')}
-                    title="Table View"
-                  >
-                    <RiList size={14} /> Table
-                  </button>
-                  <button
-                    type="button"
-                    className={`rp-toggle-btn ${viewMode === 'cards' ? 'active' : ''}`}
-                    onClick={() => setViewMode('cards')}
-                    title="Card Grid View"
-                  >
-                    <RiLayoutGrid size={14} /> Cards
-                  </button>
-                </div>
               </div>
             </div>
           </div>
 
-          {/* ── Content ── */}
+          {/* ── Content (Card Grid View) ── */}
           {apiStatus === 'loading' ? (
-            viewMode === 'table' ? (
-              <div className="rp-table-container">
-                <div className="rp-table-wrapper">
-                  <table className="rp-table">
-                    <thead>
-                      <tr>
-                        <th style={{ width: 45, textAlign: 'center' }}>#</th>
-                        <th>Group Name</th>
-                        <th>Status</th>
-                        <th>Total Members</th>
-                        <th>Monthly Share</th>
-                        <th>Pool Value</th>
-                        <th>Duration & Progress</th>
-                        <th>Total Collected</th>
-                        <th style={{ textAlign: 'right', minWidth: 150 }}>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <tr key={i} className="skeleton-pulse" style={{ pointerEvents: 'none' }}>
-                          <td style={{ textAlign: 'center' }}><div style={{ width: 16, height: 12, background: '#e2e8f0', margin: '0 auto', borderRadius: 3 }} /></td>
-                          <td>
-                            <div className="rp-cell-member">
-                              <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#e2e8f0' }} />
-                              <div>
-                                <div style={{ width: 110, height: 14, background: '#e2e8f0', borderRadius: 4, marginBottom: 5 }} />
-                                <div style={{ width: 70, height: 11, background: '#e2e8f0', borderRadius: 4 }} />
-                              </div>
-                            </div>
-                          </td>
-                          <td><div style={{ width: 75, height: 20, background: '#e2e8f0', borderRadius: 100 }} /></td>
-                          <td><div style={{ width: 70, height: 14, background: '#e2e8f0', borderRadius: 4 }} /></td>
-                          <td><div style={{ width: 65, height: 14, background: '#e2e8f0', borderRadius: 4 }} /></td>
-                          <td><div style={{ width: 75, height: 14, background: '#e2e8f0', borderRadius: 4 }} /></td>
-                          <td><div style={{ width: 120, height: 14, background: '#e2e8f0', borderRadius: 4 }} /></td>
-                          <td><div style={{ width: 70, height: 14, background: '#e2e8f0', borderRadius: 4 }} /></td>
-                          <td><div style={{ width: 90, height: 30, background: '#e2e8f0', borderRadius: 6, marginLeft: 'auto' }} /></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : (
-              <div className="rn-list">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <GroupCardSkeleton key={i} />
-                ))}
-              </div>
-            )
+            <div className="rn-list">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <GroupCardSkeleton key={i} />
+              ))}
+            </div>
           ) : apiStatus === 'error' ? (
             <div className="rn-empty">
               <RiAlertLine size={48} color="var(--danger)" style={{ marginBottom: 14 }} />
@@ -448,121 +383,6 @@ const Reports = () => {
               <p style={{ margin: 0, fontSize: '13px', color: '#334155', fontWeight: 500 }}>
                 No {activeTab === 'all' ? '' : activeTab === 'not-started' ? 'not started' : activeTab} groups available yet.
               </p>
-            </div>
-          ) : viewMode === 'table' ? (
-            <div className="rp-table-container">
-              <div className="rp-table-wrapper">
-                <table className="rp-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: 45, textAlign: 'center' }}>#</th>
-                      <th>Group Name</th>
-                      <th>Status</th>
-                      <th>Total Members</th>
-                      <th>Monthly Share</th>
-                      <th>Pool Value</th>
-                      <th>Duration & Progress</th>
-                      <th>Collected</th>
-                      <th style={{ textAlign: 'right', minWidth: 150 }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((group, idx) => {
-                      const status = String(group.status || 'active').toLowerCase();
-                      const color = scOf(status);
-                      const totalCycles = Number(group.duration) || 20;
-                      const completed = Number(group.completedCycles) || 0;
-                      const pct = Math.min(100, Math.round((completed / totalCycles) * 100));
-                      const poolValue = Number(group.groupAmount) || 0;
-                      const monthlyAmount = group.monthlyAmount || (totalCycles > 0 ? Math.round(poolValue / totalCycles) : 0);
-
-                      return (
-                        <tr 
-                          key={group.id} 
-                          onClick={() => openGroupMembers(group)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <td style={{ textAlign: 'center', fontWeight: 700, color: '#94a3b8', fontSize: 12 }}>
-                            {idx + 1}
-                          </td>
-                          <td>
-                            <div className="rp-cell-member">
-                              <div className="rp-avatar" style={{ background: `${color}15`, color, border: `1.5px solid ${color}33` }}>
-                                {String(group.name || '?').charAt(0).toUpperCase()}
-                              </div>
-                              <div className="rp-name-info">
-                                <span className="rp-name">{group.name}</span>
-                                <span className="rp-sub">
-                                  <RiCalendarLine size={11} /> {group.currentMonthDisplay || (group.duration ? `Month 1 of ${group.duration}` : '1st Month')}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <span style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 5,
-                              padding: '3px 10px',
-                              borderRadius: 100,
-                              fontSize: 11,
-                              fontWeight: 700,
-                              background: `${color}18`,
-                              color: color,
-                              border: `1px solid ${color}33`
-                            }}>
-                              <StatusIcon status={group.status} size={11} />
-                              {String(group.status || 'Active').toUpperCase()}
-                            </span>
-                          </td>
-                          <td>
-                            <span style={{ fontWeight: 600, color: '#334155' }}>
-                              {group.totalMembers} Members
-                            </span>
-                          </td>
-                          <td>
-                            <strong style={{ fontSize: 14, color: '#0f172a' }}>
-                              {formatCurrency(monthlyAmount)}/mo
-                            </strong>
-                          </td>
-                          <td>
-                            <strong style={{ fontSize: 14, color: '#0f172a' }}>
-                              {formatCurrency(poolValue)}
-                            </strong>
-                          </td>
-                          <td style={{ minWidth: 150 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
-                                {completed}/{totalCycles} Cycles ({pct}%)
-                              </span>
-                              <div style={{ width: '100%', height: 5, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
-                                <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width 0.4s' }} />
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <strong style={{ color: '#2E7D32', fontSize: 14 }}>
-                              {formatCurrency(group.collectedAmount)}
-                            </strong>
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <button
-                              type="button"
-                              className="reports-refresh-btn"
-                              onClick={(e) => { e.stopPropagation(); openGroupMembers(group); }}
-                              style={{ height: 32, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}
-                              title="View Collections & Members"
-                            >
-                              <span>Collections</span>
-                              <RiArrowRightSLine size={15} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
             </div>
           ) : (
             <div className="rn-list">

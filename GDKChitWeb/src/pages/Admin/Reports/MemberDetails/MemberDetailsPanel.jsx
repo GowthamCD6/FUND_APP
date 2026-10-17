@@ -6,8 +6,7 @@ import {
   X as RiCloseLine, Loader2 as RiLoader4Line, Calendar as RiCalendarLine, User as RiUserLine,
   History as RiHistoryLine, Pencil as RiEditLine, ChevronRight as RiArrowRightSLine, Info as RiInformationLine,
   FileText as RiFileListLine, CircleDollarSign as RiMoneyDollarCircleLine, ArrowLeft as RiArrowLeftLine,
-  CheckCircle as RiCheckCircleLine, Phone as RiPhoneLine, ShieldCheck, Search as RiSearchLine,
-  LayoutGrid as RiLayoutGrid, List as RiList
+  CheckCircle as RiCheckCircleLine, Phone as RiPhoneLine, ShieldCheck, Search as RiSearchLine
 } from 'lucide-react';
 import { MONTHS, scOf, StatusIcon } from '../Reports.jsx';
 
@@ -158,171 +157,6 @@ const PaymentEditor = ({ member, payment, selMonth, selYear, monthlyAmount, onSa
 };
 
 /* ════════════════════════════════════════════════════════════════
-   MEMBER CARD WITH QUICK ACCEPT ACTION
-════════════════════════════════════════════════════════════════ */
-const MemberCard = ({ member, monthlyAmount, selMonth, selYear, onChitCard, onEdit, onQuickAccept, isUpdating }) => {
-  const payment = (member.paymentHistory || []).find(p => Number(p.month) === Number(selMonth) && Number(p.year) === Number(selYear)) || member.currentPayment;
-  const status = payment?.status || 'pending';
-  const color = scOf(status);
-  const initials = String(member.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-  const isPaid = status === 'paid';
-
-  return (
-    <div className="gc-card mg-enhanced-card" style={{ borderTop: `4px solid ${color}`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-      <div>
-        {/* Header */}
-        <div className="gc-header" style={{ padding: '18px 20px 12px' }}>
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div className="md-avatar" style={{ background: `${color}18`, color, width: 44, height: 44, fontSize: 16, fontWeight: 700, border: `1.5px solid ${color}33` }}>
-              {initials}
-            </div>
-              <div style={{ minWidth: 0 }}>
-                <h3 className="gc-name" style={{ margin: '0 0 4px', fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {member.name || 'Unknown'}
-                </h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <span className="gc-badge" style={{ background: color }}>
-                    <StatusIcon status={status} size={10} /> {status.toUpperCase()}
-                  </span>
-                  {member.hasWonAuction ? (
-                    <span style={{ 
-                      display: 'inline-flex', 
-                      alignItems: 'center', 
-                      gap: 4, 
-                      background: '#fef3c7', 
-                      color: '#b45309', 
-                      border: '1px solid #fde68a', 
-                      padding: '2px 8px', 
-                      borderRadius: 100, 
-                      fontSize: 10, 
-                      fontWeight: 700 
-                    }}>
-                      <ShieldCheck size={11} color="#d97706" /> Prize Received {member.auctionPrize?.amountTaken ? `(₹${Number(member.auctionPrize.amountTaken).toLocaleString('en-IN')})` : ''}
-                    </span>
-                  ) : (
-                    <span style={{ 
-                      display: 'inline-flex', 
-                      alignItems: 'center', 
-                      gap: 4, 
-                      background: '#f1f5f9', 
-                      color: '#64748b', 
-                      border: '1px solid #e2e8f0', 
-                      padding: '2px 8px', 
-                      borderRadius: 100, 
-                      fontSize: 10, 
-                      fontWeight: 600 
-                    }}>
-                      Eligible for Auction
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-        {/* Content */}
-        <div className="gc-content" style={{ padding: '0 20px 16px' }}>
-          <div className="mg-card-metrics-grid" style={{ marginBottom: 12, padding: '10px 12px' }}>
-            <div className="mg-metric-item">
-              <span className="mg-metric-lbl">
-                <RiPhoneLine size={12} color="#64748b" /> Contact
-              </span>
-              <strong className="mg-metric-val" style={{ fontSize: 13 }}>{member.phone || '--'}</strong>
-            </div>
-            <div className="mg-metric-item">
-              <span className="mg-metric-lbl">
-                <RiMoneyDollarCircleLine size={12} color="#10b981" /> Due / Month
-              </span>
-              <strong className="mg-metric-val" style={{ fontSize: 13, color: '#0B140E' }}>
-                {formatCurrency(payment?.amount || monthlyAmount)}
-              </strong>
-            </div>
-          </div>
-
-          {payment?.paidDate && (
-            <p style={{ margin: '0 0 8px', fontSize: 12, color: '#2E7D32', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <RiCheckLine size={13} /> Paid on {formatDate(payment.paidDate)}
-            </p>
-          )}
-
-          {payment?.receiptNumber && (
-            <p style={{ margin: 0, fontSize: 11, color: '#6B7A6E', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <RiFileListLine size={11} /> {payment.receiptNumber}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Action Footer */}
-      <div className="gc-footer" style={{ padding: '12px 20px', borderTop: '1px solid #f1f5f9', background: '#fafbfc' }}>
-        <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center' }}>
-          {/* Quick Accept Button for fast admin processing */}
-          {!isPaid ? (
-            <button 
-              className="reports-refresh-btn" 
-              style={{ 
-                flex: 1.4, 
-                background: '#2E7D32', 
-                borderColor: '#2E7D32', 
-                color: '#ffffff', 
-                justifyContent: 'center', 
-                fontWeight: 700, 
-                height: 36,
-                padding: '6px 12px',
-                boxShadow: '0 2px 6px rgba(46, 125, 50, 0.2)'
-              }} 
-              disabled={isUpdating}
-              onClick={() => onQuickAccept(member, payment)}
-              title="Accept & Confirm Payment directly"
-            >
-              {isUpdating ? <RiLoader4Line size={14} className="spin-anim" /> : <RiCheckLine size={15} color="#ffffff" />} 
-              <span style={{ fontSize: 12 }}>Accept Payment</span>
-            </button>
-          ) : (
-            <button 
-              className="reports-refresh-btn" 
-              style={{ 
-                flex: 1.4, 
-                background: '#E8F5E9', 
-                borderColor: '#C8E6C9', 
-                color: '#2E7D32', 
-                justifyContent: 'center', 
-                fontWeight: 700, 
-                height: 36,
-                padding: '6px 12px',
-                cursor: 'default'
-              }}
-              title="Payment Confirmed"
-            >
-              <RiCheckCircleLine size={15} color="#2E7D32" /> 
-              <span style={{ fontSize: 12 }}>Accepted</span>
-            </button>
-          )}
-
-          <button 
-            className="reports-refresh-btn" 
-            style={{ padding: '6px 10px', height: 36, flex: 0.8, justifyContent: 'center' }} 
-            onClick={() => onEdit(member, payment)}
-            title="Edit Status"
-          >
-            <RiEditLine size={13} /> <span style={{ fontSize: 12 }}>Edit</span>
-          </button>
-
-          <button 
-            className="reports-refresh-btn" 
-            style={{ padding: '6px 10px', height: 36, flex: 0.8, justifyContent: 'center' }} 
-            onClick={() => onChitCard(member)}
-            title="View Full Ledger History"
-          >
-            <RiHistoryLine size={13} /> <span style={{ fontSize: 12 }}>Ledger</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ════════════════════════════════════════════════════════════════
    MEMBER DETAILS PANEL  (Live Data Synchronized)
 ════════════════════════════════════════════════════════════════ */
 const MemberDetailsPanel = ({ group, onClose, onRefreshParent }) => {
@@ -401,7 +235,6 @@ const MemberDetailsPanel = ({ group, onClose, onRefreshParent }) => {
     return { paid, pending, overdue, collected };
   }, [members, selMonth, selYear, monthlyAmt]);
 
-  const [viewMode, setViewMode] = useState('table');
   const [searchMember, setSearchMember] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -706,31 +539,11 @@ const MemberDetailsPanel = ({ group, onClose, onRefreshParent }) => {
               </button>
             )}
           </div>
-
-          <div className="rp-view-toggle">
-            <button
-              type="button"
-              className={`rp-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
-              onClick={() => setViewMode('table')}
-              title="Table View"
-            >
-              <RiList size={14} /> Table
-            </button>
-            <button
-              type="button"
-              className={`rp-toggle-btn ${viewMode === 'cards' ? 'active' : ''}`}
-              onClick={() => setViewMode('cards')}
-              title="Card Grid View"
-            >
-              <RiLayoutGrid size={14} /> Cards
-            </button>
-          </div>
         </div>
       </div>
 
       {/* ── Table View ── */}
-      {viewMode === 'table' ? (
-        <div className="rp-table-container">
+      <div className="rp-table-container">
           <div className="rp-table-wrapper">
             <table className="rp-table">
               <thead>
@@ -941,50 +754,6 @@ const MemberDetailsPanel = ({ group, onClose, onRefreshParent }) => {
             </table>
           </div>
         </div>
-      ) : (
-        /* ── Members Card Grid View ── */
-        <div className={filteredMembers.length === 0 && !loading ? "" : "rn-list"}>
-          {loading ? (
-            <>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="gc-card mg-enhanced-card skeleton-pulse" style={{ pointerEvents: 'none', height: 210 }}>
-                  <div style={{ padding: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                      <div style={{ width: 42, height: 42, borderRadius: '50%', background: '#e2e8f0' }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ width: '60%', height: 16, background: '#e2e8f0', borderRadius: 4, marginBottom: 6 }} />
-                        <div style={{ width: '30%', height: 12, background: '#e2e8f0', borderRadius: 4 }} />
-                      </div>
-                    </div>
-                    <div style={{ height: 40, background: '#f8fafc', borderRadius: 8, marginBottom: 14 }} />
-                    <div style={{ height: 32, background: '#e2e8f0', borderRadius: 6 }} />
-                  </div>
-                </div>
-              ))}
-            </>
-          ) : filteredMembers.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)', background: '#ffffff', borderRadius: 12, border: '1px solid #DCE3DC' }}>
-              <RiGroupLine size={56} color="var(--border)" style={{ marginBottom: 16 }} />
-              <h3 style={{ margin: '0 0 6px', fontSize: 18, color: '#0B140E' }}>No Members Enrolled</h3>
-              <p style={{ margin: 0, fontSize: 14, color: '#6B7A6E' }}>There are no registered members associated with this chit group.</p>
-            </div>
-          ) : (
-            filteredMembers.map(m => (
-              <MemberCard
-                key={m.userId || m.id}
-                member={m}
-                monthlyAmount={monthlyAmt}
-                selMonth={selMonth}
-                selYear={selYear}
-                onChitCard={setChitCardMember}
-                onEdit={(mem, pay) => { setEditTarget(mem); setEditPayment(pay); }}
-                onQuickAccept={handleQuickAccept}
-                isUpdating={updatingMemberId === (m.id || m.userId)}
-              />
-            ))
-          )}
-        </div>
-      )}
 
       {/* Chit Card Panel */}
       {chitCardMember && (
