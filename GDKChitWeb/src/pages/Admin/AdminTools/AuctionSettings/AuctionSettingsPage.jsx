@@ -12,7 +12,8 @@ const DEFAULT_AUCTION_CONFIG = {
   minBidStep: 1000,
   maxDiscountPercent: 30,
   autoExtendOnLastSeconds: true,
-  extendSeconds: 30,
+  extendMinutes: 1,
+  extendSeconds: 60,
   defaultAuctionDay: 10,
   foremanCommissionPercent: 5
 };
@@ -29,11 +30,14 @@ const AuctionSettingsPage = () => {
       try {
         const parsed = JSON.parse(stored);
         const mins = parsed.defaultDurationMinutes || Math.round((parsed.defaultDurationSeconds || 300) / 60);
+        const extMins = parsed.extendMinutes || (parsed.extendSeconds ? Math.max(1, Math.round(parsed.extendSeconds / 60)) : 1);
         setSettings({
           ...DEFAULT_AUCTION_CONFIG,
           ...parsed,
           defaultDurationMinutes: mins,
-          defaultDurationSeconds: mins * 60
+          defaultDurationSeconds: mins * 60,
+          extendMinutes: extMins,
+          extendSeconds: extMins * 60
         });
       } catch (e) {}
     }
@@ -54,12 +58,27 @@ const AuctionSettingsPage = () => {
     setIsDirty(true);
   };
 
+  const handleExtendMinutesChange = (mins) => {
+    const validMins = Math.max(1, Math.min(10, mins));
+    setSettings(prev => ({
+      ...prev,
+      extendMinutes: validMins,
+      extendSeconds: validMins * 60
+    }));
+    setIsDirty(true);
+  };
+
   const handleSave = (e) => {
     e.preventDefault();
 
     const durationMins = settings.defaultDurationMinutes || Math.round(settings.defaultDurationSeconds / 60);
     if (durationMins < 1 || durationMins > 60) {
       alert('Auction duration must be between 1 minute and 60 minutes.');
+      return;
+    }
+    const extMins = settings.extendMinutes || Math.max(1, Math.round((settings.extendSeconds || 60) / 60));
+    if (settings.autoExtendOnLastSeconds && (extMins < 1 || extMins > 10)) {
+      alert('Dynamic clock extension must be between 1 minute and 10 minutes.');
       return;
     }
     if (settings.minBidStep < 100) {
@@ -78,7 +97,9 @@ const AuctionSettingsPage = () => {
     const payload = {
       ...settings,
       defaultDurationMinutes: durationMins,
-      defaultDurationSeconds: durationMins * 60
+      defaultDurationSeconds: durationMins * 60,
+      extendMinutes: extMins,
+      extendSeconds: extMins * 60
     };
 
     localStorage.setItem('admin_auction_settings', JSON.stringify(payload));
@@ -201,7 +222,7 @@ const AuctionSettingsPage = () => {
                 />
                 <div>
                   <strong>Enable Dynamic Clock Extension (Anti-Sniping)</strong>
-                  <p>Extends remaining timer by {settings.extendSeconds}s if a bid is placed in closing seconds</p>
+                  <p>Extends remaining timer by {settings.extendMinutes || 1} min ({((settings.extendMinutes || 1) * 60)}s) if a bid is placed in closing minutes</p>
                 </div>
               </label>
             </div>
@@ -209,30 +230,30 @@ const AuctionSettingsPage = () => {
             {settings.autoExtendOnLastSeconds && (
               <div className="asp-field">
                 <label className="asp-label">
-                  Extension Duration (Seconds)
-                  <span className="asp-hint">+{settings.extendSeconds}s per late bid</span>
+                  Extension Duration (Minutes)
+                  <span className="asp-hint">+{(settings.extendMinutes || 1) * 60} seconds per late bid</span>
                 </label>
                 <div className="asp-input-wrapper">
                   <input
                     type="number"
-                    min="10"
-                    max="120"
-                    step="5"
+                    min="1"
+                    max="10"
+                    step="1"
                     className="asp-input"
-                    value={settings.extendSeconds}
-                    onChange={e => handleChange('extendSeconds', Number(e.target.value))}
+                    value={settings.extendMinutes || 1}
+                    onChange={e => handleExtendMinutesChange(Number(e.target.value))}
                   />
-                  <span className="asp-unit-tag">sec</span>
+                  <span className="asp-unit-tag">min</span>
                 </div>
                 <div className="asp-preset-pills">
-                  {[15, 30, 45, 60].map(secs => (
+                  {[1, 2, 3, 5].map(mins => (
                     <button
-                      key={secs}
+                      key={mins}
                       type="button"
-                      className={`asp-pill ${settings.extendSeconds === secs ? 'active' : ''}`}
-                      onClick={() => handleChange('extendSeconds', secs)}
+                      className={`asp-pill ${(settings.extendMinutes || 1) === mins ? 'active' : ''}`}
+                      onClick={() => handleExtendMinutesChange(mins)}
                     >
-                      +{secs}s {secs === 30 ? '(Recommended)' : ''}
+                      +{mins} min{mins > 1 ? 's' : ''} {mins === 1 ? '(Standard)' : ''}
                     </button>
                   ))}
                 </div>
