@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Gavel, ArrowLeft, Check, Timer, TrendingDown, ShieldAlert,
-  Percent, Calendar, Save, RotateCcw, AlertCircle, Info, Zap
+  Percent, Save, RotateCcw, AlertCircle, Info, Zap
 } from 'lucide-react';
 import './AuctionSettingsPage.css';
 
@@ -275,83 +275,120 @@ const AuctionSettingsPage = () => {
           </div>
 
           <div className="asp-form-body">
+            {/* Minimum Bid Step */}
             <div className="asp-field">
               <label className="asp-label">
                 Minimum Bid Decrement Step (₹)
                 <span className="asp-hint">Smallest reduction permitted per bid</span>
               </label>
-              <input
-                type="number"
-                min="100"
-                step="100"
-                className="asp-input"
-                value={settings.minBidStep}
-                onChange={e => handleChange('minBidStep', Number(e.target.value))}
-              />
+              <div className="asp-input-wrapper">
+                <input
+                  type="number"
+                  min="100"
+                  step="100"
+                  className="asp-input"
+                  value={settings.minBidStep}
+                  onChange={e => handleChange('minBidStep', Number(e.target.value))}
+                />
+                <span className="asp-unit-tag">₹</span>
+              </div>
+              <div className="asp-preset-pills">
+                {[500, 1000, 2000, 5000].map(step => (
+                  <button
+                    key={step}
+                    type="button"
+                    className={`asp-pill ${settings.minBidStep === step ? 'active' : ''}`}
+                    onClick={() => handleChange('minBidStep', step)}
+                  >
+                    ₹{step.toLocaleString('en-IN')} {step === 1000 ? '(Standard)' : ''}
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* Foreman Commission */}
             <div className="asp-field">
               <label className="asp-label">
                 Statutory Foreman Commission (%)
                 <span className="asp-hint">Under Chit Funds Act 1982 (Standard: 5%)</span>
               </label>
-              <input
-                type="number"
-                min="1"
-                max="10"
-                step="0.5"
-                className="asp-input"
-                value={settings.foremanCommissionPercent}
-                onChange={e => handleChange('foremanCommissionPercent', Number(e.target.value))}
-              />
+              <div className="asp-input-wrapper">
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="0.5"
+                  className="asp-input"
+                  value={settings.foremanCommissionPercent}
+                  onChange={e => handleChange('foremanCommissionPercent', Number(e.target.value))}
+                />
+                <span className="asp-unit-tag">%</span>
+              </div>
+              <div className="asp-preset-pills">
+                {[4, 5, 7, 10].map(pct => (
+                  <button
+                    key={pct}
+                    type="button"
+                    className={`asp-pill ${settings.foremanCommissionPercent === pct ? 'active' : ''}`}
+                    onClick={() => handleChange('foremanCommissionPercent', pct)}
+                  >
+                    {pct}% {pct === 5 ? '(Statutory Std)' : ''}
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* Maximum Bid Discount */}
             <div className="asp-field">
               <label className="asp-label">
-                Maximum Permissible Discount Ceiling (%)
-                <span className="asp-hint">Maximum bid discount allowed (Cap: 30%)</span>
+                Maximum Bid Discount Ceiling (%)
+                <span className="asp-hint">Maximum allowable discount bid ({settings.maxDiscountPercent}%)</span>
               </label>
-              <input
-                type="number"
-                min="5"
-                max="40"
-                className="asp-input"
-                value={settings.maxDiscountPercent}
-                onChange={e => handleChange('maxDiscountPercent', Number(e.target.value))}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: Cycle Scheduling */}
-        <div className="asp-card" style={{ gridColumn: '1 / -1' }}>
-          <div className="asp-card-header">
-            <div className="asp-icon-badge" style={{ background: '#fdf6f0', color: '#a3704c' }}>
-              <Calendar size={20} />
-            </div>
-            <div>
-              <h2 className="asp-card-title">Recurring Monthly Cycle Schedules</h2>
-              <p className="asp-card-desc">Default day of month assigned for reverse auctions</p>
-            </div>
-          </div>
-
-          <div className="asp-form-body">
-            <div className="asp-field" style={{ maxWidth: 440 }}>
-              <label className="asp-label">
-                Default Monthly Auction Date
-                <span className="asp-hint">Recurring monthly bidding day</span>
-              </label>
-              <select
-                className="asp-input"
-                value={settings.defaultAuctionDay}
-                onChange={e => handleChange('defaultAuctionDay', Number(e.target.value))}
-              >
-                {Array.from({ length: 28 }).map((_, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    {i + 1}th of every month
-                  </option>
+              <div className="asp-input-wrapper">
+                <input
+                  type="number"
+                  min="5"
+                  max="40"
+                  step="1"
+                  className="asp-input"
+                  value={settings.maxDiscountPercent}
+                  onChange={e => handleChange('maxDiscountPercent', Math.max(5, Math.min(40, Number(e.target.value))))}
+                />
+                <span className="asp-unit-tag">%</span>
+              </div>
+              <div className="asp-preset-pills">
+                {[20, 25, 30, 35, 40].map(pct => (
+                  <button
+                    key={pct}
+                    type="button"
+                    className={`asp-pill ${settings.maxDiscountPercent === pct ? 'active' : ''}`}
+                    onClick={() => handleChange('maxDiscountPercent', pct)}
+                  >
+                    {pct}% {pct === 30 ? '(Standard)' : pct === 40 ? '(Statutory Max)' : ''}
+                  </button>
                 ))}
-              </select>
+              </div>
+
+              {/* Live Calculation Preview */}
+              <div className="asp-calc-preview">
+                <div className="asp-calc-title">
+                  <span>💡 Live Calculation Preview (Example on ₹1,00,000 Scheme)</span>
+                </div>
+                <div className="asp-calc-grid">
+                  <div className="asp-calc-item">
+                    <span className="asp-calc-label">Max Bid Discount</span>
+                    <span className="asp-calc-value">₹{Math.round((100000 * (settings.maxDiscountPercent || 30)) / 100).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="asp-calc-item">
+                    <span className="asp-calc-label">Min Prize Money</span>
+                    <span className="asp-calc-value highlight">₹{Math.round(100000 - (100000 * (settings.maxDiscountPercent || 30)) / 100).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="asp-calc-item">
+                    <span className="asp-calc-label">Est. Dividend Pool</span>
+                    <span className="asp-calc-value">₹{Math.round(Math.max(0, (100000 * (settings.maxDiscountPercent || 30)) / 100 - (100000 * (settings.foremanCommissionPercent || 5)) / 100)).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
