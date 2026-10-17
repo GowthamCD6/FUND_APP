@@ -1082,12 +1082,12 @@ exports.getCompletedAuctions = async (req, res) => {
             SELECT winner_user_id, winner_name, winner_member_phone, amount_taken, auction_date, collection_period, updated_at
             FROM group_auction_winners
             WHERE group_id = ? AND deleted_at IS NULL
-            ORDER BY updated_at DESC
+            ORDER BY collection_period ASC, auction_date ASC
         `;
         const [winners] = await db.promise().query(sqlWinners, [groupIdNum]);
 
-        const completedAuctions = winners.map(winner => {
-            const wDate = new Date(winner.updated_at).getTime();
+        const completedAuctions = winners.map((winner, index) => {
+            const wDate = new Date(winner.updated_at || winner.auction_date).getTime();
             let matchedAuction = auctions.find(a => {
                 const aDate = new Date(a.updated_at).getTime();
                 return Math.abs(aDate - wDate) < 1000 * 60 * 60 * 24;
@@ -1095,6 +1095,8 @@ exports.getCompletedAuctions = async (req, res) => {
 
             return {
                 id: winner.collection_period + '-' + winner.winner_name,
+                cycle_month: index + 1,
+                winner_user_id: winner.winner_user_id,
                 winner_name: winner.winner_name,
                 winner_member_phone: winner.winner_member_phone,
                 amount_taken: winner.amount_taken,

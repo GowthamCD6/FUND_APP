@@ -10,7 +10,8 @@ import {
   Play as RiPlayLine, Pause as RiPauseLine, RotateCcw as RiResetLine, Timer as RiTimerLine,
   Trophy as RiTrophyLine, Crown as RiCrownLine, History as RiHistoryLine, Zap as RiZapLine,
   Wifi as RiWifiLine, WifiOff as RiWifiOffLine, UserCheck as RiUserCheckLine,
-  Clock as RiTimeLine, CircleDollarSign as RiMoneyDollarCircleLine, Calendar as RiCalendarLine
+  Clock as RiTimeLine, CircleDollarSign as RiMoneyDollarCircleLine, Calendar as RiCalendarLine,
+  Phone as RiPhoneLine, CheckCircle2 as RiCheckCircle2, ArrowRight as RiArrowRightLine
 } from 'lucide-react';
 import './Auction.css';
 import BettingAuction from './components/BettingAuction.jsx';
@@ -73,6 +74,9 @@ const Auction = () => {
   const [drawMode, setDrawMode] = useState('random'); // 'random' | 'manual'
   const [selectedWinnerId, setSelectedWinnerId] = useState(null);
   const [auctionCycleMonth, setAuctionCycleMonth] = useState(1);
+  const [completedAuctions, setCompletedAuctions] = useState([]);
+  const [loadingCompletedAuctions, setLoadingCompletedAuctions] = useState(false);
+  const [isOverridingCompletedMonth, setIsOverridingCompletedMonth] = useState(false);
 
   const unsubscribeRef = useRef([]);
   const timerRef = useRef(null);
@@ -244,14 +248,98 @@ const Auction = () => {
     fetchGroups();
   }, []);
 
-  // Load members for selected group
+  const fetchCompletedAuctions = useCallback(async (groupId) => {
+    if (!groupId) {
+      setCompletedAuctions([]);
+      return;
+    }
+    try {
+      setLoadingCompletedAuctions(true);
+      const res = await makeRequest(`/admin/groups/getCompletedAuctions?groupId=${groupId}`);
+      const data = await safeJson(res);
+      if (data.success && Array.isArray(data.data)) {
+        setCompletedAuctions(data.data);
+      } else {
+        setCompletedAuctions([]);
+      }
+    } catch (err) {
+      console.error('Error fetching completed auctions:', err);
+      setCompletedAuctions([]);
+    } finally {
+      setLoadingCompletedAuctions(false);
+    }
+  }, []);
+
+  const getWinnerForCycle = useCallback((cycleNum) => {
+    if (!completedAuctions || completedAuctions.length === 0) return null;
+
+    // 1. Direct cycle_month match if present
+    const byCycle = completedAuctions.find(ca => Number(ca.cycle_month) === Number(cycleNum));
+    if (byCycle) return byCycle;
+
+    // 2. Match by calculated collection_period from group start date
+    const startDt = selectedGroup?.startDate ? new Date(selectedGroup.startDate) : null;
+    if (startDt && !isNaN(startDt.getTime())) {
+      const targetDate = new Date(startDt.getFullYear(), startDt.getMonth() + (cycleNum - 1), 1);
+      const targetYear = targetDate.getFullYear();
+      const targetMonth = targetDate.getMonth();
+      const padMonth = String(targetMonth + 1).padStart(2, '0');
+      const targetPeriodStr = `${targetYear}-${padMonth}`;
+
+      const dateMatch = completedAuctions.find(ca => {
+        if (!ca.collection_period) return false;
+        const cpStr = String(ca.collection_period);
+        if (cpStr.includes(targetPeriodStr)) return true;
+        const cpDt = new Date(ca.collection_period);
+        if (!isNaN(cpDt.getTime())) {
+          return (
+            (cpDt.getFullYear() === targetYear && cpDt.getMonth() === targetMonth) ||
+            (cpDt.getUTCFullYear() === targetYear && cpDt.getUTCMonth() === targetMonth)
+          );
+        }
+        return false;
+      });
+      if (dateMatch) return dateMatch;
+    }
+
+    // 3. Fallback: match by sequential index
+    if (completedAuctions[cycleNum - 1]) {
+      return completedAuctions[cycleNum - 1];
+    }
+
+    return null;
+  }, [completedAuctions, selectedGroup?.startDate]);
+
+  const firstPendingMonth = useMemo(() => {
+    const duration = Number(selectedGroup?.duration || 20);
+    for (let c = 1; c <= duration; c++) {
+      if (!getWinnerForCycle(c)) return c;
+    }
+    return duration;
+  }, [selectedGroup?.duration, getWinnerForCycle]);
+
+  const currentCycleWinner = useMemo(() => {
+    return getWinnerForCycle(auctionCycleMonth);
+  }, [getWinnerForCycle, auctionCycleMonth]);
+
+  const handleSelectCycleMonth = (cycleNum) => {
+    setAuctionCycleMonth(cycleNum);
+    setIsOverridingCompletedMonth(false);
+    setPageNotice({ text: '', type: 'error' });
+  };
+
+  // Load members and auction records for selected group
   const handleSelectGroup = async (group) => {
     setSelectedGroup(group);
     setLoadingMembers(true);
     setSelectedMembers([]);
+    setIsOverridingCompletedMonth(false);
     const initialCycle = group?.completedCycles ? Number(group.completedCycles) + 1 : 1;
     setAuctionCycleMonth(initialCycle);
     setPoolAmount(group?.groupAmount ? String(group.groupAmount) : '');
+
+    fetchCompletedAuctions(group.id);
+
     try {
       const res = await makeRequest(`/admin/groups/getMembers?groupId=${group.id}`);
       const data = await safeJson(res);
@@ -528,6 +616,9 @@ const Auction = () => {
         }
 
         setSuccessMessage(`${auctionResult.winner.name} successfully registered as winner!`);
+        if (selectedGroup?.id) {
+          fetchCompletedAuctions(selectedGroup.id);
+        }
         setTimeout(() => {
           setSuccessMessage('');
           setShowResultModal(false);
@@ -967,222 +1058,473 @@ const Auction = () => {
 
             {/* Month Cycle Selector (1, 2, 3...) */}
             <div style={{ marginBottom: 16, background: '#faf5ff', padding: '12px 14px', borderRadius: 10, border: '1px solid #e9d5ff' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                 <span style={{ fontSize: 12, fontWeight: 800, color: '#6b46c1', letterSpacing: '0.4px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <RiCalendarLine size={14} />
                   AUCTION CYCLE: MONTH {auctionCycleMonth} OF {selectedGroup.duration || 20}
                 </span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#7c3aed' }}>
-                  Select Cycle Month
+                <span style={{ 
+                  fontSize: 11, 
+                  fontWeight: 700, 
+                  color: '#6b46c1', 
+                  background: '#f3e8ff', 
+                  border: '1px solid #d8b4fe',
+                  padding: '2px 8px', 
+                  borderRadius: 12, 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: 4 
+                }}>
+                  <RiTrophyLine size={12} color="#7c3aed" />
+                  {completedAuctions.length} of {selectedGroup.duration || 20} Completed
                 </span>
               </div>
               <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
                 {Array.from({ length: Number(selectedGroup.duration || 20) }, (_, i) => i + 1).map(cycleNum => {
                   const isSelected = auctionCycleMonth === cycleNum;
+                  const cycleWinner = getWinnerForCycle(cycleNum);
+                  const isDone = Boolean(cycleWinner);
                   return (
                     <button
                       key={cycleNum}
                       type="button"
-                      onClick={() => setAuctionCycleMonth(cycleNum)}
+                      onClick={() => handleSelectCycleMonth(cycleNum)}
                       style={{
-                        padding: '5px 12px',
-                        borderRadius: 6,
+                        padding: '6px 12px',
+                        borderRadius: 7,
                         fontSize: 12,
                         fontWeight: 700,
                         cursor: 'pointer',
                         whiteSpace: 'nowrap',
-                        border: isSelected ? '1px solid #5b21b6' : '1px solid #e2e8f0',
-                        background: isSelected ? '#6b46c1' : '#ffffff',
-                        color: isSelected ? '#ffffff' : '#475569',
-                        boxShadow: isSelected ? '0 1px 3px rgba(107, 70, 193, 0.2)' : 'none'
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        border: isSelected 
+                          ? '1.5px solid #5b21b6' 
+                          : isDone 
+                            ? '1.5px solid #86efac' 
+                            : '1px solid #e2e8f0',
+                        background: isSelected 
+                          ? '#6b46c1' 
+                          : isDone 
+                            ? '#f0fdf4' 
+                            : '#ffffff',
+                        color: isSelected 
+                          ? '#ffffff' 
+                          : isDone 
+                            ? '#15803d' 
+                            : '#475569',
+                        boxShadow: isSelected ? '0 1px 4px rgba(107, 70, 193, 0.25)' : 'none',
+                        transition: 'all 0.15s ease'
                       }}
                     >
-                      Month {cycleNum}
+                      <span>Month {cycleNum}</span>
+                      {isDone && (
+                        <RiCheckLine 
+                          size={13} 
+                          color={isSelected ? '#ffffff' : '#16a34a'} 
+                          strokeWidth={3} 
+                        />
+                      )}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Auction Type Selection */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1B3322', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Auction Type
-              </label>
-              <div style={{ display: 'flex', gap: 10, background: '#E8ECE8', padding: 4, borderRadius: 8 }}>
-                <button
-                  type="button"
-                  style={{
-                    flex: 1, padding: '10px 14px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13.5, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    backgroundColor: auctionType === 'betting' ? '#ffffff' : 'transparent',
-                    color: auctionType === 'betting' ? '#1B3322' : '#4A564C',
-                    boxShadow: auctionType === 'betting' ? '0 1px 4px rgba(27, 51, 34, 0.1)' : 'none',
-                  }}
-                  onClick={() => setAuctionType('betting')}
-                >
-                  <RiGavelLine size={15} />
-                  Betting Auction
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    flex: 1, padding: '10px 14px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13.5, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    backgroundColor: auctionType === 'random' ? '#ffffff' : 'transparent',
-                    color: auctionType === 'random' ? '#1B3322' : '#4A564C',
-                    boxShadow: auctionType === 'random' ? '0 1px 4px rgba(27, 51, 34, 0.1)' : 'none',
-                  }}
-                  onClick={() => setAuctionType('random')}
-                >
-                  <RiDiceLine size={15} />
-                  Random Draw
-                </button>
-              </div>
-            </div>
+            {/* ═══ VIEW 1: MONTH AUCTION ALREADY COMPLETED (FETCHED DATA) ═══ */}
+            {currentCycleWinner && !isOverridingCompletedMonth ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', minHeight: 0 }}>
+                {/* Completed Banner */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: 12,
+                  padding: '16px',
+                  marginBottom: 16,
+                  boxShadow: '0 1px 3px rgba(16, 185, 129, 0.08)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: '#15803d',
+                      background: '#dcfce7',
+                      border: '1px solid #86efac',
+                      padding: '3px 10px',
+                      borderRadius: 20,
+                      letterSpacing: '0.5px',
+                      textTransform: 'uppercase',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5
+                    }}>
+                      <RiCheckCircle2 size={13} color="#16a34a" />
+                      Auction Completed • Month {auctionCycleMonth}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#166534' }}>
+                      Winner Registered
+                    </span>
+                  </div>
 
-            {/* Member Selection Search */}
-            <div className="mg2-picker-search-container" style={{ margin: '0 0 12px 0' }}>
-              <RiSearchLine className="mg2-picker-search-icon" size={16} />
-              <input
-                type="text"
-                className="mg2-picker-search-input"
-                placeholder="Search group members..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button className="mg2-picker-search-clear" onClick={() => setSearchQuery('')}>
-                  <RiCloseLine size={14} />
-                </button>
-              )}
-            </div>
-
-            {/* Select All Row */}
-            <div className="mg2-picker-select-all-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {(() => {
-                const eligibleMembers = members.filter(m => !m.hasWonAuction);
-                const allSelected = eligibleMembers.length > 0 && eligibleMembers.every(em => selectedMembers.some(sm => sm.userId === em.userId));
-                return (
-                  <>
-                    <button className="mg2-picker-select-all-btn" onClick={toggleSelectAllMembers}>
-                      <RiUserCheckLine size={14} /> 
-                      {allSelected ? 'Deselect All' : `Select All Eligible (${eligibleMembers.length})`}
-                    </button>
-                    {members.some(m => m.hasWonAuction) && (
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#dc2626' }}>
-                        {members.filter(m => m.hasWonAuction).length} prize claimed (ineligible)
+                  {/* Winner Spotlight Card */}
+                  <div style={{
+                    background: '#ffffff',
+                    border: '1px solid #d1fae5',
+                    borderRadius: 10,
+                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    marginBottom: 14
+                  }}>
+                    <div style={{
+                      position: 'relative',
+                      width: 50,
+                      height: 50,
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      fontSize: 16,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+                      flexShrink: 0
+                    }}>
+                      {(currentCycleWinner.winner_name || 'W').substring(0, 2).toUpperCase()}
+                      <span style={{
+                        position: 'absolute',
+                        bottom: -3,
+                        right: -3,
+                        background: '#fef08a',
+                        border: '1px solid #ca8a04',
+                        borderRadius: '50%',
+                        width: 18,
+                        height: 18,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <RiCrownLine size={11} color="#a16207" />
                       </span>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Members Picker Checklist */}
-            <div style={{ flex: 1, overflowY: 'auto', marginBottom: 20 }}>
-              {loadingMembers ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 0' }}>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="skeleton-pulse" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
-                      <div style={{ width: 18, height: 18, borderRadius: 4, background: '#e2e8f0' }} />
-                      <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#e2e8f0' }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ width: '55%', height: 13, background: '#e2e8f0', borderRadius: 4, marginBottom: 5 }} />
-                        <div style={{ width: '35%', height: 10, background: '#e2e8f0', borderRadius: 4 }} />
-                      </div>
                     </div>
-                  ))}
-                </div>
-              ) : filteredMembers.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
-                  No members match search query.
-                </div>
-              ) : (
-                <div className="mg2-picker-list" style={{ border: 'none', background: 'transparent', maxHeight: 'none' }}>
-                  {filteredMembers.map(m => {
-                    const isSelected = selectedMembers.some(sm => sm.userId === m.userId);
-                    const isIneligible = Boolean(m.hasWonAuction);
-                    return (
-                      <div 
-                        key={m.userId}
-                        className={`mg2-picker-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => toggleMemberSelection(m)}
-                        style={{ 
-                          padding: '8px 12px', 
-                          borderBottom: '1px solid #f1f5f9',
-                          background: isIneligible ? '#fff1f2' : undefined,
-                          borderColor: isIneligible ? '#fecdd3' : undefined,
-                          cursor: isIneligible ? 'not-allowed' : 'pointer'
-                        }}
-                      >
-                        <div className="mg2-picker-checkbox" style={{
-                          background: isIneligible ? '#fee2e2' : undefined,
-                          borderColor: isIneligible ? '#f87171' : undefined
-                        }}>
-                          {isIneligible ? (
-                            <RiCloseLine size={12} color="#dc2626" />
-                          ) : isSelected ? (
-                            <RiCheckLine size={12} color="#ffffff" />
-                          ) : null}
-                        </div>
-                        <div className="mg2-mem-avatar" style={{ 
-                          width: 34, 
-                          height: 34, 
-                          fontSize: 12,
-                          background: isIneligible ? '#fee2e2' : undefined,
-                          color: isIneligible ? '#b91c1c' : undefined
-                        }}>
-                          {(m.name || 'U').substring(0, 2).toUpperCase()}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                            <p className="mg2-mem-name" style={{ color: isIneligible ? '#991b1b' : undefined }}>{m.name}</p>
-                            {isIneligible && (
-                              <span style={{ 
-                                fontSize: 10, 
-                                fontWeight: 800, 
-                                color: '#b91c1c', 
-                                background: '#fee2e2', 
-                                border: '1px solid #fca5a5', 
-                                borderRadius: 4, 
-                                padding: '1px 6px',
-                                letterSpacing: '0.4px'
-                              }}>
-                                NOT ELIGIBLE
-                              </span>
-                            )}
-                          </div>
-                          <p className="mg2-mem-phone">
-                            {m.phone}
-                            {isIneligible && (
-                              <span style={{ color: '#dc2626', fontWeight: 600, marginLeft: 8 }}>
-                                • Prize Taken: {m.amountTaken ? `₹${Number(m.amountTaken).toLocaleString('en-IN')}` : 'Claimed'}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ margin: '0 0 2px', fontSize: 16, fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {currentCycleWinner.winner_name}
+                      </h3>
+                      <p style={{ margin: 0, fontSize: 12.5, color: '#64748b', display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <RiPhoneLine size={13} color="#94a3b8" />
+                        {currentCycleWinner.winner_member_phone || 'Registered Subscriber'}
+                      </p>
+                    </div>
+                  </div>
 
-            {/* Sticky Action Footer */}
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: '#475569' }}>
-                {selectedMembers.length} of {members.filter(m => !m.hasWonAuction).length} eligible selected
-                {members.some(m => m.hasWonAuction) ? ` (${members.filter(m => m.hasWonAuction).length} ineligible)` : ''}
+                  {/* Key Metrics Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: 3 }}>
+                        Prize Taken
+                      </span>
+                      <span style={{ fontSize: 17, fontWeight: 800, color: '#059669' }}>
+                        {formatCurrency(currentCycleWinner.amount_taken || 0)}
+                      </span>
+                    </div>
+                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: 3 }}>
+                        Auction Date
+                      </span>
+                      <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1e293b' }}>
+                        {currentCycleWinner.auction_date ? formatDate(currentCycleWinner.auction_date) : 'Completed'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {currentCycleWinner.auction_type && (
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                      <span style={{ color: '#059669' }}>●</span>
+                      <span>Method: <strong>{currentCycleWinner.auction_type === 'betting' ? 'Reverse Betting Auction' : 'Random Lucky Draw'}</strong></span>
+                    </div>
+                  )}
+
+                  {/* Informational callout */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
+                    ℹ️ The auction prize for <strong>Month {auctionCycleMonth}</strong> has already been awarded to <strong>{currentCycleWinner.winner_name}</strong>. Members who have won in past months are marked ineligible for future draws.
+                  </div>
+                </div>
+
+                {/* Quick Action Navigation */}
+                <div style={{ marginTop: 'auto', borderTop: '1px solid #e2e8f0', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {firstPendingMonth && firstPendingMonth !== auctionCycleMonth && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCycleMonth(firstPendingMonth)}
+                      style={{
+                        width: '100%',
+                        padding: '11px 16px',
+                        background: 'linear-gradient(135deg, #6b46c1 0%, #4c1d95 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: 8,
+                        fontWeight: 700,
+                        fontSize: 13.5,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        boxShadow: '0 2px 4px rgba(107, 70, 193, 0.25)'
+                      }}
+                    >
+                      <span>Jump to Next Pending: Month {firstPendingMonth}</span>
+                      <RiArrowRightLine size={16} />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setIsOverridingCompletedMonth(true)}
+                    style={{
+                      width: '100%',
+                      padding: '9px 14px',
+                      background: 'transparent',
+                      color: '#b91c1c',
+                      border: '1px dashed #fca5a5',
+                      borderRadius: 8,
+                      fontWeight: 600,
+                      fontSize: 12.5,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <RiResetLine size={14} />
+                    <span>Re-run / Overwrite Month {auctionCycleMonth} Auction</span>
+                  </button>
+                </div>
               </div>
-              <button 
-                className="mg2-modal-save-btn" 
-                style={{ flex: 'none', padding: '10px 24px' }}
-                disabled={selectedMembers.length < 2}
-                onClick={startAuctionSetup}
-              >
-                <span>Start {auctionType === 'betting' ? 'Bidding' : 'Draw'}</span>
-                <RiChevronRightLine size={16} />
-              </button>
-            </div>
+            ) : (
+              /* ═══ VIEW 2: ACTIVE DRAW CONFIGURATION & MEMBER PICKER ═══ */
+              <>
+                {/* Re-run Notice Banner if in override mode */}
+                {isOverridingCompletedMonth && currentCycleWinner && (
+                  <div style={{
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: 8,
+                    padding: '10px 12px',
+                    marginBottom: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10
+                  }}>
+                    <div style={{ fontSize: 12, color: '#991b1b', lineHeight: 1.4 }}>
+                      <strong>Re-run Mode:</strong> Overwriting Month {auctionCycleMonth} (previous: {currentCycleWinner.winner_name}).
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsOverridingCompletedMonth(false)}
+                      style={{
+                        background: '#ffffff',
+                        border: '1px solid #fca5a5',
+                        borderRadius: 5,
+                        padding: '4px 10px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: '#b91c1c',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel Re-run
+                    </button>
+                  </div>
+                )}
+
+                {/* Auction Type Selection */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1B3322', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Auction Type
+                  </label>
+                  <div style={{ display: 'flex', gap: 10, background: '#E8ECE8', padding: 4, borderRadius: 8 }}>
+                    <button
+                      type="button"
+                      style={{
+                        flex: 1, padding: '10px 14px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13.5, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        backgroundColor: auctionType === 'betting' ? '#ffffff' : 'transparent',
+                        color: auctionType === 'betting' ? '#1B3322' : '#4A564C',
+                        boxShadow: auctionType === 'betting' ? '0 1px 4px rgba(27, 51, 34, 0.1)' : 'none',
+                      }}
+                      onClick={() => setAuctionType('betting')}
+                    >
+                      <RiGavelLine size={15} />
+                      Betting Auction
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        flex: 1, padding: '10px 14px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13.5, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        backgroundColor: auctionType === 'random' ? '#ffffff' : 'transparent',
+                        color: auctionType === 'random' ? '#1B3322' : '#4A564C',
+                        boxShadow: auctionType === 'random' ? '0 1px 4px rgba(27, 51, 34, 0.1)' : 'none',
+                      }}
+                      onClick={() => setAuctionType('random')}
+                    >
+                      <RiDiceLine size={15} />
+                      Random Draw
+                    </button>
+                  </div>
+                </div>
+
+                {/* Member Selection Search */}
+                <div className="mg2-picker-search-container" style={{ margin: '0 0 12px 0' }}>
+                  <RiSearchLine className="mg2-picker-search-icon" size={16} />
+                  <input
+                    type="text"
+                    className="mg2-picker-search-input"
+                    placeholder="Search group members..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button className="mg2-picker-search-clear" onClick={() => setSearchQuery('')}>
+                      <RiCloseLine size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Select All Row */}
+                <div className="mg2-picker-select-all-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  {(() => {
+                    const eligibleMembers = members.filter(m => !m.hasWonAuction);
+                    const allSelected = eligibleMembers.length > 0 && eligibleMembers.every(em => selectedMembers.some(sm => sm.userId === em.userId));
+                    return (
+                      <>
+                        <button className="mg2-picker-select-all-btn" onClick={toggleSelectAllMembers}>
+                          <RiUserCheckLine size={14} /> 
+                          {allSelected ? 'Deselect All' : `Select All Eligible (${eligibleMembers.length})`}
+                        </button>
+                        {members.some(m => m.hasWonAuction) && (
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#dc2626' }}>
+                            {members.filter(m => m.hasWonAuction).length} prize claimed (ineligible)
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+
+                {/* Members Picker Checklist */}
+                <div style={{ flex: 1, overflowY: 'auto', marginBottom: 20 }}>
+                  {loadingMembers ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 0' }}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="skeleton-pulse" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
+                          <div style={{ width: 18, height: 18, borderRadius: 4, background: '#e2e8f0' }} />
+                          <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#e2e8f0' }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ width: '55%', height: 13, background: '#e2e8f0', borderRadius: 4, marginBottom: 5 }} />
+                            <div style={{ width: '35%', height: 10, background: '#e2e8f0', borderRadius: 4 }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : filteredMembers.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+                      No members match search query.
+                    </div>
+                  ) : (
+                    <div className="mg2-picker-list" style={{ border: 'none', background: 'transparent', maxHeight: 'none' }}>
+                      {filteredMembers.map(m => {
+                        const isSelected = selectedMembers.some(sm => sm.userId === m.userId);
+                        const isIneligible = Boolean(m.hasWonAuction);
+                        return (
+                          <div 
+                            key={m.userId}
+                            className={`mg2-picker-item ${isSelected ? 'selected' : ''}`}
+                            onClick={() => toggleMemberSelection(m)}
+                            style={{ 
+                              padding: '8px 12px', 
+                              borderBottom: '1px solid #f1f5f9',
+                              background: isIneligible ? '#fff1f2' : undefined,
+                              borderColor: isIneligible ? '#fecdd3' : undefined,
+                              cursor: isIneligible ? 'not-allowed' : 'pointer'
+                            }}
+                          >
+                            <div className="mg2-picker-checkbox" style={{
+                              background: isIneligible ? '#fee2e2' : undefined,
+                              borderColor: isIneligible ? '#f87171' : undefined
+                            }}>
+                              {isIneligible ? (
+                                <RiCloseLine size={12} color="#dc2626" />
+                              ) : isSelected ? (
+                                <RiCheckLine size={12} color="#ffffff" />
+                              ) : null}
+                            </div>
+                            <div className="mg2-mem-avatar" style={{ 
+                              width: 34, 
+                              height: 34, 
+                              fontSize: 12,
+                              background: isIneligible ? '#fee2e2' : undefined,
+                              color: isIneligible ? '#b91c1c' : undefined
+                            }}>
+                              {(m.name || 'U').substring(0, 2).toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                                <p className="mg2-mem-name" style={{ color: isIneligible ? '#991b1b' : undefined }}>{m.name}</p>
+                                {isIneligible && (
+                                  <span style={{ 
+                                    fontSize: 10, 
+                                    fontWeight: 800, 
+                                    color: '#b91c1c', 
+                                    background: '#fee2e2', 
+                                    border: '1px solid #fca5a5', 
+                                    borderRadius: 4, 
+                                    padding: '1px 6px',
+                                    letterSpacing: '0.4px'
+                                  }}>
+                                    NOT ELIGIBLE
+                                  </span>
+                                )}
+                              </div>
+                              <p className="mg2-mem-phone">
+                                {m.phone}
+                                {isIneligible && (
+                                  <span style={{ color: '#dc2626', fontWeight: 600, marginLeft: 8 }}>
+                                    • Prize Taken: {m.amountTaken ? `₹${Number(m.amountTaken).toLocaleString('en-IN')}` : 'Claimed'}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Sticky Action Footer */}
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: '#475569' }}>
+                    {selectedMembers.length} of {members.filter(m => !m.hasWonAuction).length} eligible selected
+                    {members.some(m => m.hasWonAuction) ? ` (${members.filter(m => m.hasWonAuction).length} ineligible)` : ''}
+                  </div>
+                  <button 
+                    className="mg2-modal-save-btn" 
+                    style={{ flex: 'none', padding: '10px 24px' }}
+                    disabled={selectedMembers.length < 2}
+                    onClick={startAuctionSetup}
+                  >
+                    <span>Start {auctionType === 'betting' ? 'Bidding' : 'Draw'}</span>
+                    <RiChevronRightLine size={16} />
+                  </button>
+                </div>
+              </>
+            )}
 
           </div>
         </div>

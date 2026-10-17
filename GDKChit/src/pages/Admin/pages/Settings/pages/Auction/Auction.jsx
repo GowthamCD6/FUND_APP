@@ -55,6 +55,23 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
   const [selectingGroupId, setSelectingGroupId] = useState(null);
   const [savingWinner, setSavingWinner] = useState(false);
   const [auctionCycleMonth, setAuctionCycleMonth] = useState(1);
+  const [completedAuctions, setCompletedAuctions] = useState([]);
+
+  const fetchCompletedAuctions = async (groupId) => {
+    if (!groupId) return;
+    try {
+      const response = await ApiService.makeRequest(`/admin/groups/getCompletedAuctions?groupId=${groupId}`, { method: 'GET' });
+      const result = await response.json();
+      if (result && result.success && Array.isArray(result.data)) {
+        setCompletedAuctions(result.data);
+      } else {
+        setCompletedAuctions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching completed auctions:', error);
+      setCompletedAuctions([]);
+    }
+  };
 
   // Fetch groups and connect WebSocket on component mount
   useEffect(() => {
@@ -239,6 +256,7 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
       : (group.currentMonthNum || 1);
     setAuctionCycleMonth(initialCycle);
     setShowMemberModal(true);
+    fetchCompletedAuctions(group.id);
     if (!group.members || group.members.length === 0) {
       await fetchGroupMembers(group.id);
     }
@@ -663,6 +681,7 @@ const AuctionScreen = ({ onBack, navigation: propNavigation }) => {
         selectedGroup={selectedGroup}
         selectedMembers={selectedMembers}
         selectedCycleMonth={auctionCycleMonth}
+        completedAuctions={completedAuctions}
         onSelectCycleMonth={setAuctionCycleMonth}
         onClose={() => setShowMemberModal(false)}
         onMemberToggle={toggleMemberSelection}
