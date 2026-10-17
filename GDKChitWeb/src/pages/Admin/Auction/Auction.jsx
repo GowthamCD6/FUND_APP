@@ -52,7 +52,36 @@ const Auction = () => {
   const [auctionResult, setAuctionResult] = useState(null);
   const [savingWinner, setSavingWinner] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [pageNotice, setPageNotice] = useState({ text: '', type: 'error' }); // Inline feedback instead of browser alert()
+  const [pageNotice, setPageNotice] = useState({ text: '', type: 'error', title: '' });
+  const toastTimerRef = useRef(null);
+
+  const showToast = useCallback((notice) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    if (!notice || !notice.text) {
+      setPageNotice({ text: '', type: 'error', title: '' });
+      return;
+    }
+    const duration = notice.duration || 4200;
+    setPageNotice({
+      text: notice.text,
+      type: notice.type || 'error',
+      title: notice.title || (notice.type === 'success' ? 'Success' : notice.type === 'warning' ? 'Attention' : 'Notice')
+    });
+    toastTimerRef.current = setTimeout(() => {
+      setPageNotice({ text: '', type: 'error', title: '' });
+    }, duration);
+  }, []);
+
+  const hideToast = useCallback(() => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setPageNotice({ text: '', type: 'error', title: '' });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   // ──── Betting Auction Live State ────
   const [initialAmount, setInitialAmount] = useState('');
@@ -356,9 +385,11 @@ const Auction = () => {
   const toggleMemberSelection = (member) => {
     if (member.hasWonAuction) {
       const amtStr = member.amountTaken ? ` (₹${Number(member.amountTaken).toLocaleString('en-IN')})` : '';
-      setPageNotice({
-        text: `⛔ ${member.name} has already received the auction prize${amtStr} and is NOT ELIGIBLE to participate in the auction.`,
-        type: 'error'
+      showToast({
+        title: 'Member Ineligible',
+        text: `${member.name} has already received the auction prize${amtStr} and is NOT ELIGIBLE to participate in the auction.`,
+        type: 'error',
+        duration: 4500
       });
       return;
     }
@@ -375,9 +406,8 @@ const Auction = () => {
 
   // ──── START AUCTION SETUP (both modes) ────
   const startAuctionSetup = () => {
-    setPageNotice({ text: '', type: 'error' });
     if (selectedMembers.length < 2) {
-      setPageNotice({ text: 'Please select at least 2 members for the auction.', type: 'error' });
+      showToast({ title: 'Selection Required', text: 'Please select at least 2 members for the auction.', type: 'warning' });
       return;
     }
 
@@ -396,25 +426,24 @@ const Auction = () => {
 
   // ──── BETTING: Start/Pause/Resume/End/Reset ────
   const handleStartBettingAuction = () => {
-    setPageNotice({ text: '', type: 'error' });
     const pAmt = parseFloat(poolAmount);
     if (Number.isNaN(pAmt) || pAmt <= 0) {
-      setPageNotice({ text: 'Please enter a valid pool amount before starting.', type: 'error' });
+      showToast({ title: 'Invalid Pool Amount', text: 'Please enter a valid pool amount before starting.', type: 'error' });
       return;
     }
     const amt = parseFloat(initialAmount);
     if (!amt || amt <= 0) {
-      setPageNotice({ text: 'Please enter a valid initial bidding amount before starting.', type: 'error' });
+      showToast({ title: 'Invalid Bid Amount', text: 'Please enter a valid initial bidding amount before starting.', type: 'error' });
       return;
     }
     if (!selectedGroup?.id) {
-      setPageNotice({ text: 'No group selected.', type: 'error' });
+      showToast({ title: 'No Group Selected', text: 'No group selected.', type: 'error' });
       return;
     }
 
     const allJoined = participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id)));
     if (!allJoined) {
-      setPageNotice({ text: 'Please wait until all selected members have applied and joined the auction before starting.', type: 'error' });
+      showToast({ title: 'Waiting for Participants', text: 'Please wait until all selected members have applied and joined the auction before starting.', type: 'warning' });
       return;
     }
 
@@ -481,22 +510,21 @@ const Auction = () => {
 
   // ──── RANDOM: Roll Dice ────
   const rollDice = () => {
-    setPageNotice({ text: '', type: 'error' });
     if (isRolling) return;
     if (participants.length === 0) {
-      setPageNotice({ text: 'No participants available for the random draw.', type: 'error' });
+      showToast({ title: 'No Participants', text: 'No participants available for the random draw.', type: 'error' });
       return;
     }
 
     const amt = parseFloat(poolAmount);
     if (Number.isNaN(amt) || amt <= 0) {
-      setPageNotice({ text: 'Please enter a valid pool prize amount for the draw.', type: 'error' });
+      showToast({ title: 'Invalid Pool Amount', text: 'Please enter a valid pool prize amount for the draw.', type: 'error' });
       return;
     }
 
     const allJoined = participants.length > 0 && participants.every(p => joinedParticipants.has(String(p.userId || p.id)));
     if (!allJoined) {
-      setPageNotice({ text: 'Please wait until all selected participants have applied and joined the draw.', type: 'error' });
+      showToast({ title: 'Waiting for Participants', text: 'Please wait until all selected participants have applied and joined the draw.', type: 'warning' });
       return;
     }
 
@@ -506,12 +534,12 @@ const Auction = () => {
 
     if (drawMode === 'manual') {
       if (!selectedWinnerId) {
-        setPageNotice({ text: 'Please select a participant from the list below as designated winner before starting.', type: 'error' });
+        showToast({ title: 'Designated Winner Required', text: 'Please select a participant from the list below as designated winner before starting.', type: 'warning' });
         return;
       }
       const winnerIdx = participants.findIndex(p => String(p.userId || p.id) === String(selectedWinnerId));
       if (winnerIdx === -1) {
-        setPageNotice({ text: 'Selected participant not found in list.', type: 'error' });
+        showToast({ title: 'Participant Not Found', text: 'Selected participant not found in list.', type: 'error' });
         return;
       }
       winner = participants[winnerIdx];
@@ -572,7 +600,11 @@ const Auction = () => {
     if (!auctionResult) return;
 
     if (auctionResult.winner?.hasWonAuction) {
-      alert(`Cannot save winner: ${auctionResult.winner.name} has already taken or won an auction prize for this group.`);
+      showToast({
+        title: 'Cannot Save Winner',
+        text: `${auctionResult.winner.name} has already taken or won an auction prize for this group.`,
+        type: 'error'
+      });
       return;
     }
 
@@ -615,6 +647,12 @@ const Auction = () => {
           console.warn('SMS notification failed (non-blocking):', smsErr);
         }
 
+        showToast({
+          title: 'Auction Completed!',
+          text: `${auctionResult.winner.name} successfully registered as winner!`,
+          type: 'success',
+          duration: 4000
+        });
         setSuccessMessage(`${auctionResult.winner.name} successfully registered as winner!`);
         if (selectedGroup?.id) {
           fetchCompletedAuctions(selectedGroup.id);
@@ -626,11 +664,19 @@ const Auction = () => {
           fetchGroups();
         }, 2000);
       } else {
-        alert(data.message || 'Failed to save winner');
+        showToast({
+          title: 'Save Failed',
+          text: data.message || 'Failed to save winner',
+          type: 'error'
+        });
       }
     } catch (err) {
       console.error('Error saving auction winner:', err);
-      alert('Connection failed. Could not save winner details.');
+      showToast({
+        title: 'Connection Error',
+        text: 'Connection failed. Could not save winner details.',
+        type: 'error'
+      });
     } finally {
       setSavingWinner(false);
     }
@@ -756,32 +802,33 @@ const Auction = () => {
         </div>
       )}
 
-      {/* Inline Text Alert Notification (No window.alert) */}
+      {/* ── Fixed Floating Top-Right Toast Notification Card ── */}
       {pageNotice.text && (
-        <div style={{
-          marginTop: 12,
-          padding: '12px 16px',
-          borderRadius: '8px',
-          background: pageNotice.type === 'error' ? '#FDECEC' : '#EBF3ED',
-          border: `1px solid ${pageNotice.type === 'error' ? '#F5C6C6' : '#C8DEC9'}`,
-          color: pageNotice.type === 'error' ? '#D32F2F' : '#1B3322',
-          fontSize: '13.5px',
-          fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {pageNotice.type === 'error' ? <RiAlertLine size={18} /> : <RiCheckLine size={18} />}
-            <span>{pageNotice.text}</span>
+        <div className="auc-toast-container">
+          <div className={`auc-toast toast-${pageNotice.type || 'error'}`}>
+            <div className="auc-toast-icon-box">
+              {pageNotice.type === 'success' ? (
+                <RiCheckLine size={20} />
+              ) : (
+                <RiAlertLine size={20} />
+              )}
+            </div>
+            <div className="auc-toast-content">
+              <h5 className="auc-toast-title">
+                {pageNotice.title || (pageNotice.type === 'success' ? 'Success' : pageNotice.type === 'warning' ? 'Attention' : 'Notice')}
+              </h5>
+              <p className="auc-toast-desc">{pageNotice.text}</p>
+            </div>
+            <button
+              type="button"
+              className="auc-toast-close"
+              onClick={hideToast}
+              aria-label="Close notification"
+            >
+              <RiCloseLine size={16} />
+            </button>
+            <div className="auc-toast-progress" />
           </div>
-          <button
-            onClick={() => setPageNotice({ text: '', type: 'error' })}
-            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'inherit', padding: 2 }}
-          >
-            <RiCloseLine size={16} />
-          </button>
         </div>
       )}
 
@@ -840,7 +887,11 @@ const Auction = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       if (activeTab === 'completed') {
-                        setPageNotice({ text: 'This group has completed all monthly cycles. You cannot run new auctions for it.', type: 'error' });
+                        showToast({
+                          title: 'Group Completed',
+                          text: 'This group has completed all monthly cycles. You cannot run new auctions for it.',
+                          type: 'warning'
+                        });
                         return;
                       }
                       handleSelectGroup(g);
