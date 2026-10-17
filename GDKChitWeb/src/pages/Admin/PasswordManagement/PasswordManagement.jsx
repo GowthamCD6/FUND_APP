@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import { 
   Key as RiKeyLine, 
@@ -7,13 +8,13 @@ import {
   Loader2 as RiLoader4Line, 
   AlertTriangle as RiAlertLine, 
   Search as RiSearchLine, 
-  RefreshCw as RiRefreshLine,
   Lock as RiLockLine,
   Eye as RiEyeLine,
   EyeOff as RiEyeOffLine,
   Phone as RiPhoneLine,
   Mail as RiMailLine,
-  Calendar as RiCalendarLine
+  Calendar as RiCalendarLine,
+  ArrowLeft
 } from 'lucide-react';
 import './PasswordManagement.css';
 import Lottie from 'lottie-react';
@@ -44,6 +45,7 @@ const PasswordSkeleton = () => (
 );
 
 const PasswordManagement = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -194,6 +196,17 @@ const PasswordManagement = () => {
     <div className="pm-page">
       <div className="pm-header-container">
         <div className="pm-toolbar-row">
+          <div className="pm-toolbar-left">
+            <button
+              type="button"
+              className="pm-back-btn"
+              onClick={() => navigate('/admin/admintool')}
+              title="Back to Admin Tools"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          </div>
+
           <div className="pm-search-container">
             <RiSearchLine size={16} className="pm-search-icon" />
             <input
@@ -213,16 +226,6 @@ const PasswordManagement = () => {
               </button>
             )}
           </div>
-
-          <button 
-            className="pm-refresh-btn" 
-            onClick={fetchUsers} 
-            disabled={loading}
-            title="Refresh"
-          >
-            <RiRefreshLine size={16} className={loading ? 'spin-anim' : ''} />
-            <span>Refresh</span>
-          </button>
         </div>
       </div>
 
@@ -251,7 +254,15 @@ const PasswordManagement = () => {
                 <div key={user.id} className="pm-card">
                   <div className="pm-card-left">
                     <div className="pm-avatar">
-                      {(user.name || 'U').substring(0, 2).toUpperCase()}
+                      {user.profile_image || user.avatar ? (
+                        <img 
+                          src={user.profile_image || user.avatar} 
+                          alt={user.name} 
+                          className="pm-avatar-img"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : null}
+                      {(!user.profile_image && !user.avatar) && (user.name || 'U').substring(0, 2).toUpperCase()}
                     </div>
                     <div className="pm-info">
                       <div className="pm-name-row">
@@ -309,7 +320,15 @@ const PasswordManagement = () => {
             <div className="pm-modal-body">
               <div className="pm-modal-user">
                 <div className="pm-avatar">
-                  {(selectedUser.name || 'U').substring(0, 2).toUpperCase()}
+                  {selectedUser.profile_image || selectedUser.avatar ? (
+                    <img 
+                      src={selectedUser.profile_image || selectedUser.avatar} 
+                      alt={selectedUser.name} 
+                      className="pm-avatar-img"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : null}
+                  {(!selectedUser.profile_image && !selectedUser.avatar) && (selectedUser.name || 'U').substring(0, 2).toUpperCase()}
                 </div>
                 <div>
                   <h4>{selectedUser.name}</h4>
