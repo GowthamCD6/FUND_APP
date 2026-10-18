@@ -118,38 +118,35 @@ const Portfolio = () => {
 
   return (
     <div className="gc-container">
-      {/* ── 1. Top Header Banner (Matches Auction Page & Member Chit Card) ── */}
-      <div className="gc-header-banner">
-        <div className="gc-header-left">
-          <div className="gc-header-icon-wrap">
-            <Coins size={26} color="#ffffff" />
-          </div>
-          <div>
-            <div className="gc-title-row">
-              <h1 className="gc-header-title">My Investments & Portfolio</h1>
-              <span className="gc-badge-live">
-                <span className="gc-live-dot" />
-                {activeGroups.length} Active Schemes
-              </span>
-            </div>
-            <p className="gc-header-subtitle">
-              Official chit fund passbook statements, cycle remittances, and payout records
-            </p>
-          </div>
-        </div>
-
-        <div className="gc-header-actions">
+      {/* ── 1. Top Filter Tabs & Refresh Bar ── */}
+      <div className="gc-tabs-row" style={{ background: '#ffffff', padding: '12px 18px', borderRadius: '14px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)' }}>
+        <div className="gc-tabs-group">
           <button
             type="button"
-            className="gc-btn-secondary"
-            onClick={load}
-            disabled={loading}
-            title="Refresh Portfolio Records"
+            className={`gc-tab-pill ${activeTab === 'active' ? 'active' : ''}`}
+            onClick={() => setActiveTab('active')}
           >
-            <RefreshCw size={13} className={loading ? 'gc-spin' : ''} />
-            <span>Refresh</span>
+            Active Groups ({activeGroups.length})
+          </button>
+          <button
+            type="button"
+            className={`gc-tab-pill ${activeTab === 'completed' ? 'active' : ''}`}
+            onClick={() => setActiveTab('completed')}
+          >
+            Completed ({completedGroups.length})
           </button>
         </div>
+
+        <button
+          type="button"
+          className="gc-btn-secondary"
+          onClick={load}
+          disabled={loading}
+          title="Refresh Portfolio Records"
+        >
+          <RefreshCw size={13} className={loading ? 'gc-spin' : ''} />
+          <span>Refresh</span>
+        </button>
       </div>
 
       {/* ── 2. Top Hero KPI Metrics Row (Compact Style) ── */}
@@ -263,30 +260,6 @@ const Portfolio = () => {
           </div>
         </div>
       )}
-
-      {/* ── 4. Filter Tabs Row (Active / Completed) ── */}
-      <div className="gc-tabs-row">
-        <div className="gc-tabs-group">
-          <button
-            type="button"
-            className={`gc-tab-pill ${activeTab === 'active' ? 'active' : ''}`}
-            onClick={() => setActiveTab('active')}
-          >
-            Active Groups ({activeGroups.length})
-          </button>
-          <button
-            type="button"
-            className={`gc-tab-pill ${activeTab === 'completed' ? 'active' : ''}`}
-            onClick={() => setActiveTab('completed')}
-          >
-            Completed ({completedGroups.length})
-          </button>
-        </div>
-
-        <span className="gc-filter-hint">
-          Click any card to view detailed monthly passbook statement
-        </span>
-      </div>
 
       {/* ── 5. Chit Cards Grid (EXACT UI AS IN AUCTION PAGE) ── */}
       {currentGroups.length === 0 ? (
