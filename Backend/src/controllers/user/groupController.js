@@ -222,6 +222,8 @@ exports.getGroupMonthlyInfo = async (req, res) => {
         monthlyData[key] = {
           status: p.status,
           paymentAmount: userCollectionAmount > 0 ? userCollectionAmount : null,
+          paidAmount: p.status === 'paid' ? userCollectionAmount : 0,
+          receiptNumber: p.receipt_number || null,
           discount: 0,
           commission: 0,
           netAmount: userCollectionAmount,
@@ -244,6 +246,10 @@ exports.getGroupMonthlyInfo = async (req, res) => {
       }
 
       monthlyData[key].status = p.status;
+      if (p.status === 'paid') {
+        monthlyData[key].paidAmount = userCollectionAmount;
+      }
+      monthlyData[key].receiptNumber = p.receipt_number || monthlyData[key].receiptNumber || null;
       if (monthlyData[key].paymentAmount == null && userCollectionAmount > 0) {
         monthlyData[key].paymentAmount = userCollectionAmount;
       }
