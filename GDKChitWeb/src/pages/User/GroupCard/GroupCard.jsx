@@ -419,26 +419,11 @@ const GroupCard = () => {
                       </button>
                     </div>
 
-                    {/* Individual Chit Plan Spent Callout Banner */}
-                    <div className="gc-card-spent-banner">
-                      <div className="gc-spent-col">
-                        <span className="gc-spent-label">
-                          <Coins size={12} color="#15803d" />
-                          My Spent in this Chit:
-                        </span>
-                        <strong className="gc-spent-amount text-emerald">{formatINR(userPaid)}</strong>
-                      </div>
-                      <div className="gc-spent-rem-col">
-                        <span className="gc-spent-rem-label">Balance Remaining:</span>
-                        <strong className="gc-spent-rem-val">{formatINR(Math.max(0, poolValue - userPaid))}</strong>
-                      </div>
-                    </div>
-
-                    {/* Financial Matrix (Compact 3-metric items) */}
-                    <div className="gc-card-metrics-grid compact">
+                    {/* Financial Matrix (Matches Admin Reports card metrics grid) */}
+                    <div className="gc-card-metrics-grid">
                       <div className="gc-metric-box">
                         <span className="gc-metric-label">
-                          <Landmark size={11} color="#64748b" />
+                          <Landmark size={12} color="#64748b" />
                           Chit Value
                         </span>
                         <strong className="gc-metric-val">{formatINR(poolValue)}</strong>
@@ -446,7 +431,7 @@ const GroupCard = () => {
 
                       <div className="gc-metric-box">
                         <span className="gc-metric-label">
-                          <CircleDollarSign size={11} color="#64748b" />
+                          <CircleDollarSign size={12} color="#64748b" />
                           Monthly Share
                         </span>
                         <strong className="gc-metric-val">{formatINR(monthlyShare)}/mo</strong>
@@ -454,10 +439,18 @@ const GroupCard = () => {
 
                       <div className="gc-metric-box">
                         <span className="gc-metric-label">
-                          <Users size={11} color="#64748b" />
+                          <Users size={12} color="#64748b" />
                           Total Members
                         </span>
                         <strong className="gc-metric-val">{group.totalMembers || totalMonths} Subs</strong>
+                      </div>
+
+                      <div className="gc-metric-box highlight">
+                        <span className="gc-metric-label">
+                          <CheckCircle2 size={12} color="#15803d" />
+                          My Total Paid
+                        </span>
+                        <strong className="gc-metric-val text-emerald">{formatINR(userPaid)}</strong>
                       </div>
                     </div>
 
