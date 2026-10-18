@@ -1,82 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User, Landmark, ShieldCheck, Users, Lock, Building2,
+  User, ShieldCheck, Users, Lock, Building2,
   Languages, FileText, HelpCircle, ChevronRight, Search,
-  BarChart3, MessageSquare, Gavel, Coins, CreditCard
+  CreditCard
 } from 'lucide-react';
 import './UserTool.css';
 
+// ONLY tools that are NOT in the main sidebar
 const USER_TOOL_SECTIONS = [
   {
-    id: 'financial-services',
-    title: 'Financial & Scheme Management',
-    actions: [
-      {
-        id: 'portfolio',
-        Icon: BarChart3,
-        title: 'Portfolio & Chit Plans',
-        desc: 'Subscribed schemes, cycles & total investment',
-        route: '/user/portfolio',
-        color: '#2E7D32',
-        bg: '#EBF3ED'
-      },
-      {
-        id: 'group-card',
-        Icon: Landmark,
-        title: 'Member Chit Passbook',
-        desc: 'Official passbook ledger & monthly remittances',
-        route: '/user/group-card',
-        color: '#1B3322',
-        bg: '#EBF3ED'
-      },
-      {
-        id: 'join-group',
-        Icon: Users,
-        title: 'Join New Chit Scheme',
-        desc: 'Browse available chit pools and enroll',
-        route: '/user/join-group',
-        color: '#2E7D32',
-        bg: '#EBF3ED'
-      },
-      {
-        id: 'auction',
-        Icon: Gavel,
-        title: 'Live Reverse Auctions',
-        desc: 'Monthly reverse bidding and lucky draws',
-        route: '/user/auction',
-        color: '#A3704C',
-        bg: '#FDF6F0'
-      },
-      {
-        id: 'finance',
-        Icon: Coins,
-        title: 'Smart Finance & Credit',
-        desc: 'Working capital and personal micro-credit',
-        route: '/user/finance',
-        color: '#1B3322',
-        bg: '#EBF3ED'
-      },
-      {
-        id: 'chat',
-        Icon: MessageSquare,
-        title: 'Subscriber Messaging & Chat',
-        desc: 'Direct communication with chit fund admin',
-        route: '/user/chat',
-        color: '#2E7D32',
-        bg: '#EBF3ED'
-      }
-    ]
-  },
-  {
-    id: 'account-profile',
-    title: 'Subscriber Identity & Banking Vault',
+    id: 'banking-identity',
+    title: 'Banking, Identity & Account Vault',
     actions: [
       {
         id: 'account-details',
         Icon: User,
-        title: 'Account Profile Details',
-        desc: 'Personal, contact & residential information',
+        title: 'Personal Identity Profile',
+        desc: 'Full legal name, phone, email & address records',
         route: '/user/profile/account-details',
         color: '#1B3322',
         bg: '#EBF3ED'
@@ -85,7 +26,7 @@ const USER_TOOL_SECTIONS = [
         id: 'bank-account',
         Icon: CreditCard,
         title: 'Linked Bank Account & UPI',
-        desc: 'Payout bank accounts and verified UPI IDs',
+        desc: 'Bank savings account & verified UPI for chit payouts',
         route: '/user/profile/link-bank-account',
         color: '#2E7D32',
         bg: '#EBF3ED'
@@ -93,8 +34,8 @@ const USER_TOOL_SECTIONS = [
       {
         id: 'kyc-verification',
         Icon: ShieldCheck,
-        title: 'Identity Verification (KYC)',
-        desc: 'Aadhaar, PAN and KYC compliance status',
+        title: 'KYC Document Verification',
+        desc: 'Aadhaar, PAN & government verification compliance',
         route: '/user/profile/identity-verification',
         color: '#2E7D32',
         bg: '#EBF3ED'
@@ -103,7 +44,7 @@ const USER_TOOL_SECTIONS = [
         id: 'nominee-details',
         Icon: Users,
         title: 'Nominee & Beneficiary Records',
-        desc: 'Registered beneficiaries and legal heir records',
+        desc: 'Designated legal heirs and emergency contacts',
         route: '/user/profile/nominee-details',
         color: '#A3704C',
         bg: '#FDF6F0'
@@ -111,8 +52,8 @@ const USER_TOOL_SECTIONS = [
       {
         id: 'security-pin',
         Icon: Lock,
-        title: 'Security & App Passcode',
-        desc: 'Security permissions, PIN and screen lock',
+        title: 'Passcode & Screen Lock Security',
+        desc: 'App PIN, biometric permissions, and device lock',
         route: '/user/profile/security-permission',
         color: '#D32F2F',
         bg: '#FDECEC'
@@ -120,14 +61,14 @@ const USER_TOOL_SECTIONS = [
     ]
   },
   {
-    id: 'system-support',
-    title: 'Branch Coordinates & Subscriber Support',
+    id: 'regional-support',
+    title: 'Branch Services & Legal Compliance',
     actions: [
       {
         id: 'admin-location',
         Icon: Building2,
-        title: 'Branch & Office Locations',
-        desc: 'Sri Periyanayagi Amman Chit branches & head office',
+        title: 'HQ & Branch Locations',
+        desc: 'Registered headquarters and local branch coordinates',
         route: '/user/profile/admin-location',
         color: '#A3704C',
         bg: '#FDF6F0'
@@ -136,7 +77,7 @@ const USER_TOOL_SECTIONS = [
         id: 'language-settings',
         Icon: Languages,
         title: 'Language Settings',
-        desc: 'Switch between English and தமிழ் interface',
+        desc: 'Toggle between Tamil (தமிழ்) and English interface',
         route: '/user/profile/language-settings',
         color: '#2E7D32',
         bg: '#EBF3ED'
@@ -144,8 +85,8 @@ const USER_TOOL_SECTIONS = [
       {
         id: 'privacy-policy',
         Icon: FileText,
-        title: 'Chit Funds Act & Rules',
-        desc: 'Regulatory compliance, terms and subscriber rights',
+        title: 'Chit Funds Act Directives',
+        desc: 'Central Chit Funds Act rules, bye-laws and subscriber rights',
         route: '/user/profile/privacy-policy',
         color: '#1B3322',
         bg: '#EBF3ED'
@@ -153,19 +94,10 @@ const USER_TOOL_SECTIONS = [
       {
         id: 'help-support',
         Icon: HelpCircle,
-        title: 'Help & Operations Support',
-        desc: '24/7 customer service and grievance redressal',
+        title: 'Operations Help Desk',
+        desc: 'Customer service helpline, tickets and grievance resolution',
         route: '/user/profile/help-support',
         color: '#2E7D32',
-        bg: '#EBF3ED'
-      },
-      {
-        id: 'full-profile',
-        Icon: User,
-        title: 'Complete Profile Overview',
-        desc: 'Subscriber central dashboard and summary',
-        route: '/user/profile',
-        color: '#1B3322',
         bg: '#EBF3ED'
       }
     ]
@@ -194,14 +126,14 @@ const UserTool = () => {
       {/* Search Header Bar */}
       <div className="ut-topbar">
         <div className="ut-topbar-info">
-          <h1 className="ut-topbar-title">Subscriber Tools & Utilities</h1>
-          <p className="ut-topbar-sub">Quick access to chit schemes, accounts, verification, and branch support</p>
+          <h1 className="ut-topbar-title">Subscriber Tools & Services</h1>
+          <p className="ut-topbar-sub">Direct access to banking, KYC verification, nominee records, security, and branch coordinates</p>
         </div>
         <div className="ut-topbar-search">
           <Search size={16} color="#6B7A6E" />
           <input
             type="text"
-            placeholder="Search subscriber tools..."
+            placeholder="Search subscriber utilities..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="ut-search-input"
