@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext.jsx';
+import { useLanguage } from '../../../context/LanguageContext.jsx';
 import { makeRequest } from '../../../api/apiClient.js';
 import {
   User,
@@ -22,9 +23,13 @@ import {
   Camera,
   Play,
   MessageCircle,
-  Sparkles,
   ShieldAlert,
   CheckCircle2,
+  Phone,
+  Clock,
+  Sparkles,
+  Edit3,
+  BadgeCheck,
   ExternalLink
 } from 'lucide-react';
 
@@ -43,19 +48,16 @@ import HelpSupportModal from './Modals/HelpSupportModal.jsx';
 import UserManualModal from './Modals/UserManualModal.jsx';
 import ShareModal from './Modals/ShareModal.jsx';
 import RateModal from './Modals/RateModal.jsx';
-import { useLanguage } from '../../../context/LanguageContext.jsx';
 
 import './Profile.css';
 
 const Profile = () => {
   const { user, logout } = useAuth();
-  const { language, t } = useLanguage();
-  const currentLang = language;
+  const { language, changeLanguage, t } = useLanguage();
   const location = useLocation();
 
   const [profileData, setProfileData] = useState(null);
   const [profileImage, setProfileImage] = useState('');
-
 
   // ── Modal State Toggles ──
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -77,9 +79,14 @@ const Profile = () => {
     try {
       const res = await makeRequest('/auth/profile');
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data) {
         setProfileData(data.data?.user || data.data);
-        setProfileImage(data.data?.profile?.userImage || '');
+        setProfileImage(
+          data.data?.profile?.userImage ||
+          data.data?.profile?.avatar ||
+          data.data?.user?.avatar ||
+          ''
+        );
       }
     } catch (e) {
       console.warn('Profile fetch error:', e);
@@ -113,35 +120,39 @@ const Profile = () => {
 
   const displayName = profileData?.username || profileData?.name || user?.name || 'Subscriber';
   const displayPhone = profileData?.phone || user?.phone || 'No phone number linked';
+  const displayEmail = profileData?.email || user?.email || 'subscriber@gdkchitfunds.com';
   const initial = displayName.charAt(0).toUpperCase();
-
 
   // ── Menu List Groups ──
   const SETTINGS_GROUP = [
     {
       icon: User,
       label: 'Personal Account Details',
-      color: '#7c3aed',
+      subtitle: 'Name, email, registered mobile & residential address',
+      color: '#1B3322',
       badge: 'Profile',
       onClick: () => setShowAccountModal(true),
     },
     {
       icon: Landmark,
       label: 'Linked Bank Account',
-      color: '#2563eb',
+      subtitle: 'Primary savings bank account & UPI ID for chit payouts',
+      color: '#059669',
       badge: 'IFSC & UPI',
       onClick: () => setShowBankModal(true),
     },
     {
       icon: ShieldCheck,
       label: 'Identity Verification & KYC',
-      color: '#059669',
+      subtitle: 'Aadhaar, PAN & government identity documentation',
+      color: '#10b981',
       badge: 'Verified',
       onClick: () => setShowVerificationModal(true),
     },
     {
       icon: Users,
       label: 'Nominee Beneficiary Details',
+      subtitle: 'Designated legal beneficiaries, relationship & contacts',
       color: '#d97706',
       badge: 'Nominee',
       onClick: () => setShowNomineeModal(true),
@@ -149,6 +160,7 @@ const Profile = () => {
     {
       icon: KeyRound,
       label: 'Authorization OTP Requests',
+      subtitle: 'Active verification codes & session authorization tokens',
       color: '#4f46e5',
       badge: 'Live Codes',
       onClick: () => setShowOtpModal(true),
@@ -159,20 +171,23 @@ const Profile = () => {
     {
       icon: Lock,
       label: 'Security & Web Session Lock',
+      subtitle: 'PIN passcode protection, session timeout & lock',
       color: '#dc2626',
-      badge: 'PIN Passcode',
+      badge: 'PIN Lock',
       onClick: () => setShowSecurityModal(true),
     },
     {
       icon: MapPin,
       label: 'My Registered Location',
-      color: '#0891b2',
-      badge: 'GPS Coordinates',
+      subtitle: 'Registered GPS coordinates & home service area',
+      color: '#0284c7',
+      badge: 'GPS Location',
       onClick: () => setShowMyLocationModal(true),
     },
     {
       icon: Building2,
       label: 'Headquarters & Branch Offices',
+      subtitle: 'Sri Periyanayagi Amman Chit branches & navigation',
       color: '#4338ca',
       badge: 'Google Maps',
       onClick: () => setShowAdminLocationModal(true),
@@ -180,23 +195,26 @@ const Profile = () => {
     {
       icon: Languages,
       label: 'Language Settings',
-      color: '#059669',
-      badge: currentLang === 'ta' ? 'தமிழ்' : 'English',
+      subtitle: 'Switch application interface between English and தமிழ்',
+      color: '#16a34a',
+      badge: language === 'ta' ? 'தமிழ் (Tamil)' : 'English',
       onClick: () => setShowLanguageModal(true),
-    },
-    {
-      icon: BookOpen,
-      label: 'Interactive User Manual & Guide',
-      color: '#7c3aed',
-      badge: 'Step-by-step',
-      onClick: () => setShowManualModal(true),
     },
   ];
 
   const GENERAL_GROUP = [
     {
+      icon: BookOpen,
+      label: 'Interactive User Manual & Guide',
+      subtitle: 'Step-by-step visual tutorial and platform feature guide',
+      color: '#7c3aed',
+      badge: 'Tutorial',
+      onClick: () => setShowManualModal(true),
+    },
+    {
       icon: FileText,
       label: 'Privacy Policy & Chit Fund Guidelines',
+      subtitle: 'Central Chit Funds Act compliance & 12 golden operational rules',
       color: '#475569',
       badge: '12 Rules',
       onClick: () => setShowPrivacyModal(true),
@@ -204,6 +222,7 @@ const Profile = () => {
     {
       icon: HelpCircle,
       label: 'Help & Customer Support Desk',
+      subtitle: '24/7 dedicated support desk, executive hotline & inquiries',
       color: '#2563eb',
       badge: 'Helpline',
       onClick: () => setShowHelpModal(true),
@@ -211,6 +230,7 @@ const Profile = () => {
     {
       icon: Share2,
       label: 'Share GDK Chit Fund Portal',
+      subtitle: 'Invite relatives and acquaintances to secure chit schemes',
       color: '#059669',
       badge: 'Invite Link',
       onClick: () => setShowShareModal(true),
@@ -218,32 +238,47 @@ const Profile = () => {
     {
       icon: Star,
       label: 'Rate & Review Chit Platform',
+      subtitle: 'Submit customer feedback and review your chit experience',
       color: '#d97706',
       badge: 'Feedback',
       onClick: () => setShowRateModal(true),
     },
   ];
 
-  const MenuItem = ({ icon: Icon, label, color, badge, onClick }) => (
-    <button className="prof-menu-item" onClick={onClick}>
+  const MenuItem = ({ icon: Icon, label, subtitle, color, badge, onClick }) => (
+    <button className="prof-menu-item" onClick={onClick} type="button">
       <div className="prof-menu-left">
-        <div className="prof-menu-icon" style={{ background: `${color}15`, color }}>
-          <Icon size={18} />
+        <div
+          className="prof-menu-icon"
+          style={{
+            backgroundColor: `${color}14`,
+            color: color,
+            borderColor: `${color}28`
+          }}
+        >
+          <Icon size={19} />
         </div>
-        <div>
-          <span className="prof-menu-label">{label}</span>
-          {badge && <span className="prof-menu-badge">{badge}</span>}
+        <div className="prof-menu-text">
+          <div className="prof-menu-title-row">
+            <span className="prof-menu-label">{label}</span>
+            {badge && <span className="prof-menu-badge">{badge}</span>}
+          </div>
+          {subtitle && <p className="prof-menu-sub">{subtitle}</p>}
         </div>
       </div>
-      <ChevronRight size={18} color="#94a3b8" />
+      <div className="prof-menu-right">
+        <ChevronRight size={18} className="prof-chevron" />
+      </div>
     </button>
   );
 
   return (
     <div className="prof-page">
-      {/* ── 1. Profile Hero Card ── */}
+      {/* ── 1. Profile Hero Card (Forest Green Aesthetic) ── */}
       <div className="prof-card">
-        <div className="prof-card-top-bg" />
+        <div className="prof-card-top-bg">
+          <div className="prof-card-pattern" />
+        </div>
         <div className="prof-card-content">
           <div className="prof-avatar-wrap">
             {profileImage ? (
@@ -251,9 +286,22 @@ const Profile = () => {
             ) : (
               <div className="prof-avatar">{initial}</div>
             )}
+            <button
+              className="prof-avatar-edit-btn"
+              onClick={() => setShowAccountModal(true)}
+              title="Edit Profile & Photo"
+              type="button"
+            >
+              <Camera size={15} />
+            </button>
           </div>
+
           <h2 className="prof-name">{displayName}</h2>
-          <p className="prof-phone">{displayPhone}</p>
+          <p className="prof-phone">
+            <span>{displayPhone}</span>
+            <span className="prof-meta-dot">•</span>
+            <span>{displayEmail}</span>
+          </p>
 
           <div className="prof-badge-row">
             <span className="prof-status-badge">
@@ -262,22 +310,66 @@ const Profile = () => {
             </span>
             <span className="prof-kyc-badge">
               <ShieldCheck size={13} />
-              Verified Member
+              KYC Verified Member
             </span>
+          </div>
+
+          {/* Quick Hero Action Chips */}
+          <div className="prof-hero-chips">
+            <button
+              className="prof-hero-chip"
+              onClick={() => setShowAccountModal(true)}
+              type="button"
+            >
+              <Edit3 size={13} />
+              <span>Edit Account</span>
+            </button>
+            <button
+              className="prof-hero-chip"
+              onClick={() => setShowLanguageModal(true)}
+              type="button"
+            >
+              <Languages size={13} />
+              <span>{language === 'ta' ? 'தமிழ்' : 'English'}</span>
+            </button>
+            <button
+              className="prof-hero-chip"
+              onClick={() => setShowSecurityModal(true)}
+              type="button"
+            >
+              <Lock size={13} />
+              <span>PIN Passcode</span>
+            </button>
+            <button
+              className="prof-hero-chip"
+              onClick={() => setShowBankModal(true)}
+              type="button"
+            >
+              <Landmark size={13} />
+              <span>Bank & UPI</span>
+            </button>
           </div>
         </div>
       </div>
 
-
-      {/* ── 3. Detailed Setting Lists (Web Responsive Dual-Column) ── */}
+      {/* ── 2. Settings Grid (Dual Column Corporate Fintech) ── */}
       <div className="prof-columns-grid">
-        {/* Left Column: Profile & Financial Settings */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="prof-section">
-            <h3 className="prof-section-title">
-              <User size={16} color="#7c3aed" />
-              Profile & Financial Settings
-            </h3>
+        {/* Left Column: Account, Banking & Security Settings */}
+        <div className="prof-column-stack">
+          {/* Section: Profile & Financial Settings */}
+          <div className="prof-section-card">
+            <div className="prof-section-header">
+              <div className="prof-section-header-left">
+                <div className="prof-section-icon-badge" style={{ background: '#EBF3ED', color: '#1B3322' }}>
+                  <User size={18} />
+                </div>
+                <div>
+                  <h3 className="prof-section-title">Profile & Financial Settings</h3>
+                  <p className="prof-section-desc">Manage account identity, bank linking & beneficiaries</p>
+                </div>
+              </div>
+              <span className="prof-section-count">5 Items</span>
+            </div>
             <div className="prof-menu-group">
               {SETTINGS_GROUP.map((item, i) => (
                 <MenuItem key={i} {...item} />
@@ -285,11 +377,20 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="prof-section">
-            <h3 className="prof-section-title">
-              <ShieldAlert size={16} color="#dc2626" />
-              Security & Environment
-            </h3>
+          {/* Section: Security & Regional */}
+          <div className="prof-section-card">
+            <div className="prof-section-header">
+              <div className="prof-section-header-left">
+                <div className="prof-section-icon-badge" style={{ background: '#fef2f2', color: '#dc2626' }}>
+                  <ShieldAlert size={18} />
+                </div>
+                <div>
+                  <h3 className="prof-section-title">Security & Environment</h3>
+                  <p className="prof-section-desc">PIN authentication, branch locations & localization</p>
+                </div>
+              </div>
+              <span className="prof-section-count">4 Items</span>
+            </div>
             <div className="prof-menu-group">
               {ADVANCED_GROUP.map((item, i) => (
                 <MenuItem key={i} {...item} />
@@ -299,12 +400,21 @@ const Profile = () => {
         </div>
 
         {/* Right Column: Policies, Support & Outreach */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="prof-section">
-            <h3 className="prof-section-title">
-              <FileText size={16} color="#475569" />
-              Guidelines, Support & Ratings
-            </h3>
+        <div className="prof-column-stack">
+          {/* Section: Guidelines & Support */}
+          <div className="prof-section-card">
+            <div className="prof-section-header">
+              <div className="prof-section-header-left">
+                <div className="prof-section-icon-badge" style={{ background: '#f8fafc', color: '#475569' }}>
+                  <FileText size={18} />
+                </div>
+                <div>
+                  <h3 className="prof-section-title">Guidelines, Support & Ratings</h3>
+                  <p className="prof-section-desc">Legal chit rules, user manual & customer care</p>
+                </div>
+              </div>
+              <span className="prof-section-count">5 Items</span>
+            </div>
             <div className="prof-menu-group">
               {GENERAL_GROUP.map((item, i) => (
                 <MenuItem key={i} {...item} />
@@ -312,111 +422,103 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Quick Help Callout Box */}
-          <div style={{
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: 12,
-            padding: 18,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <HelpCircle size={18} />
+          {/* Enhanced Customer Assistance Box */}
+          <div className="prof-support-card">
+            <div className="prof-support-top">
+              <div className="prof-support-icon-wrap">
+                <HelpCircle size={22} />
               </div>
-              <div>
-                <h4 style={{ margin: 0, fontSize: 14, color: '#1e293b' }}>Need Assistance?</h4>
-                <span style={{ fontSize: 12, color: '#64748b' }}>Customer desk available Mon-Sat 9 AM - 6 PM</span>
+              <div className="prof-support-info">
+                <h4 className="prof-support-title">Need Subscriber Assistance?</h4>
+                <p className="prof-support-desc">
+                  Our customer desk is active Monday to Saturday from 9:00 AM to 6:30 PM.
+                </p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+
+            <div className="prof-support-meta-row">
+              <div className="prof-support-pill">
+                <Phone size={13} />
+                <span>+91 98765 43210</span>
+              </div>
+              <div className="prof-support-pill">
+                <Clock size={13} />
+                <span>Mon - Sat: 9 AM - 6:30 PM</span>
+              </div>
+            </div>
+
+            <div className="prof-support-actions">
               <button
+                className="prof-support-primary-btn"
                 onClick={() => setShowHelpModal(true)}
-                style={{
-                  flex: 1,
-                  background: '#2563eb',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '8px 12px',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
+                type="button"
               >
-                Open Help Desk
+                <HelpCircle size={15} />
+                <span>Open Help Desk</span>
               </button>
               <button
+                className="prof-support-secondary-btn"
                 onClick={() => setShowManualModal(true)}
-                style={{
-                  flex: 1,
-                  background: '#fff',
-                  border: '1px solid #cbd5e1',
-                  color: '#334155',
-                  padding: '8px 12px',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
+                type="button"
               >
-                App Feature Tour
+                <BookOpen size={15} />
+                <span>Interactive Manual</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── 4. Social Links, Sign Out & Version ── */}
+      {/* ── 3. Social Links, Sign Out & Version ── */}
       <div className="prof-footer">
-        <p className="prof-follow-text">Follow GDK Chit Funds on official media channels</p>
+        <p className="prof-follow-text">
+          Sri Periyanayagi Amman Chit Funds Official Communication Channels
+        </p>
         <div className="prof-socials">
           <a
-            href="https://instagram.com"
+            href="https://wa.me/919876543210"
             target="_blank"
             rel="noopener noreferrer"
-            className="prof-social-btn"
-            title="Instagram"
+            className="prof-social-btn whatsapp"
+            title="WhatsApp Support"
           >
-            <Camera size={18} />
+            <MessageCircle size={18} />
           </a>
           <a
             href="https://youtube.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="prof-social-btn"
-            title="YouTube"
+            className="prof-social-btn youtube"
+            title="YouTube Channel"
           >
             <Play size={18} />
           </a>
           <a
-            href="https://wa.me/919876543210"
+            href="https://instagram.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="prof-social-btn"
-            title="WhatsApp"
+            className="prof-social-btn instagram"
+            title="Instagram"
           >
-            <MessageCircle size={18} />
+            <Camera size={18} />
           </a>
         </div>
 
-        <div>
-          <button className="prof-logout" onClick={logout}>
+        <div className="prof-logout-container">
+          <button className="prof-logout" onClick={logout} type="button">
             <LogOut size={16} />
-            Secure Sign Out
+            <span>Secure Sign Out</span>
           </button>
         </div>
 
-        <div>
+        <div className="prof-version-container">
           <span className="prof-version">
-            GDK Chit Funds Web Portal • v2.4.0 Production Build
+            Sri Periyanayagi Amman Chit Funds Web Portal • v2.4.0 Production Build
           </span>
         </div>
       </div>
 
-      {/* ── 5. All 14 Modals Connected ── */}
+      {/* ── 4. All 14 Modals Connected ── */}
       <AccountDetailsModal
         isOpen={showAccountModal}
         onClose={() => setShowAccountModal(false)}
@@ -461,7 +563,7 @@ const Profile = () => {
       <LanguageModal
         isOpen={showLanguageModal}
         onClose={() => setShowLanguageModal(false)}
-        onLanguageChanged={(lang) => setCurrentLang(lang)}
+        onLanguageChanged={(lang) => changeLanguage(lang)}
       />
 
       <PrivacyPolicyModal
@@ -493,3 +595,4 @@ const Profile = () => {
 };
 
 export default Profile;
+
