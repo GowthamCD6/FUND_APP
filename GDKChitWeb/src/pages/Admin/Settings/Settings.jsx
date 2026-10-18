@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext.jsx';
-import { makeRequest, safeJson } from '../../../api/apiClient.js';
+import { makeRequest, safeJson, resolveMediaUrl } from '../../../api/apiClient.js';
 import {
   User,
   Lock,
@@ -15,7 +15,12 @@ import {
   FileText,
   ChevronRight,
   ShieldAlert,
-  Zap
+  Zap,
+  Camera,
+  Mail,
+  Phone,
+  MapPin,
+  CheckCircle2
 } from 'lucide-react';
 
 import AdminProfileModal from './Modals/AdminProfileModal.jsx';
@@ -40,6 +45,7 @@ const Settings = () => {
 
   const [adminProfile, setAdminProfile] = useState(null);
   const [profileImage, setProfileImage] = useState('');
+  const [imageError, setImageError] = useState(false);
   const [currentLang, setCurrentLang] = useState(localStorage.getItem('app_language') || 'en');
 
   // ── Modal State Toggles ──
@@ -64,8 +70,11 @@ const Settings = () => {
       const res = await makeRequest('/auth/profile');
       const data = await safeJson(res);
       if (data.success) {
-        setAdminProfile(data.data?.user || data.data);
-        setProfileImage(data.data?.profile?.userImage || '');
+        const u = data.data?.user || data.data;
+        const p = data.data?.profile || {};
+        setAdminProfile({ ...u, profile: p });
+        setProfileImage(p.userImage || u.userImage || '');
+        setImageError(false);
       }
     } catch (e) {
       console.warn('Admin profile fetch error:', e);
@@ -97,8 +106,12 @@ const Settings = () => {
     else if (m === 'rate') setShowRateModal(true);
   }, [location.search]);
 
-  const displayName = adminProfile?.name || adminProfile?.username || user?.name || 'Administrator';
+  const displayName = adminProfile?.profile?.name || adminProfile?.name || adminProfile?.username || user?.name || 'Administrator';
   const displayPhone = adminProfile?.phone || user?.phone || '+91 98422 12345';
+  const displayEmail = adminProfile?.profile?.email || adminProfile?.mail || adminProfile?.email || user?.email || 'admin@gdkchitfunds.com';
+  const displayLocation = adminProfile?.profile?.city
+    ? `${adminProfile.profile.city}, ${adminProfile.profile.state || 'Tamil Nadu'}`
+    : 'Tiruppur, Tamil Nadu';
   const initial = displayName.charAt(0).toUpperCase();
 
 
@@ -234,32 +247,100 @@ const Settings = () => {
       {/* ── 1. Executive Admin Profile Card ── */}
       <div className="adm-profile-banner">
         <div className="adm-profile-left">
-          <div className="adm-profile-avatar">
-            {initial}
+          {/* Avatar with image preview, live online ring & hover camera overlay */}
+          <div
+            className="adm-profile-avatar-wrap"
+            onClick={() => setShowProfileModal(true)}
+            role="button"
+            tabIndex={0}
+            title="Click to view or update admin profile photo"
+          >
+            {profileImage && !imageError ? (
+              <img
+                src={resolveMediaUrl(profileImage)}
+                alt={displayName}
+                className="adm-profile-img"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="adm-profile-avatar-fallback">
+                {initial}
+              </div>
+            )}
+            
+            {/* Live Session Online Pulse Indicator */}
+            <span className="adm-profile-status-dot" title="Live Authenticated Admin Session">
+              <span className="adm-status-pulse" />
+            </span>
+
+            {/* Hover Camera Overlay */}
+            <div className="adm-profile-avatar-overlay">
+              <Camera size={16} />
+              <span>Change</span>
+            </div>
           </div>
+
+          {/* Admin Info */}
           <div className="adm-profile-text">
             <div className="adm-profile-name-row">
               <h2 className="adm-profile-name">
                 {displayName}
               </h2>
               <span className="adm-profile-badge">
+                <ShieldCheck size={13} strokeWidth={2.5} />
                 SUPER ADMIN
               </span>
+              <span className="adm-profile-subbadge">
+                <CheckCircle2 size={12} strokeWidth={2.5} />
+                HQ Verified
+              </span>
             </div>
-            <p className="adm-profile-sub">
-              {displayPhone} • Periyanayagi Amman Chit Funds Headquarters
-            </p>
+
+            {/* Contact Details Meta Row */}
+            <div className="adm-profile-meta-row">
+              <span className="adm-meta-item">
+                <Phone size={13} className="adm-meta-icon" />
+                {displayPhone}
+              </span>
+              <span className="adm-meta-divider">•</span>
+              <span className="adm-meta-item">
+                <Mail size={13} className="adm-meta-icon" />
+                {displayEmail}
+              </span>
+              <span className="adm-meta-divider">•</span>
+              <span className="adm-meta-item">
+                <MapPin size={13} className="adm-meta-icon" />
+                {displayLocation}
+              </span>
+            </div>
+
+            {/* Quick Status Pill Bar */}
+            <div className="adm-profile-chips-row">
+              <span className="adm-chip">
+                <span className="adm-chip-dot green" />
+                Central Ledger Auth
+              </span>
+              <span className="adm-chip">
+                <span className="adm-chip-dot blue" />
+                Chit Funds Act 1982
+              </span>
+              <span className="adm-chip">
+                <span className="adm-chip-dot amber" />
+                256-Bit Encrypted
+              </span>
+            </div>
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div className="adm-profile-actions">
           <button
             onClick={() => setShowProfileModal(true)}
             className="adm-btn-secondary"
             type="button"
           >
-            <User size={15} />
-            Edit Profile
+            <Camera size={15} />
+            Edit Profile & Avatar
           </button>
           <button
             onClick={() => setShowExportModal(true)}

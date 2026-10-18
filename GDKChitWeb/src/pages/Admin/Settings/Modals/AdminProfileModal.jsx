@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { makeRequest, safeJson } from '../../../../api/apiClient.js';
+import React, { useState, useEffect, useRef } from 'react';
+import { makeRequest, safeJson, resolveMediaUrl } from '../../../../api/apiClient.js';
 import {
   User,
   X,
@@ -10,7 +10,10 @@ import {
   Phone,
   Calendar,
   MapPin,
-  Home
+  Home,
+  Camera,
+  Upload,
+  Trash2
 } from 'lucide-react';
 import './AdminModals.css';
 
@@ -25,6 +28,7 @@ const TAMIL_NADU_CITIES = [
 ];
 
 const AdminProfileModal = ({ isOpen, onClose, onUpdated }) => {
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -32,8 +36,10 @@ const AdminProfileModal = ({ isOpen, onClose, onUpdated }) => {
     dateOfBirth: '',
     streetAddress: '',
     city: 'Tiruppur',
-    state: 'Tamil Nadu'
+    state: 'Tamil Nadu',
+    userImage: ''
   });
+  const [imagePreview, setImagePreview] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -53,6 +59,7 @@ const AdminProfileModal = ({ isOpen, onClose, onUpdated }) => {
       if (data.success && data.data) {
         const u = data.data.user || {};
         const p = data.data.profile || {};
+        const img = p.userImage || u.userImage || '';
         setFormData({
           name: p.name || u.name || u.username || '',
           email: p.email || u.email || '',
@@ -62,14 +69,43 @@ const AdminProfileModal = ({ isOpen, onClose, onUpdated }) => {
             : '',
           streetAddress: p.streetAddress || '',
           city: p.city || 'Tiruppur',
-          state: p.state || 'Tamil Nadu'
+          state: p.state || 'Tamil Nadu',
+          userImage: img
         });
+        setImagePreview(img);
       }
     } catch (err) {
       setErrorMsg('Failed to load profile details.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Please select a valid image file (JPG, PNG, WEBP).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('Image size must be less than 5MB.');
+      return;
+    }
+    setErrorMsg('');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result;
+      setImagePreview(base64);
+      setFormData(prev => ({ ...prev, userImage: base64 }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview('');
+    setFormData(prev => ({ ...prev, userImage: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleChange = (e) => {
@@ -154,6 +190,63 @@ const AdminProfileModal = ({ isOpen, onClose, onUpdated }) => {
               </div>
             ) : (
               <>
+                {/* ── Avatar Photo Section ── */}
+                <div className="adm-avatar-upload-box">
+                  <div className="adm-avatar-upload-preview">
+                    {imagePreview ? (
+                      <img
+                        src={imagePreview.startsWith('data:') ? imagePreview : resolveMediaUrl(imagePreview)}
+                        alt="Avatar Preview"
+                        className="adm-avatar-upload-img"
+                      />
+                    ) : (
+                      <div className="adm-avatar-upload-placeholder">
+                        {(formData.name || 'A').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      className="adm-avatar-camera-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Upload photo"
+                    >
+                      <Camera size={15} />
+                    </button>
+                  </div>
+                  <div className="adm-avatar-upload-info">
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="adm-btn-avatar-pick"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload size={13} />
+                        Upload New Photo
+                      </button>
+                      {imagePreview && (
+                        <button
+                          type="button"
+                          className="adm-btn-avatar-remove"
+                          onClick={handleRemoveImage}
+                        >
+                          <Trash2 size={13} />
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <span className="adm-avatar-upload-hint">
+                      JPG, PNG or WEBP (Max 5MB). High-resolution square format recommended.
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      style={{ display: 'none' }}
+                      onChange={handleFileChange}
+                    />
+                  </div>
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div className="adm-form-group">
                     <label className="adm-form-label">Administrator Name *</label>

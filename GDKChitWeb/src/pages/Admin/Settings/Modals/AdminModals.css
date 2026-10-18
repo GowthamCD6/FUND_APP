@@ -230,3 +230,129 @@
 @keyframes admSpin {
   100% { transform: rotate(360deg); }
 }
+
+/* ── Avatar Upload Component ── */
+.adm-avatar-upload-box {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+  margin-bottom: 18px;
+  transition: border-color 0.2s ease;
+}
+
+.adm-avatar-upload-box:hover {
+  border-color: #2E7D32;
+  background: #f0fdf4;
+}
+
+.adm-avatar-upload-preview {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.adm-avatar-upload-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 2px solid #ffffff;
+  display: block;
+}
+
+.adm-avatar-upload-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #1B3322 0%, #2E7D32 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 800;
+  border: 2px solid #ffffff;
+}
+
+.adm-avatar-camera-btn {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #2E7D32;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: all 0.15s ease;
+}
+
+.adm-avatar-camera-btn:hover {
+  background: #1B3322;
+  transform: scale(1.1);
+}
+
+.adm-avatar-upload-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.adm-btn-avatar-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  color: #1B3322;
+  border: 1.5px solid #2E7D32;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.adm-btn-avatar-pick:hover {
+  background: #2E7D32;
+  color: #ffffff;
+}
+
+.adm-btn-avatar-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fff;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.adm-btn-avatar-remove:hover {
+  background: #fee2e2;
+}
+
+.adm-avatar-upload-hint {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
