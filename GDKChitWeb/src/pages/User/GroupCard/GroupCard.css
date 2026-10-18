@@ -146,69 +146,90 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   MOBILE PORTFOLIO STYLE KPI METRICS
+   COMPACT MOBILE PORTFOLIO STYLE KPI METRICS (Small Size)
    ══════════════════════════════════════════════════════════════════ */
-.gc-kpi-grid {
+.gc-kpi-grid,
+.gc-kpi-grid.compact {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 @media (max-width: 1080px) {
-  .gc-kpi-grid {
+  .gc-kpi-grid,
+  .gc-kpi-grid.compact {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 580px) {
-  .gc-kpi-grid {
+  .gc-kpi-grid,
+  .gc-kpi-grid.compact {
     grid-template-columns: 1fr;
   }
 }
 
-.gc-kpi-card {
+.gc-kpi-card,
+.gc-kpi-card.compact {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 14px;
-  padding: 18px 20px;
+  border-radius: 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  min-height: 90px;
 }
 
-.gc-kpi-card:hover {
+.gc-kpi-card:hover,
+.gc-kpi-card.compact:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
 }
 
-.gc-kpi-card.highlight {
+.gc-kpi-card.highlight,
+.gc-kpi-card.compact.highlight {
   border: 1.5px solid #2E7D32;
   background: linear-gradient(180deg, #FAFCFA 0%, #FFFFFF 100%);
-  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.08);
+  box-shadow: 0 2px 6px rgba(46, 125, 50, 0.07);
+}
+
+.gc-kpi-card.plan-spent,
+.gc-kpi-card.compact.plan-spent {
+  border: 1.5px solid #2563EB;
+  background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.07);
 }
 
 .gc-kpi-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .gc-kpi-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #64748B;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gc-kpi-label strong {
+  color: #0F172A;
 }
 
 .gc-kpi-icon-wrap {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -236,11 +257,99 @@
 }
 
 .gc-kpi-value {
-  font-size: 24px;
+  font-size: 19px;
   font-weight: 800;
   color: #0F172A;
-  letter-spacing: -0.02em;
-  margin-bottom: 8px;
+  letter-spacing: -0.015em;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   QUICK-INSPECT INDIVIDUAL CHIT PLAN SPENT STRIP
+   ══════════════════════════════════════════════════════════════════ */
+.gc-plan-selector-strip {
+  background: #ffffff;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  overflow: hidden;
+}
+
+.gc-plan-strip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1B3322;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gc-plan-chips-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 2px 0;
+}
+
+.gc-plan-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 11.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  color: #334155;
+}
+
+.gc-plan-chip:hover {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+}
+
+.gc-plan-chip.active {
+  background: #EBF3ED;
+  border-color: #2E7D32;
+  color: #1B3322;
+  box-shadow: 0 1px 3px rgba(46, 125, 50, 0.15);
+}
+
+.gc-plan-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #94A3B8;
+}
+
+.gc-plan-chip.active .gc-plan-chip-dot {
+  background: #10B981;
+}
+
+.gc-plan-chip-name {
+  font-weight: 600;
+}
+
+.gc-plan-chip-spent {
+  color: #15803D;
+  font-weight: 700;
+}
+
+.gc-plan-chip-pool {
+  font-size: 10.5px;
+  color: #64748B;
 }
 
 .text-emerald {
@@ -372,7 +481,7 @@
 
 .gc-card.mg-enhanced-card {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid #E2E8F0;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
   cursor: pointer;
@@ -381,14 +490,14 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  gap: 16px;
+  padding: 16px 18px;
+  gap: 12px;
 }
 
 .gc-card.mg-enhanced-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   border-color: #2E7D32;
-  box-shadow: 0 12px 28px -4px rgba(27, 51, 34, 0.1), 0 4px 10px -2px rgba(27, 51, 34, 0.04);
+  box-shadow: 0 10px 24px -4px rgba(27, 51, 34, 0.1), 0 4px 8px -2px rgba(27, 51, 34, 0.03);
 }
 
 .gc-card-header {
@@ -401,12 +510,12 @@
 .gc-card-header-left {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .gc-card-title {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   color: #0F172A;
   letter-spacing: -0.015em;
@@ -424,9 +533,9 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 6px;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
   border: 1px solid transparent;
@@ -442,18 +551,18 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 2px 7px;
   background: #F1F5F9;
   border: 1px solid #E2E8F0;
   border-radius: 6px;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   color: #475569;
 }
 
 .gc-card-arrow-btn {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   border: 1px solid #E2E8F0;
   background: #F8FAFC;
@@ -473,43 +582,94 @@
   transform: translateX(2px);
 }
 
-/* 4-Metric Grid (Matches Admin Reports Group Card UI) */
-.gc-card-metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+/* Individual Chit Plan Spent Callout Banner */
+.gc-card-spent-banner {
+  background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+  border: 1px solid #BBF7D0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
-  background: #F8FAF8;
-  border: 1px solid #E2E8E2;
-  border-radius: 12px;
-  padding: 12px 14px;
 }
 
-.gc-metric-box {
+.gc-spent-col,
+.gc-spent-left {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
-.gc-metric-box.highlight {
-  background: #ffffff;
-  padding: 4px 8px;
-  border-radius: 8px;
-  border: 1px solid #DCE3DC;
-}
-
-.gc-metric-label {
+.gc-spent-label {
   font-size: 10.5px;
+  font-weight: 700;
+  color: #166534;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.gc-spent-amount {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #15803D;
+  line-height: 1.1;
+}
+
+.gc-spent-rem-col,
+.gc-spent-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.gc-spent-rem-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #166534;
+  text-transform: uppercase;
+}
+
+.gc-spent-rem-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: #166534;
+}
+
+/* Compact 3-Metric Grid */
+.gc-card-metrics-grid.compact {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #F8FAF8;
+  border: 1px solid #E2E8E2;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.gc-card-metrics-grid.compact .gc-metric-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gc-card-metrics-grid.compact .gc-metric-label {
+  font-size: 10px;
   font-weight: 700;
   color: #6B7A6E;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
 }
 
-.gc-metric-val {
-  font-size: 14.5px;
+.gc-card-metrics-grid.compact .gc-metric-val {
+  font-size: 13px;
   font-weight: 800;
   color: #0F172A;
 }

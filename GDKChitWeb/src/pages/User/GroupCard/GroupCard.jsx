@@ -13,6 +13,7 @@ const formatINR = (amt) =>
 const GroupCard = () => {
   const [userGroups, setUserGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'active' | 'completed'
   const [monthlyRecords, setMonthlyRecords] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(true);
@@ -29,6 +30,9 @@ const GroupCard = () => {
       const data = await safeJson(res);
       if (data.success && Array.isArray(data.data)) {
         setUserGroups(data.data);
+        if (data.data.length > 0) {
+          setSelectedPlanId((prev) => prev || data.data[0].id);
+        }
       } else {
         setUserGroups([]);
       }
@@ -143,6 +147,15 @@ const GroupCard = () => {
     };
   }, [userGroups]);
 
+  // Active Plan for Individual Chit Plan Amount Spent Inspection
+  const activePlan = useMemo(() => {
+    return userGroups.find(g => g.id === selectedPlanId) || userGroups[0] || null;
+  }, [userGroups, selectedPlanId]);
+
+  const activePlanSpent = Number(activePlan?.totalPaid) || 0;
+  const activePlanPool = Number(activePlan?.investmentAmount) || 0;
+  const activePlanRem = Math.max(0, activePlanPool - activePlanSpent);
+
   // Filtered groups
   const filteredGroups = useMemo(() => {
     if (activeFilter === 'active') {
@@ -188,14 +201,14 @@ const GroupCard = () => {
         <>
 
 
-          {/* Top Hero KPI Metrics (Mobile Portfolio Style) */}
-          <div className="gc-kpi-grid">
-            {/* Total Invested */}
-            <div className="gc-kpi-card highlight">
+          {/* Top Hero KPI Metrics (Compact Mobile Portfolio Style) */}
+          <div className="gc-kpi-grid compact">
+            {/* 1. Total Invested */}
+            <div className="gc-kpi-card compact highlight">
               <div className="gc-kpi-top">
                 <span className="gc-kpi-label">Total Amount Invested</span>
                 <div className="gc-kpi-icon-wrap emerald">
-                  <Coins size={18} />
+                  <Coins size={15} />
                 </div>
               </div>
               <div className="gc-kpi-value text-emerald">
@@ -203,18 +216,39 @@ const GroupCard = () => {
               </div>
               <div className="gc-kpi-meta">
                 <span className="gc-kpi-tag emerald">
-                  Across {portfolioStats.totalCount} Groups
+                  {portfolioStats.totalCount} Schemes
                 </span>
-                <span className="gc-kpi-subtext">Realized member savings</span>
+                <span className="gc-kpi-subtext">Overall Paid</span>
               </div>
             </div>
 
-            {/* Total Chit Value */}
-            <div className="gc-kpi-card">
+            {/* 2. Individual Chit Plan Spent (Dedicated Feature) */}
+            <div className="gc-kpi-card compact plan-spent">
+              <div className="gc-kpi-top">
+                <span className="gc-kpi-label" title={activePlan ? (activePlan.groupName || activePlan.group_name) : ''}>
+                  Plan Spent: <strong>{activePlan ? (activePlan.groupName || activePlan.group_name) : 'Select Plan'}</strong>
+                </span>
+                <div className="gc-kpi-icon-wrap blue">
+                  <CircleDollarSign size={15} />
+                </div>
+              </div>
+              <div className="gc-kpi-value text-blue">
+                {formatINR(activePlanSpent)}
+              </div>
+              <div className="gc-kpi-meta">
+                <span className="gc-kpi-tag blue">
+                  Target: {formatINR(activePlanPool)}
+                </span>
+                <span className="gc-kpi-subtext">Rem: {formatINR(activePlanRem)}</span>
+              </div>
+            </div>
+
+            {/* 3. Subscribed Chit Value */}
+            <div className="gc-kpi-card compact">
               <div className="gc-kpi-top">
                 <span className="gc-kpi-label">Subscribed Chit Value</span>
                 <div className="gc-kpi-icon-wrap green">
-                  <Building2 size={18} />
+                  <Building2 size={15} />
                 </div>
               </div>
               <div className="gc-kpi-value">
@@ -222,37 +256,18 @@ const GroupCard = () => {
               </div>
               <div className="gc-kpi-meta">
                 <span className="gc-kpi-tag green">
-                  Total Maturity Sum
+                  {portfolioStats.activeCount} Active
                 </span>
-                <span className="gc-kpi-subtext">Cumulative chit pool</span>
+                <span className="gc-kpi-subtext">Total Maturity</span>
               </div>
             </div>
 
-            {/* Active Schemes */}
-            <div className="gc-kpi-card">
-              <div className="gc-kpi-top">
-                <span className="gc-kpi-label">Active Chit Schemes</span>
-                <div className="gc-kpi-icon-wrap blue">
-                  <Layers size={18} />
-                </div>
-              </div>
-              <div className="gc-kpi-value text-blue">
-                {portfolioStats.activeCount} Pools
-              </div>
-              <div className="gc-kpi-meta">
-                <span className="gc-kpi-tag blue">
-                  {portfolioStats.completedCount} Completed
-                </span>
-                <span className="gc-kpi-subtext">Live ongoing auctions</span>
-              </div>
-            </div>
-
-            {/* Total Dividends Saved */}
-            <div className="gc-kpi-card">
+            {/* 4. Total Dividends Saved */}
+            <div className="gc-kpi-card compact">
               <div className="gc-kpi-top">
                 <span className="gc-kpi-label">Total Dividends Saved</span>
                 <div className="gc-kpi-icon-wrap purple">
-                  <TrendingUp size={18} />
+                  <TrendingUp size={15} />
                 </div>
               </div>
               <div className="gc-kpi-value text-purple">
@@ -260,12 +275,43 @@ const GroupCard = () => {
               </div>
               <div className="gc-kpi-meta">
                 <span className="gc-kpi-tag purple">
-                  Auction Dividends
+                  Dividends
                 </span>
-                <span className="gc-kpi-subtext">Deducted from installments</span>
+                <span className="gc-kpi-subtext">Saved from dues</span>
               </div>
             </div>
           </div>
+
+          {/* Quick-Inspect Individual Chit Plan Spent Strip (Mobile Selector Style) */}
+          {userGroups.length > 0 && (
+            <div className="gc-plan-selector-strip">
+              <div className="gc-plan-strip-label">
+                <Sparkles size={13} color="#2E7D32" />
+                <span>Inspect Spent per Chit Plan:</span>
+              </div>
+              <div className="gc-plan-chips-scroll">
+                {userGroups.map((g) => {
+                  const isSelected = selectedPlanId === g.id;
+                  const spent = Number(g.totalPaid) || 0;
+                  const pool = Number(g.investmentAmount) || 0;
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      className={`gc-plan-chip ${isSelected ? 'active' : ''}`}
+                      onClick={() => setSelectedPlanId(g.id)}
+                      title={`Inspect spent amount for ${g.groupName || g.group_name}`}
+                    >
+                      <span className="gc-plan-chip-dot" />
+                      <span className="gc-plan-chip-name">{g.groupName || g.group_name}</span>
+                      <strong className="gc-plan-chip-spent">{formatINR(spent)} spent</strong>
+                      <span className="gc-plan-chip-pool">({formatINR(pool)})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Filter Tabs */}
           <div className="gc-tabs-row">
@@ -373,11 +419,26 @@ const GroupCard = () => {
                       </button>
                     </div>
 
-                    {/* Financial Matrix (Matches Admin Reports card metrics grid) */}
-                    <div className="gc-card-metrics-grid">
+                    {/* Individual Chit Plan Spent Callout Banner */}
+                    <div className="gc-card-spent-banner">
+                      <div className="gc-spent-col">
+                        <span className="gc-spent-label">
+                          <Coins size={12} color="#15803d" />
+                          My Spent in this Chit:
+                        </span>
+                        <strong className="gc-spent-amount text-emerald">{formatINR(userPaid)}</strong>
+                      </div>
+                      <div className="gc-spent-rem-col">
+                        <span className="gc-spent-rem-label">Balance Remaining:</span>
+                        <strong className="gc-spent-rem-val">{formatINR(Math.max(0, poolValue - userPaid))}</strong>
+                      </div>
+                    </div>
+
+                    {/* Financial Matrix (Compact 3-metric items) */}
+                    <div className="gc-card-metrics-grid compact">
                       <div className="gc-metric-box">
                         <span className="gc-metric-label">
-                          <Landmark size={12} color="#64748b" />
+                          <Landmark size={11} color="#64748b" />
                           Chit Value
                         </span>
                         <strong className="gc-metric-val">{formatINR(poolValue)}</strong>
@@ -385,7 +446,7 @@ const GroupCard = () => {
 
                       <div className="gc-metric-box">
                         <span className="gc-metric-label">
-                          <CircleDollarSign size={12} color="#64748b" />
+                          <CircleDollarSign size={11} color="#64748b" />
                           Monthly Share
                         </span>
                         <strong className="gc-metric-val">{formatINR(monthlyShare)}/mo</strong>
@@ -393,18 +454,10 @@ const GroupCard = () => {
 
                       <div className="gc-metric-box">
                         <span className="gc-metric-label">
-                          <Users size={12} color="#64748b" />
+                          <Users size={11} color="#64748b" />
                           Total Members
                         </span>
                         <strong className="gc-metric-val">{group.totalMembers || totalMonths} Subs</strong>
-                      </div>
-
-                      <div className="gc-metric-box highlight">
-                        <span className="gc-metric-label">
-                          <CheckCircle2 size={12} color="#15803d" />
-                          My Total Paid
-                        </span>
-                        <strong className="gc-metric-val text-emerald">{formatINR(userPaid)}</strong>
                       </div>
                     </div>
 
