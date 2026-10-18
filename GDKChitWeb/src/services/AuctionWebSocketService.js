@@ -109,16 +109,47 @@ class AuctionWebSocketService {
   }
 
   /**
-   * Place a bid (admin can place on behalf of users if needed)
+   * Place a bid (supports both user and admin calls)
    */
-  placeBid(groupId, amount, userId, userName) {
-    this.send('place_bid', {
+  placeBid(groupId, amount, userIdOrKey = null, userName = null) {
+    const payload = {
       groupId,
-      amount,
-      userId,
-      userName,
+      amount: Number(amount),
       timestamp: Date.now(),
+    };
+    if (typeof userIdOrKey === 'string' && !userName && userIdOrKey.includes('-')) {
+      payload.idempotencyKey = userIdOrKey;
+    } else {
+      payload.userId = userIdOrKey || this._userId;
+      payload.userName = userName;
+      payload.idempotencyKey = `${this._userId || 'u'}-${groupId}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    }
+    this.send('place_bid', payload);
+  }
+
+  /**
+   * Set automated proxy bidding
+   */
+  setAutoBid(groupId, floorAmount, enabled = true) {
+    this.send('set_auto_bid', {
+      groupId,
+      floorAmount: Number(floorAmount),
+      enabled: Boolean(enabled),
     });
+  }
+
+  /**
+   * Check user eligibility for auction
+   */
+  checkEligibility(groupId) {
+    this.send('check_eligibility', { groupId });
+  }
+
+  /**
+   * Join an auction or lucky draw
+   */
+  joinAuction(groupId, userId) {
+    this.send('join_auction', { groupId, userId: userId || this._userId });
   }
 
   /**
