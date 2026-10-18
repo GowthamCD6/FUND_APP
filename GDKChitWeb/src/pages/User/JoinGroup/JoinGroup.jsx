@@ -184,39 +184,6 @@ const JoinGroup = () => {
   return (
     <div className="jg-container">
       {/* ══════════════════════════════════════════════════════════
-          HEADER BANNER (Signature Emerald Corporate Style)
-         ══════════════════════════════════════════════════════════ */}
-      <div className="jg-header-banner">
-        <div className="jg-header-left">
-          <div className="jg-header-icon-wrap">
-            <Landmark size={24} color="#ffffff" />
-          </div>
-          <div>
-            <div className="jg-header-tag-row">
-              <span className="jg-header-brand">Official Chit Scheme Enrollment</span>
-              <span className="jg-header-dot">•</span>
-              <span className="jg-header-company">Periyanayagi Amman Chit Funds</span>
-            </div>
-            <h1 className="jg-header-title">Join a Chit Group</h1>
-            <p className="jg-header-subtitle">
-              Enter your official administrative invitation code to immediately unlock your passbook, or explore verified open chit schemes.
-            </p>
-          </div>
-        </div>
-
-        <div className="jg-header-badges">
-          <span className="jg-badge-pill open">
-            <span className="jg-pulse-dot" />
-            <span>{availableGroups.length} Open Schemes Available</span>
-          </span>
-          <span className="jg-badge-pill law">
-            <ShieldCheck size={13} color="#059669" />
-            <span>Chit Funds Act 1982 Registered</span>
-          </span>
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════
           MAIN 2-COLUMN ENROLLMENT WORKSPACE
          ══════════════════════════════════════════════════════════ */}
       <div className="jg-main-grid">
