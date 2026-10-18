@@ -3,7 +3,7 @@ import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import {
   RefreshCw, Users, CheckCircle2, Clock, AlertTriangle,
   CircleDollarSign, ChevronRight, Loader2, Coins, Building2,
-  TrendingUp, Layers, Landmark, Calendar, Sparkles
+  TrendingUp, Layers, Landmark, Calendar, Sparkles, ShieldCheck, ArrowRight
 } from 'lucide-react';
 import './Portfolio.css';
 import GroupDetailedInfo from './GroupDetailedInfo.jsx';
@@ -11,9 +11,15 @@ import GroupDetailedInfo from './GroupDetailedInfo.jsx';
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(amount) || 0);
 
-const formatDate = (d) => {
-  if (!d) return 'N/A';
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+const formatDueDate = (dateStr) => {
+  if (!dateStr) return 'Standard Cycle';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return String(dateStr);
+  }
 };
 
 const getStatusBadge = (status) => {
@@ -90,12 +96,18 @@ const Portfolio = () => {
     return groups.reduce((s, g) => s + (Number(g.totalPaid) || 0), 0);
   }, [groups]);
 
+  const totalPoolValue = useMemo(() => {
+    return groups.reduce((s, g) => s + (Number(g.investmentAmount) || 0), 0);
+  }, [groups]);
+
   const selectedGroup = useMemo(() => {
     return groups.find((g) => g.id === selectedGroupId) || groups[0] || null;
   }, [groups, selectedGroupId]);
 
   const selectedPaid = Number(selectedGroup?.totalPaid) || 0;
   const selectedPool = Number(selectedGroup?.investmentAmount) || 0;
+  const selectedRemaining = Math.max(0, selectedPool - selectedPaid);
+  const selectedProgress = selectedPool > 0 ? Math.min(100, Math.round((selectedPaid / selectedPool) * 100)) : 0;
 
   const activeGroups = useMemo(() => {
     return groups.filter((g) => !['completed', 'paid'].includes(String(g.paymentStatus || '').toLowerCase()));
@@ -156,101 +168,158 @@ const Portfolio = () => {
 
   return (
     <div className="pf-container">
-      {/* ── 1. Top Toolbar (Tabs & Refresh) ── */}
-      <div className="pf-toolbar-card">
-        <div className="pf-tabs-group">
-          <button
-            type="button"
-            className={`pf-tab-btn ${activeTab === 'active' ? 'active' : ''}`}
-            onClick={() => setActiveTab('active')}
-          >
-            <span className="pf-tab-dot" />
-            Active Groups ({activeGroups.length})
-          </button>
-          <button
-            type="button"
-            className={`pf-tab-btn ${activeTab === 'completed' ? 'active' : ''}`}
-            onClick={() => setActiveTab('completed')}
-          >
-            Completed ({completedGroups.length})
-          </button>
+      {/* ── 1. Page Header (Title, Filter Tabs & Refresh) ── */}
+      <div className="pf-header-bar">
+        <div className="pf-header-intro">
+          <h1 className="pf-page-title">My Investments & Portfolio</h1>
+          <p className="pf-page-subtitle">
+            Track your scheme payments, cycle schedule, and official monthly passbooks
+          </p>
         </div>
 
-        <button
-          type="button"
-          className="pf-btn-refresh"
-          onClick={load}
-          disabled={loading}
-          title="Refresh Portfolio"
-        >
-          <RefreshCw size={14} className={loading ? 'pf-spin' : ''} />
-          <span>Refresh</span>
-        </button>
+        <div className="pf-header-actions">
+          <div className="pf-tabs-pill">
+            <button
+              type="button"
+              className={`pf-tab-item ${activeTab === 'active' ? 'active' : ''}`}
+              onClick={() => setActiveTab('active')}
+            >
+              <span className="pf-tab-dot" />
+              Active Groups ({activeGroups.length})
+            </button>
+            <button
+              type="button"
+              className={`pf-tab-item ${activeTab === 'completed' ? 'active' : ''}`}
+              onClick={() => setActiveTab('completed')}
+            >
+              Completed ({completedGroups.length})
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className="pf-btn-refresh"
+            onClick={load}
+            disabled={loading}
+            title="Refresh Portfolio"
+          >
+            <RefreshCw size={13} className={loading ? 'pf-spin' : ''} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── 2. Hero Stats Row (Total Invested & Paid in Selected Group) ── */}
-      <div className="pf-stats-grid">
-        {/* Stat Card 1: Total Amount Invested */}
-        <div className="pf-stat-card primary">
-          <div className="pf-stat-icon total">
-            <Coins size={22} />
-          </div>
-          <div className="pf-stat-info">
-            <span className="pf-stat-label">TOTAL AMOUNT INVESTED</span>
-            <h3 className="pf-stat-val">{formatCurrency(totalInvested)}</h3>
-            <span className="pf-stat-sub">Across all {groups.length} enrolled schemes</span>
-          </div>
-        </div>
-
-        {/* Stat Card 2: Paid in Selected Group */}
-        <div className="pf-stat-card">
-          <div className="pf-stat-icon group">
-            <Users size={22} />
-          </div>
-          <div className="pf-stat-info">
-            <div className="pf-stat-header-row">
-              <span className="pf-stat-label">PAID IN {selectedGroup ? selectedGroup.groupName : 'SELECTED GROUP'}</span>
-              {selectedGroup && (
-                <span className="pf-stat-pool-badge">
-                  Target: {formatCurrency(selectedPool)}
-                </span>
-              )}
+      {/* ── 2. Hero Overview (Total Invested & Scheme Inspector) ── */}
+      <div className="pf-hero-row">
+        {/* Stat Card 1: Total Invested Across All Schemes */}
+        <div className="pf-hero-card primary">
+          <div className="pf-card-glow-circle" />
+          <div className="pf-hero-top">
+            <div className="pf-stat-icon-wrap">
+              <Coins size={20} />
             </div>
-            <h3 className="pf-stat-val text-emerald">{formatCurrency(selectedPaid)}</h3>
-            <span className="pf-stat-sub">
-              Remaining: {formatCurrency(Math.max(0, selectedPool - selectedPaid))}
-            </span>
+            <span className="pf-hero-badge">Overall Portfolio</span>
+          </div>
+
+          <div className="pf-hero-center">
+            <span className="pf-hero-label">TOTAL AMOUNT INVESTED</span>
+            <h2 className="pf-hero-value">{formatCurrency(totalInvested)}</h2>
+          </div>
+
+          <div className="pf-hero-footer">
+            <div className="pf-hero-sub-item">
+              <ShieldCheck size={13} />
+              <span>Across all {groups.length} enrolled schemes</span>
+            </div>
+            <div className="pf-hero-sub-item end">
+              <span className="pf-pool-tag">Pool: {formatCurrency(totalPoolValue)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stat Card 2: Interactive Scheme Inspector */}
+        <div className="pf-hero-card inspector">
+          <div className="pf-inspector-head">
+            <div className="pf-inspector-title-wrap">
+              <div className="pf-inspector-icon-wrap">
+                <Building2 size={16} />
+              </div>
+              <div>
+                <span className="pf-hero-label">SCHEME CONTRIBUTION</span>
+                <h3 className="pf-inspector-name">
+                  {selectedGroup ? (selectedGroup.groupName || selectedGroup.group_name) : 'Select Scheme'}
+                </h3>
+              </div>
+            </div>
+
+            {/* Scheme Selector Pills Embedded Inside Header */}
+            <div className="pf-inspector-chips-row">
+              {groups.map((g) => {
+                const isSelected = selectedGroupId === g.id;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    className={`pf-inspector-chip ${isSelected ? 'active' : ''}`}
+                    onClick={() => setSelectedGroupId(g.id)}
+                    title={`Inspect payment details for ${g.groupName || g.group_name}`}
+                  >
+                    <span className="pf-chip-dot" />
+                    <span>{g.groupName || g.group_name}</span>
+                    <span className="pf-chip-amt">({formatCurrency(g.investmentAmount)})</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="pf-inspector-metrics">
+            <div className="pf-inspector-col">
+              <span className="pf-submetric-label">Paid in This Scheme</span>
+              <span className="pf-submetric-val text-emerald">{formatCurrency(selectedPaid)}</span>
+            </div>
+            <div className="pf-inspector-col">
+              <span className="pf-submetric-label">Target Chit Value</span>
+              <span className="pf-submetric-val">{formatCurrency(selectedPool)}</span>
+            </div>
+            <div className="pf-inspector-col end">
+              <span className="pf-submetric-label">Remaining Balance</span>
+              <span className="pf-submetric-val text-amber">{formatCurrency(selectedRemaining)}</span>
+            </div>
+          </div>
+
+          {/* Mini progress track of selected scheme */}
+          <div className="pf-inspector-progress-box">
+            <div className="pf-inspector-progress-label">
+              <span>Remittance Completion</span>
+              <strong>{selectedProgress}% Remitted</strong>
+            </div>
+            <div className="pf-inspector-progress-track">
+              <div
+                className="pf-inspector-progress-fill"
+                style={{ width: `${selectedProgress}%` }}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── 3. Group Selector Chips Strip ── */}
-      <div className="pf-chips-strip">
-        <div className="pf-chips-label">
-          <Sparkles size={13} color="#2E7D32" />
-          <span>Inspect Paid per Scheme:</span>
+      {/* ── 3. Cards Section Title / Hint ── */}
+      <div className="pf-section-heading">
+        <div className="pf-heading-left">
+          <h2 className="pf-section-title">
+            {activeTab === 'active' ? 'Active Chit Schemes' : 'Completed Schemes'}
+          </h2>
+          <span className="pf-heading-count">
+            {currentGroups.length} {currentGroups.length === 1 ? 'Scheme' : 'Schemes'}
+          </span>
         </div>
-        <div className="pf-chips-scroll">
-          {groups.map((g) => {
-            const isSelected = selectedGroupId === g.id;
-            return (
-              <button
-                key={g.id}
-                type="button"
-                className={`pf-chip-btn ${isSelected ? 'active' : ''}`}
-                onClick={() => setSelectedGroupId(g.id)}
-                title={`Inspect payment progress for ${g.groupName}`}
-              >
-                <span className="pf-chip-dot" />
-                <span className="pf-chip-name">{g.groupName}</span>
-                <span className="pf-chip-amount">({formatCurrency(g.investmentAmount)})</span>
-              </button>
-            );
-          })}
-        </div>
+        <span className="pf-heading-hint">
+          Click any card to open official passbook statement
+        </span>
       </div>
 
-      {/* ── 4. Group Cards Grid ── */}
+      {/* ── 4. Group Cards Grid (Matches Member Chit Card Matrix) ── */}
       {currentGroups.length > 0 ? (
         <div className="pf-cards-grid">
           {currentGroups.map((g) => {
@@ -261,36 +330,45 @@ const Portfolio = () => {
             const monthlyShare = Number(g.monthlyContribution) || Math.round((Number(g.investmentAmount) || 100000) / totalMonths);
             const poolValue = Number(g.investmentAmount) || 0;
             const paidValue = Number(g.totalPaid) || 0;
+            const isSelected = selectedGroupId === g.id;
 
             return (
               <div
                 key={g.id}
-                className="pf-group-card"
-                onClick={() => setDetailGroup(g)}
+                className={`pf-group-card ${isSelected ? 'selected' : ''}`}
+                onClick={() => {
+                  setSelectedGroupId(g.id);
+                  setDetailGroup(g);
+                }}
                 role="button"
                 tabIndex={0}
                 title="Click to view detailed monthly passbook statement"
               >
-                {/* Header: Title, Badges, Circular Chevron */}
+                {/* Header: Avatar, Title, Badges, Circular Chevron */}
                 <div className="pf-card-top">
                   <div className="pf-card-title-col">
-                    <h3 className="pf-card-name">{g.groupName || g.group_name}</h3>
-                    <div className="pf-card-badges">
-                      <span
-                        className="pf-badge-status"
-                        style={{
-                          background: badge.bg,
-                          color: badge.color,
-                          borderColor: badge.border,
-                        }}
-                      >
-                        <span className="pf-badge-dot" style={{ background: badge.dot }} />
-                        {badge.label}
-                      </span>
-                      <span className="pf-badge-cycle">
-                        <Calendar size={11} />
-                        Cycle {curMonth} of {totalMonths}
-                      </span>
+                    <div className="pf-card-avatar">
+                      <Building2 size={16} color="#1B3322" />
+                    </div>
+                    <div className="pf-card-heading-box">
+                      <h3 className="pf-card-name">{g.groupName || g.group_name}</h3>
+                      <div className="pf-card-badges">
+                        <span
+                          className="pf-badge-status"
+                          style={{
+                            background: badge.bg,
+                            color: badge.color,
+                            borderColor: badge.border,
+                          }}
+                        >
+                          <span className="pf-badge-dot" style={{ background: badge.dot }} />
+                          {badge.label}
+                        </span>
+                        <span className="pf-badge-cycle">
+                          <Calendar size={10.5} />
+                          Cycle {curMonth} of {totalMonths}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -299,15 +377,16 @@ const Portfolio = () => {
                     className="pf-card-arrow"
                     onClick={(e) => {
                       e.stopPropagation();
+                      setSelectedGroupId(g.id);
                       setDetailGroup(g);
                     }}
                     title="View Group Passbook"
                   >
-                    <ChevronRight size={18} />
+                    <ChevronRight size={17} />
                   </button>
                 </div>
 
-                {/* 4-Metric Grid (Matches Member Chit Card UI) */}
+                {/* 4-Metric Grid (Balanced Quadrants) */}
                 <div className="pf-card-metrics-grid">
                   <div className="pf-metric-box">
                     <span className="pf-metric-label">
@@ -362,13 +441,13 @@ const Portfolio = () => {
                   </div>
                 </div>
 
-                {/* Card Footer (Next Due & Click CTA) */}
+                {/* Card Footer: Due Date & View Statement CTA */}
                 <div className="pf-card-footer">
                   <span className="pf-due-info">
-                    Next Due: <strong>{g.estimatedPayDate || g.endDate || 'Standard Cycle'}</strong>
+                    Next Due: <strong>{formatDueDate(g.estimatedPayDate || g.endDate)}</strong>
                   </span>
                   <span className="pf-click-cta">
-                    View Statement <ChevronRight size={13} />
+                    View Statement <ArrowRight size={12} />
                   </span>
                 </div>
               </div>

@@ -1,15 +1,15 @@
 /* ==========================================================================
-   PORTFOLIO PAGE STYLESHEET — Project Forest Green Theme & Compact Layout
+   PORTFOLIO PAGE STYLESHEET — Project Forest Green Theme & Premium Layout
    ========================================================================== */
 
 .pf-container {
-  max-width: 1240px;
+  max-width: 1220px;
   margin: 0 auto;
   padding: 16px 20px 48px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   min-height: 80vh;
 }
 
@@ -23,50 +23,77 @@
 }
 
 /* ────────────────────────────────────────────────────────────
-   1. TOP TOOLBAR (Tabs & Refresh)
+   1. TOP HEADER BAR (Title, Tabs & Refresh)
    ──────────────────────────────────────────────────────────── */
-.pf-toolbar-card {
+.pf-header-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #ffffff;
-  padding: 12px 18px;
-  border-radius: 12px;
+  padding: 16px 22px;
+  border-radius: 16px;
   border: 1px solid #E2E8F0;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
 }
 
-.pf-tabs-group {
+.pf-header-intro {
   display: flex;
-  background: #F8FAF8;
-  border: 1px solid #E2E8E2;
-  border-radius: 9px;
-  padding: 3px;
-  gap: 4px;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.pf-tab-btn {
+.pf-page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.02em;
+}
+
+.pf-page-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.pf-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pf-tabs-pill {
+  display: flex;
+  background: #F1F5F9;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.pf-tab-item {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 14px;
-  border-radius: 7px;
+  padding: 6px 14px;
+  border-radius: 8px;
   background: transparent;
   border: none;
   font-size: 13px;
   font-weight: 700;
   color: #64748B;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.16s ease;
 }
 
-.pf-tab-btn:hover {
-  color: #0B140E;
+.pf-tab-item:hover {
+  color: #0F172A;
 }
 
-.pf-tab-btn.active {
+.pf-tab-item.active {
   background: #1B3322;
   color: #ffffff;
   box-shadow: 0 2px 6px rgba(27, 51, 34, 0.2);
@@ -76,10 +103,10 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #2E7D32;
+  background: #94A3B8;
 }
 
-.pf-tab-btn.active .pf-tab-dot {
+.pf-tab-item.active .pf-tab-dot {
   background: #4ADE80;
 }
 
@@ -87,15 +114,15 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 7px 14px;
   border-radius: 8px;
-  background: #F8FAF8;
-  border: 1px solid #E2E8E2;
+  background: #F8FAFC;
+  border: 1px solid #CBD5E1;
   font-size: 13px;
   font-weight: 700;
-  color: #333D35;
+  color: #334155;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.16s ease;
 }
 
 .pf-btn-refresh:hover:not(:disabled) {
@@ -105,210 +132,351 @@
 }
 
 /* ────────────────────────────────────────────────────────────
-   2. HERO STATS GRID (Total Invested & Selected Group Paid)
+   2. HERO ROW (Total Invested & Scheme Inspector)
    ──────────────────────────────────────────────────────────── */
-.pf-stats-grid {
+.pf-hero-row {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1.35fr;
   gap: 16px;
 }
 
-@media (max-width: 768px) {
-  .pf-stats-grid {
+@media (max-width: 960px) {
+  .pf-hero-row {
     grid-template-columns: 1fr;
   }
 }
 
-.pf-stat-card {
-  background: #ffffff;
-  border-radius: 14px;
+.pf-hero-card {
+  border-radius: 16px;
   padding: 20px 22px;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
-  transition: all 0.18s ease;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  position: relative;
+  overflow: hidden;
+  gap: 14px;
 }
 
-.pf-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-}
-
-/* Primary Card: Total Invested */
-.pf-stat-card.primary {
-  background: linear-gradient(135deg, #1B3322 0%, #2E7D32 100%);
+/* Hero Card 1: Total Invested (Deep Forest Green) */
+.pf-hero-card.primary {
+  background: linear-gradient(135deg, #14281B 0%, #1B3322 55%, #285433 100%);
   border: 1px solid #1B3322;
   color: #ffffff;
-  box-shadow: 0 6px 18px rgba(27, 51, 34, 0.16);
+  box-shadow: 0 6px 20px rgba(27, 51, 34, 0.18);
 }
 
-.pf-stat-icon {
-  width: 48px;
-  height: 48px;
+.pf-card-glow-circle {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(46, 125, 50, 0.2);
+  filter: blur(24px);
+  pointer-events: none;
+}
+
+.pf-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pf-stat-icon-wrap {
+  width: 42px;
+  height: 42px;
   border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-}
-
-.pf-stat-icon.total {
-  background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-.pf-stat-icon.group {
-  background: #EBF3ED;
-  color: #1B3322;
-  border: 1px solid #C8DEC9;
+.pf-hero-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #E2E8F0;
+  letter-spacing: 0.02em;
 }
 
-.pf-stat-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.pf-stat-header-row {
+.pf-hero-center {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 2px;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.pf-stat-label {
-  font-size: 11.5px;
+.pf-hero-label {
+  font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.85;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.8);
 }
 
-.pf-stat-card:not(.primary) .pf-stat-label {
+.pf-hero-card.inspector .pf-hero-label {
   color: #64748B;
 }
 
-.pf-stat-pool-badge {
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 6px;
-  background: #F1F5F9;
-  color: #475569;
-}
-
-.pf-stat-val {
-  font-size: 26px;
+.pf-hero-value {
+  margin: 0;
+  font-size: 30px;
   font-weight: 900;
-  margin: 3px 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   line-height: 1.15;
 }
 
-.pf-stat-val.text-emerald {
-  color: #059669;
+.pf-hero-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.pf-stat-sub {
-  font-size: 12px;
-  opacity: 0.85;
+.pf-hero-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 500;
 }
 
-.pf-stat-card:not(.primary) .pf-stat-sub {
-  color: #64748B;
+.pf-pool-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
 
-/* ────────────────────────────────────────────────────────────
-   3. CHIPS SELECTOR STRIP
-   ──────────────────────────────────────────────────────────── */
-.pf-chips-strip {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* Hero Card 2: Interactive Scheme Inspector */
+.pf-hero-card.inspector {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 12px;
-  padding: 10px 14px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
-  overflow-x: auto;
+  color: #0F172A;
 }
 
-.pf-chips-label {
+.pf-inspector-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pf-inspector-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pf-inspector-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #EBF3ED;
+  border: 1px solid #C8DEC9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1B3322;
+}
+
+.pf-inspector-name {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.pf-inspector-chips-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  font-weight: 800;
-  color: #1B3322;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.pf-chips-scroll {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   overflow-x: auto;
-  scrollbar-width: none;
+  max-width: 100%;
 }
 
-.pf-chips-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.pf-chip-btn {
+.pf-inspector-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 20px;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 16px;
   background: #F8FAF8;
   border: 1px solid #E2E8E2;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   color: #475569;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
-  flex-shrink: 0;
 }
 
-.pf-chip-btn:hover {
+.pf-inspector-chip:hover {
   background: #EBF3ED;
   border-color: #C8DEC9;
   color: #1B3322;
 }
 
-.pf-chip-btn.active {
+.pf-inspector-chip.active {
   background: #1B3322;
   border-color: #1B3322;
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(27, 51, 34, 0.22);
+  box-shadow: 0 2px 6px rgba(27, 51, 34, 0.2);
 }
 
 .pf-chip-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: #CBD5E1;
+  background: #94A3B8;
 }
 
-.pf-chip-btn.active .pf-chip-dot {
+.pf-inspector-chip.active .pf-chip-dot {
   background: #4ADE80;
 }
 
-.pf-chip-amount {
-  font-size: 11.5px;
+.pf-chip-amt {
+  font-size: 11px;
   opacity: 0.85;
 }
 
+.pf-inspector-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  background: #F8FAF8;
+  border: 1px solid #EBF0EB;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.pf-inspector-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pf-inspector-col.end {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.pf-submetric-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.pf-submetric-val {
+  font-size: 17px;
+  font-weight: 900;
+  color: #0F172A;
+  letter-spacing: -0.01em;
+}
+
+.pf-submetric-val.text-emerald {
+  color: #059669;
+}
+
+.pf-submetric-val.text-amber {
+  color: #D97706;
+}
+
+/* Inspector Progress Track */
+.pf-inspector-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pf-inspector-progress-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: #64748B;
+  font-weight: 600;
+}
+
+.pf-inspector-progress-label strong {
+  color: #1B3322;
+  font-weight: 700;
+}
+
+.pf-inspector-progress-track {
+  height: 6px;
+  background: #EAEFEA;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pf-inspector-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1B3322 0%, #2E7D32 100%);
+  border-radius: 6px;
+  transition: width 0.35s ease;
+}
+
 /* ────────────────────────────────────────────────────────────
-   4. GROUP CARDS GRID (Matches Member Chit Card Layout)
+   3. SECTION HEADING
+   ──────────────────────────────────────────────────────────── */
+.pf-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 2px 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pf-heading-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pf-section-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.015em;
+}
+
+.pf-heading-count {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #EBF3ED;
+  color: #1B3322;
+  border: 1px solid #C8DEC9;
+}
+
+.pf-heading-hint {
+  font-size: 12px;
+  color: #64748B;
+  font-weight: 500;
+}
+
+/* ────────────────────────────────────────────────────────────
+   4. CHIT CARDS GRID (Matches Member Chit Card Layout)
    ──────────────────────────────────────────────────────────── */
 .pf-cards-grid {
   display: grid;
@@ -333,8 +501,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  gap: 16px;
+  padding: 18px 20px;
+  gap: 14px;
 }
 
 .pf-group-card:hover {
@@ -343,6 +511,12 @@
   box-shadow: 0 12px 28px -4px rgba(27, 51, 34, 0.1), 0 4px 10px -2px rgba(27, 51, 34, 0.04);
 }
 
+.pf-group-card.selected {
+  border-color: #2E7D32;
+  box-shadow: 0 0 0 1px #2E7D32, 0 6px 18px rgba(27, 51, 34, 0.07);
+}
+
+/* Header */
 .pf-card-top {
   display: flex;
   justify-content: space-between;
@@ -352,9 +526,28 @@
 
 .pf-card-title-col {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 12px;
   flex: 1;
+  min-width: 0;
+}
+
+.pf-card-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #EBF3ED;
+  border: 1px solid #C8DEC9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pf-card-heading-box {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   min-width: 0;
 }
 
@@ -364,21 +557,21 @@
   font-weight: 800;
   color: #0F172A;
   letter-spacing: -0.015em;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .pf-card-badges {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .pf-badge-status {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
+  gap: 4px;
+  padding: 2px 7px;
   border-radius: 6px;
   font-size: 10px;
   font-weight: 800;
@@ -387,8 +580,8 @@
 }
 
 .pf-badge-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
 }
 
@@ -396,11 +589,11 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
+  padding: 2px 7px;
   background: #F1F5F9;
   border: 1px solid #E2E8F0;
   border-radius: 6px;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   color: #475569;
 }
@@ -416,7 +609,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.16s ease;
   flex-shrink: 0;
 }
 
@@ -427,52 +620,58 @@
   transform: translateX(2px);
 }
 
-/* 4-Metric Grid (Matches Member Chit Card Matrix) */
+/* 4-Metric Grid (Balanced Quadrants) */
 .pf-card-metrics-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 8px;
   background: #F8FAF8;
   border: 1px solid #E2E8E2;
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 10px;
 }
 
 .pf-metric-box {
+  background: #ffffff;
+  border: 1px solid #E8ECE8;
+  border-radius: 8px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .pf-metric-box.highlight {
-  background: #ffffff;
-  padding: 4px 8px;
-  border-radius: 8px;
-  border: 1px solid #DCE3DC;
+  background: #F0FDF4;
+  border-color: #A7F3D0;
 }
 
 .pf-metric-label {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   color: #6B7A6E;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .pf-metric-val {
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 800;
   color: #0F172A;
+}
+
+.pf-metric-val.text-emerald {
+  color: #059669;
 }
 
 /* Progress Section */
 .pf-progress-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .pf-progress-header {
@@ -505,8 +704,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 12px;
-  border-top: 1px dashed #E2E8F0;
+  padding-top: 10px;
+  border-top: 1px solid #F1F5F9;
   gap: 12px;
 }
 
@@ -520,7 +719,7 @@
 }
 
 .pf-click-cta {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #2E7D32;
   display: inline-flex;
@@ -540,7 +739,7 @@
 .pf-state-box {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 48px 20px;
   text-align: center;
   display: flex;
@@ -560,7 +759,7 @@
 .pf-state-title {
   font-size: 17px;
   font-weight: 800;
-  color: #0B140E;
+  color: #0F172A;
   margin: 12px 0 6px;
 }
 
