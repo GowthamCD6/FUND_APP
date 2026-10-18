@@ -24,6 +24,7 @@ import OtpRequestsPage from '../pages/Admin/AdminTools/OtpRequests/OtpRequestsPa
 import AuctionSettingsPage from '../pages/Admin/AdminTools/AuctionSettings/AuctionSettingsPage.jsx';
 import OfficeLocationPage from '../pages/Admin/AdminTools/OfficeLocation/OfficeLocationPage.jsx';
 import DeviceRevocationPage from '../pages/Admin/AdminTools/DeviceRevocation/DeviceRevocationPage.jsx';
+import MonthlyCollections from '../pages/Admin/MonthlyCollections/MonthlyCollections.jsx';
 
 // ── User Pages ──
 import UserHome from '../pages/User/Home/Home.jsx';
@@ -112,6 +113,7 @@ const AppNavigation = () => {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="monthly-collections" element={<MonthlyCollections />} />
         <Route path="chat" element={<Chat />} />
         <Route path="users" element={<ManageUsers />} />
         <Route path="manage-groups" element={<ManageGroups />} />
@@ -134,6 +136,7 @@ const AppNavigation = () => {
         <Route path="admintool/office-location" element={<OfficeLocationPage />} />
         <Route path="admintool/device-revocation" element={<DeviceRevocationPage />} />
         <Route path="device-revocation" element={<Navigate to="/admin/admintool/device-revocation" replace />} />
+        <Route path="admintool/monthly-collections" element={<Navigate to="/admin/monthly-collections" replace />} />
         <Route path="admintool/manage-groups" element={<Navigate to="/admin/manage-groups" replace />} />
         <Route path="admintool/manage-users" element={<Navigate to="/admin/manage-users" replace />} />
         <Route path="admintool/block-user" element={<Navigate to="/admin/block-user" replace />} />

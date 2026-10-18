@@ -10,7 +10,8 @@ import {
   MessageSquare, Menu, LogOut, User as UserIcon, X, Loader2, Gavel,
   Settings, UserCog, MapPin, Plus, Ban, Key, Layers, Lock, Unlock,
   Landmark, ShieldCheck, Users, ShieldAlert, Map, FileText, HelpCircle,
-  Bell, Search, ChevronRight, UserPlus, Info, CheckCircle2, AlertCircle, Globe
+  Bell, Search, ChevronRight, UserPlus, Info, CheckCircle2, AlertCircle, Globe,
+  Calculator
 } from 'lucide-react';
 
 
@@ -41,6 +42,7 @@ const ADMIN_NAV_GROUPS = [
     title: 'COLLECTIONS & AUDIT',
     items: [
       { id: 'reports', to: '/admin/reports', label: 'Reports & Collections', Icon: BarChart3 },
+      { id: 'monthly-collections', to: '/admin/monthly-collections', label: 'Monthly & Cumulative Yields', Icon: Calculator },
       { id: 'defaulters', to: '/admin/defaulters', label: 'Overdue Tracker', Icon: AlertTriangle },
     ]
   },
@@ -111,6 +113,7 @@ const USER_NAV_GROUPS = [
 const PAGE_TITLES = {
   '/admin/dashboard': 'Dashboard',
   '/admin/reports': 'Monthly Collections & Reports',
+  '/admin/monthly-collections': 'Monthly Collections & Cumulative Yields',
   '/admin/defaulters': 'Global Defaulters Tracker',
   '/admin/auction': 'Chit Reverse Auctions',
   '/admin/groups': 'Chit Plans & Groups',

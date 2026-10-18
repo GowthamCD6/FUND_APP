@@ -12,7 +12,8 @@ import {
   Search,
   ShieldCheck,
   Zap,
-  Smartphone
+  Smartphone,
+  Calculator
 } from 'lucide-react';
 import './AdminTool.css';
 
@@ -63,6 +64,15 @@ const TOOL_SECTIONS = [
     id: 'chit-ops',
     title: 'Chit Scheme & Auction Operations',
     actions: [
+      {
+        id: 'monthly-collections',
+        Icon: Calculator,
+        title: 'Monthly Collections & Revenue Calculator',
+        desc: 'Audit cycle collections per chit & calculate yields',
+        route: '/admin/monthly-collections',
+        color: '#1B3322',
+        bg: '#EBF3ED'
+      },
       {
         id: 'auction-settings',
         Icon: Gavel,

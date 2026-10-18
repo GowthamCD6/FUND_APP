@@ -9,6 +9,7 @@ const userManagement = require('../controllers/admin/userManagement');
 const reportsController = require('../controllers/admin/reportsController');
 const settingsController = require('../controllers/admin/settingsController');
 const deviceController = require('../controllers/admin/deviceController');
+const collectionAnalytics = require('../controllers/admin/chitCollectionAnalyticsController');
 const { otpRateLimiter, authAttemptRateLimiter } = require('../middleware/rateLimiter');
 const {
   validateCreateGroupPayload,
@@ -90,5 +91,12 @@ router.post('/settings/auction', authenticateToken, requireAdmin, settingsContro
 router.get('/devices/bindings', authenticateToken, requireAdmin, deviceController.getDeviceBindings);
 router.post('/devices/revoke', authenticateToken, requireAdmin, deviceController.revokeDeviceBinding);
 router.get('/devices/logs', authenticateToken, requireAdmin, deviceController.getDeviceRevocationLogs);
+
+// Monthly & Cumulative Chit Collections Analytics & Revenue Calculator
+router.get('/collections/analytics/overview', authenticateToken, requireAdmin, collectionAnalytics.getAnalyticsOverview);
+router.get('/collections/analytics/cumulative-monthly', authenticateToken, requireAdmin, collectionAnalytics.getCumulativeMonthlyCollections);
+router.get('/collections/analytics/group-monthly', authenticateToken, requireAdmin, collectionAnalytics.getGroupMonthlyCollections);
+router.get('/collections/analytics/groups-list', authenticateToken, requireAdmin, collectionAnalytics.getChitGroupsList);
+router.post('/collections/analytics/calculate', authenticateToken, requireAdmin, collectionAnalytics.calculateChitCollection);
 
 module.exports = router;
