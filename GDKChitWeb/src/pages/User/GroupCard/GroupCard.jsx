@@ -186,39 +186,7 @@ const GroupCard = () => {
          ══════════════════════════════════════════════════════════ */}
       {!selectedGroup ? (
         <>
-          {/* Header Banner */}
-          <div className="gc-header-banner">
-            <div className="gc-header-left">
-              <div className="gc-header-icon-wrap">
-                <Landmark size={26} strokeWidth={2.2} />
-              </div>
-              <div>
-                <div className="gc-title-row">
-                  <h1 className="gc-header-title">Member Chit Cards & Portfolio Passbook</h1>
-                  <span className="gc-badge-live">
-                    <span className="gc-live-dot" />
-                    Verified Member
-                  </span>
-                </div>
-                <p className="gc-header-subtitle">
-                  Inspect your subscribed chit schemes, track total personal investments, and open individual passbooks.
-                </p>
-              </div>
-            </div>
 
-            <div className="gc-header-actions">
-              <button
-                type="button"
-                className="gc-btn-secondary"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                title="Refresh portfolio records"
-              >
-                <RefreshCw size={14} className={refreshing ? 'gc-spin' : ''} />
-                <span>Refresh</span>
-              </button>
-            </div>
-          </div>
 
           {/* Top Hero KPI Metrics (Mobile Portfolio Style) */}
           <div className="gc-kpi-grid">
@@ -325,9 +293,22 @@ const GroupCard = () => {
               </button>
             </div>
 
-            <span className="gc-filter-hint">
-              Click any card below to view its monthly passbook statement & auction outcomes
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span className="gc-filter-hint">
+                Click any card to view monthly passbook statement
+              </span>
+              <button
+                type="button"
+                className="gc-btn-secondary"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Refresh portfolio records"
+                style={{ padding: '6px 12px', fontSize: 12 }}
+              >
+                <RefreshCw size={13} className={refreshing ? 'gc-spin' : ''} />
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
 
           {/* ══════════════════════════════════════════════════════
