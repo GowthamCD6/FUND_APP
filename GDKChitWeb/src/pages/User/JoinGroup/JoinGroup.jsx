@@ -250,29 +250,6 @@ const JoinGroup = () => {
               </div>
             </div>
 
-            {/* Quick Sample Schemes Click-to-Fill Chips */}
-            {availableGroups.length > 0 && (
-              <div className="jg-quick-codes-section">
-                <span className="jg-quick-label">Or select an active code:</span>
-                <div className="jg-quick-pills">
-                  {availableGroups.slice(0, 3).map((grp) => {
-                    const code = grp.groupCode || grp.group_code || `GRP${grp.id}`;
-                    return (
-                      <button
-                        type="button"
-                        key={grp.id}
-                        className={`jg-quick-pill ${groupCode === code ? 'active' : ''}`}
-                        onClick={() => setGroupCode(code)}
-                      >
-                        <span>{code}</span>
-                        <span className="jg-pill-name">({grp.group_name || grp.name})</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             <button
               type="submit"
               className="jg-btn-submit"
