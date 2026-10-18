@@ -768,55 +768,55 @@
   border: 1px solid #C8DEC9;
 }
 
-/* ── Passbook Executive Hero Card ── */
+/* ── Passbook Executive Hero Card (Small & Sleek) ── */
 .gc-passbook-hero-card {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-top: 4px solid #2E7D32;
-  border-radius: 16px;
-  padding: 24px 28px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  border-top: 3.5px solid #2E7D32;
+  border-radius: 14px;
+  padding: 15px 18px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .gc-hero-top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
 }
 
 .gc-hero-identity {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .gc-hero-icon-box {
-  width: 50px;
-  height: 50px;
-  border-radius: 14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #1B3322 0%, #2E7D32 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.25);
+  box-shadow: 0 3px 8px rgba(46, 125, 50, 0.2);
   flex-shrink: 0;
 }
 
 .gc-hero-pretitle-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
+  gap: 5px;
+  font-size: 10.5px;
   font-weight: 800;
   color: #2E7D32;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .gc-hero-dot {
-  color: #94A3B8;
+  color: #CBD5E1;
 }
 
 .gc-hero-branch {
@@ -825,17 +825,17 @@
 }
 
 .gc-hero-name {
-  margin: 3px 0 0;
-  font-size: 24px;
+  margin: 1px 0 0;
+  font-size: 18px;
   font-weight: 800;
   color: #0F172A;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
 }
 
 .gc-hero-sub {
-  margin: 4px 0 0;
-  font-size: 13px;
+  margin: 2px 0 0;
+  font-size: 12px;
   color: #64748B;
   font-weight: 500;
 }
@@ -843,19 +843,19 @@
 .gc-hero-badge-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   flex-wrap: wrap;
 }
 
 .gc-hero-status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
+  gap: 5px;
+  padding: 3px 10px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
 }
 
 .gc-hero-status-pill.completed {
@@ -873,59 +873,66 @@
 .gc-hero-id-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 11px;
+  gap: 4px;
+  padding: 3px 9px;
   background: #F8FAFC;
   border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  font-size: 11.5px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 700;
   color: #334155;
 }
 
-/* ── 4 Hero Stat Cards Grid ── */
-.gc-hero-stats-grid {
+/* ── 4 Hero Stat Cards Grid (Small Size) ── */
+.gc-hero-stats-grid,
+.gc-hero-stats-grid.compact {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-top: 22px;
-  padding-top: 20px;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
   border-top: 1px solid #F1F5F9;
 }
 
 @media (max-width: 980px) {
-  .gc-hero-stats-grid {
+  .gc-hero-stats-grid,
+  .gc-hero-stats-grid.compact {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 540px) {
-  .gc-hero-stats-grid {
+  .gc-hero-stats-grid,
+  .gc-hero-stats-grid.compact {
     grid-template-columns: 1fr;
   }
 }
 
-.gc-hero-stat-card {
+.gc-hero-stat-card,
+.gc-hero-stat-card.compact {
   background: #F8FAF8;
   border: 1px solid #E2E8E2;
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
+  min-height: 72px;
   transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 
-.gc-hero-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+.gc-hero-stat-card:hover,
+.gc-hero-stat-card.compact:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
 }
 
-.gc-hero-stat-card.highlight {
+.gc-hero-stat-card.highlight,
+.gc-hero-stat-card.compact.highlight {
   background: linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 100%);
   border: 1.5px solid #2E7D32;
-  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.08);
+  box-shadow: 0 1px 4px rgba(46, 125, 50, 0.06);
 }
 
 .gc-hero-stat-top {
@@ -935,7 +942,7 @@
 }
 
 .gc-hero-stat-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #64748B;
   text-transform: uppercase;
@@ -943,9 +950,9 @@
 }
 
 .gc-hero-stat-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -973,22 +980,22 @@
 }
 
 .gc-hero-stat-value {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 800;
   color: #0F172A;
   letter-spacing: -0.015em;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .gc-hero-unit {
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #64748B;
   margin-left: 2px;
 }
 
 .gc-hero-stat-sub {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: #64748B;
 }
@@ -996,11 +1003,11 @@
 .gc-hero-stat-progress {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .gc-hero-progress-track {
-  height: 5px;
+  height: 4px;
   background: #E2E8F0;
   border-radius: 4px;
   overflow: hidden;
@@ -1014,7 +1021,7 @@
 }
 
 .gc-hero-progress-text {
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 700;
   color: #2E7D32;
 }

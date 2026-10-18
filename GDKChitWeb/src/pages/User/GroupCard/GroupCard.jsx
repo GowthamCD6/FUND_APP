@@ -529,7 +529,7 @@ const GroupCard = () => {
                 <div className="gc-hero-top">
                   <div className="gc-hero-identity">
                     <div className="gc-hero-icon-box">
-                      <Landmark size={24} color="#ffffff" />
+                      <Landmark size={20} color="#ffffff" />
                     </div>
                     <div>
                       <div className="gc-hero-pretitle-row">
@@ -547,23 +547,23 @@ const GroupCard = () => {
                   <div className="gc-hero-badge-container">
                     <span className={`gc-hero-status-pill ${isCompleted ? 'completed' : 'ongoing'}`}>
                       <span className="gc-status-dot" />
-                      {isCompleted ? <CheckCircle2 size={13} /> : <Clock size={13} />}
+                      {isCompleted ? <CheckCircle2 size={12} /> : <Clock size={12} />}
                       <span>{isCompleted ? 'COMPLETED SCHEME' : 'ACTIVE CYCLE'}</span>
                     </span>
                     <span className="gc-hero-id-chip">
-                      <Layers size={12} color="#2E7D32" />
+                      <Layers size={11} color="#2E7D32" />
                       Cycle {currentMonth} / {totalMonths}
                     </span>
                   </div>
                 </div>
 
                 {/* Quick Hero KPIs Grid */}
-                <div className="gc-hero-stats-grid">
-                  <div className="gc-hero-stat-card">
+                <div className="gc-hero-stats-grid compact">
+                  <div className="gc-hero-stat-card compact">
                     <div className="gc-hero-stat-top">
                       <span className="gc-hero-stat-label">Chit Maturity Value</span>
                       <div className="gc-hero-stat-icon green">
-                        <Building2 size={15} />
+                        <Building2 size={13} />
                       </div>
                     </div>
                     <div className="gc-hero-stat-value">
@@ -574,11 +574,11 @@ const GroupCard = () => {
                     </div>
                   </div>
 
-                  <div className="gc-hero-stat-card highlight">
+                  <div className="gc-hero-stat-card compact highlight">
                     <div className="gc-hero-stat-top">
                       <span className="gc-hero-stat-label">My Total Paid Amount</span>
                       <div className="gc-hero-stat-icon emerald">
-                        <Coins size={15} />
+                        <Coins size={13} />
                       </div>
                     </div>
                     <div className="gc-hero-stat-value text-emerald">
@@ -589,11 +589,11 @@ const GroupCard = () => {
                     </div>
                   </div>
 
-                  <div className="gc-hero-stat-card">
+                  <div className="gc-hero-stat-card compact">
                     <div className="gc-hero-stat-top">
                       <span className="gc-hero-stat-label">Monthly Remittance</span>
                       <div className="gc-hero-stat-icon blue">
-                        <CircleDollarSign size={15} />
+                        <CircleDollarSign size={13} />
                       </div>
                     </div>
                     <div className="gc-hero-stat-value">
@@ -604,11 +604,11 @@ const GroupCard = () => {
                     </div>
                   </div>
 
-                  <div className="gc-hero-stat-card">
+                  <div className="gc-hero-stat-card compact">
                     <div className="gc-hero-stat-top">
                       <span className="gc-hero-stat-label">Passbook Progress</span>
                       <div className="gc-hero-stat-icon purple">
-                        <TrendingUp size={15} />
+                        <TrendingUp size={13} />
                       </div>
                     </div>
                     <div className="gc-hero-stat-value">
