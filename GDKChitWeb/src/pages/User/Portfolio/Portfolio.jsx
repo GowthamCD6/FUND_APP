@@ -1,63 +1,31 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import {
-  RefreshCw, Users, CheckCircle2, Clock, AlertTriangle,
-  CircleDollarSign, ChevronRight, Loader2, Coins, Building2,
-  TrendingUp, Layers, Landmark, Calendar, Sparkles, ShieldCheck, ArrowRight
+  Coins, Building2, TrendingUp, CircleDollarSign, CheckCircle2,
+  Calendar, ChevronRight, RefreshCw, Loader2, Landmark, Users,
+  Sparkles, ShieldCheck, AlertTriangle
 } from 'lucide-react';
+import '../GroupCard/GroupCard.css';
 import './Portfolio.css';
 import GroupDetailedInfo from './GroupDetailedInfo.jsx';
 
-const formatCurrency = (amount) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(amount) || 0);
+const formatINR = (amt) => {
+  if (amt == null || amt === '' || isNaN(Number(amt))) return '₹0';
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(Number(amt));
+};
 
 const formatDueDate = (dateStr) => {
-  if (!dateStr) return 'Standard Cycle';
+  if (!dateStr) return 'Standard Schedule';
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return String(dateStr);
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   } catch {
     return String(dateStr);
-  }
-};
-
-const getStatusBadge = (status) => {
-  const s = String(status || 'active').toLowerCase();
-  switch (s) {
-    case 'completed':
-    case 'paid':
-      return {
-        label: 'COMPLETED',
-        bg: '#ECFDF5',
-        color: '#059669',
-        border: '#A7F3D0',
-        dot: '#10B981',
-      };
-    case 'overdue':
-      return {
-        label: 'OVERDUE',
-        bg: '#FEF2F2',
-        color: '#DC2626',
-        border: '#FECACA',
-        dot: '#EF4444',
-      };
-    case 'pending':
-      return {
-        label: 'PENDING',
-        bg: '#FFFBEB',
-        color: '#D97706',
-        border: '#FDE68A',
-        dot: '#F59E0B',
-      };
-    default:
-      return {
-        label: 'ACTIVE',
-        bg: '#EBF3ED',
-        color: '#1B3322',
-        border: '#C8DEC9',
-        dot: '#2E7D32',
-      };
   }
 };
 
@@ -119,31 +87,28 @@ const Portfolio = () => {
 
   const currentGroups = activeTab === 'active' ? activeGroups : completedGroups;
 
-  const getProgress = (g) => {
-    const cur = Number(g.currentMonth) || 0;
-    const total = Number(g.totalMonths) || 20;
-    return Math.min(100, Math.max(0, Math.round((cur / total) * 100)));
-  };
-
   if (loading) {
     return (
-      <div className="pf-container">
-        <div className="pf-state-box">
-          <Loader2 size={36} className="pf-spin" color="#2E7D32" />
-          <p className="pf-state-text">Loading your portfolio...</p>
-        </div>
+      <div className="gc-container" style={{ textAlign: 'center', padding: '80px 20px' }}>
+        <Loader2 size={38} className="gc-spin" color="#2E7D32" style={{ margin: '0 auto 16px' }} />
+        <h3 style={{ margin: 0, color: '#0B140E', fontSize: 18, fontWeight: 700 }}>
+          Loading Your Investment Portfolio...
+        </h3>
+        <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: 13 }}>
+          Fetching active chit passbooks from central ledger
+        </p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="pf-container">
-        <div className="pf-state-box">
-          <AlertTriangle size={42} color="#DC2626" />
-          <h3 className="pf-state-title">Unable to Load Portfolio</h3>
-          <p className="pf-state-desc">{error}</p>
-          <button className="pf-btn-retry" onClick={load}>
+      <div className="gc-container">
+        <div className="gc-empty-card">
+          <AlertTriangle size={44} color="#DC2626" />
+          <h3>Unable to Load Portfolio</h3>
+          <p>{error}</p>
+          <button type="button" className="gc-btn-secondary" onClick={load} style={{ marginTop: 12 }}>
             <RefreshCw size={14} /> Try Again
           </button>
         </div>
@@ -151,322 +116,329 @@ const Portfolio = () => {
     );
   }
 
-  if (groups.length === 0) {
-    return (
-      <div className="pf-container">
-        <div className="pf-state-box">
-          <Users size={48} color="#94A3B8" />
-          <h3 className="pf-state-title">No Portfolio Data</h3>
-          <p className="pf-state-desc">You have not joined any active chit groups yet.</p>
-          <a href="/user/join-group" className="pf-btn-join">
-            Join a Chit Scheme
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="pf-container">
-      {/* ── 1. Page Header (Title, Filter Tabs & Refresh) ── */}
-      <div className="pf-header-bar">
-        <div className="pf-header-intro">
-          <h1 className="pf-page-title">My Investments & Portfolio</h1>
-          <p className="pf-page-subtitle">
-            Track your scheme payments, cycle schedule, and official monthly passbooks
-          </p>
+    <div className="gc-container">
+      {/* ── 1. Top Header Banner (Matches Auction Page & Member Chit Card) ── */}
+      <div className="gc-header-banner">
+        <div className="gc-header-left">
+          <div className="gc-header-icon-wrap">
+            <Coins size={26} color="#ffffff" />
+          </div>
+          <div>
+            <div className="gc-title-row">
+              <h1 className="gc-header-title">My Investments & Portfolio</h1>
+              <span className="gc-badge-live">
+                <span className="gc-live-dot" />
+                {activeGroups.length} Active Schemes
+              </span>
+            </div>
+            <p className="gc-header-subtitle">
+              Official chit fund passbook statements, cycle remittances, and payout records
+            </p>
+          </div>
         </div>
 
-        <div className="pf-header-actions">
-          <div className="pf-tabs-pill">
-            <button
-              type="button"
-              className={`pf-tab-item ${activeTab === 'active' ? 'active' : ''}`}
-              onClick={() => setActiveTab('active')}
-            >
-              <span className="pf-tab-dot" />
-              Active Groups ({activeGroups.length})
-            </button>
-            <button
-              type="button"
-              className={`pf-tab-item ${activeTab === 'completed' ? 'active' : ''}`}
-              onClick={() => setActiveTab('completed')}
-            >
-              Completed ({completedGroups.length})
-            </button>
-          </div>
-
+        <div className="gc-header-actions">
           <button
             type="button"
-            className="pf-btn-refresh"
+            className="gc-btn-secondary"
             onClick={load}
             disabled={loading}
-            title="Refresh Portfolio"
+            title="Refresh Portfolio Records"
           >
-            <RefreshCw size={13} className={loading ? 'pf-spin' : ''} />
+            <RefreshCw size={13} className={loading ? 'gc-spin' : ''} />
             <span>Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* ── 2. Hero Overview (Total Invested & Scheme Inspector) ── */}
-      <div className="pf-hero-row">
-        {/* Stat Card 1: Total Invested Across All Schemes */}
-        <div className="pf-hero-card primary">
-          <div className="pf-card-glow-circle" />
-          <div className="pf-hero-top">
-            <div className="pf-stat-icon-wrap">
-              <Coins size={20} />
+      {/* ── 2. Top Hero KPI Metrics Row (Compact Style) ── */}
+      <div className="gc-kpi-grid compact">
+        {/* Metric 1: Total Invested */}
+        <div className="gc-kpi-card compact highlight">
+          <div className="gc-kpi-top">
+            <span className="gc-kpi-label">Total Amount Invested</span>
+            <div className="gc-kpi-icon-wrap emerald">
+              <Coins size={15} />
             </div>
-            <span className="pf-hero-badge">Overall Portfolio</span>
           </div>
-
-          <div className="pf-hero-center">
-            <span className="pf-hero-label">TOTAL AMOUNT INVESTED</span>
-            <h2 className="pf-hero-value">{formatCurrency(totalInvested)}</h2>
+          <div className="gc-kpi-value text-emerald">
+            {formatINR(totalInvested)}
           </div>
-
-          <div className="pf-hero-footer">
-            <div className="pf-hero-sub-item">
-              <ShieldCheck size={13} />
-              <span>Across all {groups.length} enrolled schemes</span>
-            </div>
-            <div className="pf-hero-sub-item end">
-              <span className="pf-pool-tag">Pool: {formatCurrency(totalPoolValue)}</span>
-            </div>
+          <div className="gc-kpi-meta">
+            <span className="gc-kpi-tag emerald">
+              {groups.length} Schemes
+            </span>
+            <span className="gc-kpi-subtext">Overall Paid</span>
           </div>
         </div>
 
-        {/* Stat Card 2: Interactive Scheme Inspector */}
-        <div className="pf-hero-card inspector">
-          <div className="pf-inspector-head">
-            <div className="pf-inspector-title-wrap">
-              <div className="pf-inspector-icon-wrap">
-                <Building2 size={16} />
-              </div>
-              <div>
-                <span className="pf-hero-label">SCHEME CONTRIBUTION</span>
-                <h3 className="pf-inspector-name">
-                  {selectedGroup ? (selectedGroup.groupName || selectedGroup.group_name) : 'Select Scheme'}
-                </h3>
-              </div>
-            </div>
-
-            {/* Scheme Selector Pills Embedded Inside Header */}
-            <div className="pf-inspector-chips-row">
-              {groups.map((g) => {
-                const isSelected = selectedGroupId === g.id;
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    className={`pf-inspector-chip ${isSelected ? 'active' : ''}`}
-                    onClick={() => setSelectedGroupId(g.id)}
-                    title={`Inspect payment details for ${g.groupName || g.group_name}`}
-                  >
-                    <span className="pf-chip-dot" />
-                    <span>{g.groupName || g.group_name}</span>
-                    <span className="pf-chip-amt">({formatCurrency(g.investmentAmount)})</span>
-                  </button>
-                );
-              })}
+        {/* Metric 2: Paid in Selected Scheme */}
+        <div className="gc-kpi-card compact plan-spent">
+          <div className="gc-kpi-top">
+            <span className="gc-kpi-label" title={selectedGroup ? (selectedGroup.groupName || selectedGroup.group_name) : ''}>
+              Paid: <strong>{selectedGroup ? (selectedGroup.groupName || selectedGroup.group_name) : 'Select Scheme'}</strong>
+            </span>
+            <div className="gc-kpi-icon-wrap blue">
+              <CircleDollarSign size={15} />
             </div>
           </div>
+          <div className="gc-kpi-value text-blue">
+            {formatINR(selectedPaid)}
+          </div>
+          <div className="gc-kpi-meta">
+            <span className="gc-kpi-tag blue">
+              Target: {formatINR(selectedPool)}
+            </span>
+            <span className="gc-kpi-subtext">Rem: {formatINR(selectedRemaining)}</span>
+          </div>
+        </div>
 
-          <div className="pf-inspector-metrics">
-            <div className="pf-inspector-col">
-              <span className="pf-submetric-label">Paid in This Scheme</span>
-              <span className="pf-submetric-val text-emerald">{formatCurrency(selectedPaid)}</span>
-            </div>
-            <div className="pf-inspector-col">
-              <span className="pf-submetric-label">Target Chit Value</span>
-              <span className="pf-submetric-val">{formatCurrency(selectedPool)}</span>
-            </div>
-            <div className="pf-inspector-col end">
-              <span className="pf-submetric-label">Remaining Balance</span>
-              <span className="pf-submetric-val text-amber">{formatCurrency(selectedRemaining)}</span>
+        {/* Metric 3: Subscribed Chit Pool Value */}
+        <div className="gc-kpi-card compact">
+          <div className="gc-kpi-top">
+            <span className="gc-kpi-label">Subscribed Chit Value</span>
+            <div className="gc-kpi-icon-wrap green">
+              <Building2 size={15} />
             </div>
           </div>
+          <div className="gc-kpi-value">
+            {formatINR(totalPoolValue)}
+          </div>
+          <div className="gc-kpi-meta">
+            <span className="gc-kpi-tag green">
+              {activeGroups.length} Active
+            </span>
+            <span className="gc-kpi-subtext">Total Maturity</span>
+          </div>
+        </div>
 
-          {/* Mini progress track of selected scheme */}
-          <div className="pf-inspector-progress-box">
-            <div className="pf-inspector-progress-label">
-              <span>Remittance Completion</span>
-              <strong>{selectedProgress}% Remitted</strong>
+        {/* Metric 4: Selected Scheme Progress */}
+        <div className="gc-kpi-card compact">
+          <div className="gc-kpi-top">
+            <span className="gc-kpi-label">Scheme Remittance</span>
+            <div className="gc-kpi-icon-wrap purple">
+              <TrendingUp size={15} />
             </div>
-            <div className="pf-inspector-progress-track">
-              <div
-                className="pf-inspector-progress-fill"
-                style={{ width: `${selectedProgress}%` }}
-              />
-            </div>
+          </div>
+          <div className="gc-kpi-value text-purple">
+            {selectedProgress}%
+          </div>
+          <div className="gc-kpi-meta">
+            <span className="gc-kpi-tag purple">
+              Cycle {selectedGroup?.currentMonth || 0}/{selectedGroup?.totalMonths || 20}
+            </span>
+            <span className="gc-kpi-subtext">Remitted</span>
           </div>
         </div>
       </div>
 
-      {/* ── 3. Cards Section Title / Hint ── */}
-      <div className="pf-section-heading">
-        <div className="pf-heading-left">
-          <h2 className="pf-section-title">
-            {activeTab === 'active' ? 'Active Chit Schemes' : 'Completed Schemes'}
-          </h2>
-          <span className="pf-heading-count">
-            {currentGroups.length} {currentGroups.length === 1 ? 'Scheme' : 'Schemes'}
-          </span>
+      {/* ── 3. Quick-Inspect Scheme Selector Chips Strip ── */}
+      {groups.length > 0 && (
+        <div className="gc-plan-selector-strip">
+          <div className="gc-plan-strip-label">
+            <Sparkles size={13} color="#2E7D32" />
+            <span>Inspect Scheme Paid:</span>
+          </div>
+          <div className="gc-plan-chips-scroll">
+            {groups.map((g) => {
+              const isSelected = selectedGroupId === g.id;
+              const spent = Number(g.totalPaid) || 0;
+              const pool = Number(g.investmentAmount) || 0;
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  className={`gc-plan-chip ${isSelected ? 'active' : ''}`}
+                  onClick={() => setSelectedGroupId(g.id)}
+                  title={`Inspect spent amount for ${g.groupName || g.group_name}`}
+                >
+                  <span className="gc-plan-chip-dot" />
+                  <span className="gc-plan-chip-name">{g.groupName || g.group_name}</span>
+                  <strong className="gc-plan-chip-spent">{formatINR(spent)} paid</strong>
+                  <span className="gc-plan-chip-pool">({formatINR(pool)})</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <span className="pf-heading-hint">
-          Click any card to open official passbook statement
+      )}
+
+      {/* ── 4. Filter Tabs Row (Active / Completed) ── */}
+      <div className="gc-tabs-row">
+        <div className="gc-tabs-group">
+          <button
+            type="button"
+            className={`gc-tab-pill ${activeTab === 'active' ? 'active' : ''}`}
+            onClick={() => setActiveTab('active')}
+          >
+            Active Groups ({activeGroups.length})
+          </button>
+          <button
+            type="button"
+            className={`gc-tab-pill ${activeTab === 'completed' ? 'active' : ''}`}
+            onClick={() => setActiveTab('completed')}
+          >
+            Completed ({completedGroups.length})
+          </button>
+        </div>
+
+        <span className="gc-filter-hint">
+          Click any card to view detailed monthly passbook statement
         </span>
       </div>
 
-      {/* ── 4. Group Cards Grid (Matches Member Chit Card Matrix) ── */}
-      {currentGroups.length > 0 ? (
-        <div className="pf-cards-grid">
-          {currentGroups.map((g) => {
-            const pct = getProgress(g);
-            const badge = getStatusBadge(g.paymentStatus);
-            const totalMonths = Number(g.totalMonths) || 20;
-            const curMonth = Number(g.currentMonth) || 0;
-            const monthlyShare = Number(g.monthlyContribution) || Math.round((Number(g.investmentAmount) || 100000) / totalMonths);
-            const poolValue = Number(g.investmentAmount) || 0;
-            const paidValue = Number(g.totalPaid) || 0;
-            const isSelected = selectedGroupId === g.id;
+      {/* ── 5. Chit Cards Grid (EXACT UI AS IN AUCTION PAGE) ── */}
+      {currentGroups.length === 0 ? (
+        <div className="gc-empty-card">
+          <Landmark size={44} color="#94a3b8" />
+          <h3>No Chit Groups Found</h3>
+          <p>
+            {activeTab === 'active'
+              ? 'You have no active chit schemes in this category yet.'
+              : 'You have no completed chit schemes yet.'}
+          </p>
+          <a href="/user/join-group" className="gc-btn-join">
+            Join a Chit Group
+          </a>
+        </div>
+      ) : (
+        <div className="gc-cards-grid">
+          {currentGroups.map((group) => {
+            const totalMonths = Number(group.totalMonths) || 20;
+            const currentMonth = Number(group.currentMonth) || 1;
+            const progressPercent = Math.min(100, Math.max(0, Math.round((currentMonth / totalMonths) * 100)));
+            const poolValue = Number(group.investmentAmount) || 100000;
+            const monthlyShare = Number(group.monthlyContribution) || Math.round(poolValue / totalMonths);
+            const userPaid = Number(group.totalPaid) || 0;
+            const isPaid = ['completed', 'paid'].includes(String(group.paymentStatus || '').toLowerCase());
+            const isOverdue = String(group.paymentStatus || '').toLowerCase() === 'overdue';
+            const isPending = String(group.paymentStatus || '').toLowerCase() === 'pending';
+
+            const statusBg = isPaid ? '#E8F5E9' : (isOverdue ? '#FEF2F2' : (isPending ? '#FFFBEB' : '#EBF3ED'));
+            const statusColor = isPaid ? '#2E7D32' : (isOverdue ? '#DC2626' : (isPending ? '#D97706' : '#1B3322'));
+            const statusBorder = isPaid ? '#C8E6C9' : (isOverdue ? '#FECACA' : (isPending ? '#FDE68A' : '#C8DEC9'));
+            const statusDot = isPaid ? '#10B981' : (isOverdue ? '#EF4444' : (isPending ? '#F59E0B' : '#2E7D32'));
+            const statusLabel = isPaid ? 'COMPLETED' : (isOverdue ? 'OVERDUE' : (isPending ? 'PENDING' : 'ACTIVE'));
+            const isSelected = selectedGroupId === group.id;
 
             return (
               <div
-                key={g.id}
-                className={`pf-group-card ${isSelected ? 'selected' : ''}`}
+                key={group.id}
+                className={`gc-card mg-enhanced-card ${isSelected ? 'selected' : ''}`}
                 onClick={() => {
-                  setSelectedGroupId(g.id);
-                  setDetailGroup(g);
+                  setSelectedGroupId(group.id);
+                  setDetailGroup(group);
                 }}
                 role="button"
                 tabIndex={0}
                 title="Click to view detailed monthly passbook statement"
               >
-                {/* Header: Avatar, Title, Badges, Circular Chevron */}
-                <div className="pf-card-top">
-                  <div className="pf-card-title-col">
-                    <div className="pf-card-avatar">
-                      <Building2 size={16} color="#1B3322" />
-                    </div>
-                    <div className="pf-card-heading-box">
-                      <h3 className="pf-card-name">{g.groupName || g.group_name}</h3>
-                      <div className="pf-card-badges">
-                        <span
-                          className="pf-badge-status"
-                          style={{
-                            background: badge.bg,
-                            color: badge.color,
-                            borderColor: badge.border,
-                          }}
-                        >
-                          <span className="pf-badge-dot" style={{ background: badge.dot }} />
-                          {badge.label}
-                        </span>
-                        <span className="pf-badge-cycle">
-                          <Calendar size={10.5} />
-                          Cycle {curMonth} of {totalMonths}
-                        </span>
-                      </div>
+                {/* Card Header (Exact Auction Page Header) */}
+                <div className="gc-card-header">
+                  <div className="gc-card-header-left">
+                    <h3 className="gc-card-title">{group.groupName || group.group_name}</h3>
+                    <div className="gc-card-badges-row">
+                      <span
+                        className="gc-badge-status"
+                        style={{
+                          background: statusBg,
+                          color: statusColor,
+                          borderColor: statusBorder,
+                        }}
+                      >
+                        <span className="gc-status-dot" style={{ background: statusDot }} />
+                        {statusLabel}
+                      </span>
+                      <span className="gc-badge-cycle">
+                        <Calendar size={11} />
+                        Cycle {currentMonth} of {totalMonths}
+                      </span>
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    className="pf-card-arrow"
+                    className="gc-card-arrow-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedGroupId(g.id);
-                      setDetailGroup(g);
+                      setSelectedGroupId(group.id);
+                      setDetailGroup(group);
                     }}
-                    title="View Group Passbook"
+                    title="Open passbook"
                   >
-                    <ChevronRight size={17} />
+                    <ChevronRight size={18} />
                   </button>
                 </div>
 
-                {/* 4-Metric Grid (Balanced Quadrants) */}
-                <div className="pf-card-metrics-grid">
-                  <div className="pf-metric-box">
-                    <span className="pf-metric-label">
-                      <Landmark size={12} color="#6B7A6E" />
+                {/* Financial Matrix (Exact 4-Box Grid from Auction Page) */}
+                <div className="gc-card-metrics-grid">
+                  <div className="gc-metric-box">
+                    <span className="gc-metric-label">
+                      <Landmark size={12} color="#64748b" />
                       Chit Value
                     </span>
-                    <strong className="pf-metric-val">{formatCurrency(poolValue)}</strong>
+                    <strong className="gc-metric-val">{formatINR(poolValue)}</strong>
                   </div>
 
-                  <div className="pf-metric-box">
-                    <span className="pf-metric-label">
-                      <CircleDollarSign size={12} color="#6B7A6E" />
+                  <div className="gc-metric-box">
+                    <span className="gc-metric-label">
+                      <CircleDollarSign size={12} color="#64748b" />
                       Monthly Share
                     </span>
-                    <strong className="pf-metric-val">{formatCurrency(monthlyShare)}/mo</strong>
+                    <strong className="gc-metric-val">{formatINR(monthlyShare)}/mo</strong>
                   </div>
 
-                  <div className="pf-metric-box">
-                    <span className="pf-metric-label">
-                      <Users size={12} color="#6B7A6E" />
+                  <div className="gc-metric-box">
+                    <span className="gc-metric-label">
+                      <Users size={12} color="#64748b" />
                       Total Members
                     </span>
-                    <strong className="pf-metric-val">{g.totalMembers || totalMonths} Subs</strong>
+                    <strong className="gc-metric-val">{group.totalMembers || totalMonths} Subs</strong>
                   </div>
 
-                  <div className="pf-metric-box highlight">
-                    <span className="pf-metric-label">
+                  <div className="gc-metric-box highlight">
+                    <span className="gc-metric-label">
                       <CheckCircle2 size={12} color="#15803d" />
                       My Total Paid
                     </span>
-                    <strong className="pf-metric-val text-emerald">{formatCurrency(paidValue)}</strong>
+                    <strong className="gc-metric-val text-emerald">{formatINR(userPaid)}</strong>
                   </div>
                 </div>
 
-                {/* Progress Bar Section */}
-                <div className="pf-progress-section">
-                  <div className="pf-progress-header">
-                    <span>Cycle Progress: {curMonth}/{totalMonths}</span>
-                    <strong style={{ color: badge.color }}>{pct}% Complete</strong>
+                {/* Progress Bar (Exact Auction Page Progress) */}
+                <div className="gc-card-progress-section">
+                  <div className="gc-progress-header">
+                    <span>Cycle Progress</span>
+                    <strong>{progressPercent}% Complete</strong>
                   </div>
-                  <div className="pf-progress-track">
+                  <div className="gc-progress-track">
                     <div
-                      className="pf-progress-fill"
+                      className="gc-progress-bar"
                       style={{
-                        width: `${pct}%`,
-                        background:
-                          badge.label === 'COMPLETED'
-                            ? '#10B981'
-                            : 'linear-gradient(90deg, #1B3322 0%, #2E7D32 100%)',
+                        width: `${progressPercent}%`,
+                        background: isPaid ? '#10B981' : 'linear-gradient(90deg, #1B3322 0%, #2E7D32 100%)'
                       }}
                     />
                   </div>
                 </div>
 
-                {/* Card Footer: Due Date & View Statement CTA */}
-                <div className="pf-card-footer">
-                  <span className="pf-due-info">
-                    Next Due: <strong>{formatDueDate(g.estimatedPayDate || g.endDate)}</strong>
+                {/* Card Footer (Exact Auction Page Footer) */}
+                <div className="gc-card-footer">
+                  <span className="gc-due-info">
+                    Next Due: <strong>{formatDueDate(group.estimatedPayDate || group.endDate)}</strong>
                   </span>
-                  <span className="pf-click-cta">
-                    View Statement <ArrowRight size={12} />
+                  <span className="gc-click-cta">
+                    View Statement <ChevronRight size={13} />
                   </span>
                 </div>
               </div>
             );
           })}
         </div>
-      ) : (
-        <div className="pf-state-box empty">
-          <Users size={42} color="#94A3B8" />
-          <h3 className="pf-state-title">No Groups Found</h3>
-          <p className="pf-state-desc">
-            {activeTab === 'active'
-              ? 'You have no active chit groups in this category.'
-              : 'You have no completed chit groups yet.'}
-          </p>
-        </div>
       )}
 
-      {/* ── 5. Detailed Info Modal (Opens on Card Click) ── */}
+      {/* ── 6. Detailed Info Modal (Opens on Card Click) ── */}
       {detailGroup && (
         <GroupDetailedInfo
           group={detailGroup}
