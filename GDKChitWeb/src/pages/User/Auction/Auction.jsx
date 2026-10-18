@@ -6,8 +6,10 @@ import {
   Gavel, Clock, Users, Trophy, Sparkles, Send,
   ShieldCheck, CheckCircle2, AlertCircle, RefreshCw, Loader2,
   ChevronRight, ArrowLeft, Crown, Bot, Zap, Calendar,
-  Coins, Building2, Info, X, History, Award, Check
+  Coins, Building2, Info, X, History, Award, Check, Landmark,
+  CircleDollarSign, Layers
 } from 'lucide-react';
+import '../GroupCard/GroupCard.css';
 import './UserAuction.css';
 
 const formatINR = (amt) => {
@@ -25,7 +27,7 @@ const formatTime = (seconds) => {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-// Compact 3D Dice Face
+// 3D Dice Dots Subcomponent
 const DiceDots = ({ value }) => {
   const dotPositions = {
     1: ['center'],
@@ -486,21 +488,29 @@ const UserAuction = () => {
   };
 
   // ══════════════════════════════════════════════════════════════
-  // RENDER VIEW 1: SELECT GROUP LIST SCREEN (Compact & Project Theme)
+  // RENDER VIEW 1: SELECT GROUP SCREEN (EXACT MEMBER CHIT CARD UI)
   // ══════════════════════════════════════════════════════════════
   if (!selectedGroup) {
     return (
-      <div className="ua-page-wrapper">
-        {/* Compact Header */}
-        <div className="ua-nav-header">
-          <div className="ua-nav-header-left">
-            <h1 className="ua-nav-title">Select Chit Scheme</h1>
-            <p className="ua-nav-sub">
-              Select an enrolled chit group to enter its live monthly auction
-            </p>
-          </div>
-          <div className="ua-nav-icon-badge">
-            <Gavel size={18} />
+      <div className="gc-container">
+        {/* Header Banner matching Member Chit Card */}
+        <div className="gc-header-banner">
+          <div className="gc-header-left">
+            <div className="gc-header-icon-wrap">
+              <Gavel size={26} color="#ffffff" />
+            </div>
+            <div>
+              <div className="gc-title-row">
+                <h1 className="gc-header-title">Live Chit Fund Auction</h1>
+                <span className="gc-badge-live">
+                  <span className="gc-status-dot" style={{ background: '#2E7D32' }} />
+                  {userGroups.length} Enrolled Schemes
+                </span>
+              </div>
+              <p className="gc-header-sub">
+                Select an enrolled chit group below to enter its live monthly reverse bidding floor
+              </p>
+            </div>
           </div>
         </div>
 
@@ -522,83 +532,132 @@ const UserAuction = () => {
             ))}
           </div>
         ) : userGroups.length === 0 ? (
-          <div className="ua-empty-groups-state">
-            <div className="ua-empty-icon-wrap">
-              <Gavel size={32} color="#94A3B8" />
-            </div>
+          <div className="gc-empty-card">
+            <Landmark size={44} color="#94a3b8" />
             <h3>No Chit Groups Enrolled</h3>
-            <p>You need to join or subscribe to an active chit scheme to participate in monthly auctions.</p>
-            <a href="/user/join-group" className="ua-btn-join-scheme">
+            <p>You have not joined any active chit schemes yet to participate in monthly auctions.</p>
+            <a href="/user/join-group" className="gc-btn-join">
               Join a Chit Group
             </a>
           </div>
         ) : (
-          <div className="ua-groups-grid">
+          /* Exact Member Chit Card Grid from GroupCard.jsx */
+          <div className="gc-cards-grid">
             {userGroups.map((group) => {
-              const isCompleted = ['completed', 'paid'].includes(String(group.status || '').toLowerCase());
-              const progressPct = Math.min(100, Math.max(0, Math.round((group.completedCycles / group.totalCycles) * 100)));
+              const totalMonths = Number(group.totalCycles) || 20;
+              const currentMonth = Number(group.completedCycles) || 1;
+              const progressPercent = Math.min(100, Math.max(0, Math.round((currentMonth / totalMonths) * 100)));
+              const poolValue = Number(group.groupAmount) || 100000;
+              const monthlyShare = Number(group.monthlyAmount) || Math.round(poolValue / totalMonths);
+              const userPaid = Number(group.collectedAmount) || 0;
+              const isPaid = ['completed', 'paid'].includes(String(group.status || '').toLowerCase());
+              const statusColor = isPaid ? '#10B981' : '#2E7D32';
 
               return (
                 <div
                   key={group.id}
-                  className="ua-group-card"
+                  className="gc-card mg-enhanced-card"
                   onClick={() => handleGroupSelect(group)}
                   role="button"
                   tabIndex={0}
+                  title="Click to enter live auction floor"
                 >
-                  <div className="ua-gc-header">
-                    <div className="ua-gc-title-block">
-                      <h3 className="ua-gc-name">{group.name}</h3>
-                      <div className="ua-gc-pills-row">
-                        <span className={`ua-gc-status-pill ${isCompleted ? 'completed' : 'active'}`}>
-                          <span className="ua-gc-status-dot" />
-                          {String(group.status).toUpperCase()}
+                  {/* Card Header */}
+                  <div className="gc-card-header">
+                    <div className="gc-card-header-left">
+                      <h3 className="gc-card-title">{group.name}</h3>
+                      <div className="gc-card-badges-row">
+                        <span
+                          className="gc-badge-status"
+                          style={{
+                            background: isPaid ? '#E8F5E9' : '#EBF3ED',
+                            color: isPaid ? '#2E7D32' : '#1B3322',
+                            borderColor: isPaid ? '#C8E6C9' : '#C8DEC9'
+                          }}
+                        >
+                          <span className="gc-status-dot" style={{ background: statusColor }} />
+                          {isPaid ? 'COMPLETED' : 'ACTIVE'}
                         </span>
-
-                        <span className="ua-gc-cycle-pill">
-                          <Calendar size={10} />
-                          Cycle {group.completedCycles} of {group.totalCycles}
+                        <span className="gc-badge-cycle">
+                          <Calendar size={11} />
+                          Cycle {currentMonth} of {totalMonths}
                         </span>
                       </div>
                     </div>
 
-                    <button type="button" className="ua-gc-arrow-btn" aria-label="Enter Auction">
-                      <ChevronRight size={16} />
+                    <button
+                      type="button"
+                      className="gc-card-arrow-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleGroupSelect(group);
+                      }}
+                      title="Enter Auction Floor"
+                    >
+                      <ChevronRight size={18} />
                     </button>
                   </div>
 
-                  <div className="ua-gc-info-row">
-                    <div className="ua-gc-info-item">
-                      <Users size={13} />
-                      <span>{group.currentMembers} / {group.totalMembers} Members</span>
+                  {/* Financial Matrix (Exact 4-Box Grid from Member Chit Card) */}
+                  <div className="gc-card-metrics-grid">
+                    <div className="gc-metric-box">
+                      <span className="gc-metric-label">
+                        <Landmark size={12} color="#64748b" />
+                        Chit Value
+                      </span>
+                      <strong className="gc-metric-val">{formatINR(poolValue)}</strong>
                     </div>
 
-                    <div className="ua-gc-info-item">
-                      <Coins size={13} />
-                      <span>{formatINR(group.monthlyAmount)}/mo</span>
+                    <div className="gc-metric-box">
+                      <span className="gc-metric-label">
+                        <CircleDollarSign size={12} color="#64748b" />
+                        Monthly Share
+                      </span>
+                      <strong className="gc-metric-val">{formatINR(monthlyShare)}/mo</strong>
+                    </div>
+
+                    <div className="gc-metric-box">
+                      <span className="gc-metric-label">
+                        <Users size={12} color="#64748b" />
+                        Total Members
+                      </span>
+                      <strong className="gc-metric-val">{group.totalMembers} Subs</strong>
+                    </div>
+
+                    <div className="gc-metric-box highlight">
+                      <span className="gc-metric-label">
+                        <CheckCircle2 size={12} color="#15803d" />
+                        Total Paid
+                      </span>
+                      <strong className="gc-metric-val text-emerald">{formatINR(userPaid)}</strong>
                     </div>
                   </div>
 
-                  <div className="ua-gc-progress-block">
-                    <div className="ua-gc-progress-labels">
-                      <span>{group.completedCycles}/{group.totalCycles} Cycles</span>
-                      <strong>{progressPct}%</strong>
+                  {/* Progress Bar */}
+                  <div className="gc-card-progress-section">
+                    <div className="gc-progress-header">
+                      <span>Cycle Progress</span>
+                      <strong>{progressPercent}% Complete</strong>
                     </div>
-                    <div className="ua-gc-progress-track">
+                    <div className="gc-progress-track">
                       <div
-                        className="ua-gc-progress-fill"
-                        style={{ width: `${progressPct}%` }}
+                        className="gc-progress-bar"
+                        style={{
+                          width: `${progressPercent}%`,
+                          background: isPaid ? '#10B981' : 'linear-gradient(90deg, #1B3322 0%, #2E7D32 100%)'
+                        }}
                       />
                     </div>
                   </div>
 
-                  <div className="ua-gc-footer">
-                    <span className="ua-gc-due-text">
-                      {isCompleted ? 'Completed' : `Due: ${group.nextDueDate || 'Standard Schedule'}`}
+                  {/* Card Footer */}
+                  <div className="gc-card-footer">
+                    <span className="gc-due-info">
+                      Next Due: <strong>{group.nextDueDate || 'Standard Schedule'}</strong>
                     </span>
-                    <strong className="ua-gc-collected-val">
-                      {formatINR(group.collectedAmount)} collected
-                    </strong>
+                    <span className="gc-click-cta">
+                      Enter Auction <ChevronRight size={13} />
+                    </span>
                   </div>
                 </div>
               );
@@ -607,7 +666,7 @@ const UserAuction = () => {
         )}
 
         {/* ══════════════════════════════════════════════════════════
-            AUCTION NOT ACTIVE / NOT HELD MODAL (Project Theme)
+            AUCTION NOT ACTIVE / NOT HELD MODAL
            ══════════════════════════════════════════════════════════ */}
         {showNotActiveModal && targetGroupForModal && !isAuctionActive && (
           <div
@@ -657,35 +716,31 @@ const UserAuction = () => {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // RENDER VIEW 2: ACTIVE AUCTION ROOM (Project Forest Theme)
+  // RENDER VIEW 2: ACTIVE AUCTION ROOM (Seamlessly within gc-container)
   // ══════════════════════════════════════════════════════════════
   const effectiveLivePool = liveAmount !== null ? liveAmount : selectedGroup.groupAmount;
 
   return (
-    <div className="ua-page-wrapper">
-      {/* Compact Auction Room Header Bar */}
-      <div className="ua-room-header">
+    <div className="gc-container">
+      {/* Back Bar Navigation (Matching GroupCard.jsx Statement View) */}
+      <div className="gc-back-bar">
         <button
           type="button"
-          className="ua-btn-back"
+          className="gc-btn-back"
           onClick={handleBackToGroupList}
-          title="Back to Group Selection"
         >
-          <ArrowLeft size={15} />
-          <span>Back</span>
+          <ArrowLeft size={16} />
+          <span>Back to All Schemes</span>
         </button>
-
-        <div className="ua-room-title-center">
-          <h2 className="ua-room-title">{selectedGroup.name}</h2>
-          <span className="ua-room-tag">
-            <span className="ua-live-pulse-dot" />
-            Live Session
+        <div className="gc-back-meta">
+          <span className="gc-viewing-badge">
+            <ShieldCheck size={14} color="#2E7D32" />
+            Live Auction Room #{selectedGroup.id}
           </span>
-        </div>
-
-        <div className="ua-room-cash-badge">
-          <Coins size={15} />
-          <span>{formatINR(effectiveLivePool)}</span>
+          <div className="ua-room-cash-badge">
+            <Coins size={15} />
+            <span>Prize Pot: {formatINR(effectiveLivePool)}</span>
+          </div>
         </div>
       </div>
 
@@ -710,12 +765,9 @@ const UserAuction = () => {
         </button>
       </div>
 
-      {/* ──────────────────────────────────────────────────────────
-          TAB 1: BETTING AUCTION INTERFACE
-         ────────────────────────────────────────────────────────── */}
+      {/* TAB 1: BETTING AUCTION */}
       {activeMode === 'betting' ? (
         <div className="ua-betting-layout">
-          {/* Anti-Sniping Alert Banner */}
           {antiSnipingAlert && (
             <div className="ua-anti-sniping-banner">
               <Zap size={16} />
@@ -723,7 +775,6 @@ const UserAuction = () => {
             </div>
           )}
 
-          {/* Member Eligibility Pill Banner */}
           {eligibility.checked && (
             <div
               className={`ua-eligibility-card ${eligibility.isEligible ? 'eligible' : 'ineligible'}`}
@@ -747,9 +798,7 @@ const UserAuction = () => {
             </div>
           )}
 
-          {/* Top 2-Column Metrics */}
           <div className="ua-metrics-two-col">
-            {/* 1. Timer Card */}
             <div className="ua-timer-card">
               <Clock
                 size={22}
@@ -770,7 +819,6 @@ const UserAuction = () => {
               )}
             </div>
 
-            {/* 2. Current Lowest Bid Card */}
             <div className="ua-lowest-bid-card">
               <div className="ua-lb-header">
                 <Trophy size={15} color="#D97706" />
@@ -795,7 +843,6 @@ const UserAuction = () => {
             </div>
           </div>
 
-          {/* Compact Place Your Bid Card */}
           <div className="ua-bidding-card">
             <div className="ua-bidding-top">
               <span className="ua-bidding-title">Place Your Bid</span>
@@ -821,7 +868,6 @@ const UserAuction = () => {
               />
             </div>
 
-            {/* Quick Reduction Chips */}
             <div className="ua-quick-bid-buttons">
               <button
                 type="button"
@@ -869,7 +915,6 @@ const UserAuction = () => {
             </button>
           </div>
 
-          {/* Compact 3-Tab Deck: Leaderboard | Live History | Members */}
           <div className="ua-subtabs-card">
             <div className="ua-subtabs-nav">
               <button
@@ -1014,9 +1059,7 @@ const UserAuction = () => {
           </div>
         </div>
       ) : (
-        /* ──────────────────────────────────────────────────────────
-            TAB 2: RANDOM AUCTION (LUCKY DRAW)
-           ────────────────────────────────────────────────────────── */
+        /* TAB 2: RANDOM AUCTION (LUCKY DRAW) */
         <div className="ua-random-layout">
           <div className="ua-dice-arena-card">
             <div className="ua-dice-top-bar">
@@ -1102,9 +1145,7 @@ const UserAuction = () => {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════
-          AUTO-BID CONFIGURATION MODAL
-         ══════════════════════════════════════════════════════════ */}
+      {/* AUTO-BID CONFIGURATION MODAL */}
       {showAutoBidModal && (
         <div className="ua-modal-overlay" onClick={() => setShowAutoBidModal(false)}>
           <div className="ua-autobid-modal" onClick={(e) => e.stopPropagation()}>
@@ -1153,9 +1194,7 @@ const UserAuction = () => {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════
-          AUCTION CONCLUDED / FINANCIAL SETTLEMENT SUMMARY MODAL
-         ══════════════════════════════════════════════════════════ */}
+      {/* AUCTION CONCLUDED SUMMARY MODAL */}
       {showWinnerModal && (
         <div className="ua-modal-overlay" onClick={() => setShowWinnerModal(false)}>
           <div className="ua-winner-modal" onClick={(e) => e.stopPropagation()}>
@@ -1222,7 +1261,7 @@ const UserAuction = () => {
                 handleBackToGroupList();
               }}
             >
-              Close & Return to Groups
+              Close & Return to Schemes
             </button>
           </div>
         </div>
