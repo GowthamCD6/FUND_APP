@@ -189,7 +189,7 @@ const JoinGroup = () => {
       <div className="jg-main-grid">
         {/* LEFT COLUMN: Interactive Code Verification Portal */}
         <div className="jg-portal-card">
-          <div className="jg-portal-top">
+          <div className="jg-portal-top centered">
             <h2 className="jg-portal-title">Enter Scheme Access Code</h2>
             <p className="jg-portal-desc">
               Enter your official administrative group code below to join.
@@ -201,6 +201,7 @@ const JoinGroup = () => {
               {React.createElement(Lottie.default || Lottie, {
                 animationData: joinAnimation,
                 loop: true,
+                style: { width: '100%', height: '100%', margin: '0 auto' },
               })}
             </div>
           </div>
