@@ -4,30 +4,18 @@ import { useAuth } from '../../../context/AuthContext.jsx';
 import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import {
   User,
-  KeyRound,
   Lock,
   Bell,
   Download,
-  Gavel,
   ShieldCheck,
   Languages,
-  MapPin,
   HelpCircle,
   Share2,
   Star,
-  Users,
-  Compass,
   FileText,
-  Key,
-  Ban,
   ChevronRight,
   ShieldAlert,
-  Zap,
-  CheckCircle2,
-  LogOut,
-  Sparkles,
-  RefreshCw,
-  ExternalLink
+  Zap
 } from 'lucide-react';
 
 import AdminProfileModal from './Modals/AdminProfileModal.jsx';
@@ -113,81 +101,6 @@ const Settings = () => {
   const displayPhone = adminProfile?.phone || user?.phone || '+91 98422 12345';
   const initial = displayName.charAt(0).toUpperCase();
 
-  // ── Quick Shortcuts Dashboard (Application Preferences & Settings) ──
-  const SHORTCUTS = [
-    {
-      id: 'profile',
-      title: 'Admin Profile',
-      sub: 'HQ Info & Avatar',
-      icon: User,
-      color: '#1B3322',
-      bg: '#EBF3ED',
-      onClick: () => setShowProfileModal(true),
-    },
-    {
-      id: 'security-pin',
-      title: 'Web Lock PIN',
-      sub: 'Passcode & Screen',
-      icon: Lock,
-      color: '#D32F2F',
-      bg: '#FDECEC',
-      onClick: () => setShowSecurityModal(true),
-    },
-    {
-      id: 'language',
-      title: 'Language',
-      sub: currentLang === 'ta' ? 'தமிழ்' : 'English',
-      icon: Languages,
-      color: '#2E7D32',
-      bg: '#EBF3ED',
-      onClick: () => setShowLanguageModal(true),
-    },
-    {
-      id: 'notifications',
-      title: 'Notifications',
-      sub: 'System Alerts',
-      icon: Bell,
-      color: '#A3704C',
-      bg: '#FDF6F0',
-      onClick: () => setShowNotificationModal(true),
-    },
-    {
-      id: 'chit-rules',
-      title: 'Compliance Rules',
-      sub: 'Act Directives',
-      icon: FileText,
-      color: '#1B3322',
-      bg: '#EBF3ED',
-      onClick: () => setShowRulesModal(true),
-    },
-    {
-      id: 'help',
-      title: 'Help Desk',
-      sub: 'Contact Hotline',
-      icon: HelpCircle,
-      color: '#2E7D32',
-      bg: '#EBF3ED',
-      onClick: () => setShowHelpModal(true),
-    },
-    {
-      id: 'admin-tools-link',
-      title: 'Admin Tools',
-      sub: 'Operations Hub',
-      icon: Zap,
-      color: '#A3704C',
-      bg: '#FDF6F0',
-      onClick: () => navigate('/admin/admintool'),
-    },
-    {
-      id: 'share',
-      title: 'Share Portal',
-      sub: 'Copy Access URL',
-      icon: Share2,
-      color: '#2E7D32',
-      bg: '#EBF3ED',
-      onClick: () => setShowShareModal(true),
-    },
-  ];
 
   // ── Administrative Sections ──
   const ACCOUNT_GROUP = [
@@ -299,20 +212,6 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* Shortcuts Grid Skeleton */}
-        <div className="adm-shortcuts-section skeleton-pulse">
-          <div style={{ width: 180, height: 18, background: '#e2e8f0', borderRadius: 4, marginBottom: 16 }} />
-          <div className="adm-shortcuts-grid">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 42, height: 42, borderRadius: 10, background: '#e2e8f0' }} />
-                <div style={{ width: 70, height: 12, background: '#e2e8f0', borderRadius: 4 }} />
-                <div style={{ width: 50, height: 9, background: '#e2e8f0', borderRadius: 4 }} />
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Dual Columns Skeleton */}
         <div className="adm-sections-grid">
           {Array.from({ length: 2 }).map((_, i) => (
@@ -370,39 +269,6 @@ const Settings = () => {
             <Download size={15} />
             Export Data
           </button>
-        </div>
-      </div>
-
-      {/* ── 2. Quick Shortcuts Grid ── */}
-      <div className="adm-shortcuts-section">
-        <div className="adm-shortcuts-header">
-          <h3 className="adm-shortcuts-title">
-            <Sparkles size={17} color="#2E7D32" />
-            Executive Quick Shortcuts
-          </h3>
-          <span className="adm-shortcuts-subtitle">
-            One-click modal access to administrative actions, exports, and security parameters
-          </span>
-        </div>
-
-        <div className="adm-shortcuts-grid">
-          {SHORTCUTS.map(item => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                className="adm-shortcut-card"
-                onClick={item.onClick}
-                type="button"
-              >
-                <div className="adm-shortcut-icon" style={{ background: item.bg, color: item.color }}>
-                  <Icon size={20} strokeWidth={2.2} />
-                </div>
-                <span className="adm-shortcut-label">{item.title}</span>
-                <span className="adm-shortcut-sub">{item.sub}</span>
-              </button>
-            );
-          })}
         </div>
       </div>
 
