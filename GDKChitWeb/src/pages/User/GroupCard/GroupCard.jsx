@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { makeRequest } from '../../../api/apiClient.js';
+import React, { useState, useEffect, useMemo } from 'react';
+import { makeRequest, safeJson } from '../../../api/apiClient.js';
 import {
-  Landmark, ArrowLeft, Calendar, CircleDollarSign, TrendingUp, CheckCircle,
-  Clock, AlertTriangle, Printer, Layers, ChevronRight, Award, Loader2
+  Landmark, ArrowLeft, Calendar, CircleDollarSign, TrendingUp, CheckCircle2,
+  Clock, AlertTriangle, Printer, Layers, ChevronRight, Award, Loader2,
+  Users, Coins, Eye, ShieldCheck, RefreshCw, Building2, Sparkles
 } from 'lucide-react';
 import './GroupCard.css';
 
@@ -12,54 +13,55 @@ const formatINR = (amt) =>
 const GroupCard = () => {
   const [userGroups, setUserGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'active' | 'completed'
   const [monthlyRecords, setMonthlyRecords] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [loadingMonthly, setLoadingMonthly] = useState(false);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // 1. Fetch user portfolio groups
-  useEffect(() => {
-    const fetchPortfolio = async () => {
-      setLoadingGroups(true);
-      setError(null);
-      try {
-        const res = await makeRequest('/user/portfolio');
-        const data = await res.json();
-        if (data.success && Array.isArray(data.data)) {
-          setUserGroups(data.data);
-          if (data.data.length > 0) {
-            // Default select the first active group
-            setSelectedGroup(data.data[0]);
-          }
-        } else {
-          setUserGroups([]);
-        }
-      } catch (err) {
-        setError(err.message || 'Failed to load chit groups');
-      } finally {
-        setLoadingGroups(false);
+  const fetchPortfolio = async () => {
+    setLoadingGroups(true);
+    setError(null);
+    try {
+      const res = await makeRequest('/user/portfolio');
+      const data = await safeJson(res);
+      if (data.success && Array.isArray(data.data)) {
+        setUserGroups(data.data);
+      } else {
+        setUserGroups([]);
       }
-    };
+    } catch (err) {
+      setError(err.message || 'Failed to load chit groups');
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
+  useEffect(() => {
     fetchPortfolio();
   }, []);
 
   // 2. Fetch monthly schedule details whenever selectedGroup changes
   useEffect(() => {
-    if (!selectedGroup?.id) return;
+    if (!selectedGroup?.id) {
+      setMonthlyRecords([]);
+      return;
+    }
 
     const fetchMonthlyData = async () => {
       setLoadingMonthly(true);
       try {
         const cleanId = encodeURIComponent(String(selectedGroup.id).trim());
         const res = await makeRequest(`/user/portfolio/${cleanId}/months`);
-        const json = await res.json();
+        const json = await safeJson(res);
 
         const totalMonths = Number(selectedGroup.totalMonths) || 20;
         const totalInvestment = Number(selectedGroup.investmentAmount) || 100000;
         const baseMonthly = Math.round(totalInvestment / totalMonths);
 
         if (json.success && json.data) {
-          // Format records
           const raw = json.data;
           const formatted = Array.from({ length: totalMonths }, (_, i) => {
             const monthNum = i + 1;
@@ -68,12 +70,12 @@ const GroupCard = () => {
 
             return {
               monthNumber: monthNum,
-              date: item.paidDate || item.dueDate || `Month ${monthNum}`,
+              date: item.paidDate || item.dueDate || `Cycle Month #${monthNum}`,
               installment: item.paymentAmount || baseMonthly,
               amountTaken: item.amountTaken || 0,
               discount: item.discount || (isPast ? Math.round(baseMonthly * 0.1) : 0),
               status: item.status || (monthNum < (Number(selectedGroup.currentMonth) || 1) ? 'paid' : monthNum === Number(selectedGroup.currentMonth) ? 'pending' : 'upcoming'),
-              winnerName: item.auctionWinner || (isPast ? `Member #${(monthNum * 3) % 20 + 1}` : 'Pending Auction'),
+              winnerName: item.auctionWinner || (isPast ? `Member #${(monthNum * 3) % 20 + 1}` : 'To be auctioned'),
             };
           });
           setMonthlyRecords(formatted);
@@ -91,7 +93,7 @@ const GroupCard = () => {
               amountTaken: isPaid ? Math.round(totalInvestment * 0.85) : 0,
               discount: isPaid ? Math.round(baseMonthly * 0.08) : 0,
               status: isPaid ? 'paid' : isCurrent ? 'pending' : 'upcoming',
-              winnerName: isPaid ? `Winner (Cycle ${m})` : 'To be auctioned',
+              winnerName: isPaid ? `Prize Winner (Cycle ${m})` : 'To be auctioned',
             };
           });
           setMonthlyRecords(generated);
@@ -106,236 +108,499 @@ const GroupCard = () => {
     fetchMonthlyData();
   }, [selectedGroup]);
 
+  // 3. Computed KPI Stats across all user groups (Mobile Portfolio Style)
+  const portfolioStats = useMemo(() => {
+    let totalInvested = 0;
+    let totalPoolValue = 0;
+    let totalDividends = 0;
+    let activeCount = 0;
+    let completedCount = 0;
+
+    userGroups.forEach(g => {
+      const paid = Number(g.totalPaid) || 0;
+      const amount = Number(g.investmentAmount) || 0;
+      const isCompleted = ['completed', 'paid'].includes(String(g.paymentStatus || '').toLowerCase());
+
+      totalInvested += paid;
+      totalPoolValue += amount;
+      // Approximate dividends earned
+      totalDividends += Math.max(0, Math.round(paid * 0.08));
+
+      if (isCompleted) {
+        completedCount++;
+      } else {
+        activeCount++;
+      }
+    });
+
+    return {
+      totalInvested,
+      totalPoolValue,
+      totalDividends,
+      activeCount,
+      completedCount,
+      totalCount: userGroups.length
+    };
+  }, [userGroups]);
+
+  // Filtered groups
+  const filteredGroups = useMemo(() => {
+    if (activeFilter === 'active') {
+      return userGroups.filter(g => !['completed', 'paid'].includes(String(g.paymentStatus || '').toLowerCase()));
+    }
+    if (activeFilter === 'completed') {
+      return userGroups.filter(g => ['completed', 'paid'].includes(String(g.paymentStatus || '').toLowerCase()));
+    }
+    return userGroups;
+  }, [userGroups, activeFilter]);
+
   const handlePrint = () => {
     window.print();
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchPortfolio();
+    setRefreshing(false);
+  };
+
+  // ── Loading Screen ──
   if (loadingGroups) {
     return (
       <div className="gc-container" style={{ textAlign: 'center', padding: '80px 20px' }}>
-        <Loader2 size={36} className="spin" color="var(--primary)" style={{ margin: '0 auto 16px' }} />
-        <h3 style={{ margin: 0, color: 'var(--text)' }}>Loading Chit Groups...</h3>
+        <Loader2 size={38} className="gc-spin" color="#2E7D32" style={{ margin: '0 auto 16px' }} />
+        <h3 style={{ margin: 0, color: '#0B140E', fontSize: 18, fontWeight: 700 }}>
+          Loading Your Chit Cards...
+        </h3>
+        <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: 13 }}>
+          Fetching active chit passbooks from central ledger
+        </p>
       </div>
     );
   }
 
   return (
     <div className="gc-container">
-      {/* Header */}
-      <div className="gc-header">
-        <div>
-          <h1 className="gc-title">Chit Group Card & Passbook</h1>
-          <p className="gc-subtitle">
-            View transparent monthly ledger statements, installments paid, dividends, and auction outcomes.
-          </p>
-        </div>
-      </div>
-
-      {/* Group Selector Cards Grid (Cards First) */}
-      {userGroups.length > 0 && (
-        <div className="gc-cards-selector-section">
-          <div className="gc-cards-selector-header">
-            <h3 className="gc-cards-selector-title">
-              <Layers size={18} color="#2E7D32" />
-              My Enrolled Chit Groups ({userGroups.length})
-            </h3>
-            <span className="gc-cards-selector-sub">Select any card below to view its monthly passbook statement & auction outcomes</span>
-          </div>
-
-          <div className="gc-groups-grid">
-            {userGroups.map((group) => {
-              const isSelected = selectedGroup && String(selectedGroup.id) === String(group.id);
-              const currMonth = Number(group.currentMonth) || 1;
-              const totMonths = Number(group.totalMonths) || 20;
-              const progressPercent = Math.min(100, Math.max(0, Math.round((currMonth / totMonths) * 100)));
-              const isPaid = ['completed', 'paid'].includes(String(group.paymentStatus).toLowerCase());
-
-              return (
-                <div
-                  key={group.id}
-                  className={`gc-group-card ${isSelected ? 'active' : ''}`}
-                  onClick={() => setSelectedGroup(group)}
-                >
-                  <div className="gc-card-top-row">
-                    <span className="gc-card-group-name" title={group.groupName || group.group_name}>
-                      {group.groupName || group.group_name}
-                    </span>
-                    <span className={`gc-card-badge ${isPaid ? 'paid' : 'pending'}`}>
-                      {isPaid ? 'PAID' : 'PENDING'}
-                    </span>
-                  </div>
-
-                  <div className="gc-card-meta-row">
-                    <span className="gc-card-id">ID: #{group.id} • {group.groupCode || 'CHIT'}</span>
-                    <span className="gc-card-value">{formatINR(group.investmentAmount || 100000)}</span>
-                  </div>
-
-                  <div className="gc-card-progress-block">
-                    <div className="gc-card-progress-bar">
-                      <div className="gc-card-progress-fill" style={{ width: `${progressPercent}%` }} />
-                    </div>
-                    <div className="gc-card-progress-labels">
-                      <span>Cycle {currMonth}/{totMonths}</span>
-                      <span>{progressPercent}% Complete</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {userGroups.length === 0 ? (
-        <div className="gc-empty">
-          <Landmark size={48} color="var(--subtle)" style={{ margin: '0 auto 16px' }} />
-          <h3 style={{ margin: '0 0 8px', color: 'var(--text)' }}>No Active Chit Groups Found</h3>
-          <p style={{ margin: '0 0 20px', color: 'var(--muted)', fontSize: 14.5 }}>
-            You have not joined any chit groups yet. Join a group using your invitation code!
-          </p>
-          <a
-            href="/user/join-group"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '11px 20px',
-              borderRadius: 'var(--radius)',
-              background: '#2E7D32',
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: 14,
-              textDecoration: 'none'
-            }}
-          >
-            Join a Group
-          </a>
-        </div>
-      ) : selectedGroup ? (
-        <div>
-          {/* Hero Banner with KPIs */}
-          <div className="gc-passbook-hero">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+      {/* ══════════════════════════════════════════════════════════
+          SCENARIO A: NO CARD SELECTED -> SHOW ONLY THE CARDS
+         ══════════════════════════════════════════════════════════ */}
+      {!selectedGroup ? (
+        <>
+          {/* Header Banner */}
+          <div className="gc-header-banner">
+            <div className="gc-header-left">
+              <div className="gc-header-icon-wrap">
+                <Landmark size={26} strokeWidth={2.2} />
+              </div>
               <div>
-                <span style={{ fontSize: 11.5, textTransform: 'uppercase', letterSpacing: 1, color: '#2E7D32', fontWeight: 700 }}>
-                  Official Chit Passbook
+                <div className="gc-title-row">
+                  <h1 className="gc-header-title">Member Chit Cards & Portfolio Passbook</h1>
+                  <span className="gc-badge-live">
+                    <span className="gc-live-dot" />
+                    Verified Member
+                  </span>
+                </div>
+                <p className="gc-header-subtitle">
+                  Inspect your subscribed chit schemes, track total personal investments, and open individual passbooks.
+                </p>
+              </div>
+            </div>
+
+            <div className="gc-header-actions">
+              <button
+                type="button"
+                className="gc-btn-secondary"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Refresh portfolio records"
+              >
+                <RefreshCw size={14} className={refreshing ? 'gc-spin' : ''} />
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Top Hero KPI Metrics (Mobile Portfolio Style) */}
+          <div className="gc-kpi-grid">
+            {/* Total Invested */}
+            <div className="gc-kpi-card highlight">
+              <div className="gc-kpi-top">
+                <span className="gc-kpi-label">Total Amount Invested</span>
+                <div className="gc-kpi-icon-wrap emerald">
+                  <Coins size={18} />
+                </div>
+              </div>
+              <div className="gc-kpi-value text-emerald">
+                {formatINR(portfolioStats.totalInvested)}
+              </div>
+              <div className="gc-kpi-meta">
+                <span className="gc-kpi-tag emerald">
+                  Across {portfolioStats.totalCount} Groups
                 </span>
-                <h2 style={{ fontSize: 24, fontWeight: 800, margin: '4px 0 6px', color: '#0B140E' }}>
-                  {selectedGroup.groupName || selectedGroup.group_name}
-                </h2>
-                <p style={{ margin: 0, fontSize: 13.5, color: '#6B7A6E' }}>
-                  Periyanayagi Amman Chit Fund • Passbook Ledger #{selectedGroup.id}
+                <span className="gc-kpi-subtext">Realized member savings</span>
+              </div>
+            </div>
+
+            {/* Total Chit Value */}
+            <div className="gc-kpi-card">
+              <div className="gc-kpi-top">
+                <span className="gc-kpi-label">Subscribed Chit Value</span>
+                <div className="gc-kpi-icon-wrap green">
+                  <Building2 size={18} />
+                </div>
+              </div>
+              <div className="gc-kpi-value">
+                {formatINR(portfolioStats.totalPoolValue)}
+              </div>
+              <div className="gc-kpi-meta">
+                <span className="gc-kpi-tag green">
+                  Total Maturity Sum
+                </span>
+                <span className="gc-kpi-subtext">Cumulative chit pool</span>
+              </div>
+            </div>
+
+            {/* Active Schemes */}
+            <div className="gc-kpi-card">
+              <div className="gc-kpi-top">
+                <span className="gc-kpi-label">Active Chit Schemes</span>
+                <div className="gc-kpi-icon-wrap blue">
+                  <Layers size={18} />
+                </div>
+              </div>
+              <div className="gc-kpi-value text-blue">
+                {portfolioStats.activeCount} Pools
+              </div>
+              <div className="gc-kpi-meta">
+                <span className="gc-kpi-tag blue">
+                  {portfolioStats.completedCount} Completed
+                </span>
+                <span className="gc-kpi-subtext">Live ongoing auctions</span>
+              </div>
+            </div>
+
+            {/* Total Dividends Saved */}
+            <div className="gc-kpi-card">
+              <div className="gc-kpi-top">
+                <span className="gc-kpi-label">Total Dividends Saved</span>
+                <div className="gc-kpi-icon-wrap purple">
+                  <TrendingUp size={18} />
+                </div>
+              </div>
+              <div className="gc-kpi-value text-purple">
+                {formatINR(portfolioStats.totalDividends)}
+              </div>
+              <div className="gc-kpi-meta">
+                <span className="gc-kpi-tag purple">
+                  Auction Dividends
+                </span>
+                <span className="gc-kpi-subtext">Deducted from installments</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="gc-tabs-row">
+            <div className="gc-tabs-group">
+              <button
+                type="button"
+                className={`gc-tab-pill ${activeFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setActiveFilter('all')}
+              >
+                All Chit Schemes ({portfolioStats.totalCount})
+              </button>
+              <button
+                type="button"
+                className={`gc-tab-pill ${activeFilter === 'active' ? 'active' : ''}`}
+                onClick={() => setActiveFilter('active')}
+              >
+                Active Pools ({portfolioStats.activeCount})
+              </button>
+              <button
+                type="button"
+                className={`gc-tab-pill ${activeFilter === 'completed' ? 'active' : ''}`}
+                onClick={() => setActiveFilter('completed')}
+              >
+                Completed ({portfolioStats.completedCount})
+              </button>
+            </div>
+
+            <span className="gc-filter-hint">
+              Click any card below to view its monthly passbook statement & auction outcomes
+            </span>
+          </div>
+
+          {/* ══════════════════════════════════════════════════════
+              ONLY THE CARDS ARE SHOWN HERE (Admin Enhanced Card UI)
+             ══════════════════════════════════════════════════════ */}
+          {filteredGroups.length === 0 ? (
+            <div className="gc-empty-card">
+              <Landmark size={44} color="#94a3b8" />
+              <h3>No Chit Groups Found</h3>
+              <p>You have not joined any chit schemes in this category yet.</p>
+              <a href="/user/join-group" className="gc-btn-join">
+                Join a Chit Group
+              </a>
+            </div>
+          ) : (
+            <div className="gc-cards-grid">
+              {filteredGroups.map((group) => {
+                const totalMonths = Number(group.totalMonths) || 20;
+                const currentMonth = Number(group.currentMonth) || 1;
+                const progressPercent = Math.min(100, Math.max(0, Math.round((currentMonth / totalMonths) * 100)));
+                const poolValue = Number(group.investmentAmount) || 100000;
+                const monthlyShare = Number(group.monthlyContribution) || Math.round(poolValue / totalMonths);
+                const userPaid = Number(group.totalPaid) || 0;
+                const isPaid = ['completed', 'paid'].includes(String(group.paymentStatus || '').toLowerCase());
+                const statusColor = isPaid ? '#10B981' : '#F59E0B';
+
+                return (
+                  <div
+                    key={group.id}
+                    className="gc-card mg-enhanced-card"
+                    onClick={() => setSelectedGroup(group)}
+                    role="button"
+                    tabIndex={0}
+                    title="Click to view detailed monthly passbook statement"
+                  >
+                    {/* Card Header (Matches Admin Reports Group Card UI) */}
+                    <div className="gc-card-header">
+                      <div className="gc-card-header-left">
+                        <h3 className="gc-card-title">{group.groupName || group.group_name}</h3>
+                        <div className="gc-card-badges-row">
+                          <span className="gc-badge-status" style={{ background: `${statusColor}18`, color: statusColor, borderColor: `${statusColor}40` }}>
+                            <span className="gc-status-dot" style={{ background: statusColor }} />
+                            {isPaid ? 'COMPLETED' : 'ONGOING'}
+                          </span>
+                          <span className="gc-badge-cycle">
+                            <Calendar size={11} />
+                            Cycle {currentMonth} of {totalMonths}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="gc-card-arrow-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedGroup(group);
+                        }}
+                        title="Open passbook"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+
+                    {/* Financial Matrix (Matches Admin Reports card metrics grid) */}
+                    <div className="gc-card-metrics-grid">
+                      <div className="gc-metric-box">
+                        <span className="gc-metric-label">
+                          <Landmark size={12} color="#64748b" />
+                          Chit Value
+                        </span>
+                        <strong className="gc-metric-val">{formatINR(poolValue)}</strong>
+                      </div>
+
+                      <div className="gc-metric-box">
+                        <span className="gc-metric-label">
+                          <CircleDollarSign size={12} color="#64748b" />
+                          Monthly Share
+                        </span>
+                        <strong className="gc-metric-val">{formatINR(monthlyShare)}/mo</strong>
+                      </div>
+
+                      <div className="gc-metric-box">
+                        <span className="gc-metric-label">
+                          <Users size={12} color="#64748b" />
+                          Total Members
+                        </span>
+                        <strong className="gc-metric-val">{group.totalMembers || totalMonths} Subs</strong>
+                      </div>
+
+                      <div className="gc-metric-box highlight">
+                        <span className="gc-metric-label">
+                          <CheckCircle2 size={12} color="#15803d" />
+                          My Total Paid
+                        </span>
+                        <strong className="gc-metric-val text-emerald">{formatINR(userPaid)}</strong>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="gc-card-progress-section">
+                      <div className="gc-progress-header">
+                        <span>Passbook Progress</span>
+                        <strong>{progressPercent}% Complete</strong>
+                      </div>
+                      <div className="gc-progress-track">
+                        <div
+                          className="gc-progress-bar"
+                          style={{
+                            width: `${progressPercent}%`,
+                            background: isPaid ? '#10B981' : 'linear-gradient(90deg, #1B3322 0%, #2E7D32 100%)'
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Card Footer */}
+                    <div className="gc-card-footer">
+                      <span className="gc-due-info">
+                        Next Due: <strong>{group.estimatedPayDate || group.endDate || 'Standard Cycle'}</strong>
+                      </span>
+                      <span className="gc-click-cta">
+                        View Statement <ChevronRight size={13} />
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : (
+        /* ══════════════════════════════════════════════════════════
+           SCENARIO B: CARD IS PRESSED -> SHOW ONLY THE PASSBOOK LOG
+           ══════════════════════════════════════════════════════════ */
+        <div className="gc-passbook-view">
+          {/* Back Navigation Button */}
+          <div className="gc-back-bar">
+            <button
+              type="button"
+              className="gc-btn-back"
+              onClick={() => setSelectedGroup(null)}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to All Chit Cards</span>
+            </button>
+            <span className="gc-viewing-badge">
+              Viewing Passbook #{selectedGroup.id}
+            </span>
+          </div>
+
+          {/* Selected Chit Hero Passbook Banner */}
+          <div className="gc-passbook-hero-card">
+            <div className="gc-hero-top">
+              <div>
+                <span className="gc-hero-pretitle">Official Member Passbook Ledger</span>
+                <h2 className="gc-hero-name">{selectedGroup.groupName || selectedGroup.group_name}</h2>
+                <p className="gc-hero-sub">
+                  Periyanayagi Amman Chit Funds • Group Code #{selectedGroup.id}
                 </p>
               </div>
 
-              <span
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: 20,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  background: '#EBF3ED',
-                  color: '#1B3322',
-                  border: '1px solid #C8DEC9',
-                }}
-              >
-                {selectedGroup.paymentStatus || 'ACTIVE'}
+              <span className={`gc-badge-status ${['completed', 'paid'].includes(String(selectedGroup.paymentStatus || '').toLowerCase()) ? 'paid' : 'pending'}`}>
+                {selectedGroup.paymentStatus || 'ONGOING'}
               </span>
             </div>
 
-            <div className="gc-hero-kpi-grid">
-              <div className="gc-hero-kpi-item">
-                <span className="gc-hero-kpi-label">Chit Value</span>
-                <span className="gc-hero-kpi-val">
+            {/* Quick Hero KPIs */}
+            <div className="gc-hero-stats-grid">
+              <div className="gc-hero-stat">
+                <span className="gc-hero-stat-label">Chit Value</span>
+                <span className="gc-hero-stat-value">
                   {formatINR(selectedGroup.investmentAmount || 100000)}
                 </span>
               </div>
-              <div className="gc-hero-kpi-item">
-                <span className="gc-hero-kpi-label">Total Paid</span>
-                <span className="gc-hero-kpi-val" style={{ color: '#2E7D32' }}>
-                  {formatINR(selectedGroup.totalPaid || selectedGroup.groupCollectedAmount || 0)}
+
+              <div className="gc-hero-stat">
+                <span className="gc-hero-stat-label">Total Amount Paid</span>
+                <span className="gc-hero-stat-value text-emerald">
+                  {formatINR(selectedGroup.totalPaid || 0)}
                 </span>
               </div>
-              <div className="gc-hero-kpi-item">
-                <span className="gc-hero-kpi-label">Monthly Due</span>
-                <span className="gc-hero-kpi-val">
-                  {formatINR(selectedGroup.monthlyContribution || Math.round((selectedGroup.investmentAmount || 100000) / (selectedGroup.totalMonths || 20)))}
+
+              <div className="gc-hero-stat">
+                <span className="gc-hero-stat-label">Monthly Share</span>
+                <span className="gc-hero-stat-value">
+                  {formatINR(selectedGroup.monthlyContribution || Math.round((selectedGroup.investmentAmount || 100000) / (selectedGroup.totalMonths || 20)))}/mo
                 </span>
               </div>
-              <div className="gc-hero-kpi-item">
-                <span className="gc-hero-kpi-label">Progress</span>
-                <span className="gc-hero-kpi-val">
-                  {selectedGroup.currentMonth || 1} / {selectedGroup.totalMonths || 20} Mos
+
+              <div className="gc-hero-stat">
+                <span className="gc-hero-stat-label">Completed Cycles</span>
+                <span className="gc-hero-stat-value">
+                  {selectedGroup.currentMonth || 1} / {selectedGroup.totalMonths || 20} Months
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Statement Table */}
-          <div className="gc-table-card">
-            <div className="gc-table-header">
-              <h3 className="gc-table-title">
-                <Layers size={20} color="var(--primary)" />
-                Monthly Ledger & Passbook Statement
-              </h3>
-              <button className="gc-btn-print" onClick={handlePrint}>
-                <Printer size={16} />
-                Print Statement
+          {/* Statement Table Log Card */}
+          <div className="gc-statement-card">
+            <div className="gc-statement-header">
+              <div>
+                <h3 className="gc-statement-title">
+                  <Layers size={18} color="#2E7D32" />
+                  Monthly Passbook Statement & Payment Log
+                </h3>
+                <span className="gc-statement-sub">
+                  Full cycle-by-cycle accounting of installment remittances, auction dividends, and prize payouts
+                </span>
+              </div>
+
+              <button type="button" className="gc-btn-print" onClick={handlePrint}>
+                <Printer size={15} />
+                <span>Print Passbook</span>
               </button>
             </div>
 
             {loadingMonthly ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--muted)' }}>
-                <Loader2 size={24} className="spin" style={{ margin: '0 auto 8px' }} />
-                <p style={{ margin: 0, fontSize: 13.5 }}>Fetching statement rows...</p>
+              <div className="gc-loading-log">
+                <Loader2 size={30} className="gc-spin" color="#2E7D32" />
+                <p>Loading monthly ledger statement...</p>
               </div>
             ) : (
               <div className="gc-table-responsive">
                 <table className="gc-table">
                   <thead>
                     <tr>
-                      <th>Month #</th>
-                      <th>Installment</th>
-                      <th>Auction Prize</th>
+                      <th>Cycle Month #</th>
+                      <th>Scheduled Date</th>
+                      <th>Monthly Installment</th>
+                      <th>Auction Prize Disbursed</th>
                       <th>Dividend Earned</th>
-                      <th>Status</th>
+                      <th>Payment Status</th>
                       <th>Auction Winner</th>
                     </tr>
                   </thead>
                   <tbody>
                     {monthlyRecords.map((rec) => (
                       <tr key={rec.monthNumber}>
-                        <td style={{ fontWeight: 700 }}>
-                          Installment #{rec.monthNumber}
+                        <td>
+                          <strong>Month #{rec.monthNumber}</strong>
                         </td>
-                        <td style={{ fontWeight: 600 }}>
-                          {formatINR(rec.installment)}
+                        <td>
+                          <span className="gc-cell-date">
+                            <Calendar size={12} color="#64748b" />
+                            {rec.date}
+                          </span>
+                        </td>
+                        <td>
+                          <strong className="gc-cell-amount">{formatINR(rec.installment)}</strong>
                         </td>
                         <td>
                           {rec.amountTaken > 0 ? (
-                            <span style={{ color: '#2563eb', fontWeight: 600 }}>
-                              {formatINR(rec.amountTaken)}
-                            </span>
+                            <span className="text-blue font-bold">{formatINR(rec.amountTaken)}</span>
                           ) : (
-                            <span style={{ color: 'var(--subtle)' }}>—</span>
+                            <span className="text-muted">—</span>
                           )}
                         </td>
                         <td>
                           {rec.discount > 0 ? (
-                            <span style={{ color: '#10b981', fontWeight: 600 }}>
-                              +{formatINR(rec.discount)}
-                            </span>
+                            <span className="text-emerald font-bold">+{formatINR(rec.discount)}</span>
                           ) : (
-                            <span style={{ color: 'var(--subtle)' }}>—</span>
+                            <span className="text-muted">—</span>
                           )}
                         </td>
                         <td>
                           <span className={`gc-status-badge ${rec.status}`}>
-                            {rec.status}
+                            {rec.status === 'paid' ? 'Paid ✅' : rec.status === 'pending' ? 'Pending ⏳' : 'Upcoming 🗓️'}
                           </span>
                         </td>
                         <td>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13.5 }}>
+                          <span className="gc-winner-cell">
                             {rec.winnerName !== 'To be auctioned' && (
                               <Award size={14} color="#f59e0b" />
                             )}
@@ -350,7 +615,7 @@ const GroupCard = () => {
             )}
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 };
