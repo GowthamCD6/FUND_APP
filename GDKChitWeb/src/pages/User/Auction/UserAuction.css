@@ -1,73 +1,76 @@
 /* ============================================================
-   USER AUCTION CONSOLE — Premium Chit Fund Auction System
-   Faithfully matching the User Mobile App Architecture & Styling
+   USER AUCTION CONSOLE — Project Theme & Compact Design
+   Primary Brand: #1B3322 (Deep Forest Green)
+   Action / CTA: #2E7D32 (Money Green)
+   Backgrounds: #F4F6F4, #EBF3ED, #FFFFFF
    ============================================================ */
 
 .ua-page-wrapper {
-  max-width: 1200px;
+  max-width: 980px;
   margin: 0 auto;
-  padding: 16px 20px 48px;
+  padding: 10px 14px 36px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-height: 85vh;
+  gap: 12px;
+  min-height: 80vh;
 }
 
 /* ────────────────────────────────────────────────────────────
-   1. VIEW 1: SELECT GROUP LIST HEADER & CARDS
+   1. VIEW 1: COMPACT SELECT GROUP LIST HEADER & CARDS
    ──────────────────────────────────────────────────────────── */
 .ua-nav-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #ffffff;
-  padding: 18px 24px;
-  border-radius: 16px;
+  padding: 12px 18px;
+  border-radius: 12px;
   border: 1px solid #E2E8F0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 
 .ua-nav-title {
-  font-size: 22px;
+  font-size: 17px;
   font-weight: 800;
-  color: #1E293B;
-  margin: 0 0 4px 0;
-  letter-spacing: -0.02em;
+  color: #0B140E;
+  margin: 0 0 2px 0;
+  letter-spacing: -0.015em;
 }
 
 .ua-nav-sub {
-  font-size: 13.5px;
+  font-size: 12px;
   color: #64748B;
   margin: 0;
 }
 
 .ua-nav-icon-badge {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: #F3E8FF;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #EBF3ED;
+  color: #1B3322;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #E9D5FF;
+  border: 1px solid #C8DEC9;
 }
 
 /* Skeleton Loading */
 .ua-skeleton-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
 }
 
 .ua-card-skeleton {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   animation: ua-pulse 1.2s ease-in-out infinite;
 }
 
@@ -84,59 +87,59 @@
 
 .ua-sk-box {
   background: #E2E8F0;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
-.ua-sk-box.title { width: 150px; height: 20px; }
-.ua-sk-box.badge { width: 80px; height: 20px; border-radius: 12px; }
-.ua-sk-box.line { width: 100%; height: 14px; }
-.ua-sk-row { display: flex; gap: 12px; }
-.ua-sk-box.half { flex: 1; height: 32px; }
+.ua-sk-box.title { width: 130px; height: 16px; }
+.ua-sk-box.badge { width: 65px; height: 16px; border-radius: 10px; }
+.ua-sk-box.line { width: 100%; height: 10px; }
+.ua-sk-row { display: flex; gap: 8px; }
+.ua-sk-box.half { flex: 1; height: 24px; }
 
 /* Empty state */
 .ua-empty-groups-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 44px 16px;
   background: #ffffff;
-  border-radius: 20px;
+  border-radius: 14px;
   border: 1px dashed #CBD5E1;
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
 .ua-empty-icon-wrap {
-  width: 72px;
-  height: 72px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   background: #F8FAFC;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 16px;
+  margin: 0 auto 12px;
 }
 
 .ua-empty-groups-state h3 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  color: #1E293B;
-  margin: 0 0 8px;
+  color: #0B140E;
+  margin: 0 0 6px;
 }
 
 .ua-empty-groups-state p {
-  font-size: 14px;
+  font-size: 13px;
   color: #64748B;
-  max-width: 420px;
-  margin: 0 auto 20px;
+  max-width: 380px;
+  margin: 0 auto 16px;
 }
 
 .ua-btn-join-scheme {
   display: inline-flex;
   align-items: center;
-  padding: 10px 20px;
-  border-radius: 10px;
+  padding: 8px 16px;
+  border-radius: 8px;
   background: #1B3322;
   color: #ffffff;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   text-decoration: none;
   transition: all 0.15s ease;
 }
@@ -145,31 +148,30 @@
   background: #2E7D32;
 }
 
-/* Groups Grid & Card (Matching Mobile GroupCard Component) */
+/* Compact Group Cards */
 .ua-groups-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
 }
 
 .ua-group-card {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid #E2E8F0;
-  padding: 20px;
+  padding: 14px 16px;
   cursor: pointer;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: all 0.18s ease;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  position: relative;
+  gap: 10px;
 }
 
 .ua-group-card:hover {
   transform: translateY(-2px);
-  border-color: #6B46C1;
-  box-shadow: 0 10px 24px rgba(107, 70, 193, 0.12);
+  border-color: #2E7D32;
+  box-shadow: 0 8px 20px rgba(27, 51, 34, 0.08);
 }
 
 .ua-gc-header {
@@ -183,11 +185,11 @@
 }
 
 .ua-gc-name {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 800;
-  color: #1E293B;
-  margin: 0 0 8px 0;
-  line-height: 1.3;
+  color: #0B140E;
+  margin: 0 0 5px 0;
+  line-height: 1.25;
 }
 
 .ua-gc-pills-row {
@@ -200,52 +202,65 @@
 .ua-gc-status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  border-radius: 12px;
-  font-size: 10.5px;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 10px;
   font-weight: 800;
-  border: 1px solid transparent;
   letter-spacing: 0.3px;
 }
 
+.ua-gc-status-pill.active {
+  background: #EBF3ED;
+  color: #1B3322;
+  border: 1px solid #C8DEC9;
+}
+
+.ua-gc-status-pill.completed {
+  background: #F0FDF4;
+  color: #059669;
+  border: 1px solid #A7F3D0;
+}
+
 .ua-gc-status-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
+  background: #2E7D32;
 }
 
 .ua-gc-cycle-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 11px;
+  gap: 3px;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 10px;
   font-weight: 700;
-  color: #1D4ED8;
+  color: #475569;
 }
 
 .ua-gc-arrow-btn {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  background: #F8FAF8;
+  border: 1px solid #E2E8E2;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #64748B;
   cursor: pointer;
   transition: all 0.15s ease;
-  margin-left: 8px;
+  flex-shrink: 0;
+  margin-left: 6px;
 }
 
 .ua-group-card:hover .ua-gc-arrow-btn {
-  background: #6B46C1;
-  border-color: #6B46C1;
+  background: #1B3322;
+  border-color: #1B3322;
   color: #ffffff;
 }
 
@@ -253,17 +268,17 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #F8FAFC;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid #F1F5F9;
+  background: #F8FAF8;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #EBF0EB;
 }
 
 .ua-gc-info-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 12px;
   font-weight: 600;
   color: #475569;
 }
@@ -271,28 +286,28 @@
 .ua-gc-progress-block {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ua-gc-progress-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  color: #475569;
+  color: #64748B;
 }
 
 .ua-gc-progress-track {
-  height: 7px;
-  background: #F1F5F9;
-  border-radius: 4px;
+  height: 5px;
+  background: #E2E8F0;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .ua-gc-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #7C3AED 0%, #6B46C1 100%);
-  border-radius: 4px;
+  background: linear-gradient(90deg, #1B3322 0%, #2E7D32 100%);
+  border-radius: 3px;
   transition: width 0.3s ease;
 }
 
@@ -300,9 +315,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid #F1F5F9;
-  font-size: 12.5px;
+  font-size: 11.5px;
 }
 
 .ua-gc-due-text {
@@ -311,25 +326,25 @@
 }
 
 .ua-gc-collected-val {
-  color: #059669;
+  color: #2E7D32;
   font-weight: 800;
-  font-size: 13.5px;
+  font-size: 12.5px;
 }
 
 /* ────────────────────────────────────────────────────────────
-   2. "AUCTION NOT ACTIVE / NOT HELD" MODAL (Pixel Match)
+   2. "AUCTION NOT ACTIVE" MODAL (Compact & Project Themed)
    ──────────────────────────────────────────────────────────── */
 .ua-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(5px);
+  background: rgba(11, 20, 14, 0.65);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  padding: 16px;
-  animation: ua-fade-in 0.2s ease-out;
+  padding: 14px;
+  animation: ua-fade-in 0.18s ease-out;
 }
 
 @keyframes ua-fade-in {
@@ -339,134 +354,131 @@
 
 .ua-modal-not-active {
   width: 100%;
-  max-width: 420px;
+  max-width: 380px;
   background: #FFFFFF;
-  border-radius: 24px;
-  padding: 32px 28px;
+  border-radius: 18px;
+  padding: 24px 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  box-shadow: 0 20px 45px rgba(107, 70, 193, 0.22);
-  animation: ua-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 16px 36px rgba(27, 51, 34, 0.18);
+  animation: ua-scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes ua-scale-in {
-  from { transform: scale(0.92); opacity: 0; }
+  from { transform: scale(0.94); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
 
 .ua-na-icon-wrapper {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .ua-na-icon-circle {
-  width: 76px;
-  height: 76px;
-  border-radius: 38px;
-  background: #F3E8FF;
-  border: 2px solid #DDD6FE;
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background: #EBF3ED;
+  border: 1.5px solid #C8DEC9;
+  color: #1B3322;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
 }
 
 .ua-na-badge-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: #FEF3C7;
-  color: #B45309;
+  color: #92400E;
   border: 1px solid #FDE68A;
-  padding: 5px 14px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 3px 11px;
+  border-radius: 14px;
+  font-size: 11.5px;
   font-weight: 800;
-  margin-bottom: 12px;
-  letter-spacing: 0.3px;
+  margin-bottom: 10px;
 }
 
 .ua-na-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #D97706;
-  box-shadow: 0 0 8px rgba(217, 119, 6, 0.6);
 }
 
 .ua-na-title {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
-  color: #1E293B;
-  margin: 0 0 8px;
+  color: #0B140E;
+  margin: 0 0 6px;
 }
 
 .ua-na-desc {
-  font-size: 14.5px;
-  color: #475569;
-  line-height: 1.5;
-  margin: 0 0 8px;
+  font-size: 13.5px;
+  color: #333D35;
+  line-height: 1.45;
+  margin: 0 0 6px;
 }
 
 .ua-na-subtext {
-  font-size: 13px;
+  font-size: 12px;
   color: #64748B;
-  line-height: 1.5;
-  margin: 0 0 24px;
+  line-height: 1.45;
+  margin: 0 0 18px;
 }
 
 .ua-btn-na-ok {
   width: 100%;
-  padding: 13px;
-  border-radius: 12px;
-  background: #6B46C1;
+  padding: 10px;
+  border-radius: 9px;
+  background: #1B3322;
   color: #ffffff;
   border: none;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 4px 14px rgba(107, 70, 193, 0.3);
 }
 
 .ua-btn-na-ok:hover {
-  background: #5B21B6;
+  background: #2E7D32;
 }
 
 /* ────────────────────────────────────────────────────────────
-   3. VIEW 2: ACTIVE AUCTION ROOM HEADER & TABS
+   3. VIEW 2: ACTIVE AUCTION ROOM (Compact Header & Switcher)
    ──────────────────────────────────────────────────────────── */
 .ua-room-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #ffffff;
-  padding: 14px 20px;
-  border-radius: 16px;
+  padding: 10px 16px;
+  border-radius: 12px;
   border: 1px solid #E2E8F0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 
 .ua-btn-back {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
-  font-size: 13px;
+  gap: 5px;
+  padding: 6px 11px;
+  background: #F8FAF8;
+  border: 1px solid #E2E8E2;
+  border-radius: 8px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #475569;
+  color: #333D35;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .ua-btn-back:hover {
-  background: #EDE9FE;
-  border-color: #DDD6FE;
-  color: #6B46C1;
+  background: #EBF3ED;
+  border-color: #C8DEC9;
+  color: #1B3322;
 }
 
 .ua-room-title-center {
@@ -474,53 +486,53 @@
 }
 
 .ua-room-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
-  color: #1E293B;
+  color: #0B140E;
   margin: 0;
 }
 
 .ua-room-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
+  gap: 5px;
+  font-size: 11px;
   font-weight: 700;
-  color: #059669;
+  color: #2E7D32;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
 }
 
 .ua-live-pulse-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #10B981;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+  background: #2E7D32;
+  box-shadow: 0 0 6px rgba(46, 125, 50, 0.8);
   animation: ua-pulse 1s infinite;
 }
 
 .ua-room-cash-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: #F3E8FF;
-  border: 1px solid #E9D5FF;
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-size: 17px;
+  gap: 5px;
+  background: #EBF3ED;
+  border: 1px solid #C8DEC9;
+  padding: 6px 12px;
+  border-radius: 9px;
+  font-size: 15px;
   font-weight: 800;
-  color: #6B46C1;
+  color: #1B3322;
 }
 
-/* Mode Switcher Tabs */
+/* Compact Mode Switcher */
 .ua-mode-tabs-container {
   display: flex;
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 14px;
-  padding: 6px;
-  gap: 6px;
+  border-radius: 10px;
+  padding: 4px;
+  gap: 4px;
 }
 
 .ua-mode-tab {
@@ -528,67 +540,67 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 9px 12px;
+  border-radius: 7px;
   background: transparent;
   border: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #64748B;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.ua-mode-tab:hover {
-  color: #1E293B;
-  background: #F8FAFC;
-}
-
-.ua-mode-tab.active {
-  background: #EDE9FE;
-  color: #6B46C1;
-}
-
-/* ────────────────────────────────────────────────────────────
-   4. MODE A: BETTING AUCTION LAYOUT & COMPONENTS
-   ──────────────────────────────────────────────────────────── */
-.ua-betting-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Anti-Sniping Alert */
-.ua-anti-sniping-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: linear-gradient(90deg, #F59E0B 0%, #D97706 100%);
-  color: #ffffff;
-  padding: 12px 18px;
-  border-radius: 12px;
-  font-size: 13.5px;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
-  animation: ua-pulse 1s infinite alternate;
-}
-
-/* Eligibility Card */
-.ua-eligibility-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 11px 16px;
-  border-radius: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
+.ua-mode-tab:hover {
+  color: #0B140E;
+  background: #F8FAF8;
+}
+
+.ua-mode-tab.active {
+  background: #EBF3ED;
+  color: #1B3322;
+  border: 1px solid #C8DEC9;
+}
+
+/* ────────────────────────────────────────────────────────────
+   4. MODE A: COMPACT BETTING AUCTION
+   ──────────────────────────────────────────────────────────── */
+.ua-betting-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Anti-sniping Banner */
+.ua-anti-sniping-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, #D97706 0%, #B45309 100%);
+  color: #ffffff;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  animation: ua-pulse 1s infinite alternate;
+}
+
+/* Eligibility Pill */
+.ua-eligibility-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
 .ua-eligibility-card.eligible {
-  background: #ECFDF5;
-  border: 1px solid #A7F3D0;
-  color: #059669;
+  background: #EBF3ED;
+  border: 1px solid #C8DEC9;
+  color: #1B3322;
 }
 
 .ua-eligibility-card.ineligible {
@@ -600,19 +612,18 @@
 .ua-elig-left {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
   font-weight: 700;
 }
 
-/* 2-Column Metrics Row */
+/* Compact 2-Col Metrics */
 .ua-metrics-two-col {
   display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: 16px;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 12px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 680px) {
   .ua-metrics-two-col {
     grid-template-columns: 1fr;
   }
@@ -621,98 +632,98 @@
 .ua-timer-card {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 
 .ua-timer-digits {
   font-family: monospace;
-  font-size: 42px;
+  font-size: 30px;
   font-weight: 900;
-  color: #6B46C1;
-  letter-spacing: -1px;
-  margin: 6px 0 4px;
+  color: #1B3322;
+  letter-spacing: -0.5px;
+  margin: 3px 0 2px;
 }
 
 .ua-timer-digits.warning {
-  color: #EF4444;
+  color: #D32F2F;
   animation: ua-pulse 0.8s infinite alternate;
 }
 
 .ua-timer-sub-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 11px;
   font-weight: 600;
   color: #64748B;
 }
 
 .ua-clock-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #10B981;
+  background: #2E7D32;
 }
 
 .ua-sniping-notice-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  margin-top: 10px;
-  padding: 4px 10px;
-  border-radius: 8px;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
   background: #FEF3C7;
-  color: #B45309;
-  font-size: 11px;
+  color: #92400E;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
 .ua-lowest-bid-card {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 
 .ua-lb-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #64748B;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
 }
 
 .ua-lb-amount {
-  font-size: 38px;
+  font-size: 28px;
   font-weight: 900;
-  color: #059669;
-  letter-spacing: -1px;
-  margin: 6px 0 10px;
+  color: #2E7D32;
+  letter-spacing: -0.5px;
+  margin: 3px 0 6px;
 }
 
 .ua-lb-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .ua-my-bid-text {
-  font-size: 13.5px;
-  color: #334155;
+  font-size: 12.5px;
+  color: #333D35;
   font-weight: 600;
 }
 
@@ -724,24 +735,25 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
-  border-radius: 8px;
-  background: #EDE9FE;
-  color: #6B46C1;
-  font-size: 11.5px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #EBF3ED;
+  color: #1B3322;
+  font-size: 11px;
   font-weight: 700;
+  border: 1px solid #C8DEC9;
 }
 
-/* Bidding Input Card */
+/* Compact Bidding Card */
 .ua-bidding-card {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 16px;
-  padding: 22px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .ua-bidding-top {
@@ -751,87 +763,87 @@
 }
 
 .ua-bidding-title {
-  font-size: 16px;
+  font-size: 14.5px;
   font-weight: 800;
-  color: #1E293B;
+  color: #0B140E;
 }
 
 .ua-btn-autobid-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: #F3E8FF;
-  border: 1px solid #DDD6FE;
-  color: #6B46C1;
-  font-size: 12.5px;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: #EBF3ED;
+  border: 1px solid #C8DEC9;
+  color: #1B3322;
+  font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .ua-btn-autobid-toggle.active {
-  background: #6B46C1;
+  background: #1B3322;
   color: #ffffff;
-  border-color: #6B46C1;
+  border-color: #1B3322;
 }
 
 .ua-bid-input-container {
   display: flex;
   align-items: center;
-  background: #F8FAFC;
+  background: #F8FAF8;
   border: 1.5px solid #CBD5E1;
-  border-radius: 12px;
-  padding: 0 16px;
+  border-radius: 9px;
+  padding: 0 12px;
   transition: border-color 0.15s ease;
 }
 
 .ua-bid-input-container:focus-within {
-  border-color: #6B46C1;
+  border-color: #2E7D32;
   background: #ffffff;
 }
 
 .ua-currency-sym {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #64748B;
-  margin-right: 8px;
+  margin-right: 6px;
 }
 
 .ua-bid-text-input {
   flex: 1;
-  padding: 14px 0;
+  padding: 10px 0;
   border: none;
   background: transparent;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
-  color: #1E293B;
+  color: #0B140E;
   outline: none;
 }
 
 .ua-quick-bid-buttons {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 
 .ua-quick-btn {
-  padding: 10px;
-  border-radius: 10px;
-  background: #F8FAFC;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: #F8FAF8;
   border: 1px solid #CBD5E1;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
-  color: #1E293B;
+  color: #333D35;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .ua-quick-btn:hover:not(:disabled) {
-  background: #EDE9FE;
-  border-color: #6B46C1;
-  color: #6B46C1;
+  background: #EBF3ED;
+  border-color: #2E7D32;
+  color: #1B3322;
 }
 
 .ua-quick-btn:disabled {
@@ -843,45 +855,41 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  background: #6B46C1;
+  padding: 11px;
+  border-radius: 9px;
+  background: #1B3322;
   color: #ffffff;
   border: none;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 4px 14px rgba(107, 70, 193, 0.3);
 }
 
 .ua-btn-submit-bid:hover:not(:disabled) {
-  background: #5B21B6;
+  background: #2E7D32;
 }
 
 .ua-btn-submit-bid:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
-/* ────────────────────────────────────────────────────────────
-   5. 3-TAB SUBSECTION: LEADERBOARD, HISTORY, MEMBERS
-   ──────────────────────────────────────────────────────────── */
+/* Compact Subtabs Deck */
 .ua-subtabs-card {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 
 .ua-subtabs-nav {
   display: flex;
   border-bottom: 1px solid #E2E8F0;
-  background: #F8FAFC;
+  background: #F8FAF8;
 }
 
 .ua-subtab-btn {
@@ -889,12 +897,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 14px 16px;
+  gap: 6px;
+  padding: 10px 12px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #64748B;
   cursor: pointer;
@@ -902,35 +910,34 @@
 }
 
 .ua-subtab-btn:hover {
-  color: #1E293B;
+  color: #0B140E;
 }
 
 .ua-subtab-btn.active {
-  color: #6B46C1;
+  color: #1B3322;
   background: #ffffff;
-  border-bottom-color: #6B46C1;
+  border-bottom-color: #2E7D32;
 }
 
 .ua-subtabs-content {
-  padding: 16px;
+  padding: 12px;
 }
 
 .ua-subtab-empty {
   text-align: center;
-  padding: 40px 16px;
+  padding: 30px 14px;
   color: #94A3B8;
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 500;
 }
 
-/* Leaderboard List */
 .ua-leaderboard-list,
 .ua-history-list,
 .ua-members-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 380px;
+  gap: 6px;
+  max-height: 280px;
   overflow-y: auto;
 }
 
@@ -938,51 +945,51 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
-  background: #F8FAFC;
-  border-radius: 12px;
+  padding: 9px 12px;
+  background: #F8FAF8;
+  border-radius: 9px;
   border: 1px solid #E2E8F0;
 }
 
 .ua-leader-row.top-rank {
-  background: #FFFBEB;
-  border-color: #FDE68A;
+  background: #F0FDF4;
+  border-color: #A7F3D0;
 }
 
 .ua-lr-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .ua-rank-circle {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #E2E8F0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: #475569;
 }
 
 .ua-rank-circle.top {
-  background: #F59E0B;
+  background: #D97706;
   color: #ffffff;
 }
 
 .ua-avatar-circle {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: #6B46C1;
+  background: #1B3322;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -992,133 +999,132 @@
 }
 
 .ua-lr-name {
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #1E293B;
+  color: #0B140E;
 }
 
 .ua-lr-me-tag {
-  font-size: 11px;
-  color: #6B46C1;
+  font-size: 10px;
+  color: #2E7D32;
   font-weight: 700;
 }
 
 .ua-lr-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .ua-lr-bid {
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 800;
-  color: #059669;
+  color: #2E7D32;
 }
 
-/* Live History List */
 .ua-history-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
-  background: #F8FAFC;
-  border-radius: 10px;
+  padding: 8px 12px;
+  background: #F8FAF8;
+  border-radius: 8px;
   border: 1px solid #F1F5F9;
 }
 
 .ua-hist-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .ua-hist-chevron {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: #ECFDF5;
+  background: #EBF3ED;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .ua-hist-name {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #1E293B;
+  color: #0B140E;
 }
 
 .ua-hist-time {
-  font-size: 11px;
+  font-size: 10px;
   color: #94A3B8;
 }
 
 .ua-hist-val {
-  font-size: 14.5px;
+  font-size: 13px;
   font-weight: 800;
-  color: #1E293B;
+  color: #0B140E;
 }
 
-/* Members List */
 .ua-member-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
-  background: #F8FAFC;
-  border-radius: 10px;
+  padding: 8px 12px;
+  background: #F8FAF8;
+  border-radius: 8px;
   border: 1px solid #F1F5F9;
 }
 
 .ua-mem-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .ua-mem-name {
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #1E293B;
+  color: #0B140E;
 }
 
 .ua-mem-role {
-  font-size: 11.5px;
+  font-size: 10.5px;
   color: #64748B;
 }
 
 .ua-mem-badge {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: 2px 7px;
+  border-radius: 5px;
   background: #E2E8F0;
   color: #64748B;
 }
 
 .ua-mem-badge.active {
-  background: #ECFDF5;
-  color: #059669;
+  background: #EBF3ED;
+  color: #1B3322;
+  border: 1px solid #C8DEC9;
 }
 
 /* ────────────────────────────────────────────────────────────
-   6. MODE B: RANDOM AUCTION (LUCKY DRAW) & 3D DICE
+   5. MODE B: COMPACT LUCKY DRAW & 3D DICE
    ──────────────────────────────────────────────────────────── */
 .ua-random-layout {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .ua-dice-arena-card {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 16px;
-  padding: 28px 24px;
+  border-radius: 12px;
+  padding: 20px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 
 .ua-dice-top-bar {
@@ -1126,77 +1132,77 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .ua-dice-title {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 800;
-  color: #1E293B;
+  color: #0B140E;
   margin: 0;
 }
 
 .ua-dice-count-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: #6B46C1;
+  gap: 4px;
+  background: #1B3322;
   color: #ffffff;
-  padding: 5px 12px;
-  border-radius: 14px;
-  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .ua-dice-waiting-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: #F3E8FF;
-  border: 1px solid #E9D5FF;
-  color: #6B46C1;
-  padding: 10px 20px;
-  border-radius: 10px;
-  font-size: 13.5px;
+  gap: 6px;
+  background: #EBF3ED;
+  border: 1px solid #C8DEC9;
+  color: #1B3322;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 700;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .ua-dice-rolling-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: #FEF3C7;
   border: 1px solid #FDE68A;
-  color: #B45309;
-  padding: 10px 20px;
-  border-radius: 10px;
-  font-size: 13.5px;
+  color: #92400E;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 700;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
-/* 3D Dice Stage */
+/* Compact 3D Dice */
 .ua-dice-stage {
-  width: 140px;
-  height: 140px;
-  margin: 20px 0 28px;
-  perspective: 700px;
+  width: 100px;
+  height: 100px;
+  margin: 10px 0 18px;
+  perspective: 600px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .ua-cube {
-  width: 80px;
-  height: 80px;
+  width: 56px;
+  height: 56px;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.5s ease;
 }
 
 .ua-cube.rolling {
-  animation: ua-dice-spin 0.4s linear infinite;
+  animation: ua-dice-spin 0.35s linear infinite;
 }
 
 @keyframes ua-dice-spin {
@@ -1214,23 +1220,22 @@
 
 .ua-face {
   position: absolute;
-  width: 80px;
-  height: 80px;
-  background: #6B46C1;
-  border: 2px solid #5B21B6;
-  border-radius: 12px;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+  width: 56px;
+  height: 56px;
+  background: #1B3322;
+  border: 1.5px solid #0B140E;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.ua-face-1 { transform: rotateY(0deg) translateZ(40px); background: #6B46C1; }
-.ua-face-2 { transform: rotateX(90deg) translateZ(40px); background: #7C3AED; }
-.ua-face-3 { transform: rotateY(-90deg) translateZ(40px); background: #8B5CF6; }
-.ua-face-4 { transform: rotateY(90deg) translateZ(40px); background: #A855F7; }
-.ua-face-5 { transform: rotateX(-90deg) translateZ(40px); background: #9333EA; }
-.ua-face-6 { transform: rotateX(180deg) translateZ(40px); background: #C084FC; }
+.ua-face-1 { transform: rotateY(0deg) translateZ(28px); background: #1B3322; }
+.ua-face-2 { transform: rotateX(90deg) translateZ(28px); background: #2E7D32; }
+.ua-face-3 { transform: rotateY(-90deg) translateZ(28px); background: #15803D; }
+.ua-face-4 { transform: rotateY(90deg) translateZ(28px); background: #166534; }
+.ua-face-5 { transform: rotateX(-90deg) translateZ(28px); background: #14532D; }
+.ua-face-6 { transform: rotateX(180deg) translateZ(28px); background: #2E7D32; }
 
 .ua-dice-face-dots {
   width: 100%;
@@ -1240,105 +1245,103 @@
 
 .ua-dot {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .ua-dot-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-.ua-dot-top-left { top: 12px; left: 12px; }
-.ua-dot-top-right { top: 12px; right: 12px; }
-.ua-dot-bottom-left { bottom: 12px; left: 12px; }
-.ua-dot-bottom-right { bottom: 12px; right: 12px; }
-.ua-dot-middle-left { top: 50%; left: 12px; transform: translateY(-50%); }
-.ua-dot-middle-right { top: 50%; right: 12px; transform: translateY(-50%); }
+.ua-dot-top-left { top: 8px; left: 8px; }
+.ua-dot-top-right { top: 8px; right: 8px; }
+.ua-dot-bottom-left { bottom: 8px; left: 8px; }
+.ua-dot-bottom-right { bottom: 8px; right: 8px; }
+.ua-dot-middle-left { top: 50%; left: 8px; transform: translateY(-50%); }
+.ua-dot-middle-right { top: 50%; right: 8px; transform: translateY(-50%); }
 
 .ua-lucky-winner-reveal {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: #ECFDF5;
-  border: 1.5px solid #86EFAC;
-  padding: 10px 18px;
-  border-radius: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  background: #F0FDF4;
+  border: 1px solid #86EFAC;
+  padding: 8px 14px;
+  border-radius: 9px;
+  margin-bottom: 14px;
 }
 
-.ua-lw-label { font-size: 14px; font-weight: 700; color: #166534; }
+.ua-lw-label { font-size: 12.5px; font-weight: 700; color: #166534; }
 .ua-lw-box {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #10B981;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: #2E7D32;
   color: #ffffff;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.ua-lw-name { font-size: 14px; font-weight: 800; color: #1E293B; }
+.ua-lw-name { font-size: 13px; font-weight: 800; color: #0B140E; }
 
 .ua-btn-join-draw {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 28px;
-  background: #6B46C1;
+  gap: 6px;
+  padding: 9px 20px;
+  background: #1B3322;
   color: #ffffff;
   border: none;
-  border-radius: 24px;
-  font-size: 15px;
+  border-radius: 20px;
+  font-size: 13.5px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(107, 70, 193, 0.3);
   transition: all 0.15s ease;
 }
 
-.ua-btn-join-draw:hover { background: #5B21B6; }
+.ua-btn-join-draw:hover { background: #2E7D32; }
 
 .ua-joined-confirmed-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  background: #ECFDF5;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  background: #F0FDF4;
   border: 1px solid #A7F3D0;
   color: #059669;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
-/* Lucky Draw Participants Grid */
+/* Compact Participants Grid */
 .ua-draw-participants-card {
   background: #ffffff;
   border: 1px solid #E2E8F0;
-  border-radius: 16px;
-  padding: 22px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 
 .ua-dp-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
-  color: #1E293B;
-  margin: 0 0 16px;
+  color: #0B140E;
+  margin: 0 0 12px;
 }
 
 .ua-dp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
 }
 
 .ua-dp-item {
-  background: #F8FAFC;
+  background: #F8FAF8;
   border: 1px solid #E2E8F0;
-  border-radius: 12px;
-  padding: 14px 10px;
+  border-radius: 9px;
+  padding: 10px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1347,203 +1350,205 @@
 
 .ua-dp-num-pill {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 20px;
-  height: 20px;
+  top: -5px;
+  right: -5px;
+  width: 17px;
+  height: 17px;
   border-radius: 50%;
-  background: #F59E0B;
+  background: #D97706;
   color: #ffffff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #ffffff;
+  border: 1.5px solid #ffffff;
 }
 
 .ua-dp-name {
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  color: #1E293B;
-  margin-top: 6px;
+  color: #0B140E;
+  margin-top: 4px;
 }
 
 /* ────────────────────────────────────────────────────────────
-   7. AUTO-BID SETUP MODAL
+   6. AUTO-BID SETUP MODAL
    ──────────────────────────────────────────────────────────── */
 .ua-autobid-modal {
   width: 100%;
-  max-width: 440px;
+  max-width: 380px;
   background: #ffffff;
-  border-radius: 20px;
-  padding: 28px;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
-  animation: ua-scale-in 0.2s ease-out;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 16px 36px rgba(27, 51, 34, 0.16);
+  animation: ua-scale-in 0.18s ease-out;
 }
 
 .ua-ab-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .ua-ab-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
-  color: #1E293B;
+  color: #0B140E;
   margin: 0;
 }
 
 .ua-ab-desc {
-  font-size: 13.5px;
+  font-size: 12.5px;
   color: #64748B;
-  line-height: 1.5;
-  margin: 0 0 18px;
+  line-height: 1.45;
+  margin: 0 0 14px;
 }
 
 .ua-ab-field label {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: #334155;
-  margin-bottom: 6px;
+  color: #333D35;
+  margin-bottom: 5px;
 }
 
 .ua-ab-input-wrap {
   display: flex;
   align-items: center;
-  background: #F8FAFC;
+  background: #F8FAF8;
   border: 1.5px solid #CBD5E1;
-  border-radius: 10px;
-  padding: 0 14px;
+  border-radius: 8px;
+  padding: 0 10px;
 }
 
 .ua-ab-input-wrap input {
   flex: 1;
-  padding: 11px 0;
+  padding: 9px 0;
   border: none;
   background: transparent;
-  font-size: 16px;
+  font-size: 14.5px;
   font-weight: 700;
-  color: #1E293B;
+  color: #0B140E;
   outline: none;
 }
 
 .ua-ab-help {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   color: #64748B;
-  margin-top: 6px;
+  margin-top: 5px;
 }
 
 .ua-ab-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 22px;
+  gap: 8px;
+  margin-top: 18px;
 }
 
 .ua-btn-ab-cancel {
-  padding: 10px 16px;
-  border-radius: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
   background: #F1F5F9;
   border: 1px solid #E2E8F0;
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #475569;
   cursor: pointer;
 }
 
 .ua-btn-ab-save {
-  padding: 10px 20px;
-  border-radius: 10px;
-  background: #6B46C1;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #1B3322;
   border: none;
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 800;
   color: #ffffff;
   cursor: pointer;
 }
 
+.ua-btn-ab-save:hover { background: #2E7D32; }
+
 /* ────────────────────────────────────────────────────────────
-   8. AUCTION CONCLUDED / FINANCIAL SUMMARY MODAL
+   7. AUCTION CONCLUDED SUMMARY MODAL
    ──────────────────────────────────────────────────────────── */
 .ua-winner-modal {
   width: 100%;
-  max-width: 480px;
+  max-width: 420px;
   background: #ffffff;
-  border-radius: 24px;
-  padding: 32px 28px;
+  border-radius: 18px;
+  padding: 24px 22px;
   text-align: center;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-  animation: ua-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 20px 40px rgba(27, 51, 34, 0.2);
+  animation: ua-scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ua-wm-header h2 {
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 800;
-  color: #1E293B;
-  margin: 10px 0 4px;
+  color: #0B140E;
+  margin: 8px 0 3px;
 }
 
 .ua-wm-winner-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
-  color: #6B46C1;
-  margin: 0 0 20px;
+  color: #2E7D32;
+  margin: 0 0 16px;
 }
 
 .ua-wm-table-card {
-  background: #F8FAFC;
+  background: #F8FAF8;
   border: 1px solid #E2E8F0;
-  border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 22px;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
   text-align: left;
 }
 
 .ua-wm-table-title {
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 800;
   color: #64748B;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0 0 12px;
+  letter-spacing: 0.4px;
+  margin: 0 0 8px;
 }
 
 .ua-wm-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 7px 0;
+  padding: 5px 0;
   border-bottom: 1px solid #F1F5F9;
-  font-size: 13px;
-  color: #475569;
+  font-size: 12px;
+  color: #333D35;
 }
 
 .ua-wm-row:last-child { border-bottom: none; }
-.ua-wm-row strong { font-weight: 700; color: #1E293B; }
-.ua-wm-row.highlight-green strong { color: #059669; }
-.ua-wm-row.highlight-purple strong { color: #6B46C1; }
+.ua-wm-row strong { font-weight: 700; color: #0B140E; }
+.ua-wm-row.highlight-green strong { color: #2E7D32; }
+.ua-wm-row.highlight-dark strong { color: #1B3322; }
 
 .ua-wm-row.total {
-  margin-top: 6px;
-  padding-top: 10px;
+  margin-top: 4px;
+  padding-top: 8px;
   border-top: 1.5px dashed #CBD5E1;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
 }
 
 .ua-btn-wm-close {
   width: 100%;
-  padding: 13px;
-  border-radius: 12px;
+  padding: 11px;
+  border-radius: 9px;
   background: #1B3322;
   color: #ffffff;
   border: none;
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1553,7 +1558,6 @@
   background: #2E7D32;
 }
 
-/* Spinner helper */
 .ua-spin {
   animation: ua-rotate 1s linear infinite;
 }

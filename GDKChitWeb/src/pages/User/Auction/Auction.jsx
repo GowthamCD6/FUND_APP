@@ -25,7 +25,7 @@ const formatTime = (seconds) => {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-// 3D Dice Dots Subcomponent
+// Compact 3D Dice Face
 const DiceDots = ({ value }) => {
   const dotPositions = {
     1: ['center'],
@@ -66,8 +66,8 @@ const UserAuction = () => {
   const [isSubmittingBid, setIsSubmittingBid] = useState(false);
 
   // Bids and participants
-  const [allBids, setAllBids] = useState([]); // Unique per-user lowest bids
-  const [bidHistory, setBidHistory] = useState([]); // Chronological order
+  const [allBids, setAllBids] = useState([]);
+  const [bidHistory, setBidHistory] = useState([]);
   const [participants, setParticipants] = useState([]);
   const [activeParticipantsList, setActiveParticipantsList] = useState([]);
 
@@ -147,10 +147,8 @@ const UserAuction = () => {
     fetchUserGroups();
   }, [fetchUserGroups]);
 
-  // Initial chit value / starting amount
   const initialPoolAmount = selectedGroup?.groupAmount || 100000;
 
-  // Memoized sorted bids (lowest bid first for reverse auction)
   const sortedBids = useMemo(() => {
     return [...allBids].sort((a, b) => a.bid - b.bid);
   }, [allBids]);
@@ -160,14 +158,13 @@ const UserAuction = () => {
     return bids.length > 0 ? Math.min(...bids) : initialPoolAmount;
   }, [allBids, initialPoolAmount]);
 
-  // 2. Click handler when user selects a group card
+  // 2. Select group handler
   const handleGroupSelect = async (group) => {
     setTargetGroupForModal(group);
     setLiveAmount(group.groupAmount || null);
 
     const cleanGroupId = encodeURIComponent(String(group.id).trim());
 
-    // Fetch members in background
     try {
       const resp = await makeRequest(`/user/groups/getMembers?groupId=${cleanGroupId}`);
       const data = await safeJson(resp);
@@ -187,22 +184,15 @@ const UserAuction = () => {
       setParticipants([]);
     }
 
-    // Check if auction is actively running on backend
     let active = false;
     try {
       const res = await makeRequest(`/user/auctions/active?groupId=${cleanGroupId}`);
       const auctionData = await safeJson(res);
       if (auctionData && auctionData.success && auctionData.active) {
         active = true;
-        if (auctionData.currentBid) {
-          setLiveAmount(auctionData.currentBid);
-        }
-        if (auctionData.timeLeft) {
-          setTimeRemaining(auctionData.timeLeft);
-        }
-        if (auctionData.auctionType) {
-          setActiveMode(auctionData.auctionType);
-        }
+        if (auctionData.currentBid) setLiveAmount(auctionData.currentBid);
+        if (auctionData.timeLeft) setTimeRemaining(auctionData.timeLeft);
+        if (auctionData.auctionType) setActiveMode(auctionData.auctionType);
       }
     } catch (e) {
       active = false;
@@ -214,8 +204,8 @@ const UserAuction = () => {
       setShowNotActiveModal(false);
     } else {
       setIsAuctionActive(false);
-      setSelectedGroup(null); // Keep user on the group list screen
-      setShowNotActiveModal(true); // Show "Auction Not Active" modal
+      setSelectedGroup(null);
+      setShowNotActiveModal(true);
     }
   };
 
@@ -232,17 +222,15 @@ const UserAuction = () => {
 
     AuctionWebSocketService.connect(token, userId, 'user')
       .then(() => {
-        // Request eligibility check
         if (activeTarget.id) {
           AuctionWebSocketService.checkEligibility(activeTarget.id);
         }
 
-        // Live auction started
         const unsubStart = AuctionWebSocketService.on('auction_started', (data) => {
           if (!data.groupId || String(data.groupId) === String(activeTarget.id)) {
             setIsAuctionActive(true);
             setShowNotActiveModal(false);
-            setSelectedGroup(activeTarget); // Automatically enter live room!
+            setSelectedGroup(activeTarget);
             if (data.initialAmount) setLiveAmount(data.initialAmount);
             if (data.remainingTime !== undefined) setTimeRemaining(data.remainingTime);
             else if (data.duration) setTimeRemaining(data.duration);
@@ -264,7 +252,6 @@ const UserAuction = () => {
           }
         });
 
-        // Live bid placed
         const unsubBid = AuctionWebSocketService.on('bid_placed', (data) => {
           const { userId: bUserId, userName, amount, timestamp, antiSnipingExtended, newRemainingTime } = data;
           const bidVal = Number(amount || data.bidAmount);
@@ -307,14 +294,12 @@ const UserAuction = () => {
           }
         });
 
-        // Time updates
         const unsubTime = AuctionWebSocketService.on('time_update', (data) => {
           if (data.remainingTime !== undefined) {
             setTimeRemaining(data.remainingTime);
           }
         });
 
-        // Dice rolling (Random Auction)
         const unsubDice = AuctionWebSocketService.on('dice_rolling', (data) => {
           if (!data.groupId || String(data.groupId) === String(activeTarget.id)) {
             setActiveMode('random');
@@ -324,15 +309,10 @@ const UserAuction = () => {
             setRollTimer(durationSec);
             if (data.initialAmount) setLiveAmount(data.initialAmount);
 
-            const diceInterval = setInterval(() => {
-              setDiceFace(Math.floor(Math.random() * 6) + 1);
-            }, 150);
-
             const timerCountdown = setInterval(() => {
               setRollTimer((prev) => {
                 if (prev <= 1) {
                   clearInterval(timerCountdown);
-                  clearInterval(diceInterval);
                   return 0;
                 }
                 return prev - 1;
@@ -340,7 +320,6 @@ const UserAuction = () => {
             }, 1000);
 
             setTimeout(() => {
-              clearInterval(diceInterval);
               clearInterval(timerCountdown);
               setIsDiceRolling(false);
               const finalVal = data.finalValue || 1;
@@ -350,7 +329,6 @@ const UserAuction = () => {
           }
         });
 
-        // Auction ended
         const unsubEnd = AuctionWebSocketService.on('auction_ended', (data) => {
           setIsAuctionActive(false);
           setIsDiceRolling(false);
@@ -367,7 +345,6 @@ const UserAuction = () => {
           setShowWinnerModal(true);
         });
 
-        // Eligibility response
         const unsubElig = AuctionWebSocketService.on('eligibility_status', (data) => {
           setEligibility({
             checked: true,
@@ -376,7 +353,6 @@ const UserAuction = () => {
           });
         });
 
-        // Auto-bid status response
         const unsubAutoBid = AuctionWebSocketService.on('auto_bid_status', (data) => {
           setAutoBidActive(Boolean(data.enabled));
           if (data.enabled) {
@@ -386,7 +362,6 @@ const UserAuction = () => {
           }
         });
 
-        // Participants list update
         const unsubParts = AuctionWebSocketService.on('participants_updated', (data) => {
           if (Array.isArray(data.participants)) {
             setActiveParticipantsList(
@@ -408,7 +383,7 @@ const UserAuction = () => {
     };
   }, [selectedGroup, targetGroupForModal, currentUserId, getCurrentLowestBid]);
 
-  // Submit Bid Handler
+  // Submit Bid
   const handlePlaceBid = async (customAmount = null) => {
     if (isSubmittingBid) return;
 
@@ -438,10 +413,8 @@ const UserAuction = () => {
     try {
       const idempotencyKey = `${currentUserId || 'u'}-${selectedGroup?.id}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
-      // 1. WebSocket send
       AuctionWebSocketService.placeBid(selectedGroup.id, targetBid, idempotencyKey);
 
-      // 2. REST fallback
       makeRequest('/user/auctions/bid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -467,7 +440,6 @@ const UserAuction = () => {
     handlePlaceBid(newBid);
   };
 
-  // Auto-bid toggle & save
   const handleToggleAutoBid = () => {
     if (!eligibility.isEligible && eligibility.checked) {
       alert(eligibility.reason || 'You are not eligible to set up auto-bid.');
@@ -498,7 +470,6 @@ const UserAuction = () => {
     setAutoBidFloor('');
   };
 
-  // Lucky Draw Join Handler
   const handleJoinLuckyDraw = () => {
     if (hasJoinedLuckyDraw || isDiceRolling) return;
     try {
@@ -515,21 +486,21 @@ const UserAuction = () => {
   };
 
   // ══════════════════════════════════════════════════════════════
-  // RENDER VIEW 1: SELECT GROUP LIST SCREEN
+  // RENDER VIEW 1: SELECT GROUP LIST SCREEN (Compact & Project Theme)
   // ══════════════════════════════════════════════════════════════
   if (!selectedGroup) {
     return (
       <div className="ua-page-wrapper">
-        {/* Header (Matching User Mobile App Header) */}
+        {/* Compact Header */}
         <div className="ua-nav-header">
           <div className="ua-nav-header-left">
-            <h1 className="ua-nav-title">Select Group</h1>
+            <h1 className="ua-nav-title">Select Chit Scheme</h1>
             <p className="ua-nav-sub">
-              Choose an active chit fund scheme to enter the live auction floor
+              Select an enrolled chit group to enter its live monthly auction
             </p>
           </div>
           <div className="ua-nav-icon-badge">
-            <Gavel size={22} color="#6B46C1" />
+            <Gavel size={18} />
           </div>
         </div>
 
@@ -553,7 +524,7 @@ const UserAuction = () => {
         ) : userGroups.length === 0 ? (
           <div className="ua-empty-groups-state">
             <div className="ua-empty-icon-wrap">
-              <Gavel size={42} color="#9CA3AF" />
+              <Gavel size={32} color="#94A3B8" />
             </div>
             <h3>No Chit Groups Enrolled</h3>
             <p>You need to join or subscribe to an active chit scheme to participate in monthly auctions.</p>
@@ -565,7 +536,6 @@ const UserAuction = () => {
           <div className="ua-groups-grid">
             {userGroups.map((group) => {
               const isCompleted = ['completed', 'paid'].includes(String(group.status || '').toLowerCase());
-              const statusColor = isCompleted ? '#10B981' : '#6B46C1';
               const progressPct = Math.min(100, Math.max(0, Math.round((group.completedCycles / group.totalCycles) * 100)));
 
               return (
@@ -580,43 +550,31 @@ const UserAuction = () => {
                     <div className="ua-gc-title-block">
                       <h3 className="ua-gc-name">{group.name}</h3>
                       <div className="ua-gc-pills-row">
-                        <span
-                          className="ua-gc-status-pill"
-                          style={{
-                            background: isCompleted ? '#ECFDF5' : '#F3E8FF',
-                            color: isCompleted ? '#059669' : '#6B46C1',
-                            borderColor: isCompleted ? '#A7F3D0' : '#DDD6FE',
-                          }}
-                        >
-                          <span
-                            className="ua-gc-status-dot"
-                            style={{ background: statusColor }}
-                          />
+                        <span className={`ua-gc-status-pill ${isCompleted ? 'completed' : 'active'}`}>
+                          <span className="ua-gc-status-dot" />
                           {String(group.status).toUpperCase()}
                         </span>
 
                         <span className="ua-gc-cycle-pill">
-                          <Calendar size={11} />
+                          <Calendar size={10} />
                           Cycle {group.completedCycles} of {group.totalCycles}
                         </span>
                       </div>
                     </div>
 
                     <button type="button" className="ua-gc-arrow-btn" aria-label="Enter Auction">
-                      <ChevronRight size={20} />
+                      <ChevronRight size={16} />
                     </button>
                   </div>
 
                   <div className="ua-gc-info-row">
                     <div className="ua-gc-info-item">
-                      <Users size={15} color="#6B7280" />
-                      <span>
-                        {group.currentMembers} / {group.totalMembers} Members
-                      </span>
+                      <Users size={13} />
+                      <span>{group.currentMembers} / {group.totalMembers} Members</span>
                     </div>
 
                     <div className="ua-gc-info-item">
-                      <Coins size={15} color="#6B7280" />
+                      <Coins size={13} />
                       <span>{formatINR(group.monthlyAmount)}/mo</span>
                     </div>
                   </div>
@@ -636,7 +594,7 @@ const UserAuction = () => {
 
                   <div className="ua-gc-footer">
                     <span className="ua-gc-due-text">
-                      {isCompleted ? 'Completed' : `Next Due: ${group.nextDueDate || 'Standard Schedule'}`}
+                      {isCompleted ? 'Completed' : `Due: ${group.nextDueDate || 'Standard Schedule'}`}
                     </span>
                     <strong className="ua-gc-collected-val">
                       {formatINR(group.collectedAmount)} collected
@@ -649,7 +607,7 @@ const UserAuction = () => {
         )}
 
         {/* ══════════════════════════════════════════════════════════
-            AUCTION NOT ACTIVE / NOT HELD MODAL (Matching User App)
+            AUCTION NOT ACTIVE / NOT HELD MODAL (Project Theme)
            ══════════════════════════════════════════════════════════ */}
         {showNotActiveModal && targetGroupForModal && !isAuctionActive && (
           <div
@@ -662,7 +620,7 @@ const UserAuction = () => {
             <div className="ua-modal-not-active" onClick={(e) => e.stopPropagation()}>
               <div className="ua-na-icon-wrapper">
                 <div className="ua-na-icon-circle">
-                  <Gavel size={38} color="#7C3AED" />
+                  <Gavel size={28} />
                 </div>
               </div>
 
@@ -699,13 +657,13 @@ const UserAuction = () => {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // RENDER VIEW 2: ACTIVE AUCTION ROOM (User App Mobile Structure)
+  // RENDER VIEW 2: ACTIVE AUCTION ROOM (Project Forest Theme)
   // ══════════════════════════════════════════════════════════════
   const effectiveLivePool = liveAmount !== null ? liveAmount : selectedGroup.groupAmount;
 
   return (
     <div className="ua-page-wrapper">
-      {/* Auction Room Header Bar */}
+      {/* Compact Auction Room Header Bar */}
       <div className="ua-room-header">
         <button
           type="button"
@@ -713,7 +671,7 @@ const UserAuction = () => {
           onClick={handleBackToGroupList}
           title="Back to Group Selection"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={15} />
           <span>Back</span>
         </button>
 
@@ -721,24 +679,24 @@ const UserAuction = () => {
           <h2 className="ua-room-title">{selectedGroup.name}</h2>
           <span className="ua-room-tag">
             <span className="ua-live-pulse-dot" />
-            Live Auction Room
+            Live Session
           </span>
         </div>
 
         <div className="ua-room-cash-badge">
-          <Coins size={18} color="#6B46C1" />
+          <Coins size={15} />
           <span>{formatINR(effectiveLivePool)}</span>
         </div>
       </div>
 
-      {/* Mode Switcher Tabs (Betting Auction vs Random Auction) */}
+      {/* Mode Switcher Tabs */}
       <div className="ua-mode-tabs-container">
         <button
           type="button"
           className={`ua-mode-tab ${activeMode === 'betting' ? 'active' : ''}`}
           onClick={() => setActiveMode('betting')}
         >
-          <Gavel size={17} />
+          <Gavel size={15} />
           <span>Betting Auction</span>
         </button>
 
@@ -747,7 +705,7 @@ const UserAuction = () => {
           className={`ua-mode-tab ${activeMode === 'random' ? 'active' : ''}`}
           onClick={() => setActiveMode('random')}
         >
-          <Sparkles size={17} />
+          <Sparkles size={15} />
           <span>Random Auction</span>
         </button>
       </div>
@@ -760,7 +718,7 @@ const UserAuction = () => {
           {/* Anti-Sniping Alert Banner */}
           {antiSnipingAlert && (
             <div className="ua-anti-sniping-banner">
-              <Zap size={18} color="#FFFFFF" />
+              <Zap size={16} />
               <span>{antiSnipingAlert}</span>
             </div>
           )}
@@ -779,23 +737,23 @@ const UserAuction = () => {
             >
               <div className="ua-elig-left">
                 {eligibility.isEligible ? (
-                  <CheckCircle2 size={16} color="#059669" />
+                  <CheckCircle2 size={15} color="#059669" />
                 ) : (
-                  <AlertCircle size={16} color="#DC2626" />
+                  <AlertCircle size={15} color="#DC2626" />
                 )}
                 <span>{eligibility.isEligible ? 'Eligible to Bid' : 'Ineligible to Bid'}</span>
               </div>
-              <Info size={15} />
+              <Info size={14} />
             </div>
           )}
 
-          {/* Top Metrics Row: Timer & Current Lowest Bid */}
+          {/* Top 2-Column Metrics */}
           <div className="ua-metrics-two-col">
             {/* 1. Timer Card */}
             <div className="ua-timer-card">
               <Clock
-                size={32}
-                color={timeRemaining < 60 ? '#EF4444' : '#6B46C1'}
+                size={22}
+                color={timeRemaining < 60 ? '#D32F2F' : '#2E7D32'}
               />
               <div className={`ua-timer-digits ${timeRemaining < 60 ? 'warning' : ''}`}>
                 {formatTime(timeRemaining)}
@@ -806,8 +764,8 @@ const UserAuction = () => {
               </div>
               {timeRemaining <= 30 && (
                 <div className="ua-sniping-notice-badge">
-                  <ShieldCheck size={12} color="#B45309" />
-                  <span>Anti-sniping active: bids under 30s add +30s</span>
+                  <ShieldCheck size={11} color="#A3704C" />
+                  <span>Anti-sniping: bids &lt;30s add +30s</span>
                 </div>
               )}
             </div>
@@ -815,7 +773,7 @@ const UserAuction = () => {
             {/* 2. Current Lowest Bid Card */}
             <div className="ua-lowest-bid-card">
               <div className="ua-lb-header">
-                <Trophy size={18} color="#F59E0B" />
+                <Trophy size={15} color="#D97706" />
                 <span>Current Lowest Prize Bid</span>
               </div>
               <div className="ua-lb-amount">{formatINR(getCurrentLowestBid())}</div>
@@ -829,7 +787,7 @@ const UserAuction = () => {
                 )}
                 {activeAutoBidFloor && (
                   <span className="ua-autobid-floor-badge">
-                    <Bot size={12} />
+                    <Bot size={11} />
                     Floor: {formatINR(activeAutoBidFloor)}
                   </span>
                 )}
@@ -837,7 +795,7 @@ const UserAuction = () => {
             </div>
           </div>
 
-          {/* Place Your Bid Card */}
+          {/* Compact Place Your Bid Card */}
           <div className="ua-bidding-card">
             <div className="ua-bidding-top">
               <span className="ua-bidding-title">Place Your Bid</span>
@@ -846,12 +804,11 @@ const UserAuction = () => {
                 className={`ua-btn-autobid-toggle ${autoBidActive ? 'active' : ''}`}
                 onClick={handleToggleAutoBid}
               >
-                <Bot size={15} />
+                <Bot size={13} />
                 <span>{autoBidActive ? 'Auto-Bid ON' : 'Setup Auto-Bid'}</span>
               </button>
             </div>
 
-            {/* Input wrap */}
             <div className="ua-bid-input-container">
               <span className="ua-currency-sym">₹</span>
               <input
@@ -864,7 +821,7 @@ const UserAuction = () => {
               />
             </div>
 
-            {/* Quick Bid Reductions */}
+            {/* Quick Reduction Chips */}
             <div className="ua-quick-bid-buttons">
               <button
                 type="button"
@@ -892,7 +849,6 @@ const UserAuction = () => {
               </button>
             </div>
 
-            {/* Submit Bid Button */}
             <button
               type="button"
               className="ua-btn-submit-bid"
@@ -901,19 +857,19 @@ const UserAuction = () => {
             >
               {isSubmittingBid ? (
                 <>
-                  <Loader2 size={18} className="ua-spin" />
-                  <span>Placing Bid...</span>
+                  <Loader2 size={16} className="ua-spin" />
+                  <span>Submitting Bid...</span>
                 </>
               ) : (
                 <>
-                  <Gavel size={18} />
-                  <span>Place Bid</span>
+                  <Gavel size={16} />
+                  <span>Submit Bid</span>
                 </>
               )}
             </button>
           </div>
 
-          {/* Bottom Tabs: Leaderboard | Live History | Members */}
+          {/* Compact 3-Tab Deck: Leaderboard | Live History | Members */}
           <div className="ua-subtabs-card">
             <div className="ua-subtabs-nav">
               <button
@@ -921,7 +877,7 @@ const UserAuction = () => {
                 className={`ua-subtab-btn ${bettingTab === 'leaderboard' ? 'active' : ''}`}
                 onClick={() => setBettingTab('leaderboard')}
               >
-                <Trophy size={14} />
+                <Trophy size={13} />
                 <span>Leaderboard ({allBids.length})</span>
               </button>
 
@@ -930,7 +886,7 @@ const UserAuction = () => {
                 className={`ua-subtab-btn ${bettingTab === 'history' ? 'active' : ''}`}
                 onClick={() => setBettingTab('history')}
               >
-                <History size={14} />
+                <History size={13} />
                 <span>Live History ({bidHistory.length})</span>
               </button>
 
@@ -939,18 +895,17 @@ const UserAuction = () => {
                 className={`ua-subtab-btn ${bettingTab === 'members' ? 'active' : ''}`}
                 onClick={() => setBettingTab('members')}
               >
-                <Users size={14} />
+                <Users size={13} />
                 <span>Members ({activeParticipantsList.length || participants.length})</span>
               </button>
             </div>
 
             <div className="ua-subtabs-content">
-              {/* TAB 1: LEADERBOARD */}
               {bettingTab === 'leaderboard' && (
                 <>
                   {sortedBids.length === 0 ? (
                     <div className="ua-subtab-empty">
-                      <Gavel size={32} color="#CBD5E1" />
+                      <Gavel size={26} color="#CBD5E1" />
                       <p>No bids placed yet in this session</p>
                     </div>
                   ) : (
@@ -973,7 +928,7 @@ const UserAuction = () => {
 
                           <div className="ua-lr-right">
                             <strong className="ua-lr-bid">{formatINR(item.bid)}</strong>
-                            {idx === 0 && <Crown size={17} color="#F59E0B" />}
+                            {idx === 0 && <Crown size={15} color="#D97706" />}
                           </div>
                         </div>
                       ))}
@@ -982,12 +937,11 @@ const UserAuction = () => {
                 </>
               )}
 
-              {/* TAB 2: LIVE HISTORY */}
               {bettingTab === 'history' && (
                 <>
                   {bidHistory.length === 0 ? (
                     <div className="ua-subtab-empty">
-                      <Clock size={32} color="#CBD5E1" />
+                      <Clock size={26} color="#CBD5E1" />
                       <p>No bid history recorded yet</p>
                     </div>
                   ) : (
@@ -1004,7 +958,7 @@ const UserAuction = () => {
                           <div key={idx} className="ua-history-row">
                             <div className="ua-hist-left">
                               <div className="ua-hist-chevron">
-                                <ChevronRight size={14} color="#059669" />
+                                <ChevronRight size={13} color="#2E7D32" />
                               </div>
                               <div>
                                 <div className="ua-hist-name">
@@ -1022,12 +976,11 @@ const UserAuction = () => {
                 </>
               )}
 
-              {/* TAB 3: MEMBERS */}
               {bettingTab === 'members' && (
                 <>
                   {(activeParticipantsList.length > 0 ? activeParticipantsList : participants).length === 0 ? (
                     <div className="ua-subtab-empty">
-                      <Users size={32} color="#CBD5E1" />
+                      <Users size={26} color="#CBD5E1" />
                       <p>No participants enrolled in this session</p>
                     </div>
                   ) : (
@@ -1062,34 +1015,32 @@ const UserAuction = () => {
         </div>
       ) : (
         /* ──────────────────────────────────────────────────────────
-            TAB 2: RANDOM AUCTION (LUCKY DRAW) INTERFACE
+            TAB 2: RANDOM AUCTION (LUCKY DRAW)
            ────────────────────────────────────────────────────────── */
         <div className="ua-random-layout">
-          {/* Main 3D Lucky Draw Card */}
           <div className="ua-dice-arena-card">
             <div className="ua-dice-top-bar">
               <h2 className="ua-dice-title">Lucky Draw</h2>
               <span className="ua-dice-count-badge">
-                <Users size={13} />
+                <Users size={12} />
                 {participants.length} Participants
               </span>
             </div>
 
             {!isDiceRolling && !luckyDrawWinner && (
               <div className="ua-dice-waiting-badge">
-                <Clock size={16} />
+                <Clock size={14} />
                 <span>Waiting for Admin to start the draw...</span>
               </div>
             )}
 
             {isDiceRolling && (
               <div className="ua-dice-rolling-badge">
-                <Clock size={16} className="ua-spin" />
+                <Clock size={14} className="ua-spin" />
                 <span>Rolling in progress ({rollTimer}s)...</span>
               </div>
             )}
 
-            {/* 3D Dice Graphic Container */}
             <div className="ua-dice-stage">
               <div className={`ua-cube ${isDiceRolling ? 'rolling' : ''} show-${diceValue}`}>
                 <div className="ua-face ua-face-1"><DiceDots value={1} /></div>
@@ -1119,20 +1070,19 @@ const UserAuction = () => {
                 className="ua-btn-join-draw"
                 onClick={handleJoinLuckyDraw}
               >
-                <Sparkles size={18} />
+                <Sparkles size={16} />
                 <span>Join Lucky Draw</span>
               </button>
             )}
 
             {hasJoinedLuckyDraw && !isDiceRolling && !luckyDrawWinner && (
               <div className="ua-joined-confirmed-chip">
-                <Check size={15} color="#059669" />
+                <Check size={14} color="#059669" />
                 <span>Joined Successfully! Waiting for Admin Roll</span>
               </div>
             )}
           </div>
 
-          {/* Participants Grid */}
           <div className="ua-draw-participants-card">
             <h3 className="ua-dp-title">Draw Participants</h3>
             <div className="ua-dp-grid">
@@ -1153,18 +1103,18 @@ const UserAuction = () => {
       )}
 
       {/* ══════════════════════════════════════════════════════════
-          AUTO-BID CONFIGURATION MODAL (User Mobile App Style)
+          AUTO-BID CONFIGURATION MODAL
          ══════════════════════════════════════════════════════════ */}
       {showAutoBidModal && (
         <div className="ua-modal-overlay" onClick={() => setShowAutoBidModal(false)}>
           <div className="ua-autobid-modal" onClick={(e) => e.stopPropagation()}>
             <div className="ua-ab-header">
-              <Bot size={24} color="#6B46C1" />
+              <Bot size={20} color="#2E7D32" />
               <h3 className="ua-ab-title">Configure Auto-Bid</h3>
             </div>
 
             <p className="ua-ab-desc">
-              Our automated proxy bidding system will place bids on your behalf whenever another member bids, reducing the price by ₹500 down to your floor limit.
+              Proxy bidding automatically places bids for you whenever another member bids, dropping ₹500 down to your floor limit.
             </p>
 
             <div className="ua-ab-field">
@@ -1210,14 +1160,13 @@ const UserAuction = () => {
         <div className="ua-modal-overlay" onClick={() => setShowWinnerModal(false)}>
           <div className="ua-winner-modal" onClick={(e) => e.stopPropagation()}>
             <div className="ua-wm-header">
-              <Trophy size={48} color="#F59E0B" />
+              <Trophy size={40} color="#D97706" />
               <h2>Auction Concluded</h2>
               <p className="ua-wm-winner-name">
                 Winner: {auctionWinner?.name || luckyDrawWinner?.name || 'Declared Member'}
               </p>
             </div>
 
-            {/* Financial Breakdown Table */}
             {(() => {
               const summary = auctionSummary || {
                 chitValue: initialPoolAmount,
@@ -1249,7 +1198,7 @@ const UserAuction = () => {
                     <span>Foreman Commission (5%)</span>
                     <span>{formatINR(summary.commission)}</span>
                   </div>
-                  <div className="ua-wm-row highlight-purple">
+                  <div className="ua-wm-row highlight-dark">
                     <span>Net Dividend Distributed</span>
                     <strong>{formatINR(summary.netDividendPool)}</strong>
                   </div>
