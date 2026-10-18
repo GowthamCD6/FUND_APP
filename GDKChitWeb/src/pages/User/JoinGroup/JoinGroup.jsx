@@ -217,54 +217,15 @@ const JoinGroup = () => {
       </div>
 
       {/* ══════════════════════════════════════════════════════════
-          BENEFIT VALUE PROPOSITIONS STRIP
-         ══════════════════════════════════════════════════════════ */}
-      <div className="jg-benefits-strip">
-        <div className="jg-benefit-card">
-          <div className="jg-benefit-icon green">
-            <ShieldCheck size={18} />
-          </div>
-          <div>
-            <h4 className="jg-benefit-title">100% Legal & Regulated</h4>
-            <p className="jg-benefit-desc">State-audited security deposit protected under statutory reserve rules.</p>
-          </div>
-        </div>
-
-        <div className="jg-benefit-card">
-          <div className="jg-benefit-icon emerald">
-            <Coins size={18} />
-          </div>
-          <div>
-            <h4 className="jg-benefit-title">Monthly Dividend Benefits</h4>
-            <p className="jg-benefit-desc">Non-prized members earn continuous auction discount credits every cycle.</p>
-          </div>
-        </div>
-
-        <div className="jg-benefit-card">
-          <div className="jg-benefit-icon blue">
-            <Sparkles size={18} />
-          </div>
-          <div>
-            <h4 className="jg-benefit-title">Instant Digital Passbook</h4>
-            <p className="jg-benefit-desc">Real-time ledger statements, payment receipts, and auction logs upon enrollment.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════
           MAIN 2-COLUMN ENROLLMENT WORKSPACE
          ══════════════════════════════════════════════════════════ */}
       <div className="jg-main-grid">
         {/* LEFT COLUMN: Interactive Code Verification Portal */}
         <div className="jg-portal-card">
           <div className="jg-portal-top">
-            <div className="jg-portal-badge">
-              <KeyRound size={13} />
-              <span>Administrative Access Portal</span>
-            </div>
             <h2 className="jg-portal-title">Enter Scheme Access Code</h2>
             <p className="jg-portal-desc">
-              Have an enrollment authorization code provided by the administrator? Enter it below to activate your account.
+              Enter your official administrative group code below to join.
             </p>
           </div>
 
