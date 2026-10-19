@@ -12,46 +12,37 @@ const AuthLoader = () => {
       try {
         const phone = await AsyncStorage.getItem('userPhone');
         const role = await AsyncStorage.getItem('userRole');
+        const userId = await AsyncStorage.getItem('userId');
         const accessToken = await ApiService.getAccessToken();
-        const refreshToken = await ApiService.getRefreshToken();
+        const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
 
-        if (!phone || !role || !accessToken || !refreshToken) {
-          await ApiService.clearTokens();
-          await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'userLoginMethod']);
+        // Check if user has active session stored in AsyncStorage
+        const hasSession = (isLoggedIn === 'true' || !!accessToken || !!userId) && (!!phone || !!role);
+
+        if (!hasSession) {
           return navigation.reset({
             index: 0,
             routes: [{ name: 'Welcome' }],
           });
         }
 
-        // Verify session in the background so that user transition is instant
+        // Soft background session refresh/validation - NEVER auto-logout on network error or offline
         ApiService.getProfile().then(profile => {
-          if (!profile.success) {
-            ApiService.clearTokens();
-            AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'userLoginMethod']);
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Welcome' }],
-            });
+          if (profile?.success && profile?.data?.user) {
+            const u = profile.data.user;
+            if (u.role) AsyncStorage.setItem('userRole', String(u.role)).catch(() => {});
+            if (u.username) AsyncStorage.setItem('userName', String(u.username)).catch(() => {});
+            if (u.id) AsyncStorage.setItem('userId', String(u.id)).catch(() => {});
           }
         }).catch(error => {
-          console.error('Background session validation failed:', error);
-          const errorMessage = error?.message || '';
-          if (!errorMessage.includes('Network') && !errorMessage.toLowerCase().includes('blocked')) {
-            ApiService.clearTokens();
-            AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'userLoginMethod']);
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Welcome' }],
-            });
-          }
+          console.log('Background session check skipped (offline or server):', error?.message);
         });
 
-        if (String(role || '').toLowerCase() === 'admin') {
-          navigation.navigate('AdminTabs');
-        } else {
-          navigation.navigate('TabRouter');
-        }
+        const isPlatformAdmin = String(role || '').toLowerCase() === 'admin';
+        navigation.reset({
+          index: 0,
+          routes: [{ name: isPlatformAdmin ? 'AdminTabs' : 'TabRouter' }],
+        });
       } catch (error) {
         console.error('Error checking login status:', error);
         navigation.reset({
@@ -62,7 +53,7 @@ const AuthLoader = () => {
     };
 
     checkLogin();
-  }, []);
+  }, [navigation]);
 
   return (
     <View style={styles.loaderContainer}>

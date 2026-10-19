@@ -25,44 +25,54 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const isAuth = await ApiService.isAuthenticated();
-      if (isAuth) {
-        // Try to get user profile
-        const response = await ApiService.getProfile();
-        if (response.success) {
-          const user = response.data.user;
-          setUser(user);
-          setIsAuthenticated(true);
-          await AsyncStorage.setItem('userId', user.id ? String(user.id) : '');
-          if (user.role) {
-            await AsyncStorage.setItem('userRole', String(user.role));
+      const accessToken = await ApiService.getAccessToken();
+      const storedUserId = await AsyncStorage.getItem('userId');
+      const storedPhone = await AsyncStorage.getItem('userPhone');
+      const storedRole = await AsyncStorage.getItem('userRole');
+      const storedName = await AsyncStorage.getItem('userName');
+      const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
+
+      const hasSession = (isLoggedIn === 'true' || !!accessToken || !!storedUserId) && (!!storedPhone || !!storedRole);
+
+      if (hasSession) {
+        // Restore user state from AsyncStorage immediately
+        const existingUser = {
+          id: storedUserId ? Number(storedUserId) : undefined,
+          phone: storedPhone || '',
+          role: storedRole || 'User',
+          username: storedName || 'User',
+        };
+        setUser(existingUser);
+        setIsAuthenticated(true);
+
+        PushNotificationService.init();
+        try {
+          if (accessToken && storedUserId) {
+            GlobalNotificationService.init(accessToken, storedUserId, storedRole || 'User');
           }
-          PushNotificationService.init();
-          try {
-            const token = await ApiService.getAccessToken();
-            if (token && user.id) {
-              GlobalNotificationService.init(token, user.id, user.role || 'User');
-            }
-          } catch (tokErr) {
-            console.warn('Error fetching token for GlobalNotificationService:', tokErr);
-          }
-        } else {
-          // Token might be invalid, clear it
-          await ApiService.clearTokens();
-          setIsAuthenticated(false);
-          setUser(null);
+        } catch (tokErr) {
+          console.warn('Error fetching token for GlobalNotificationService:', tokErr);
         }
+
+        // Soft background profile sync - NEVER clear tokens or log out on network/offline error
+        ApiService.getProfile().then(response => {
+          if (response?.success && response?.data?.user) {
+            const u = response.data.user;
+            setUser(u);
+            if (u.id) AsyncStorage.setItem('userId', String(u.id)).catch(() => {});
+            if (u.role) AsyncStorage.setItem('userRole', String(u.role)).catch(() => {});
+            if (u.username) AsyncStorage.setItem('userName', String(u.username)).catch(() => {});
+          }
+        }).catch(err => {
+          console.log('Background profile sync skipped (offline or network error):', err?.message);
+        });
       } else {
-        await ApiService.clearTokens();
         setIsAuthenticated(false);
         setUser(null);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
-      // Don't fail completely on network errors - allow app to continue
-      // User can still navigate and retry
-      setIsAuthenticated(false);
-      setUser(null);
+      console.error('Auth check error:', error);
+      // Keep session intact if error occurred reading storage
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +85,8 @@ export const AuthProvider = ({ children }) => {
       if (response.success) {
         const user = response.data.user;
 
-        // Save user details to AsyncStorage
+        // Persist session details to AsyncStorage for permanent login
+        await AsyncStorage.setItem('isLoggedIn', 'true');
         await AsyncStorage.setItem('userName', user.username ? String(user.username) : '');
         await AsyncStorage.setItem('userPhone', user.phone ? String(user.phone) : '');
         await AsyncStorage.setItem('userRole', user.role ? String(user.role) : 'User');

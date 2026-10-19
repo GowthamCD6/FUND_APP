@@ -146,10 +146,10 @@ exports.login = async (req, res) => {
       role: user.role 
     };
     
-    const accessToken = generateToken(tokenPayload, '15m');
+    const accessToken = generateToken(tokenPayload, '365d');
     const refreshToken = generateRefreshToken({ userId: user.id });
 
-    const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))';
+    const storeTokenSql = 'INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 365 DAY))';
     await db.promise().query(storeTokenSql, [user.id, refreshToken]);
 
     return res.json({

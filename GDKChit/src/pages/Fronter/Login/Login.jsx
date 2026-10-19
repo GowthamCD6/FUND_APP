@@ -147,6 +147,7 @@ const Login = () => {
                 const user = response.data.user;
                 
                 // Save user data to AsyncStorage
+                await AsyncStorage.setItem("isLoggedIn", "true");
                 await AsyncStorage.setItem("userPhone", String(user.phone));
                 await AsyncStorage.setItem("userName", String(user.username));
                 await AsyncStorage.setItem("userRole", String(user.role));

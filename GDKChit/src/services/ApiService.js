@@ -100,8 +100,7 @@ class ApiService {
         throw new Error(data.message || 'Failed to refresh token');
       }
     } catch (error) {
-      console.error('Token refresh failed:', error);
-      await this.clearTokens();
+      console.warn('Token refresh notice:', error?.message);
       throw error;
     }
   }
@@ -175,19 +174,15 @@ class ApiService {
         }
 
         const refreshToken = await this.getRefreshToken();
-        if (!refreshToken) {
-          await this.clearTokens();
-          throw new Error('Session invalid: no refresh token available. Please login again.');
-        }
-
-        try {
-          accessToken = await this.refreshAccessToken();
-          response = await makeCall(accessToken);
-        } catch (refreshError) {
-          // Refresh failed, redirect to login
-          console.error('Refresh failed while requesting', url, refreshError);
-          if (refreshError.message && refreshError.message.toLowerCase().includes('blocked')) {
-            await AsyncStorage.multiRemove(['userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
+        if (refreshToken) {
+          try {
+            accessToken = await this.refreshAccessToken();
+            response = await makeCall(accessToken);
+          } catch (refreshError) {
+            console.warn('Refresh failed while requesting', url, refreshError?.message);
+            if (refreshError.message && refreshError.message.toLowerCase().includes('blocked')) {
+              await this.clearTokens();
+              await AsyncStorage.multiRemove(['isLoggedIn', 'userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
             
             Alert.alert(
               'Account Blocked',

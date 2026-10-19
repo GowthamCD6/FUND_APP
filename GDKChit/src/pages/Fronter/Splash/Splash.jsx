@@ -36,15 +36,20 @@ export const SplashScreen = ({ navigation, onFinish, loop = false }) => {
       try {
         const phone = await AsyncStorage.getItem('userPhone');
         const role = await AsyncStorage.getItem('userRole');
+        const userId = await AsyncStorage.getItem('userId');
         const accessToken = await AsyncStorage.getItem('accessToken');
-        const refreshToken = await AsyncStorage.getItem('refreshToken');
+        const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
 
-        if (!phone || !role || !accessToken || !refreshToken) {
-          targetRouteRef.current = 'Welcome';
-        } else if (String(role || '').toLowerCase() === 'admin') {
-          targetRouteRef.current = 'AdminTabs';
+        const hasSession = (isLoggedIn === 'true' || !!accessToken || !!userId) && (!!phone || !!role);
+
+        if (hasSession) {
+          if (String(role || '').toLowerCase() === 'admin') {
+            targetRouteRef.current = 'AdminTabs';
+          } else {
+            targetRouteRef.current = 'TabRouter';
+          }
         } else {
-          targetRouteRef.current = 'TabRouter';
+          targetRouteRef.current = 'Welcome';
         }
       } catch (error) {
         targetRouteRef.current = 'Welcome';

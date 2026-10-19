@@ -63,14 +63,14 @@ const authenticateOptional = (req, res, next) => {
   });
 };
 
-// Generate JWT token
-const generateToken = (payload, expiresIn = '24h') => {
+// Generate JWT token (extended to 365d so users remain persistently logged in)
+const generateToken = (payload, expiresIn = '365d') => {
   return jwt.sign(payload, JWT_SECRET, { expiresIn });
 };
 
-// Generate refresh token
+// Generate refresh token (extended to 365d)
 const generateRefreshToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '365d' });
 };
 
 // Verify refresh token
