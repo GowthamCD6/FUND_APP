@@ -76,7 +76,7 @@ class GlobalNotificationService {
     try {
       let wsBase = ApiService.baseURL ? ApiService.baseURL.replace(/^http/, 'ws') : 'wss://api.fund.gowthamcd.in/api';
       wsBase = wsBase.replace(/\/api\/admin\/?$/, '').replace(/\/api\/?$/, '');
-      const wsUrl = `${wsBase}/api/chat?token=${this.token}&userId=${this.userId}&userType=${this.userRole || 'User'}`;
+      const wsUrl = `${wsBase}/api/chat?token=${encodeURIComponent(this.token)}&userId=${encodeURIComponent(this.userId)}&userType=${encodeURIComponent(this.userRole || 'User')}`;
 
       console.log('🔔 [GlobalNotificationService] Connecting to global notification socket...');
       this.ws = new WebSocket(wsUrl);
@@ -104,6 +104,7 @@ class GlobalNotificationService {
       this.ws.onclose = () => {
         this.isConnecting = false;
         this.stopHeartbeat();
+        this.ws = null;
         console.log('🔌 [GlobalNotificationService] Socket disconnected, scheduling reconnect...');
         this.scheduleReconnect();
       };

@@ -60,25 +60,34 @@ class AuctionWebSocketService {
           attempt: this.reconnectAttempts,
         });
 
-        // Clean WebSocket URL — NO token in query parameters!
-        this.ws = new WebSocket(this.url);
+        // Pass auth in query parameters for production proxy/server compatibility
+        const wsUrl = `${this.url}?token=${encodeURIComponent(token)}&userId=${encodeURIComponent(userId)}&userType=${encodeURIComponent(userType)}`;
+        this.ws = new WebSocket(wsUrl);
         let resolved = false;
 
         this.ws.onopen = () => {
-          console.log('✅ WebSocket socket opened, dispatching first-frame authentication...');
+          console.log('✅ [AuctionWS] WebSocket opened for auction');
           
-          // Send authentication as the first frame over the encrypted WS connection
-          this.ws.send(JSON.stringify({
-            type: 'auth',
-            data: {
-              token,
-              userId: String(userId),
-              userType: String(userType).toLowerCase(),
-            }
-          }));
+          // Send first-frame auth for servers expecting message-based auth
+          try {
+            this.ws.send(JSON.stringify({
+              type: 'auth',
+              data: {
+                token,
+                userId: String(userId),
+                userType: String(userType).toLowerCase(),
+              }
+            }));
+          } catch (_) {}
 
           this.reconnectAttempts = 0;
+          this.isAuthenticated = true;
+          this.setConnectionState('connected');
           this.startHeartbeat();
+          if (!resolved) {
+            resolved = true;
+            resolve();
+          }
         };
 
         this.ws.onmessage = (event) => {
@@ -103,16 +112,17 @@ class AuctionWebSocketService {
         };
 
         this.ws.onerror = (error) => {
-          console.error('❌ [AuctionWS] WebSocket error:', error?.message || error);
-          this.emitEvent('error', { message: 'WebSocket connection error' });
+          const errMsg = error?.message || (typeof error === 'string' ? error : 'WebSocket connection error');
+          console.warn('⚠️ [AuctionWS] WebSocket warning/error:', errMsg);
+          this.emitEvent('error', { message: errMsg });
           if (!resolved) {
             resolved = true;
-            reject(error);
+            reject(new Error(errMsg));
           }
         };
 
         this.ws.onclose = (event) => {
-          console.log(`🔌 [AuctionWS] WebSocket closed (code: ${event?.code}, reason: ${event?.reason})`);
+          console.log(`🔌 [AuctionWS] WebSocket closed (code: ${event?.code || 1000}, reason: ${event?.reason || ''})`);
           this.stopHeartbeat();
           this.isAuthenticated = false;
           this.setConnectionState('disconnected', { code: event?.code });
@@ -153,7 +163,7 @@ class AuctionWebSocketService {
     if (this.isManuallyClosed || !this.activeCredentials) return;
     const { token, userId, userType } = this.activeCredentials;
     this.connect(token, userId, userType).catch(err => {
-      console.warn('[AuctionWS] Reconnect failed, will retry:', err?.message);
+      console.warn('[AuctionWS] Reconnect failed, will retry:', err?.message || 'Connection failed');
     });
   }
 
