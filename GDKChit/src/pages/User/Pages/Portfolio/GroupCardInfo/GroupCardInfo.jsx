@@ -138,6 +138,8 @@ const GroupCardInfo = ({ onClose, group }) => {
     return null;
   };
 
+  const amountToPayThisMonth = getAmountToPay();
+
   const getSelectedMonthDisplay = () => {
     let monthNumber = null;
     const startProp = group?.startDate || groupInfo?.startDate;
