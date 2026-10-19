@@ -81,7 +81,7 @@ const GroupCard = ({ group, onPress, onArrowPress }) => {
             }}>
               <MaterialCommunityIcons name="calendar-clock" size={11} color="#1D4ED8" style={{ marginRight: 3 }} />
               <Text style={{ fontSize: 11, fontWeight: '700', color: '#1D4ED8' }}>
-                {group.currentMonthDisplay || (group.duration ? `1st Month of ${group.duration}` : '1st Month')}
+                {group.currentMonthDisplay ? `${group.currentMonthDisplay}${group.currentMonthName ? ` (${group.currentMonthName})` : ''}` : (group.duration ? `${group.currentMonth || 1}st Month of ${group.duration}` : '1st Month')}
               </Text>
             </View>
           </View>

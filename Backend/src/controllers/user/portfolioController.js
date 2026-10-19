@@ -121,15 +121,35 @@ exports.getPortfolio = async (req, res) => {
           reportStatus = (row.latest_status.toLowerCase() === 'paid') ? 'paid' : 'pending';
       }
 
-      const completedCycles = isFullyPaid ? safeDuration : paidCycles;
-      
+      const getOrdinal = (n) => {
+        const s = ['th', 'st', 'nd', 'rd'];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+      };
+
+      let currentMonthNum = 1;
+      let currentMonthName = 'Month 1';
+      if (row.start_date) {
+        const st = new Date(row.start_date);
+        st.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const diff = (today.getFullYear() - st.getFullYear()) * 12 + (today.getMonth() - st.getMonth()) + 1;
+        currentMonthNum = Math.min(safeDuration, Math.max(1, diff));
+
+        const monthNamesArray = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const cycleDate = new Date(st.getFullYear(), st.getMonth() + (currentMonthNum - 1), 1);
+        currentMonthName = `${monthNamesArray[cycleDate.getMonth()]} ${cycleDate.getFullYear()}`;
+      }
+      const currentMonthDisplay = `${getOrdinal(currentMonthNum)} Month of ${safeDuration}`;
+
       let estimatedPayDate = row.end_date;
       if (!estimatedPayDate && row.start_date) {
-         const d = new Date(row.start_date);
-         d.setMonth(d.getMonth() + safeDuration);
-         estimatedPayDate = formatDateLocal(d);
+        const d = new Date(row.start_date);
+        d.setMonth(d.getMonth() + safeDuration);
+        estimatedPayDate = formatDateLocal(d);
       } else if (estimatedPayDate) {
-         estimatedPayDate = formatDateLocal(estimatedPayDate);
+        estimatedPayDate = formatDateLocal(estimatedPayDate);
       }
 
       return {
@@ -144,8 +164,14 @@ exports.getPortfolio = async (req, res) => {
         estimatedPayDate: estimatedPayDate || 'N/A',
         paymentStatus: reportStatus,
         monthlyContribution: monthlyAmount,
-        currentMonth: completedCycles,
+        currentMonth: currentMonthNum,
+        currentMonthNum,
+        currentMonthDisplay,
+        currentMonthName,
+        paidCycles,
+        completedCycles: paidCycles,
         totalMonths: safeDuration,
+        duration: safeDuration,
         groupCollectedAmount: toSafeNumber(row.group_collected_amount, 0),
         groupCompletedCycles: Number(row.group_completed_cycles) || 0,
       };

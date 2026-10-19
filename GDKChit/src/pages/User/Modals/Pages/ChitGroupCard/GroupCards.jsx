@@ -84,7 +84,7 @@ const GroupCards = ({ onBack, onSelectGroup }) => {
   }
 
   const renderGroupCard = ({ item }) => {
-    const currMonth = Number(item.currentMonth) || 0;
+    const currMonth = Number(item.currentMonth) || 1;
     const totMonths = Number(item.totalMonths) || 1;
     const progressPercent = Math.min(100, Math.max(0, (currMonth / totMonths) * 100));
     const isPaid = ['completed', 'paid'].includes(item.paymentStatus);
@@ -114,7 +114,7 @@ const GroupCards = ({ onBack, onSelectGroup }) => {
         
         <View style={styles.groupListCardInfo}>
           <Text style={[styles.currentMonthText, language === 'ta' && { fontSize: 12 }]}>
-            {t('Current Month')}: {currMonth}
+            {item.currentMonthDisplay ? `${item.currentMonthDisplay}${item.currentMonthName ? ` • ${item.currentMonthName}` : ''}` : `${t('Current Month')}: ${currMonth}`}
           </Text>
         </View>
 

@@ -63,32 +63,30 @@ const ChitCard = ({ selectedGroup, onBack }) => {
     const totalMonths = selectedGroup.totalMonths || 20;
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
+    let startYear = new Date().getFullYear();
+    let startMonth = new Date().getMonth();
+    if (selectedGroup.startDate) {
+      const parts = String(selectedGroup.startDate).split('-');
+      if (parts.length >= 2) {
+        startYear = parseInt(parts[0], 10);
+        startMonth = parseInt(parts[1], 10) - 1;
+      }
+    }
+
     // Create array with all month slots (1 to totalMonths)
     const allMonthsData = Array.from({ length: totalMonths }, (_, index) => {
       const monthNumber = index + 1;
+      const cycleDate = new Date(startYear, startMonth + index, 1);
+      const monthKey = `${months[cycleDate.getMonth()]} ${cycleDate.getFullYear()}`;
       
-      // Find matching data for this month position
-      let monthData = null;
-      let monthKey = null;
-      for (const key in data) {
-        const details = data[key];
-        // Try to match by month number (you might need to adjust this based on how months are stored)
-        const monthIndex = Object.keys(data).indexOf(key);
-        if (monthIndex === index) {
-          monthData = details;
-          monthKey = key;
-          break;
-        }
-      }
-      
-      // If no data found, create empty row for this month
-      const details = monthData || {};
+      // Match by exact monthKey, e.g. "Jun 2026", or index/number fallback
+      const details = (data && (data[monthKey] || data[monthNumber] || data[`Month ${monthNumber}`])) || {};
       
       return {
         serialNo: monthNumber,
         monthNumber,
-        month: monthKey || `Month ${monthNumber}`,
-        collectionPeriod: details.collectionPeriod || monthKey || '',
+        month: monthKey,
+        collectionPeriod: details.collectionPeriod || monthKey,
         date: details.paidDate || '',
         auctionAmount: details.amountTaken || 0,
         receivedAmount: details.paymentAmount || 0,

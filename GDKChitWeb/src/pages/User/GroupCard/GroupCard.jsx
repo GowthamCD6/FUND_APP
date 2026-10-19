@@ -510,7 +510,7 @@ const GroupCard = () => {
                           </span>
                           <span className="gc-badge-cycle">
                             <Calendar size={11} />
-                            Cycle {currentMonth} of {totalMonths}
+                            {group.currentMonthDisplay ? `${group.currentMonthDisplay}${group.currentMonthName ? ` (${group.currentMonthName})` : ''}` : `Cycle ${currentMonth} of ${totalMonths}`}
                           </span>
                         </div>
                       </div>
