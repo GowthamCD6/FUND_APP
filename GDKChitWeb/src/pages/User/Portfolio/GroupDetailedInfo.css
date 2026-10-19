@@ -181,11 +181,30 @@
   flex: 1;
 }
 
+.gdi-status-header-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
+}
+
 .gdi-status-label {
   font-size: 12px;
   color: #4b5563;
   font-weight: 600;
-  margin-bottom: 2px;
+}
+
+.gdi-status-month-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.2px;
 }
 
 .gdi-status-val {

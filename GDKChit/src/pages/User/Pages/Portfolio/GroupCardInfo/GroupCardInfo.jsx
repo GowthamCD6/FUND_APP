@@ -138,7 +138,31 @@ const GroupCardInfo = ({ onClose, group }) => {
     return null;
   };
 
-  const amountToPayThisMonth = getAmountToPay();
+  const getSelectedMonthDisplay = () => {
+    let monthNumber = null;
+    const startProp = group?.startDate || groupInfo?.startDate;
+    if (startProp) {
+      const start = new Date(startProp);
+      if (!isNaN(start.getTime())) {
+        monthNumber = (selectedDate.getFullYear() - start.getFullYear()) * 12 + (selectedDate.getMonth() - start.getMonth()) + 1;
+      }
+    }
+    const total = group?.totalMonths || group?.duration || group?.totalCycles || null;
+    const monthName = selectedDate.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+
+    if (monthNumber && monthNumber > 0) {
+      const s = ["th", "st", "nd", "rd"];
+      const v = monthNumber % 100;
+      const ordinal = monthNumber + (s[(v - 20) % 10] || s[v] || s[0]);
+      if (total) {
+        return `${ordinal} Month of ${total} (${monthName})`;
+      }
+      return `${ordinal} Month (${monthName})`;
+    }
+    return monthName;
+  };
+
+  const selectedMonthDisplay = getSelectedMonthDisplay();
 
   const formatDate = (dateString) => {
     if (!dateString) return 'nil';
@@ -249,7 +273,12 @@ const GroupCardInfo = ({ onClose, group }) => {
               <MaterialCommunityIcons name={getStatusIcon()} size={24} color="#FFFFFF" />
             </View>
             <View style={styles.statusInfo}>
-              <Text style={[styles.statusLabel, language === 'ta' && { fontSize: 11 }]}>{t('Payment Status')}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 3 }}>
+                <Text style={[styles.statusLabel, language === 'ta' && { fontSize: 11 }]}>{t('Payment Status')}</Text>
+                <View style={styles.statusMonthBadge}>
+                  <Text style={styles.statusMonthBadgeText}>{selectedMonthDisplay}</Text>
+                </View>
+              </View>
               <Text style={[styles.statusValue, { color: getStatusColor() }, language === 'ta' && { fontSize: 14 }]}>
                 {t(monthData.status).toUpperCase()}
               </Text>

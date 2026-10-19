@@ -139,6 +139,31 @@ const GroupDetailedInfo = ({ group, onClose }) => {
 
   const statusInfo = getStatusInfo();
 
+  const getSelectedMonthDisplay = () => {
+    let monthNumber = null;
+    if (group?.startDate) {
+      const start = new Date(group.startDate);
+      if (!isNaN(start.getTime())) {
+        monthNumber = (selectedDate.getFullYear() - start.getFullYear()) * 12 + (selectedDate.getMonth() - start.getMonth()) + 1;
+      }
+    }
+    const total = group?.totalMonths || group?.duration || group?.totalCycles || null;
+    const monthName = selectedDate.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+
+    if (monthNumber && monthNumber > 0) {
+      const s = ["th", "st", "nd", "rd"];
+      const v = monthNumber % 100;
+      const ordinal = monthNumber + (s[(v - 20) % 10] || s[v] || s[0]);
+      if (total) {
+        return `${ordinal} Month of ${total} (${monthName})`;
+      }
+      return `${ordinal} Month (${monthName})`;
+    }
+    return monthName;
+  };
+
+  const selectedMonthDisplay = getSelectedMonthDisplay();
+
   return (
     <>
       <div className="gdi-overlay" onClick={onClose} />
@@ -200,7 +225,10 @@ const GroupDetailedInfo = ({ group, onClose }) => {
                   {statusInfo.icon}
                 </div>
                 <div className="gdi-status-text">
-                  <div className="gdi-status-label">Payment Status</div>
+                  <div className="gdi-status-header-line">
+                    <span className="gdi-status-label">Payment Status</span>
+                    <span className="gdi-status-month-badge">{selectedMonthDisplay}</span>
+                  </div>
                   <div className="gdi-status-val" style={{ color: statusInfo.color }}>
                     {String(monthData.status || 'pending').toUpperCase()}
                   </div>

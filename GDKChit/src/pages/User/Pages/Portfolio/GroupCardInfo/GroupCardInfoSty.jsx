@@ -213,6 +213,19 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '500',
   },
+  statusMonthBadge: {
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    alignSelf: 'center',
+  },
+  statusMonthBadgeText: {
+    fontSize: 11,
+    fontFamily: Platform.select({ ios: 'Inter-Bold', android: 'Inter-Bold' }),
+    fontWeight: '700',
+    color: '#0F172A',
+  },
   statusValue: {
     fontSize: 16,
     fontFamily: Platform.select({
