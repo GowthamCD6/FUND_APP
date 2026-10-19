@@ -134,21 +134,37 @@ const ChitfundPortfolio = ({ navigation, route }) => {
   // Function to transform Portfolio data to GroupCard format
   const transformGroupData = (group) => {
     if (!group) return {};
+    const paidCycles = Number(group.paidCycles) || 0;
+    const currentMonth = Number(group.currentMonth || group.currentMonthNum) || 1;
+    const totalMonths = Number(group.totalMonths || group.duration) || 20;
+
+    let computedStatus = group.paymentStatus || 'pending';
+    if (paidCycles >= totalMonths) {
+      computedStatus = 'completed';
+    } else if (paidCycles >= currentMonth) {
+      computedStatus = 'paid';
+    } else if (paidCycles === currentMonth - 1) {
+      computedStatus = 'pending';
+    } else if (paidCycles < currentMonth - 1) {
+      computedStatus = 'overdue';
+    }
+
     return {
       id: group.id,
       name: String(group.groupName || 'Chit Group'),
-      status: group.paymentStatus || 'pending',
+      status: computedStatus,
+      paymentStatus: computedStatus,
       totalMembers: Number(group.totalMembers) || 0,
       currentMembers: Number(group.currentMembers) || 0,
       monthlyAmount: Number(group.monthlyContribution) || 0,
       completedCycles: Number(group.currentMonth || group.completedCycles) || 0,
-      paidCycles: Number(group.paidCycles) || 0,
-      currentMonth: Number(group.currentMonth) || 1,
-      currentMonthDisplay: group.currentMonthDisplay || (group.totalMonths ? `${group.currentMonth || 1}st Month of ${group.totalMonths}` : '1st Month'),
+      paidCycles,
+      currentMonth,
+      currentMonthDisplay: group.currentMonthDisplay || (totalMonths ? `${currentMonth}st Month of ${totalMonths}` : '1st Month'),
       currentMonthName: group.currentMonthName || '',
-      totalCycles: Number(group.totalMonths) || 0,
-      duration: Number(group.totalMonths) || 0,
-      totalMonths: Number(group.totalMonths) || 0,
+      totalCycles: totalMonths,
+      duration: totalMonths,
+      totalMonths,
       nextDueDate: group.estimatedPayDate || 'N/A',
       completedDate: group.estimatedPayDate || 'N/A',
       totalAmount: Number(group.investmentAmount) || 0,

@@ -181,8 +181,30 @@ const GroupCardInfo = ({ onClose, group }) => {
     }
   };
 
+  const getEffectiveStatus = () => {
+    const raw = String(monthData.status || '').toLowerCase();
+    if (raw === 'paid' || raw === 'completed') return 'paid';
+
+    const startProp = group?.startDate || groupInfo?.startDate;
+    if (startProp) {
+      const start = new Date(startProp);
+      if (!isNaN(start.getTime())) {
+        const todayDate = new Date();
+        const currentRunningMonth = (todayDate.getFullYear() - start.getFullYear()) * 12 + (todayDate.getMonth() - start.getMonth()) + 1;
+        const selectedMonthNum = (selectedDate.getFullYear() - start.getFullYear()) * 12 + (selectedDate.getMonth() - start.getMonth()) + 1;
+        if (selectedMonthNum < currentRunningMonth) {
+          return 'overdue';
+        }
+        return 'pending';
+      }
+    }
+    return raw === 'overdue' ? 'overdue' : 'pending';
+  };
+
+  const effectiveStatus = getEffectiveStatus();
+
   const getStatusColor = () => {
-    switch (monthData.status) {
+    switch (effectiveStatus) {
       case 'paid':
         return '#10B981';
       case 'pending':
@@ -195,7 +217,7 @@ const GroupCardInfo = ({ onClose, group }) => {
   };
 
   const getStatusIcon = () => {
-    switch (monthData.status) {
+    switch (effectiveStatus) {
       case 'paid':
         return 'check-circle';
       case 'pending':
@@ -282,18 +304,18 @@ const GroupCardInfo = ({ onClose, group }) => {
                 </View>
               </View>
               <Text style={[styles.statusValue, { color: getStatusColor() }, language === 'ta' && { fontSize: 14 }]}>
-                {t(monthData.status).toUpperCase()}
+                {t(effectiveStatus).toUpperCase()}
               </Text>
             </View>
-            {(monthData.status === 'pending' || monthData.status === 'overdue') && monthData.daysPending > 0 ? (
+            {(effectiveStatus === 'pending' || effectiveStatus === 'overdue') && monthData.daysPending > 0 ? (
               <View style={styles.daysInfo}>
                 <Text style={styles.daysValue}>{monthData.daysPending}</Text>
                 <Text style={[styles.daysLabel, language === 'ta' && { fontSize: 10 }]}>
-                  {monthData.status === 'overdue' ? t('days out') : t('days left')}
+                  {effectiveStatus === 'overdue' ? t('days out') : t('days left')}
                 </Text>
               </View>
             ) : null}
-            {monthData.status === 'paid' && monthData.paidDate ? (
+            {effectiveStatus === 'paid' && monthData.paidDate ? (
               <View style={styles.paidInfo}>
                 <Text style={[styles.paidLabel, language === 'ta' && { fontSize: 11 }]}>{t('Paid on')}</Text>
                 <Text style={styles.paidDate}>{formatDate(monthData.paidDate)}</Text>

@@ -166,6 +166,38 @@ exports.getGroupMonthlyInfo = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Forbidden: You are not a member of this group' });
     }
 
+    const [[groupInfo]] = await db.promise().query(
+      `SELECT start_date, duration FROM \`groups\` WHERE id = ? AND deleted_at IS NULL`,
+      [rawGroupId]
+    );
+
+    let currentRunningMonth = 1;
+    let groupStartDate = null;
+    if (groupInfo && groupInfo.start_date) {
+      groupStartDate = new Date(groupInfo.start_date);
+      groupStartDate.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diff = (today.getFullYear() - groupStartDate.getFullYear()) * 12 + (today.getMonth() - groupStartDate.getMonth()) + 1;
+      const duration = Number(groupInfo.duration) || 20;
+      currentRunningMonth = Math.min(duration, Math.max(1, diff));
+    }
+
+    const evaluateMonthStatus = (rawStatus, monthDate) => {
+      const s = String(rawStatus || '').toLowerCase();
+      if (s === 'paid' || s === 'completed') {
+        return 'paid';
+      }
+      if (groupStartDate) {
+        const mIndex = (monthDate.getFullYear() - groupStartDate.getFullYear()) * 12 + (monthDate.getMonth() - groupStartDate.getMonth()) + 1;
+        if (mIndex < currentRunningMonth) {
+          return 'overdue';
+        }
+        return 'pending';
+      }
+      return s === 'overdue' ? 'overdue' : 'pending';
+    };
+
     const [payments] = await db.promise().query(
       `SELECT MONTH(collection_period) - 1 AS month, YEAR(collection_period) AS year, amount, status, due_date, paid_date, receipt_number 
        FROM monthly_collections 
@@ -197,7 +229,7 @@ exports.getGroupMonthlyInfo = async (req, res) => {
       
       const net = (Number(d.monthly_amount) || 0) + (Number(d.commission_amount) || 0) - (Number(d.discount_amount) || 0);
       monthlyData[key] = {
-        status: 'pending',
+        status: evaluateMonthStatus('pending', monthDate),
         paymentAmount: Number(d.monthly_amount) || 0, 
         discount: Number(d.discount_amount) || 0,
         commission: Number(d.commission_amount) || 0,
@@ -216,13 +248,14 @@ exports.getGroupMonthlyInfo = async (req, res) => {
       const monthDate = new Date(p.year, p.month, 1);
       const key = `${monthNamesArray[monthDate.getMonth()]} ${monthDate.getFullYear()}`;
       const userCollectionAmount = Number(p.amount) || 0;
+      const computedStatus = evaluateMonthStatus(p.status, monthDate);
 
       if (!monthlyData[key]) {
         // Fallback if no admin details strictly exist yet
         monthlyData[key] = {
-          status: p.status,
+          status: computedStatus,
           paymentAmount: userCollectionAmount > 0 ? userCollectionAmount : null,
-          paidAmount: p.status === 'paid' ? userCollectionAmount : 0,
+          paidAmount: computedStatus === 'paid' ? userCollectionAmount : 0,
           receiptNumber: p.receipt_number || null,
           discount: 0,
           commission: 0,
@@ -237,7 +270,7 @@ exports.getGroupMonthlyInfo = async (req, res) => {
       }
 
       let daysPending = 0;
-      if (p.status === 'pending' && p.due_date) {
+      if (computedStatus === 'pending' && p.due_date) {
         const due = new Date(p.due_date);
         const diff = due.getTime() - new Date().getTime();
         if (diff > 0) {
@@ -245,8 +278,8 @@ exports.getGroupMonthlyInfo = async (req, res) => {
         }
       }
 
-      monthlyData[key].status = p.status;
-      if (p.status === 'paid') {
+      monthlyData[key].status = computedStatus;
+      if (computedStatus === 'paid') {
         monthlyData[key].paidAmount = userCollectionAmount;
       }
       monthlyData[key].receiptNumber = p.receipt_number || monthlyData[key].receiptNumber || null;

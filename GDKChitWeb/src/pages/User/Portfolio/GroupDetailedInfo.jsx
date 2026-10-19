@@ -123,8 +123,29 @@ const GroupDetailedInfo = ({ group, onClose }) => {
   };
   const amountToPayThisMonth = getAmountToPay();
 
+  const getEffectiveStatus = () => {
+    const raw = String(monthData.status || '').toLowerCase();
+    if (raw === 'paid' || raw === 'completed') return 'paid';
+
+    if (group?.startDate) {
+      const start = new Date(group.startDate);
+      if (!isNaN(start.getTime())) {
+        const todayDate = new Date();
+        const currentRunningMonth = (todayDate.getFullYear() - start.getFullYear()) * 12 + (todayDate.getMonth() - start.getMonth()) + 1;
+        const selectedMonthNum = (selectedDate.getFullYear() - start.getFullYear()) * 12 + (selectedDate.getMonth() - start.getMonth()) + 1;
+        if (selectedMonthNum < currentRunningMonth) {
+          return 'overdue';
+        }
+        return 'pending';
+      }
+    }
+    return raw === 'overdue' ? 'overdue' : 'pending';
+  };
+
+  const effectiveStatus = getEffectiveStatus();
+
   const getStatusInfo = () => {
-    switch (monthData.status?.toLowerCase()) {
+    switch (effectiveStatus) {
       case 'paid':
       case 'completed':
         return { color: '#10B981', bg: '#D1FAE5', icon: <RiCheckCircleLine size={24} color="#10B981" /> };
@@ -230,18 +251,18 @@ const GroupDetailedInfo = ({ group, onClose }) => {
                     <span className="gdi-status-month-badge">{selectedMonthDisplay}</span>
                   </div>
                   <div className="gdi-status-val" style={{ color: statusInfo.color }}>
-                    {String(monthData.status || 'pending').toUpperCase()}
+                    {String(effectiveStatus || 'pending').toUpperCase()}
                   </div>
                 </div>
                 {/* Days pending/overdue or Paid Date */}
                 <div className="gdi-status-extra">
-                  {(monthData.status === 'pending' || monthData.status === 'overdue') && monthData.daysPending > 0 && (
+                  {(effectiveStatus === 'pending' || effectiveStatus === 'overdue') && monthData.daysPending > 0 && (
                     <>
                       <div className="gdi-extra-val">{monthData.daysPending}</div>
-                      <div className="gdi-extra-label">{monthData.status === 'overdue' ? 'days out' : 'days left'}</div>
+                      <div className="gdi-extra-label">{effectiveStatus === 'overdue' ? 'days out' : 'days left'}</div>
                     </>
                   )}
-                  {monthData.status === 'paid' && monthData.paidDate && (
+                  {effectiveStatus === 'paid' && monthData.paidDate && (
                     <>
                       <div className="gdi-extra-label">Paid on</div>
                       <div className="gdi-extra-val-date">{formatDate(monthData.paidDate)}</div>

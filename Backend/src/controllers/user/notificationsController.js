@@ -73,70 +73,88 @@ exports.getNotifications = async (req, res) => {
       const now = new Date();
       now.setHours(0, 0, 0, 0);
 
-      let elapsedMonths = (now.getFullYear() - st.getFullYear()) * 12 + (now.getMonth() - st.getMonth());
-      if (now.getDate() >= st.getDate()) {
-        elapsedMonths += 1;
-      }
-
       const maxDuration = Number(group.duration) || 1;
-      if (elapsedMonths < 0 || elapsedMonths > maxDuration) continue;
+      const diff = (now.getFullYear() - st.getFullYear()) * 12 + (now.getMonth() - st.getMonth()) + 1;
+      const currentMonthNum = Math.min(maxDuration, Math.max(1, diff));
 
-      const dueDate = new Date(st.getFullYear(), st.getMonth() + elapsedMonths, st.getDate());
-      dueDate.setHours(0, 0, 0, 0);
-
-      const paymentMonth = dueDate.getMonth();
-      const paymentYear = dueDate.getFullYear();
-      
-      const periodStr = `${paymentYear}-${String(paymentMonth + 1).padStart(2, '0')}-01`;
-
-      const [paymentRows] = await db.promise().query(
-        `SELECT status, due_date FROM monthly_collections WHERE group_id = ? AND user_id = ? AND collection_period = ? AND deleted_at IS NULL LIMIT 1`,
-        [group.id, userId, periodStr]
+      // Fetch all recorded payments for this user in this group
+      const [userPayments] = await db.promise().query(
+        `SELECT collection_period, status, due_date FROM monthly_collections WHERE group_id = ? AND user_id = ? AND deleted_at IS NULL`,
+        [group.id, userId]
       );
+      const paymentMap = new Map();
+      userPayments.forEach(p => {
+        if (p.collection_period) {
+          const key = String(p.collection_period).substring(0, 7); // 'YYYY-MM'
+          paymentMap.set(key, p);
+        }
+      });
 
-      const payment = paymentRows[0];
-      const isPaid = payment && String(payment.status || '').toLowerCase() === 'paid';
-      const effectiveDueDate = payment && payment.due_date ? new Date(payment.due_date) : dueDate;
-      effectiveDueDate.setHours(0, 0, 0, 0);
+      // 1. Check past elapsed months (1 to currentMonthNum - 1) -> If unpaid, they are OVERDUE!
+      for (let m = 1; m < currentMonthNum; m++) {
+        const cycleDate = new Date(st.getFullYear(), st.getMonth() + (m - 1), 1);
+        const cycleYear = cycleDate.getFullYear();
+        const cycleMonth = cycleDate.getMonth();
+        const periodKey = `${cycleYear}-${String(cycleMonth + 1).padStart(2, '0')}`;
+        
+        const payment = paymentMap.get(periodKey);
+        const isPaid = payment && String(payment.status || '').toLowerCase() === 'paid';
 
-      const timeDiff = effectiveDueDate.getTime() - now.getTime();
-      const daysAway = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-      if (!isPaid) {
-        if (daysAway < 0) {
+        if (!isPaid) {
           generatedNotifications.push({
-            notification_key: `notif-${group.id}-${paymentYear}-${paymentMonth}-overdue`,
+            notification_key: `notif-${group.id}-${cycleYear}-${cycleMonth}-overdue`,
             type: 'danger',
             title: 'Payment Overdue',
-            message: `Your payment for "${group.group_name}" was due on ${effectiveDueDate.toLocaleDateString()} and is now overdue. Please pay immediately.`,
-            payload: { groupId: group.id, groupName: group.group_name },
+            message: `Your payment for Month ${m} of "${group.group_name}" was missed and is now overdue. Please clear this immediately.`,
+            payload: { groupId: group.id, groupName: group.group_name, month: m },
             created_at: new Date().toISOString(),
           });
-        } else if (daysAway === 0) {
+        }
+      }
+
+      // 2. Check current active running month (currentMonthNum) -> If unpaid, it is PENDING
+      const curCycleDate = new Date(st.getFullYear(), st.getMonth() + (currentMonthNum - 1), 1);
+      const curYear = curCycleDate.getFullYear();
+      const curMonth = curCycleDate.getMonth();
+      const curPeriodKey = `${curYear}-${String(curMonth + 1).padStart(2, '0')}`;
+
+      const curPayment = paymentMap.get(curPeriodKey);
+      const curIsPaid = curPayment && String(curPayment.status || '').toLowerCase() === 'paid';
+
+      if (!curIsPaid) {
+        const defaultDue = new Date(curYear, curMonth, st.getDate() > 1 ? st.getDate() - 1 : 15);
+        defaultDue.setHours(0, 0, 0, 0);
+        const effectiveDueDate = curPayment && curPayment.due_date ? new Date(curPayment.due_date) : defaultDue;
+        effectiveDueDate.setHours(0, 0, 0, 0);
+
+        const timeDiff = effectiveDueDate.getTime() - now.getTime();
+        const daysAway = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        if (daysAway === 0) {
           generatedNotifications.push({
-            notification_key: `notif-${group.id}-${paymentYear}-${paymentMonth}-0`,
-            type: 'danger',
+            notification_key: `notif-${group.id}-${curYear}-${curMonth}-0`,
+            type: 'warning',
             title: 'Payment Due Today!',
-            message: `Your payment for "${group.group_name}" is due today (${effectiveDueDate.toLocaleDateString()}). Please complete it now.`,
-            payload: { groupId: group.id, groupName: group.group_name },
+            message: `Your Month ${currentMonthNum} payment for "${group.group_name}" is due today (${effectiveDueDate.toLocaleDateString()}).`,
+            payload: { groupId: group.id, groupName: group.group_name, month: currentMonthNum },
             created_at: new Date().toISOString(),
           });
-        } else if (daysAway <= 3) {
+        } else if (daysAway > 0 && daysAway <= 3) {
           generatedNotifications.push({
-            notification_key: `notif-${group.id}-${paymentYear}-${paymentMonth}-3`,
+            notification_key: `notif-${group.id}-${curYear}-${curMonth}-3`,
             type: 'warning',
             title: 'Upcoming Payment Reminder',
-            message: `Your payment for "${group.group_name}" is due on ${effectiveDueDate.toLocaleDateString()}. Please make the payment within the next ${daysAway} day${daysAway === 1 ? '' : 's'}.`,
-            payload: { groupId: group.id, groupName: group.group_name },
+            message: `Your Month ${currentMonthNum} payment for "${group.group_name}" is due in ${daysAway} day${daysAway === 1 ? '' : 's'}.`,
+            payload: { groupId: group.id, groupName: group.group_name, month: currentMonthNum },
             created_at: new Date().toISOString(),
           });
         } else {
           generatedNotifications.push({
-            notification_key: `notif-${group.id}-${paymentYear}-${paymentMonth}-pending`,
+            notification_key: `notif-${group.id}-${curYear}-${curMonth}-pending`,
             type: 'warning',
             title: 'Pending Payment Reminder',
-            message: `Your payment for "${group.group_name}" is pending and due on ${effectiveDueDate.toLocaleDateString()}. Please pay before the due date.`,
-            payload: { groupId: group.id, groupName: group.group_name },
+            message: `Your Month ${currentMonthNum} payment for "${group.group_name}" is pending. Please pay before the month completes.`,
+            payload: { groupId: group.id, groupName: group.group_name, month: currentMonthNum },
             created_at: new Date().toISOString(),
           });
         }

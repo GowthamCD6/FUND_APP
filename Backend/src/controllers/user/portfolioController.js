@@ -101,26 +101,6 @@ exports.getPortfolio = async (req, res) => {
 
       const isFullyPaid = paidCycles >= safeDuration;
       
-      let reportStatus = 'pending';
-      if (isFullyPaid) {
-          reportStatus = 'completed';
-      } else if (row.start_date) {
-          const startDateStr = formatDateLocal(row.start_date);
-          const elapsed = Math.min(safeDuration, getElapsedMonths(startDateStr));
-          if (elapsed > 0) {
-              if (paidCycles >= elapsed) {
-                  reportStatus = 'paid';
-              } else {
-                  reportStatus = (row.latest_status && row.latest_status.toLowerCase() === 'overdue') ? 'overdue' : 'pending';
-              }
-          } else {
-              // Group hasn't started yet
-              reportStatus = (paidCycles > 0) ? 'paid' : 'pending';
-          }
-      } else if (row.latest_status) {
-          reportStatus = (row.latest_status.toLowerCase() === 'paid') ? 'paid' : 'pending';
-      }
-
       const getOrdinal = (n) => {
         const s = ['th', 'st', 'nd', 'rd'];
         const v = n % 100;
@@ -142,6 +122,23 @@ exports.getPortfolio = async (req, res) => {
         currentMonthName = `${monthNamesArray[cycleDate.getMonth()]} ${cycleDate.getFullYear()}`;
       }
       const currentMonthDisplay = `${getOrdinal(currentMonthNum)} Month of ${safeDuration}`;
+
+      let reportStatus = 'pending';
+      if (isFullyPaid) {
+        reportStatus = 'completed';
+      } else if (row.start_date) {
+        if (paidCycles >= currentMonthNum) {
+          reportStatus = 'paid';
+        } else if (paidCycles === currentMonthNum - 1) {
+          // Current active month is awaiting payment; not overdue yet
+          reportStatus = 'pending';
+        } else {
+          // Missed one or more past months after next month has started
+          reportStatus = 'overdue';
+        }
+      } else if (row.latest_status) {
+        reportStatus = (row.latest_status.toLowerCase() === 'paid') ? 'paid' : 'pending';
+      }
 
       let estimatedPayDate = row.end_date;
       if (!estimatedPayDate && row.start_date) {
