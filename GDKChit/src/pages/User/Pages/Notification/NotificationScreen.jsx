@@ -240,9 +240,19 @@ const NotificationScreen = () => {
     } else if (
       notif.type === 'danger' ||
       notif.type === 'warning' ||
-      String(notif.title || '').toLowerCase().includes('payment')
+      String(notif.title || '').toLowerCase().includes('payment') ||
+      String(notif.title || '').toLowerCase().includes('due') ||
+      String(notif.title || '').toLowerCase().includes('reminder')
     ) {
-      navigation.navigate('DueCalendar');
+      const targetGroupId = notif.groupId || notif.group_id;
+      const targetMonth = notif.month || notif.collection_period || notif.dueDate || notif.due_date;
+      navigation.navigate('UserTabs', {
+        screen: 'Portfolio',
+        params: {
+          openGroupId: targetGroupId,
+          targetMonth: targetMonth
+        }
+      });
     } else if (
       String(notif.title || '').toLowerCase().includes('auction') ||
       notif.groupId
@@ -250,7 +260,7 @@ const NotificationScreen = () => {
       if (notif.groupId) {
         navigation.navigate('AuctionScreen', { groupId: String(notif.groupId) });
       } else {
-        navigation.navigate('DueCalendar');
+        navigation.navigate('UserTabs', { screen: 'Portfolio' });
       }
     }
   };

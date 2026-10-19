@@ -199,8 +199,8 @@ class PushNotificationService {
             const isAuctionActive = groupInfo?.auction_status === 'active' || groupInfo?.status === 'bidding';
             
             if (groupInfo && !isAuctionActive && groupInfo.auction_status === 'completed') {
-              console.log('🏁 [PushNotificationService] Auction already ended. Routing to Post-Auction Summary.');
-              navigate('PrizedSuretyTracker', { groupId: String(groupId), highlightResult: true });
+              console.log('🏁 [PushNotificationService] Auction already ended. Routing to Portfolio.');
+              navigate('UserTabs', { screen: 'Portfolio', params: { openGroupId: String(groupId) } });
               return;
             }
           }
@@ -210,9 +210,9 @@ class PushNotificationService {
 
         navigate('AuctionScreen', { groupId: String(groupId) });
       } else if (screen === 'DueCalendar') {
-        navigate('DueCalendar');
+        navigate('UserTabs', { screen: 'Portfolio', params: { openGroupId: groupId, targetMonth: data.month || data.targetMonth } });
       } else if (screen === 'PrizedSuretyTracker') {
-        navigate('PrizedSuretyTracker', { groupId: String(groupId) });
+        navigate('UserTabs', { screen: 'Portfolio', params: { openGroupId: groupId } });
       } else if (screen === 'AdminNotification') {
         navigate('AdminNotification');
       } else if (screen === 'Chat' || type === 'CHAT_MESSAGE') {

@@ -6,8 +6,6 @@ import GroupCards from './Pages/ChitGroupCard/GroupCards';
 import Auction from './Pages/Auction/Auction';
 import Finance from './Pages/Finance/Finance';
 import ChitSimulator from '../Pages/Tools/ChitSimulator/ChitSimulator';
-import PrizedSuretyTracker from '../Pages/Tools/PrizedSuretyTracker/PrizedSuretyTracker';
-import DueCalendar from '../Pages/Tools/DueCalendar/DueCalendar';
 import DocumentVault from '../Pages/Tools/DocumentVault/DocumentVault';
 import PushNotificationService from '../../../services/PushNotificationService';
 import { useRef } from 'react';
@@ -21,8 +19,6 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
   const [showAuction, setShowAuction] = useState(false);
   const [showFinance, setShowFinance] = useState(false);
   const [showSimulator, setShowSimulator] = useState(false);
-  const [showSuretyTracker, setShowSuretyTracker] = useState(false);
-  const [showDueCalendar, setShowDueCalendar] = useState(false);
   const [showDocumentVault, setShowDocumentVault] = useState(false);
   const [joinGroupCode, setJoinGroupCode] = useState('');
   const { t, language } = useLanguage();
@@ -121,8 +117,6 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
     setShowAuction(false);
     setShowFinance(false);
     setShowSimulator(false);
-    setShowSuretyTracker(false);
-    setShowDueCalendar(false);
     setShowDocumentVault(false);
     setJoinGroupCode('');
     onClose();
@@ -193,32 +187,6 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
     );
   }
 
-  if (showSuretyTracker) {
-    return (
-      <Modal
-        animationType="slide"
-        transparent={false}
-        visible={visible}
-        onRequestClose={() => setShowSuretyTracker(false)}
-      >
-        <PrizedSuretyTracker onBack={() => setShowSuretyTracker(false)} />
-      </Modal>
-    );
-  }
-
-  if (showDueCalendar) {
-    return (
-      <Modal
-        animationType="slide"
-        transparent={false}
-        visible={visible}
-        onRequestClose={() => setShowDueCalendar(false)}
-      >
-        <DueCalendar onBack={() => setShowDueCalendar(false)} />
-      </Modal>
-    );
-  }
-
   if (showDocumentVault) {
     return (
       <Modal
@@ -270,24 +238,17 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
               />
               <MenuItem
                 viewRef={(el) => itemRefs.current[3] = el}
+                icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#16A34A" />}
+                title={t('Finance & Loan Assistance')}
+                description={t('Fast emergency funding, EMI schemes & daily collection')}
+                onPress={handleFinancePress}
+                language={language}
+              />
+              <MenuItem
                 icon={<MaterialCommunityIcons name="calculator-variant" size={26} color="#0D9488" />}
                 title={t('Chit Simulator & ROI')}
                 description={t('Calculate prize payout, dividends and borrowing ROI')}
                 onPress={() => setShowSimulator(true)}
-                language={language}
-              />
-              <MenuItem
-                icon={<MaterialCommunityIcons name="shield-account" size={26} color="#B45309" />}
-                title={t('Prized Status & Surety')}
-                description={t('Track winning payouts and manage guarantor details')}
-                onPress={() => setShowSuretyTracker(true)}
-                language={language}
-              />
-              <MenuItem
-                icon={<MaterialCommunityIcons name="calendar-month" size={26} color="#2563EB" />}
-                title={t('Due-Date Calendar')}
-                description={t('Upcoming payment deadlines across enrolled chits')}
-                onPress={() => setShowDueCalendar(true)}
                 language={language}
               />
               <MenuItem
@@ -304,13 +265,6 @@ const MoreModal = ({ visible, onClose, selectedGroup, initialGroupCode = '' }) =
                 onPress={async () => {
                   await PushNotificationService.openOEMAutostartSettings();
                 }}
-                language={language}
-              />
-              <MenuItem
-                icon={<MaterialCommunityIcons name="cash-multiple" size={26} color="#6B46C1" />}
-                title={t('Finance')}
-                description={t('Contribute and earn extra interest')}
-                onPress={handleFinancePress}
                 language={language}
               />
             </View>

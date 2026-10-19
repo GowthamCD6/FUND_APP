@@ -247,7 +247,7 @@ class FCMPushService {
   /**
    * 3. Send Alert: Payment Due or Overdue Reminder
    */
-  async sendPaymentDueAlert(userId, groupName, amount, dueDateStr, daysLeft) {
+  async sendPaymentDueAlert(userId, groupName, amount, dueDateStr, daysLeft, groupId = null, targetMonth = null) {
     try {
       const isOverdue = daysLeft < 0;
       const title = isOverdue 
@@ -256,7 +256,7 @@ class FCMPushService {
 
       const message = isOverdue
         ? `Your chit installment of ₹${Number(amount).toLocaleString('en-IN')} is OVERDUE by ${Math.abs(daysLeft)} day(s). Please clear immediately to maintain auction bidding eligibility.`
-        : `Your monthly installment of ₹${Number(amount).toLocaleString('en-IN')} is due on ${dueDateStr}. Tap here to view calendar and pay.`;
+        : `Your monthly installment of ₹${Number(amount).toLocaleString('en-IN')} is due on ${dueDateStr}. Tap here to view chit card and pay.`;
 
       const notificationOptions = {
         title,
@@ -264,11 +264,14 @@ class FCMPushService {
         data: {
           type: 'PAYMENT_DUE',
           groupName,
+          groupId: groupId ? String(groupId) : '',
+          openGroupId: groupId ? String(groupId) : '',
+          targetMonth: targetMonth ? String(targetMonth) : '',
           amount: String(amount),
           dueDate: dueDateStr,
           daysLeft: String(daysLeft),
           channelId: 'gdk_payments_v2',
-          screen: 'DueCalendar',
+          screen: 'Portfolio',
           timestamp: String(Date.now()),
         },
         channelId: 'gdk_payments_v2',
@@ -292,8 +295,10 @@ class FCMPushService {
       const [dueRows] = await db.promise().query(`
         SELECT 
           mc.user_id,
+          mc.group_id,
           mc.installment_amount as amount,
           mc.due_date,
+          mc.month,
           DATEDIFF(mc.due_date, CURDATE()) as days_left,
           g.group_name
         FROM monthly_collections mc
@@ -313,7 +318,9 @@ class FCMPushService {
           row.group_name,
           row.amount,
           dueDateFormatted,
-          row.days_left
+          row.days_left,
+          row.group_id,
+          row.month || row.due_date
         );
         sentCount++;
       }

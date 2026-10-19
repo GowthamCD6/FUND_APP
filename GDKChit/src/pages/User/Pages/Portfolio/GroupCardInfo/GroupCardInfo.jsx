@@ -18,7 +18,28 @@ import { useLanguage } from '../../../../../utils/LanguageContext';
 const GroupCardInfo = ({ onClose, group }) => {
   const { t, language } = useLanguage();
   const today = new Date();
-  const [selectedDate, setSelectedDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const parseTargetMonth = (target) => {
+    if (!target) return null;
+    const p = new Date(target);
+    if (!isNaN(p.getTime())) {
+      return new Date(p.getFullYear(), p.getMonth(), 1);
+    }
+    return null;
+  };
+
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const parsed = parseTargetMonth(group?.targetMonth);
+    return parsed || new Date(today.getFullYear(), today.getMonth(), 1);
+  });
+
+  useEffect(() => {
+    if (group?.targetMonth) {
+      const parsed = parseTargetMonth(group.targetMonth);
+      if (parsed) {
+        setSelectedDate(parsed);
+      }
+    }
+  }, [group?.targetMonth]);
 
   // Use real group data passed from Portfolio
   const groupInfo = {
@@ -41,9 +62,18 @@ const GroupCardInfo = ({ onClose, group }) => {
   }
 
   const currentMonthDate = new Date(today.getFullYear(), today.getMonth(), 1);
+  let maxDate = currentMonthDate;
+  if (groupInfo.startDate && (group?.duration || group?.totalMonths)) {
+    const parseStart = new Date(groupInfo.startDate);
+    const months = group?.duration || group?.totalMonths || 20;
+    const calcEnd = new Date(parseStart.getFullYear(), parseStart.getMonth() + months - 1, 1);
+    if (!isNaN(calcEnd) && calcEnd > maxDate) {
+      maxDate = calcEnd;
+    }
+  }
   
   const isPrevDisabled = selectedDate <= minDate;
-  const isNextDisabled = selectedDate >= currentMonthDate;
+  const isNextDisabled = selectedDate >= maxDate;
 
   const [monthlyData, setMonthlyData] = useState({});
   const [loading, setLoading] = useState(true);

@@ -38,10 +38,22 @@ import OTPRequests from "../../pages/User/Pages/Profile/Page/OTPRequests/OTPRequ
 import OTPNotificationBanner from "../OTPNotificationBanner/OTPNotificationBanner";
 
 import ChitSimulator from "../../pages/User/Pages/Tools/ChitSimulator/ChitSimulator";
-import PrizedSuretyTracker from "../../pages/User/Pages/Tools/PrizedSuretyTracker/PrizedSuretyTracker";
-import DueCalendar from "../../pages/User/Pages/Tools/DueCalendar/DueCalendar";
 import DocumentVault from "../../pages/User/Pages/Tools/DocumentVault/DocumentVault";
 import NotificationScreen from "../../pages/User/Pages/Notification/NotificationScreen";
+import Finance from "../../pages/User/Modals/Pages/Finance/Finance";
+
+const PortfolioRedirect = ({ navigation, route }) => {
+    React.useEffect(() => {
+        navigation.replace('UserTabs', {
+            screen: 'Portfolio',
+            params: {
+                openGroupId: route?.params?.groupId || route?.params?.openGroupId,
+                targetMonth: route?.params?.month || route?.params?.targetMonth,
+            },
+        });
+    }, [navigation, route]);
+    return null;
+};
 
 import { navigationRef } from "../../utils/navigation";
 
@@ -129,8 +141,9 @@ const Routes = () => {
                     <Stack.Screen name="AdminLanguageSettings" component={withSafe(AdminLanguageSettings)} />
                     <Stack.Screen name="OTPRequests" component={withSafe(OTPRequests)} />
                     <Stack.Screen name="ChitSimulator" component={withSafe(ChitSimulator)} />
-                    <Stack.Screen name="PrizedSuretyTracker" component={withSafe(PrizedSuretyTracker)} />
-                    <Stack.Screen name="DueCalendar" component={withSafe(DueCalendar)} />
+                    <Stack.Screen name="Finance" component={withSafe(Finance)} />
+                    <Stack.Screen name="PrizedSuretyTracker" component={PortfolioRedirect} />
+                    <Stack.Screen name="DueCalendar" component={PortfolioRedirect} />
                     <Stack.Screen name="DocumentVault" component={withSafe(DocumentVault)} />
                     <Stack.Screen name="Notifications" component={withSafe(NotificationScreen)} />
                     <Stack.Screen name="Notification" component={withSafe(NotificationScreen)} />

@@ -19,7 +19,7 @@ import styles from './Portfoliosty';
 import { useLanguage } from '../../../../utils/LanguageContext';
 import { useSecureScreen } from '../../../../services/ScreenSecurity';
 
-const ChitfundPortfolio = ({ navigation }) => {
+const ChitfundPortfolio = ({ navigation, route }) => {
   const { t, language } = useLanguage();
   useSecureScreen();
   // Modal state for showing group details
@@ -64,6 +64,25 @@ const ChitfundPortfolio = ({ navigation }) => {
       fetchPortfolio();
     }, [fetchPortfolio])
   );
+
+  // Auto-open specific group card and month if requested by notification or route params
+  useEffect(() => {
+    const openGroupId = route?.params?.openGroupId || route?.params?.groupId;
+    const targetMonth = route?.params?.targetMonth || route?.params?.month;
+
+    if (openGroupId && chitGroups.length > 0) {
+      const match = chitGroups.find(
+        g => String(g.id) === String(openGroupId) ||
+             String(g.groupId) === String(openGroupId) ||
+             `GRP-${g.id}` === String(openGroupId)
+      );
+      if (match) {
+        setSelectedGroupId(match.id);
+        setSelectedModalGroup({ ...transformGroupData(match), targetMonth });
+        setModalVisible(true);
+      }
+    }
+  }, [route?.params, chitGroups]);
 
   // --- CALCULATIONS ---
   // Calculate the actual total amount the user has successfully paid across all groups
@@ -142,13 +161,21 @@ const ChitfundPortfolio = ({ navigation }) => {
 
   const handleViewGroupDetails = (group) => {
     setSelectedGroupId(group.id);
-    setSelectedModalGroup(group);
+    setSelectedModalGroup(transformGroupData(group));
     setModalVisible(true);
   };
 
   const closeModal = () => {
     setModalVisible(false);
     setSelectedModalGroup(null);
+    if (navigation?.setParams) {
+      navigation.setParams({
+        openGroupId: undefined,
+        groupId: undefined,
+        targetMonth: undefined,
+        month: undefined,
+      });
+    }
   };
 
   const CardSkeleton = () => (
