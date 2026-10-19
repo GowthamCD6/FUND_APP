@@ -183,25 +183,26 @@ class ApiService {
             if (refreshError.message && refreshError.message.toLowerCase().includes('blocked')) {
               await this.clearTokens();
               await AsyncStorage.multiRemove(['isLoggedIn', 'userPhone', 'userName', 'userRole', 'accessToken', 'refreshToken', 'userLoginMethod']);
-            
-            Alert.alert(
-              'Account Blocked',
-              refreshError.message || 'Your account has been blocked by an administrator. Please contact the admin.',
-              [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    resetNavigation({
-                      index: 0,
-                      routes: [{ name: 'Welcome' }],
-                    });
+              
+              Alert.alert(
+                'Account Blocked',
+                refreshError.message || 'Your account has been blocked by an administrator. Please contact the admin.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      resetNavigation({
+                        index: 0,
+                        routes: [{ name: 'Welcome' }],
+                      });
+                    }
                   }
-                }
-              ],
-              { cancelable: false }
-            );
+                ],
+                { cancelable: false }
+              );
+            }
+            throw new Error(refreshError.message || 'Authentication failed');
           }
-          throw new Error(refreshError.message || 'Authentication failed');
         }
       }
 
