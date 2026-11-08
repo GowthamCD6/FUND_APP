@@ -5,6 +5,7 @@ import {
   Camera,
   Check,
   ChevronRight,
+  ChevronUp,
   HandCoins,
   MessageCircle,
   Play,
@@ -12,6 +13,8 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
 import { useAuth } from '../../context/AuthContext.jsx';
 import './Landing.css';
 
@@ -285,7 +288,12 @@ const scrollToSection = (id) => {
 
 const formatCount = (node, value) => `${node.dataset.prefix || ''}${value}${node.dataset.suffix || ''}`;
 
-const useScrollytelling = (rootRef, motion) => {
+const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
+  const onScrollRef = useRef(onScrollUpdate);
+  useEffect(() => {
+    onScrollRef.current = onScrollUpdate;
+  });
+
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return undefined;
@@ -350,6 +358,10 @@ const useScrollytelling = (rootRef, motion) => {
           scene.el.style.setProperty('--copy-b', `${bottom}px`);
         }
       });
+
+      if (lenisRef?.current) {
+        lenisRef.current.resize();
+      }
     };
 
     const probeTheme = (y) => {
@@ -454,10 +466,14 @@ const useScrollytelling = (rootRef, motion) => {
       const maxScroll = document.documentElement.scrollHeight - vh;
       root.style.setProperty('--page-p', maxScroll > 0 ? clamp(y / maxScroll).toFixed(4) : '0');
 
+      if (onScrollRef.current) {
+        onScrollRef.current(y);
+      }
+
       if (nav) {
         nav.dataset.scrolled = String(y > 24);
-        if (Math.abs(y - lastY) > 6) {
-          nav.dataset.hidden = String(y > lastY && y > vh * 0.6);
+        if (Math.abs(y - lastY) > 25) {
+          nav.dataset.hidden = String(y > lastY && y > vh * 0.75);
           lastY = y;
         }
       }
@@ -504,6 +520,30 @@ const useScrollytelling = (rootRef, motion) => {
     measure();
     update();
 
+    let lenis = null;
+    let rafId = null;
+
+    if (motion && typeof window !== 'undefined') {
+      lenis = new Lenis({
+        lerp: 0.1,
+        duration: 1.15,
+        smoothWheel: true,
+        wheelMultiplier: 1.0,
+        touchMultiplier: 1.6,
+        orientation: 'vertical',
+      });
+      if (lenisRef) lenisRef.current = lenis;
+
+      const runRaf = (time) => {
+        if (!alive) return;
+        lenis.raf(time);
+        rafId = requestAnimationFrame(runRaf);
+      };
+      rafId = requestAnimationFrame(runRaf);
+
+      lenis.on('scroll', schedule);
+    }
+
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', onResize);
 
@@ -520,6 +560,11 @@ const useScrollytelling = (rootRef, motion) => {
 
     return () => {
       alive = false;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      if (lenis) {
+        lenis.destroy();
+        if (lenisRef) lenisRef.current = null;
+      }
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', onResize);
       if (observer) observer.disconnect();
@@ -541,7 +586,7 @@ const useScrollytelling = (rootRef, motion) => {
         });
       });
     };
-  }, [rootRef, motion]);
+  }, [rootRef, motion, lenisRef]);
 };
 
 const useReducedMotion = () => {
@@ -572,25 +617,46 @@ const Landing = () => {
   const { user, status, isAdminRole } = useAuth();
 
   const rootRef = useRef(null);
+  const lenisRef = useRef(null);
   const loaderCountRef = useRef(null);
   const loaderBarRef = useRef(null);
 
   const reducedMotion = useReducedMotion();
   const motion = !reducedMotion;
 
-  const [loaded, setLoaded] = useState(() => prefersReducedMotion());
-  const [loaderGone, setLoaderGone] = useState(() => prefersReducedMotion());
+  const [loaded, setLoaded] = useState(() => {
+    if (prefersReducedMotion()) return true;
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gdk_landing_seen')) return true;
+    return false;
+  });
+  const [loaderGone, setLoaderGone] = useState(() => {
+    if (prefersReducedMotion()) return true;
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gdk_landing_seen')) return true;
+    return false;
+  });
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const isAuthed = status === 'authed';
   const isAdmin = isAdminRole(user?.role);
   const portalPath = !isAuthed ? '/login' : isAdmin ? '/admin/dashboard' : '/user/home';
   const portalLabel = !isAuthed ? 'Sign In' : isAdmin ? 'Open Admin Portal' : 'Open Member Portal';
 
-  useScrollytelling(rootRef, motion);
+  useScrollytelling(rootRef, motion, lenisRef, (y) => setShowScrollTop(y > 350));
 
   const goToSection = (id) => {
     setMenuOpen(false);
+    if (lenisRef.current && motion) {
+      if (id === 'top') {
+        lenisRef.current.scrollTo(0, { duration: 1.15 });
+        return;
+      }
+      const target = document.getElementById(id);
+      if (target) {
+        lenisRef.current.scrollTo(target, { offset: -70, duration: 1.15 });
+        return;
+      }
+    }
     scrollToSection(id);
   };
 
@@ -599,11 +665,11 @@ const Landing = () => {
     navigate(portalPath);
   };
 
-  /* ── Opening curtain: counts to 100, then lifts ── */
+  /* ── Opening curtain: snappy, elegant 480ms entrance ── */
   useEffect(() => {
     if (loaded) return undefined;
 
-    const duration = 1150;
+    const duration = 480;
     let frame = null;
     let timer = null;
     let start = null;
@@ -616,8 +682,14 @@ const Landing = () => {
       if (loaderCountRef.current) loaderCountRef.current.textContent = String(Math.round(eased * 100));
       if (loaderBarRef.current) loaderBarRef.current.style.transform = `scaleX(${eased.toFixed(3)})`;
 
-      if (t < 1) frame = requestAnimationFrame(tick);
-      else timer = setTimeout(() => setLoaded(true), 160);
+      if (t < 1) {
+        frame = requestAnimationFrame(tick);
+      } else {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('gdk_landing_seen', 'true');
+        }
+        timer = setTimeout(() => setLoaded(true), 60);
+      }
     };
 
     frame = requestAnimationFrame(tick);
@@ -630,7 +702,7 @@ const Landing = () => {
 
   useEffect(() => {
     if (!loaded || loaderGone) return undefined;
-    const timer = setTimeout(() => setLoaderGone(true), 1200);
+    const timer = setTimeout(() => setLoaderGone(true), 650);
     return () => clearTimeout(timer);
   }, [loaded, loaderGone]);
 
@@ -782,7 +854,7 @@ const Landing = () => {
             key={chapter.id}
             className="lx-rail__item"
             data-rail={chapter.id}
-            onClick={() => scrollToSection(chapter.id)}
+            onClick={() => goToSection(chapter.id)}
           >
             <span className="lx-rail__label">{chapter.label}</span>
             <span className="lx-rail__dot" aria-hidden="true" />
@@ -872,7 +944,7 @@ const Landing = () => {
                   Admin Portal
                 </button>
 
-                <button type="button" className="lx-btn lx-btn--link" onClick={() => scrollToSection('plans')}>
+                <button type="button" className="lx-btn lx-btn--link" onClick={() => goToSection('plans')}>
                   View Plans
                 </button>
               </div>
@@ -1399,13 +1471,13 @@ const Landing = () => {
           <div className="lx-footer__cols">
             <div className="lx-footer__col">
               <h4>Company</h4>
-              <button type="button" onClick={() => scrollToSection('about')}>
+              <button type="button" onClick={() => goToSection('about')}>
                 About Us
               </button>
-              <button type="button" onClick={() => scrollToSection('features')}>
+              <button type="button" onClick={() => goToSection('features')}>
                 Why Us
               </button>
-              <button type="button" onClick={() => scrollToSection('stats')}>
+              <button type="button" onClick={() => goToSection('stats')}>
                 Our Numbers
               </button>
             </div>
@@ -1438,12 +1510,22 @@ const Landing = () => {
             <button type="button" className="lx-social" aria-label="WhatsApp">
               <MessageCircle size={17} aria-hidden="true" />
             </button>
-            <button type="button" className="lx-social lx-social--top" onClick={() => scrollToSection('top')}>
+            <button type="button" className="lx-social lx-social--top" onClick={() => goToSection('top')}>
               Back to top
             </button>
           </div>
         </div>
       </footer>
+
+      {/* ═══ Floating Smooth Scroll-to-Top ═══ */}
+      <button
+        type="button"
+        className={`lx-scroll-top${showScrollTop ? ' is-visible' : ''}`}
+        onClick={() => goToSection('top')}
+        aria-label="Scroll back to top"
+      >
+        <ChevronUp size={20} aria-hidden="true" />
+      </button>
     </div>
   );
 };
