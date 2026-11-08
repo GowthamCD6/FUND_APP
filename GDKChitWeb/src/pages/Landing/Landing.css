@@ -1194,7 +1194,7 @@
    ══════════════════════════════════════════════════════════════════ */
 .lx-story {
   position: relative;
-  height: 255vh;
+  height: 270vh;
   background: var(--lx-white);
 }
 
@@ -1515,7 +1515,7 @@
   border: 1px solid var(--lx-line-light);
   opacity: calc(1 - min(var(--ad, 0), 1.6) * 0.42);
   transform: scale(calc(1 - min(var(--ad, 0), 1) * 0.1));
-  transition: border-color 0.5s ease, background-color 0.5s ease;
+  transition: border-color 0.5s ease, background-color 0.5s ease, transform 0.35s ease, opacity 0.35s ease;
 }
 
 .lx-journey__panel[data-active='true'] {
@@ -1607,7 +1607,7 @@
    ══════════════════════════════════════════════════════════════════ */
 .lx-stats {
   position: relative;
-  height: 235vh;
+  height: 260vh;
   background: var(--lx-ivory);
 }
 
@@ -1960,7 +1960,7 @@
   opacity: calc(1 - min(var(--ad, 0), 2) * 0.28);
   transform: rotateY(calc(var(--d, 0) * -16deg)) scale(calc(1 - min(var(--ad, 0), 1) * 0.12));
   transition: background-color 0.55s ease, color 0.55s ease, border-color 0.55s ease,
-    box-shadow 0.55s ease;
+    box-shadow 0.55s ease, transform 0.35s ease, opacity 0.35s ease;
 }
 
 .lx-plan[data-active='true'] {

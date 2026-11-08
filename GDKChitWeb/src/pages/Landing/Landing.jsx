@@ -314,6 +314,8 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
       scrubs: Array.from(el.querySelectorAll('[data-scrub]')),
       measured: el.querySelector('[data-measure]'),
       progress: 0,
+      targetProgress: 0,
+      currentProgress: 0,
       step: -1,
       active: -1,
       maxShift: 0,
@@ -348,7 +350,7 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
         if (scene.mode === 'horizontal' && scene.track && scene.viewport) {
           scene.viewportWidth = scene.viewport.clientWidth;
           scene.maxShift = Math.max(0, scene.track.offsetWidth - scene.viewportWidth);
-          scene.el.style.height = `${Math.round(vh + scene.maxShift)}px`;
+          scene.el.style.height = `${Math.round(vh + scene.maxShift * 1.15)}px`;
           scene.centers = scene.cards.map((card) => card.offsetLeft + card.offsetWidth / 2);
           scene.spacing = scene.centers.length > 1 ? scene.centers[1] - scene.centers[0] : 1;
         }
@@ -379,21 +381,54 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
       return 'light';
     };
 
-    const updateScene = (scene) => {
+    const updateScene = (scene, immediate = false) => {
       const { el } = scene;
       const rect = el.getBoundingClientRect();
-      if (rect.bottom < -vh || rect.top > vh * 2) return;
 
-      let progress;
+      let target;
       if (scene.mode === 'pass') {
-        progress = clamp((vh - rect.top) / (vh + rect.height));
+        target = clamp((vh - rect.top) / (vh + rect.height));
       } else if (scene.mode === 'enter') {
-        progress = rect.height > 0 ? clamp((vh - rect.top) / rect.height) : 0;
+        target = rect.height > 0 ? clamp((vh - rect.top) / rect.height) : 0;
       } else {
         const travel = rect.height - vh;
-        progress = travel > 0 ? clamp(-rect.top / travel) : 0;
+        target = travel > 0 ? clamp(-rect.top / travel) : 0;
       }
 
+      scene.targetProgress = target;
+
+      // Off-screen elements snap immediately so they don't lag behind
+      if (rect.bottom < -vh || rect.top > vh * 2) {
+        scene.currentProgress = target;
+        scene.progress = target;
+        el.style.setProperty('--p', target.toFixed(4));
+        return false;
+      }
+
+      let animating = false;
+      if (immediate) {
+        scene.currentProgress = target;
+      } else {
+        const diff = scene.targetProgress - scene.currentProgress;
+        const absDiff = Math.abs(diff);
+
+        if (absDiff > 0.0002) {
+          animating = true;
+          // Smooth slow-motion easing:
+          // Clamps the delta per frame so even on fast scrolls, the scene glides gracefully
+          const lerpRate = 0.085;
+          let delta = diff * lerpRate;
+          const maxDelta = 0.018; // Guarantees each step/card stays visible in proper slow motion
+          if (Math.abs(delta) > maxDelta) {
+            delta = Math.sign(delta) * maxDelta;
+          }
+          scene.currentProgress += delta;
+        } else {
+          scene.currentProgress = scene.targetProgress;
+        }
+      }
+
+      const progress = scene.currentProgress;
       scene.progress = progress;
       el.style.setProperty('--p', progress.toFixed(4));
 
@@ -458,10 +493,14 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
         const text = String(value).padStart(Number(node.dataset.pad) || 0, '0');
         if (node.textContent !== text) node.textContent = text;
       });
+
+      return animating;
     };
 
-    const update = () => {
+    const update = (immediate = false) => {
       frame = null;
+      let needsNextFrame = false;
+
       const y = window.scrollY;
       const maxScroll = document.documentElement.scrollHeight - vh;
       root.style.setProperty('--page-p', maxScroll > 0 ? clamp(y / maxScroll).toFixed(4) : '0');
@@ -478,7 +517,13 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
         }
       }
 
-      if (motion) scenes.forEach(updateScene);
+      if (motion) {
+        scenes.forEach((scene) => {
+          if (updateScene(scene, immediate)) {
+            needsNextFrame = true;
+          }
+        });
+      }
 
       root.dataset.navTheme = probeTheme(40);
       root.dataset.railTheme = probeTheme(vh / 2);
@@ -498,10 +543,14 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
           button.dataset.active = String(button.dataset.rail === current);
         });
       }
+
+      if (needsNextFrame && frame === null) {
+        frame = requestAnimationFrame(() => update(false));
+      }
     };
 
     const schedule = () => {
-      if (frame === null) frame = requestAnimationFrame(update);
+      if (frame === null) frame = requestAnimationFrame(() => update(false));
     };
 
     const onResize = () => {
@@ -518,18 +567,18 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
     };
 
     measure();
-    update();
+    update(true);
 
     let lenis = null;
     let rafId = null;
 
     if (motion && typeof window !== 'undefined') {
       lenis = new Lenis({
-        lerp: 0.1,
-        duration: 1.15,
+        lerp: 0.07,
+        duration: 1.35,
         smoothWheel: true,
-        wheelMultiplier: 1.0,
-        touchMultiplier: 1.6,
+        wheelMultiplier: 0.75,
+        touchMultiplier: 1.3,
         orientation: 'vertical',
       });
       if (lenisRef) lenisRef.current = lenis;
