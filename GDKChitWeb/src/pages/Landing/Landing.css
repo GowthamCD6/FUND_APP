@@ -668,7 +668,7 @@
   --sy: calc((var(--wt) - var(--wb)) / 2);
 
   position: relative;
-  height: 145vh;
+  height: 195vh;
   background: linear-gradient(180deg, var(--lx-ivory) 0%, #f3efe4 100%);
 }
 
@@ -1118,7 +1118,7 @@
    ══════════════════════════════════════════════════════════════════ */
 .lx-manifesto {
   position: relative;
-  height: 140vh;
+  height: 185vh;
   background: var(--lx-ivory);
 }
 
@@ -1607,7 +1607,7 @@
    ══════════════════════════════════════════════════════════════════ */
 .lx-stats {
   position: relative;
-  height: 260vh;
+  height: 290vh;
   background: var(--lx-ivory);
 }
 
@@ -2306,7 +2306,7 @@
   --f: clamp(0, calc((var(--p, 0) - 0.5) * 4), 1);
 
   position: relative;
-  height: 165vh;
+  height: 195vh;
   background: var(--lx-ivory);
 }
 
@@ -2641,7 +2641,7 @@
     --wr: 5vw;
     --wb: 4vh;
     --wl: 5vw;
-    height: 165vh;
+    height: 185vh;
   }
 
   .lx-hero__copy {
@@ -2662,7 +2662,7 @@
 
   /* Story: image on top, chapter text below */
   .lx-story {
-    height: 230vh;
+    height: 260vh;
   }
 
   .lx-story__sticky {
@@ -2826,7 +2826,7 @@
   }
 
   .lx-manifesto {
-    height: 140vh;
+    height: 170vh;
   }
 
   .lx-manifesto__text {

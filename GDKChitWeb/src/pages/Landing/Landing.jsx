@@ -444,7 +444,7 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
         if (scene.mode === 'horizontal' && scene.track && scene.viewport) {
           scene.viewportWidth = scene.viewport.clientWidth;
           scene.maxShift = Math.max(0, scene.track.offsetWidth - scene.viewportWidth);
-          scene.el.style.height = `${Math.round(vh + scene.maxShift * 1.15)}px`;
+          scene.el.style.height = `${Math.round(vh + scene.maxShift * 1.35)}px`;
           scene.centers = scene.cards.map((card) => card.offsetLeft + card.offsetWidth / 2);
           scene.spacing = scene.centers.length > 1 ? scene.centers[1] - scene.centers[0] : 1;
         }
@@ -490,44 +490,14 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
       }
 
       scene.targetProgress = target;
+      scene.currentProgress = target;
+      scene.progress = target;
+      el.style.setProperty('--p', target.toFixed(4));
 
-      // Off-screen elements snap immediately so they don't lag behind
-      if (rect.bottom < -vh || rect.top > vh * 2) {
-        scene.currentProgress = target;
-        scene.progress = target;
-        el.style.setProperty('--p', target.toFixed(4));
-        return false;
-      }
-
-      let animating = false;
-      if (immediate) {
-        scene.currentProgress = target;
-      } else {
-        const diff = scene.targetProgress - scene.currentProgress;
-        const absDiff = Math.abs(diff);
-
-        if (absDiff > 0.0002) {
-          animating = true;
-          // Smooth slow-motion easing:
-          // Clamps the delta per frame so even on fast scrolls, the scene glides gracefully
-          const lerpRate = 0.055;
-          let delta = diff * lerpRate;
-          const maxDelta = 0.012; // Ultra-slow cinematic glide for every scene transition
-          if (Math.abs(delta) > maxDelta) {
-            delta = Math.sign(delta) * maxDelta;
-          }
-          scene.currentProgress += delta;
-        } else {
-          scene.currentProgress = scene.targetProgress;
-        }
-      }
-
-      const progress = scene.currentProgress;
-      scene.progress = progress;
-      el.style.setProperty('--p', progress.toFixed(4));
-
+      // Stepped scenes: scale so the final step fully arrives at 90% scroll and remains visible
       if (scene.steps) {
-        const raw = progress * scene.steps;
+        const normalized = clamp(target / 0.90);
+        const raw = normalized * scene.steps;
         const step = Math.min(scene.steps - 1, Math.floor(raw));
         el.style.setProperty('--s', clamp(raw - step).toFixed(4));
         if (step !== scene.step) {
@@ -537,8 +507,9 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
         }
       }
 
+      // Horizontal scenes: scale so the last card reaches center view by 90% and stays fully visible before unpinning
       if (scene.mode === 'horizontal' && scene.track) {
-        const shift = progress * scene.maxShift;
+        const shift = Math.min(scene.maxShift, (target / 0.90) * scene.maxShift);
         scene.track.style.transform = `translate3d(${(-shift).toFixed(2)}px, 0, 0)`;
 
         let nearest = 0;
@@ -583,17 +554,14 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
       scene.scrubs.forEach((node) => {
         const from = Number(node.dataset.from) || 0;
         const to = Number(node.dataset.to) || 0;
-        const value = Math.round(from + (to - from) * progress);
+        const value = Math.round(from + (to - from) * target);
         const text = String(value).padStart(Number(node.dataset.pad) || 0, '0');
         if (node.textContent !== text) node.textContent = text;
       });
-
-      return animating;
     };
 
-    const update = (immediate = false) => {
+    const update = () => {
       frame = null;
-      let needsNextFrame = false;
 
       const y = window.scrollY;
       const maxScroll = document.documentElement.scrollHeight - vh;
@@ -613,9 +581,7 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
 
       if (motion) {
         scenes.forEach((scene) => {
-          if (updateScene(scene, immediate)) {
-            needsNextFrame = true;
-          }
+          updateScene(scene);
         });
       }
 
@@ -637,14 +603,10 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
           button.dataset.active = String(button.dataset.rail === current);
         });
       }
-
-      if (needsNextFrame && frame === null) {
-        frame = requestAnimationFrame(() => update(false));
-      }
     };
 
     const schedule = () => {
-      if (frame === null) frame = requestAnimationFrame(() => update(false));
+      if (frame === null) frame = requestAnimationFrame(update);
     };
 
     const onResize = () => {
@@ -661,21 +623,19 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
     };
 
     measure();
-    update(true);
+    update();
 
     let lenis = null;
     let rafId = null;
 
     if (motion && typeof window !== 'undefined') {
       lenis = new Lenis({
-        lerp: 0.04,
-        duration: 1.8,
+        lerp: 0.08,
+        duration: 1.25,
         smoothWheel: true,
-        wheelMultiplier: 0.55,
-        touchMultiplier: 1.0,
+        wheelMultiplier: 0.85,
+        touchMultiplier: 1.15,
         orientation: 'vertical',
-        infinite: false,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       });
       if (lenisRef) lenisRef.current = lenis;
 
