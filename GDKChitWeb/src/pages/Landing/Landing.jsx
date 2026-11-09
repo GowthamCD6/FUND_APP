@@ -1,17 +1,28 @@
 import React, { Fragment, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  ArrowRight,
+  Award,
   Building2,
+  Calendar,
   Camera,
   Check,
   ChevronRight,
   ChevronUp,
+  Clock,
   HandCoins,
+  Heart,
+  HelpCircle,
+  MapPin,
   MessageCircle,
+  Phone,
   Play,
   ShieldCheck,
+  Sparkles,
+  Star,
   TrendingUp,
   Users,
+  Wallet,
 } from 'lucide-react';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
@@ -47,6 +58,7 @@ const NAV_LINKS = [
   { id: 'journey', label: 'How It Works' },
   { id: 'plans', label: 'Plans' },
   { id: 'features', label: 'Features' },
+  { id: 'testimonials', label: 'Testimonials' },
 ];
 
 const CHAPTERS = [
@@ -57,6 +69,9 @@ const CHAPTERS = [
   { id: 'stats', label: 'Numbers' },
   { id: 'plans', label: 'Plans' },
   { id: 'features', label: 'Why Us' },
+  { id: 'testimonials', label: 'Reviews' },
+  { id: 'faq', label: 'FAQ' },
+  { id: 'contact', label: 'Contact' },
   { id: 'start', label: 'Begin' },
 ];
 
@@ -253,6 +268,85 @@ const FEATURES = [
 
 const MARQUEE = ['Trust', 'Transparency', 'Growth', 'Community', 'Since 1999'];
 
+const TESTIMONIALS = [
+  {
+    name: 'Ramesh Kumar',
+    role: 'Business Owner',
+    location: 'Coimbatore',
+    text: 'I have been a member of GDK Chit Funds for over 8 years. The transparency in their auctions and the punctual payouts have helped me fund two of my children\'s education expenses without any financial stress.',
+    rating: 5,
+    years: '8+ years member',
+  },
+  {
+    name: 'Lakshmi Devi',
+    role: 'School Teacher',
+    location: 'Salem',
+    text: 'As a single mother, saving consistently was my biggest challenge. GDK\'s structured monthly plan made it possible for me to save ₹2 lakhs which I used to renovate my home. The staff treats every member like family.',
+    rating: 5,
+    years: '5 years member',
+  },
+  {
+    name: 'Senthil Murugan',
+    role: 'Auto Parts Dealer',
+    location: 'Erode',
+    text: 'When I needed capital to expand my shop, GDK\'s chit fund came through perfectly. The auction process is fair and open — I could see every bid. Got my prize money within 24 hours of winning.',
+    rating: 5,
+    years: '12+ years member',
+  },
+  {
+    name: 'Priya Shankar',
+    role: 'Software Engineer',
+    location: 'Chennai',
+    text: 'Even with modern investment options, chit funds remain the most disciplined way to save. GDK\'s digital tracking lets me monitor my contributions from my phone. Highly recommend for young professionals.',
+    rating: 5,
+    years: '3 years member',
+  },
+  {
+    name: 'Murugesan K.',
+    role: 'Farmer',
+    location: 'Tirupur',
+    text: 'My family has been with GDK since my father\'s time. Three generations of trust. They helped us during tough harvest seasons with timely payouts. That\'s real commitment.',
+    rating: 5,
+    years: '15+ years member',
+  },
+];
+
+const FAQ_ITEMS = [
+  {
+    question: 'What is a chit fund and how does it work?',
+    answer: 'A chit fund is a rotating savings and credit scheme where a group of members contribute a fixed amount monthly. Each month, one member wins the pooled amount through an auction. The discount from the winning bid is shared as dividends among all members, reducing their effective instalment.',
+  },
+  {
+    question: 'Is GDK Chit Fund registered with the RBI?',
+    answer: 'Yes, GDK Chit Funds is fully registered and compliant with the Reserve Bank of India\'s chit fund regulations. We operate under the Chit Fund Act and maintain complete transparency in all our operations.',
+  },
+  {
+    question: 'How do the monthly auctions work?',
+    answer: 'Each month, members who need funds bid a discount on the chit value. For example, in a ₹1,00,000 chit, a member might bid ₹20,000 as discount — receiving ₹80,000 as prize money. The ₹20,000 discount is then distributed equally as dividends to all members, reducing everyone\'s next instalment.',
+  },
+  {
+    question: 'When do I receive my prize money after winning?',
+    answer: 'Prize money is disbursed promptly after the auction — typically within 24 hours of winning. We pride ourselves on our on-time payout guarantee, which has been maintained for over 25 years.',
+  },
+  {
+    question: 'Can I track my payments and dividends online?',
+    answer: 'Absolutely. Our digital member portal gives you real-time access to your contribution history, auction results, dividend statements, and group details. You can access it from any device — web or mobile.',
+  },
+  {
+    question: 'What happens if a member defaults on payment?',
+    answer: 'We have robust safeguards in place. Members provide security documentation at the time of joining. In case of defaults, our team works with the member to find a resolution. The group\'s interests are always protected.',
+  },
+];
+
+const MILESTONES = [
+  { year: '1999', event: 'Founded', detail: 'GDK Chit Funds established by Sri Periyanayagi Amman trust' },
+  { year: '2005', event: '100 Members', detail: 'Crossed 100 active members across multiple groups' },
+  { year: '2012', event: '₹10 Cr Managed', detail: 'Total funds under management crossed ₹10 crore' },
+  { year: '2018', event: 'Digital Launch', detail: 'Launched member portal for online tracking and payments' },
+  { year: '2023', event: '500+ Members', detail: 'Serving 500+ families across Tamil Nadu' },
+  { year: '2024', event: '₹50 Cr+', detail: 'Total funds managed surpassed ₹50 crore milestone' },
+];
+
 /* ══════════════════════════════════════════════════════════════════
    SCROLL ENGINE
    Every scene is declared in markup with data-scene:
@@ -416,9 +510,9 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
           animating = true;
           // Smooth slow-motion easing:
           // Clamps the delta per frame so even on fast scrolls, the scene glides gracefully
-          const lerpRate = 0.085;
+          const lerpRate = 0.055;
           let delta = diff * lerpRate;
-          const maxDelta = 0.018; // Guarantees each step/card stays visible in proper slow motion
+          const maxDelta = 0.012; // Ultra-slow cinematic glide for every scene transition
           if (Math.abs(delta) > maxDelta) {
             delta = Math.sign(delta) * maxDelta;
           }
@@ -574,12 +668,14 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
 
     if (motion && typeof window !== 'undefined') {
       lenis = new Lenis({
-        lerp: 0.07,
-        duration: 1.35,
+        lerp: 0.04,
+        duration: 1.8,
         smoothWheel: true,
-        wheelMultiplier: 0.75,
-        touchMultiplier: 1.3,
+        wheelMultiplier: 0.55,
+        touchMultiplier: 1.0,
         orientation: 'vertical',
+        infinite: false,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       });
       if (lenisRef) lenisRef.current = lenis;
 
@@ -697,12 +793,12 @@ const Landing = () => {
     setMenuOpen(false);
     if (lenisRef.current && motion) {
       if (id === 'top') {
-        lenisRef.current.scrollTo(0, { duration: 1.15 });
+        lenisRef.current.scrollTo(0, { duration: 1.8 });
         return;
       }
       const target = document.getElementById(id);
       if (target) {
-        lenisRef.current.scrollTo(target, { offset: -70, duration: 1.15 });
+        lenisRef.current.scrollTo(target, { offset: -70, duration: 1.8 });
         return;
       }
     }
@@ -1455,6 +1551,153 @@ const Landing = () => {
               )}
             </div>
           ))}
+        </section>
+
+        {/* ═══ Scene 08b — Testimonials: member voices ═══ */}
+        <section className="lx-testimonials" id="testimonials" data-chapter data-theme="light">
+          <header className="lx-testimonials__head">
+            <p className="lx-eyebrow lx-reveal">What Our Members Say</p>
+            <h2 className="lx-display lx-reveal" style={{ '--i': 1 }}>
+              Voices of Trust
+            </h2>
+            <p className="lx-body lx-reveal" style={{ '--i': 2 }}>
+              Real stories from real members who have experienced the GDK promise firsthand.
+            </p>
+          </header>
+
+          <div className="lx-testimonials__grid">
+            {TESTIMONIALS.map((t, index) => (
+              <article
+                className="lx-testimonial lx-reveal"
+                style={{ '--i': index % 3 }}
+                key={t.name}
+              >
+                <div className="lx-testimonial__stars" aria-label={`${t.rating} out of 5 stars`}>
+                  {Array.from({ length: t.rating }, (_, i) => (
+                    <Star key={i} size={14} fill="currentColor" aria-hidden="true" />
+                  ))}
+                </div>
+                <blockquote className="lx-testimonial__text">
+                  &ldquo;{t.text}&rdquo;
+                </blockquote>
+                <footer className="lx-testimonial__author">
+                  <span className="lx-testimonial__avatar" aria-hidden="true">
+                    {t.name.charAt(0)}
+                  </span>
+                  <div>
+                    <cite className="lx-testimonial__name">{t.name}</cite>
+                    <p className="lx-testimonial__role">
+                      {t.role} · {t.location}
+                    </p>
+                    <p className="lx-testimonial__years">
+                      <Clock size={12} aria-hidden="true" />
+                      {t.years}
+                    </p>
+                  </div>
+                </footer>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* ═══ Scene 08c — Timeline: our milestones ═══ */}
+        <section className="lx-timeline" data-theme="dark">
+          <div className="lx-timeline__inner">
+            <header className="lx-timeline__head">
+              <p className="lx-eyebrow lx-eyebrow--gold lx-reveal">Our Journey</p>
+              <h2 className="lx-display lx-display--light lx-reveal" style={{ '--i': 1 }}>
+                25 Years of Milestones
+              </h2>
+            </header>
+
+            <div className="lx-timeline__track">
+              <span className="lx-timeline__line" aria-hidden="true" />
+              {MILESTONES.map((m, index) => (
+                <div
+                  className="lx-timeline__item lx-reveal"
+                  style={{ '--i': index % 3 }}
+                  key={m.year}
+                >
+                  <span className="lx-timeline__dot" aria-hidden="true" />
+                  <span className="lx-timeline__year">{m.year}</span>
+                  <h3 className="lx-timeline__event">{m.event}</h3>
+                  <p className="lx-timeline__detail">{m.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══ Scene 08d — FAQ section ═══ */}
+        <section className="lx-faq" id="faq" data-chapter data-theme="light">
+          <div className="lx-faq__inner">
+            <header className="lx-faq__head">
+              <p className="lx-eyebrow lx-reveal">Common Questions</p>
+              <h2 className="lx-display lx-reveal" style={{ '--i': 1 }}>
+                Everything You
+                <br />
+                Want to Know
+              </h2>
+            </header>
+
+            <div className="lx-faq__list">
+              {FAQ_ITEMS.map((item, index) => (
+                <details className="lx-faq__item lx-reveal" style={{ '--i': index % 3 }} key={item.question}>
+                  <summary className="lx-faq__question">
+                    <span className="lx-faq__qnum" aria-hidden="true">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span>{item.question}</span>
+                    <ChevronRight className="lx-faq__chevron" size={18} aria-hidden="true" />
+                  </summary>
+                  <div className="lx-faq__answer">
+                    <p>{item.answer}</p>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══ Scene 08e — Contact / Office info ═══ */}
+        <section className="lx-contact" id="contact" data-chapter data-theme="light">
+          <div className="lx-contact__inner">
+            <header className="lx-contact__head">
+              <p className="lx-eyebrow lx-reveal">Get in Touch</p>
+              <h2 className="lx-display lx-reveal" style={{ '--i': 1 }}>
+                Visit Our Office
+              </h2>
+              <p className="lx-body lx-reveal" style={{ '--i': 2 }}>
+                Come meet us in person. Our team is always ready to help you choose the right plan and answer all your questions.
+              </p>
+            </header>
+
+            <div className="lx-contact__cards">
+              <div className="lx-contact__card lx-reveal" style={{ '--i': 0 }}>
+                <span className="lx-contact__icon" aria-hidden="true">
+                  <MapPin size={22} />
+                </span>
+                <h3>Office Address</h3>
+                <p>GDK Chit Funds, Sri Periyanayagi Amman Complex, Main Road, Tamil Nadu, India</p>
+              </div>
+
+              <div className="lx-contact__card lx-reveal" style={{ '--i': 1 }}>
+                <span className="lx-contact__icon" aria-hidden="true">
+                  <Phone size={22} />
+                </span>
+                <h3>Phone / WhatsApp</h3>
+                <p>Call or message us for inquiries, plan details, and membership support.</p>
+              </div>
+
+              <div className="lx-contact__card lx-reveal" style={{ '--i': 2 }}>
+                <span className="lx-contact__icon" aria-hidden="true">
+                  <Clock size={22} />
+                </span>
+                <h3>Office Hours</h3>
+                <p>Monday to Saturday: 9:00 AM – 6:00 PM<br />Sunday: Closed</p>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* ═══ Scene 09 — Conversion: the circle closes ═══ */}
