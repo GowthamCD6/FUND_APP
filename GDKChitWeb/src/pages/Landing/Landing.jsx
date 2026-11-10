@@ -32,8 +32,10 @@ import {
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { useAuth } from '../../context/AuthContext.jsx';
-import RangoliPurple from '../../assets/splash/RangoliPurple.jpeg';
-import RangoliWhite from '../../assets/splash/RangoliWhite.jpeg';
+import GoldenRangoli from '../../assets/UserHomePage/GoldenRangoli.png';
+import RangoliTransparent from '../../assets/UserHomePage/rangoli.png';
+import ZoomGoldenRangoli from '../../assets/UserHomePage/ZoomGoldenRangoli.png';
+import ZoomRangoli from '../../assets/UserHomePage/ZoomRangoli.png';
 import './Landing.css';
 
 const STAR_PATH = "M 50 5 C 50 32 68 50 95 50 C 68 50 50 68 50 95 C 50 68 32 50 5 50 C 32 50 50 32 50 5 Z";
@@ -66,7 +68,9 @@ const NAV_LINKS = [
   { id: 'about', label: 'About' },
   { id: 'journey', label: 'How It Works' },
   { id: 'plans', label: 'Plans' },
+  { id: 'calculator', label: 'Calculator' },
   { id: 'features', label: 'Features' },
+  { id: 'platform', label: 'Digital App' },
   { id: 'testimonials', label: 'Testimonials' },
 ];
 
@@ -77,7 +81,9 @@ const CHAPTERS = [
   { id: 'journey', label: 'The Journey' },
   { id: 'stats', label: 'Numbers' },
   { id: 'plans', label: 'Plans' },
+  { id: 'calculator', label: 'Calculator' },
   { id: 'features', label: 'Why Us' },
+  { id: 'platform', label: 'Platform' },
   { id: 'testimonials', label: 'Reviews' },
   { id: 'faq', label: 'FAQ' },
   { id: 'contact', label: 'Contact' },
@@ -740,7 +746,6 @@ const Landing = () => {
   const motion = !reducedMotion;
 
   const [rotationDeg, setRotationDeg] = useState(180);
-  const [wavePercent, setWavePercent] = useState(0);
 
   const [loaded, setLoaded] = useState(() => {
     if (prefersReducedMotion()) return true;
@@ -752,11 +757,6 @@ const Landing = () => {
   });
   const [menuOpen, setMenuOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
-
-  const skipSplash = () => {
-    setLoaded(true);
-    setLoaderGone(true);
-  };
 
   const isAuthed = status === 'authed';
   const isAdmin = isAdminRole(user?.role);
@@ -800,13 +800,9 @@ const Landing = () => {
       const t = clamp((now - start) / duration);
       const eased = easeOut(t);
 
-      // Rotating mandala: 180deg to 270deg (exact match to mobile app)
+      // Rotating mandalas: 180deg to 270deg (exact match to ceremonial mobile entrance)
       const rot = 180 + eased * 90;
       setRotationDeg(rot);
-
-      // Expanding wave reveals the white mandala starting around 30% through the animation
-      const wave = clamp((t - 0.3) / 0.55);
-      setWavePercent(Math.round(wave * 100));
 
       if (loaderCountRef.current) loaderCountRef.current.textContent = String(Math.round(eased * 100));
       if (loaderBarRef.current) loaderBarRef.current.style.transform = `scaleX(${eased.toFixed(3)})`;
@@ -883,37 +879,42 @@ const Landing = () => {
         <div
           className="lx-splash"
           data-done={loaded}
-          onClick={skipSplash}
           role="dialog"
           aria-label="Welcome to GDK Chit Funds"
         >
-          {/* Top Rotating Rangoli Mandala Stage */}
-          <div className="lx-splash__mandala-stage" aria-hidden="true">
-            {/* Base Purple Mandala */}
-            <div className="lx-splash__mandala-circle">
-              <img
-                src={RangoliPurple}
-                alt=""
-                className="lx-splash__mandala-img lx-splash__mandala-img--purple"
-                style={{ transform: `rotate(${rotationDeg}deg)` }}
-              />
-            </div>
+          {/* Multi-depth Rangoli Stage (4 Unique Sized Organic Rangolis, No Circular Border) */}
+          <div className="lx-splash__rangoli-stage" aria-hidden="true">
+            {/* Rangoli 1: Hero Crown Rangoli (Largest - Grand Golden Aura) */}
+            <img
+              src={GoldenRangoli}
+              alt=""
+              className="lx-splash__rangoli lx-splash__rangoli--hero"
+              style={{ transform: `translate(-50%, 0) rotate(${rotationDeg}deg)` }}
+            />
 
-            {/* White/Gold Mandala Expanding Wave Reveal Mask */}
-            <div
-              className="lx-splash__wave-mask"
-              style={{
-                clipPath: `circle(${wavePercent * 0.75}% at 50% 50%)`,
-                WebkitClipPath: `circle(${wavePercent * 0.75}% at 50% 50%)`,
-              }}
-            >
-              <img
-                src={RangoliWhite}
-                alt=""
-                className="lx-splash__mandala-img lx-splash__mandala-img--white"
-                style={{ transform: `rotate(${rotationDeg}deg)` }}
-              />
-            </div>
+            {/* Rangoli 2: Top-Left Floating Rangoli (Medium-Large - Violet/Gold Accent) */}
+            <img
+              src={RangoliTransparent}
+              alt=""
+              className="lx-splash__rangoli lx-splash__rangoli--left"
+              style={{ transform: `rotate(${-rotationDeg * 0.75}deg)` }}
+            />
+
+            {/* Rangoli 3: Top-Right Floating Rangoli (Medium - Sunlit Gold) */}
+            <img
+              src={ZoomGoldenRangoli}
+              alt=""
+              className="lx-splash__rangoli lx-splash__rangoli--right"
+              style={{ transform: `rotate(${rotationDeg * 0.65 + 45}deg)` }}
+            />
+
+            {/* Rangoli 4: Sacred Center Core Jewel (Smallest - Concentrated Radiance) */}
+            <img
+              src={ZoomRangoli}
+              alt=""
+              className="lx-splash__rangoli lx-splash__rangoli--core"
+              style={{ transform: `translate(-50%, 0) rotate(${-rotationDeg * 1.25}deg)` }}
+            />
           </div>
 
           {/* Centered Brand Content Overlay */}
@@ -957,18 +958,6 @@ const Landing = () => {
             </div>
             <span className="lx-splash__footer-gold">CHITFUNDS</span>
           </div>
-
-          {/* Skip button */}
-          <button
-            type="button"
-            className="lx-splash__skip"
-            onClick={(e) => {
-              e.stopPropagation();
-              skipSplash();
-            }}
-          >
-            Skip &rarr;
-          </button>
         </div>
       )}
 

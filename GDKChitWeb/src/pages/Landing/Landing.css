@@ -275,7 +275,7 @@
   color: #FAF8F2;
   overflow: hidden;
   transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
+  cursor: default;
   user-select: none;
 }
 
@@ -285,53 +285,66 @@
   pointer-events: none;
 }
 
-/* ── Top Rotating Rangoli Mandala Stage ── */
-.lx-splash__mandala-stage {
+/* ── Multi-depth Rangoli Stage (4 Unique Sized Organic Rangolis, No Circular Border) ── */
+.lx-splash__rangoli-stage {
   position: absolute;
-  top: clamp(-180px, -18vw, -80px);
-  width: clamp(340px, 56vw, 720px);
-  height: clamp(340px, 56vw, 720px);
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  box-shadow: 0 10px 80px rgba(0, 0, 0, 0.7), 0 0 100px rgba(229, 193, 88, 0.18);
+  inset: 0;
+  overflow: visible;
   pointer-events: none;
+  border-radius: 0 !important;
 }
 
-.lx-splash__mandala-circle {
+.lx-splash__rangoli {
   position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  overflow: hidden;
-  background: #1A0C38;
-}
-
-.lx-splash__mandala-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
+  object-fit: contain;
+  border-radius: 0 !important;
   will-change: transform;
+  pointer-events: none;
+  user-select: none;
 }
 
-.lx-splash__mandala-img--purple {
-  opacity: 0.82;
-  filter: contrast(1.1) brightness(0.95);
-}
-
-.lx-splash__wave-mask {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  overflow: hidden;
+/* Rangoli 1: Hero Crown (Largest - Celestial Golden Backdrop) */
+.lx-splash__rangoli--hero {
+  top: clamp(-180px, -14vw, -60px);
+  left: 50%;
+  width: clamp(380px, 48vw, 640px);
+  height: clamp(380px, 48vw, 640px);
+  opacity: 0.95;
+  filter: drop-shadow(0 0 50px rgba(255, 213, 79, 0.45)) drop-shadow(0 15px 40px rgba(0, 0, 0, 0.7));
   z-index: 2;
-  will-change: clip-path;
 }
 
-.lx-splash__mandala-img--white {
-  opacity: 0.88;
-  filter: contrast(1.08) brightness(1.02);
+/* Rangoli 2: Top-Left Floating (Medium-Large - Violet/Gold Accent) */
+.lx-splash__rangoli--left {
+  top: clamp(-60px, -3vw, 30px);
+  left: clamp(2%, 7vw, 14%);
+  width: clamp(230px, 26vw, 340px);
+  height: clamp(230px, 26vw, 340px);
+  opacity: 0.78;
+  filter: drop-shadow(0 0 35px rgba(186, 104, 200, 0.4)) drop-shadow(0 10px 25px rgba(0, 0, 0, 0.5));
+  z-index: 1;
+}
+
+/* Rangoli 3: Top-Right Floating (Medium - Sunlit Gold) */
+.lx-splash__rangoli--right {
+  top: clamp(-40px, -1vw, 50px);
+  right: clamp(2%, 7vw, 14%);
+  width: clamp(175px, 20vw, 260px);
+  height: clamp(175px, 20vw, 260px);
+  opacity: 0.82;
+  filter: drop-shadow(0 0 30px rgba(255, 213, 79, 0.42)) drop-shadow(0 8px 20px rgba(0, 0, 0, 0.45));
+  z-index: 1;
+}
+
+/* Rangoli 4: Sacred Center Core Jewel (Smallest - Concentrated Radiance) */
+.lx-splash__rangoli--core {
+  top: clamp(20px, 5vw, 110px);
+  left: 50%;
+  width: clamp(120px, 13vw, 165px);
+  height: clamp(120px, 13vw, 165px);
+  opacity: 0.98;
+  filter: drop-shadow(0 0 25px rgba(255, 241, 118, 0.9)) drop-shadow(0 0 45px rgba(255, 213, 79, 0.7));
+  z-index: 3;
 }
 
 /* ── Centered Content ── */
@@ -478,44 +491,38 @@
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
-/* ── Skip button ── */
-.lx-splash__skip {
-  position: absolute;
-  top: 24px;
-  right: 28px;
-  z-index: 20;
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 213, 79, 0.35);
-  background: rgba(26, 12, 56, 0.65);
-  color: #FFD54F;
-  font-family: var(--lx-sans);
-  font-size: 0.76rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: all 0.25s ease;
-}
-
-.lx-splash__skip:hover {
-  background: rgba(255, 213, 79, 0.2);
-  border-color: #FFD54F;
-  color: #FFFFFF;
-  transform: translateY(-2px);
-}
-
 /* Mobile responsive adjustments */
 @media (max-width: 767px) {
-  .lx-splash__mandala-stage {
+  .lx-splash__rangoli--hero {
     top: -90px;
-    width: 320px;
-    height: 320px;
+    width: 310px;
+    height: 310px;
+  }
+
+  .lx-splash__rangoli--left {
+    top: -35px;
+    left: -20px;
+    width: 160px;
+    height: 160px;
+    opacity: 0.65;
+  }
+
+  .lx-splash__rangoli--right {
+    top: -15px;
+    right: -20px;
+    width: 130px;
+    height: 130px;
+    opacity: 0.68;
+  }
+
+  .lx-splash__rangoli--core {
+    top: 18px;
+    width: 95px;
+    height: 95px;
   }
 
   .lx-splash__content {
-    margin-top: 150px;
+    margin-top: 175px;
   }
 
   .lx-splash__title {
@@ -525,13 +532,6 @@
 
   .lx-splash__tagline-text {
     font-size: 0.8rem;
-  }
-
-  .lx-splash__skip {
-    top: 16px;
-    right: 18px;
-    padding: 6px 12px;
-    font-size: 0.7rem;
   }
 }
 
