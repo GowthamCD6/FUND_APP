@@ -4,25 +4,30 @@ import {
   ArrowRight,
   Award,
   Building2,
+  Calculator,
   Calendar,
   Camera,
   Check,
   ChevronRight,
   ChevronUp,
   Clock,
+  Globe,
   HandCoins,
   Heart,
   HelpCircle,
+  Lock,
   MapPin,
   MessageCircle,
   Phone,
   Play,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   Star,
   TrendingUp,
   Users,
   Wallet,
+  Zap,
 } from 'lucide-react';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
@@ -489,6 +494,7 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
         target = travel > 0 ? clamp(-rect.top / travel) : 0;
       }
 
+      const progress = target;
       scene.targetProgress = target;
       scene.currentProgress = target;
       scene.progress = target;
