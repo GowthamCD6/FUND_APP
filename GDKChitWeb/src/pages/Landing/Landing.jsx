@@ -32,7 +32,11 @@ import {
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { useAuth } from '../../context/AuthContext.jsx';
+import RangoliPurple from '../../assets/splash/RangoliPurple.jpeg';
+import RangoliWhite from '../../assets/splash/RangoliWhite.jpeg';
 import './Landing.css';
+
+const STAR_PATH = "M 50 5 C 50 32 68 50 95 50 C 68 50 50 68 50 95 C 50 68 32 50 5 50 C 32 50 50 32 50 5 Z";
 
 /* ══════════════════════════════════════════════════════════════════
    IMAGERY
@@ -735,18 +739,24 @@ const Landing = () => {
   const reducedMotion = useReducedMotion();
   const motion = !reducedMotion;
 
+  const [rotationDeg, setRotationDeg] = useState(180);
+  const [wavePercent, setWavePercent] = useState(0);
+
   const [loaded, setLoaded] = useState(() => {
     if (prefersReducedMotion()) return true;
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gdk_landing_seen')) return true;
     return false;
   });
   const [loaderGone, setLoaderGone] = useState(() => {
     if (prefersReducedMotion()) return true;
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gdk_landing_seen')) return true;
     return false;
   });
   const [menuOpen, setMenuOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  const skipSplash = () => {
+    setLoaded(true);
+    setLoaderGone(true);
+  };
 
   const isAuthed = status === 'authed';
   const isAdmin = isAdminRole(user?.role);
@@ -776,11 +786,11 @@ const Landing = () => {
     navigate(portalPath);
   };
 
-  /* ── Opening curtain: snappy, elegant 480ms entrance ── */
+  /* ── Mobile-app style Splash Screen (2400ms ceremonial entrance) ── */
   useEffect(() => {
     if (loaded) return undefined;
 
-    const duration = 480;
+    const duration = 2400;
     let frame = null;
     let timer = null;
     let start = null;
@@ -790,16 +800,21 @@ const Landing = () => {
       const t = clamp((now - start) / duration);
       const eased = easeOut(t);
 
+      // Rotating mandala: 180deg to 270deg (exact match to mobile app)
+      const rot = 180 + eased * 90;
+      setRotationDeg(rot);
+
+      // Expanding wave reveals the white mandala starting around 30% through the animation
+      const wave = clamp((t - 0.3) / 0.55);
+      setWavePercent(Math.round(wave * 100));
+
       if (loaderCountRef.current) loaderCountRef.current.textContent = String(Math.round(eased * 100));
       if (loaderBarRef.current) loaderBarRef.current.style.transform = `scaleX(${eased.toFixed(3)})`;
 
       if (t < 1) {
         frame = requestAnimationFrame(tick);
       } else {
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('gdk_landing_seen', 'true');
-        }
-        timer = setTimeout(() => setLoaded(true), 60);
+        timer = setTimeout(() => setLoaded(true), 120);
       }
     };
 
@@ -863,23 +878,97 @@ const Landing = () => {
       data-nav-theme="light"
       data-rail-theme="light"
     >
-      {/* ═══ Opening curtain ═══ */}
+      {/* ═══ Mobile App Authentic Splash Screen ═══ */}
       {!loaderGone && (
-        <div className="lx-loader" data-done={loaded} aria-hidden="true">
-          <div className="lx-loader__inner">
-            <p className="lx-loader__tamil">ஸ்ரீ பெரியநாயகி அம்மன் CHITFUNDS</p>
-            <div className="lx-loader__row">
-              <span className="lx-loader__brand">GDK</span>
-              <span className="lx-loader__count">
-                <span ref={loaderCountRef}>0</span>
-                <em>%</em>
+        <div
+          className="lx-splash"
+          data-done={loaded}
+          onClick={skipSplash}
+          role="dialog"
+          aria-label="Welcome to GDK Chit Funds"
+        >
+          {/* Top Rotating Rangoli Mandala Stage */}
+          <div className="lx-splash__mandala-stage" aria-hidden="true">
+            {/* Base Purple Mandala */}
+            <div className="lx-splash__mandala-circle">
+              <img
+                src={RangoliPurple}
+                alt=""
+                className="lx-splash__mandala-img lx-splash__mandala-img--purple"
+                style={{ transform: `rotate(${rotationDeg}deg)` }}
+              />
+            </div>
+
+            {/* White/Gold Mandala Expanding Wave Reveal Mask */}
+            <div
+              className="lx-splash__wave-mask"
+              style={{
+                clipPath: `circle(${wavePercent * 0.75}% at 50% 50%)`,
+                WebkitClipPath: `circle(${wavePercent * 0.75}% at 50% 50%)`,
+              }}
+            >
+              <img
+                src={RangoliWhite}
+                alt=""
+                className="lx-splash__mandala-img lx-splash__mandala-img--white"
+                style={{ transform: `rotate(${rotationDeg}deg)` }}
+              />
+            </div>
+          </div>
+
+          {/* Centered Brand Content Overlay */}
+          <div className="lx-splash__content">
+            <h1 className="lx-splash__title">
+              ஸ்ரீ பெரியநாயகி அம்மன்
+            </h1>
+
+            <div className="lx-splash__tagline">
+              <span className="lx-splash__line lx-splash__line--left" />
+              <span className="lx-splash__star-dot">✦</span>
+              <span className="lx-splash__tagline-text">Chitfunds Since 1999</span>
+              <span className="lx-splash__star-dot">✦</span>
+              <span className="lx-splash__line lx-splash__line--right" />
+            </div>
+
+            {/* Progress loader */}
+            <div className="lx-splash__progress-wrap">
+              <div className="lx-splash__progress-track">
+                <span ref={loaderBarRef} className="lx-splash__progress-bar" />
+              </div>
+              <span className="lx-splash__count">
+                <span ref={loaderCountRef}>0</span>%
               </span>
             </div>
-            <div className="lx-loader__bar">
-              <span ref={loaderBarRef} />
-            </div>
-            <p className="lx-loader__caption">Trusted Financial Partner Since 1999</p>
           </div>
+
+          {/* Bottom Brand Footer */}
+          <div className="lx-splash__footer" aria-hidden="true">
+            <div className="lx-splash__footer-brand">
+              <span className="lx-splash__footer-om">ஸ்ரீ</span>
+              <svg className="lx-splash__mini-star" width="22" height="22" viewBox="0 0 100 100">
+                <defs>
+                  <linearGradient id="splashMiniStarGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#FFF176" />
+                    <stop offset="100%" stopColor="#FFC107" />
+                  </linearGradient>
+                </defs>
+                <path d={STAR_PATH} fill="url(#splashMiniStarGrad)" />
+              </svg>
+            </div>
+            <span className="lx-splash__footer-gold">CHITFUNDS</span>
+          </div>
+
+          {/* Skip button */}
+          <button
+            type="button"
+            className="lx-splash__skip"
+            onClick={(e) => {
+              e.stopPropagation();
+              skipSplash();
+            }}
+          >
+            Skip &rarr;
+          </button>
         </div>
       )}
 
