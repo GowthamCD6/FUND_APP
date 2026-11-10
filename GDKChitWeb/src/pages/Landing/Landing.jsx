@@ -33,9 +33,9 @@ import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { useAuth } from '../../context/AuthContext.jsx';
 import GoldenRangoli from '../../assets/UserHomePage/GoldenRangoli.png';
-import RangoliTransparent from '../../assets/UserHomePage/rangoli.png';
+import RangoliFlankGold from '../../assets/UserHomePage/RangoliFlankGold.png';
 import ZoomGoldenRangoli from '../../assets/UserHomePage/ZoomGoldenRangoli.png';
-import ZoomRangoli from '../../assets/UserHomePage/ZoomRangoli.png';
+import ZoomRangoliGold from '../../assets/UserHomePage/ZoomRangoliGold.png';
 import './Landing.css';
 
 const STAR_PATH = "M 50 5 C 50 32 68 50 95 50 C 68 50 50 68 50 95 C 50 68 32 50 5 50 C 32 50 50 32 50 5 Z";
@@ -882,63 +882,66 @@ const Landing = () => {
           role="dialog"
           aria-label="Welcome to GDK Chit Funds"
         >
-          {/* Multi-depth Rangoli Stage (4 Unique Sized Organic Rangolis, No Circular Border) */}
-          <div className="lx-splash__rangoli-stage" aria-hidden="true">
-            {/* Rangoli 1: Hero Crown Rangoli (Largest - Grand Golden Aura) */}
-            <img
-              src={GoldenRangoli}
-              alt=""
-              className="lx-splash__rangoli lx-splash__rangoli--hero"
-              style={{ transform: `translate(-50%, 0) rotate(${rotationDeg}deg)` }}
-            />
+          {/* Main Centered Ceremonial Showcase Card */}
+          <div className="lx-splash__center-card">
+            {/* Multi-depth Rangoli Stage (4 Unique Sized Organic Golden Rangolis, No Circular Border) */}
+            <div className="lx-splash__rangoli-stage" aria-hidden="true">
+              {/* Rangoli 1: Hero Crown Rangoli (Largest - Grand Golden Aura) */}
+              <img
+                src={GoldenRangoli}
+                alt=""
+                className="lx-splash__rangoli lx-splash__rangoli--hero"
+                style={{ transform: `translate(-50%, -50%) rotate(${rotationDeg}deg)` }}
+              />
 
-            {/* Rangoli 2: Top-Left Floating Rangoli (Medium-Large - Violet/Gold Accent) */}
-            <img
-              src={RangoliTransparent}
-              alt=""
-              className="lx-splash__rangoli lx-splash__rangoli--left"
-              style={{ transform: `rotate(${-rotationDeg * 0.75}deg)` }}
-            />
+              {/* Rangoli 2: Top-Left Floating Rangoli (Medium-Large - Sacred Gold Filigree) */}
+              <img
+                src={RangoliFlankGold}
+                alt=""
+                className="lx-splash__rangoli lx-splash__rangoli--left"
+                style={{ transform: `translate(-50%, -50%) rotate(${-rotationDeg * 0.75}deg)` }}
+              />
 
-            {/* Rangoli 3: Top-Right Floating Rangoli (Medium - Sunlit Gold) */}
-            <img
-              src={ZoomGoldenRangoli}
-              alt=""
-              className="lx-splash__rangoli lx-splash__rangoli--right"
-              style={{ transform: `rotate(${rotationDeg * 0.65 + 45}deg)` }}
-            />
+              {/* Rangoli 3: Top-Right Floating Rangoli (Medium - Radiant Star Gold) */}
+              <img
+                src={ZoomGoldenRangoli}
+                alt=""
+                className="lx-splash__rangoli lx-splash__rangoli--right"
+                style={{ transform: `translate(-50%, -50%) rotate(${rotationDeg * 0.65 + 45}deg)` }}
+              />
 
-            {/* Rangoli 4: Sacred Center Core Jewel (Smallest - Concentrated Radiance) */}
-            <img
-              src={ZoomRangoli}
-              alt=""
-              className="lx-splash__rangoli lx-splash__rangoli--core"
-              style={{ transform: `translate(-50%, 0) rotate(${-rotationDeg * 1.25}deg)` }}
-            />
-          </div>
-
-          {/* Centered Brand Content Overlay */}
-          <div className="lx-splash__content">
-            <h1 className="lx-splash__title">
-              ஸ்ரீ பெரியநாயகி அம்மன்
-            </h1>
-
-            <div className="lx-splash__tagline">
-              <span className="lx-splash__line lx-splash__line--left" />
-              <span className="lx-splash__star-dot">✦</span>
-              <span className="lx-splash__tagline-text">Chitfunds Since 1999</span>
-              <span className="lx-splash__star-dot">✦</span>
-              <span className="lx-splash__line lx-splash__line--right" />
+              {/* Rangoli 4: Sacred Center Core Jewel (Smallest - Concentrated Radiance) */}
+              <img
+                src={ZoomRangoliGold}
+                alt=""
+                className="lx-splash__rangoli lx-splash__rangoli--core"
+                style={{ transform: `translate(-50%, -50%) rotate(${-rotationDeg * 1.25}deg)` }}
+              />
             </div>
 
-            {/* Progress loader */}
-            <div className="lx-splash__progress-wrap">
-              <div className="lx-splash__progress-track">
-                <span ref={loaderBarRef} className="lx-splash__progress-bar" />
+            {/* Centered Brand Content Overlay */}
+            <div className="lx-splash__content">
+              <h1 className="lx-splash__title">
+                ஸ்ரீ பெரியநாயகி அம்மன்
+              </h1>
+
+              <div className="lx-splash__tagline">
+                <span className="lx-splash__line lx-splash__line--left" />
+                <span className="lx-splash__star-dot">✦</span>
+                <span className="lx-splash__tagline-text">Chitfunds Since 1999</span>
+                <span className="lx-splash__star-dot">✦</span>
+                <span className="lx-splash__line lx-splash__line--right" />
               </div>
-              <span className="lx-splash__count">
-                <span ref={loaderCountRef}>0</span>%
-              </span>
+
+              {/* Progress loader */}
+              <div className="lx-splash__progress-wrap">
+                <div className="lx-splash__progress-track">
+                  <span ref={loaderBarRef} className="lx-splash__progress-bar" />
+                </div>
+                <span className="lx-splash__count">
+                  <span ref={loaderCountRef}>0</span>%
+                </span>
+              </div>
             </div>
           </div>
 
