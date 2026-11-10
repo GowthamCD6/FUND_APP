@@ -270,10 +270,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #15092A;
-  background:
-    radial-gradient(ellipse 70% 55% at 50% 38%, rgba(138, 58, 224, 0.42) 0%, rgba(70, 20, 130, 0.25) 45%, rgba(21, 9, 42, 0.98) 80%, #15092A 100%),
-    #15092A;
+  background-color: #1A0C38;
+  background: #1A0C38;
   color: #FAF8F2;
   overflow: hidden;
   transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
@@ -330,16 +328,16 @@
   user-select: none;
 }
 
-/* White Base Layer: Luminous Celestial Silver-White */
+/* White Base Layer: Luminous Celestial Silver-White (Clean & Sharp) */
 .lx-splash__rangoli--white {
   opacity: 0.95;
-  filter: drop-shadow(0 0 26px rgba(255, 255, 255, 0.48)) drop-shadow(0 8px 24px rgba(0, 0, 0, 0.7));
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
   transition: opacity 0.4s ease;
 }
 
-/* Gold Transformation Layer: Radiant 24K Temple Gold with Expanding Wave */
+/* Gold Transformation Layer: Radiant 24K Temple Gold (Crisp & High-Definition) */
 .lx-splash__rangoli--gold {
-  filter: drop-shadow(0 0 38px rgba(255, 213, 79, 0.65)) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.8));
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5));
   will-change: clip-path, opacity;
   transition: opacity 0.25s ease;
 }
@@ -400,7 +398,7 @@
   background: linear-gradient(180deg, #FFFFFF 30%, #FFF3B3 75%, #FFD54F 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 30px rgba(255, 213, 79, 0.35));
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.7));
   letter-spacing: -0.01em;
   line-height: 1.25;
   animation: lx-rise 0.9s var(--lx-ease) both;
