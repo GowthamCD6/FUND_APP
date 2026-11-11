@@ -1593,12 +1593,12 @@ const Landing = () => {
                 </div>
 
                 <div className="lx-viz lx-viz--ring" data-index="3">
-                  <svg viewBox="0 0 200 200" focusable="false">
+                  <svg className="lx-viz__ring-svg" viewBox="0 0 200 200" focusable="false">
                     <circle className="lx-viz__track" cx="100" cy="100" r="80" />
                     <circle className="lx-viz__fill" cx="100" cy="100" r="80" />
                   </svg>
                   <div className="lx-viz__ring-center">
-                    <ShieldCheck className="lx-viz__shield" size={46} />
+                    <ShieldCheck className="lx-viz__shield" size={52} />
                     <span className="lx-viz__ring-pct">100%</span>
                     <span className="lx-viz__ring-sub">PAYOUT RELIABILITY</span>
                   </div>
