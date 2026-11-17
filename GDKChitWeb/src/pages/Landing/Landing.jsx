@@ -921,17 +921,7 @@ const Landing = () => {
   const [isReviewsPaused, setIsReviewsPaused] = useState(false);
   const [isReviewsHovered, setIsReviewsHovered] = useState(false);
   const reviewsMarqueeRef = useRef(null);
-  const [activePlan, setActivePlan] = useState(0);
-  const [isPlanHovered, setIsPlanHovered] = useState(false);
-
-  /* Auto-cycle hero plans circular orbit */
-  useEffect(() => {
-    if (isPlanHovered) return;
-    const timer = setInterval(() => {
-      setActivePlan((prev) => (prev + 1) % STACK_PLANS.length);
-    }, 3800);
-    return () => clearInterval(timer);
-  }, [isPlanHovered]);
+  const [isOrbitPaused, setIsOrbitPaused] = useState(false);
 
   const nudgeTestimonials = (direction) => {
     if (!reviewsMarqueeRef.current) return;
@@ -1432,28 +1422,26 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* ═══ 3D Stack Spinning Loop Plans Showcase (like Image 2) ═══ */}
+            {/* ═══ 3D Continuous Diamond Orbit Plans Showcase ═══ */}
             <div
               className="lx-hero__center-plans lx-intro"
               style={{ '--d': '640ms' }}
-              onMouseEnter={() => setIsPlanHovered(true)}
-              onMouseLeave={() => setIsPlanHovered(false)}
+              data-paused={isOrbitPaused ? 'true' : 'false'}
             >
               <div className="lx-stack-viewport">
                 {STACK_PLANS.map((plan, idx) => {
-                  const offset = (idx - activePlan + STACK_PLANS.length) % STACK_PLANS.length;
                   const IconComp = plan.icon;
 
                   return (
                     <div
                       key={plan.id}
-                      className={`lx-stack-card lx-stack-card--pos-${offset} ${offset === 0 ? 'is-front' : ''}`}
-                      onClick={() => setActivePlan(idx)}
+                      className={`lx-stack-card lx-stack-card--diamond lx-stack-card--diamond-${idx}`}
+                      onClick={() => goToSection('plans')}
                       role="button"
                       tabIndex={0}
-                      aria-label={`${plan.name} plan details - click to rotate to front`}
+                      aria-label={`${plan.name} plan details - click to explore chit plans`}
                     >
-                      {/* Floating Squircle Icon Badge on Top-Left Corner (exact match to Image 2) */}
+                      {/* Floating Squircle Icon Badge on Top-Left Corner */}
                       <div className="lx-stack-badge" style={{ background: plan.badgeBg }}>
                         <IconComp size={18} color="#ffffff" aria-hidden="true" />
                       </div>
@@ -1467,7 +1455,7 @@ const Landing = () => {
                         <span className="lx-stack-yield-pill">{plan.yieldTag}</span>
                       </div>
 
-                      {/* Primary Metric Row (like 'Stockout rate 32%' in Image 2) */}
+                      {/* Primary Metric Row */}
                       <div className="lx-stack-metric">
                         <span className="lx-stack-metric-label">Monthly Fixed Instalment</span>
                         <div className="lx-stack-metric-val-wrap">
@@ -1476,7 +1464,7 @@ const Landing = () => {
                         </div>
                       </div>
 
-                      {/* Glowing Dividend SVG Curve Graph (exact match to green graph line in Image 2) */}
+                      {/* Glowing Dividend SVG Curve Graph */}
                       <div className="lx-stack-graph">
                         <svg viewBox="0 0 260 42" preserveAspectRatio="none" aria-hidden="true">
                           <defs>
@@ -1516,39 +1504,22 @@ const Landing = () => {
                 })}
               </div>
 
-              {/* Stack Navigation & Circular Loop Controls */}
+              {/* Diamond Stream Status & Calculator Quick Action */}
               <div className="lx-stack-controls">
-                <div className="lx-stack-nav-group">
+                <div className="lx-diamond-status">
+                  <span className={`lx-stack-dot-live ${isOrbitPaused ? 'is-paused' : ''}`} aria-hidden="true" />
+                  <span className="lx-diamond-status-text">
+                    {isOrbitPaused ? 'Orbit Paused' : 'Continuous Stream'}
+                  </span>
                   <button
                     type="button"
-                    className="lx-stack-arrow-btn"
-                    onClick={() => setActivePlan((p) => (p - 1 + STACK_PLANS.length) % STACK_PLANS.length)}
-                    aria-label="Previous plan in orbit"
+                    className="lx-diamond-pause-btn"
+                    onClick={() => setIsOrbitPaused((prev) => !prev)}
+                    aria-label={isOrbitPaused ? 'Play diamond orbit' : 'Pause diamond orbit'}
+                    title={isOrbitPaused ? 'Play diamond orbit' : 'Pause diamond orbit'}
                   >
-                    <ChevronLeft size={14} aria-hidden="true" />
-                  </button>
-
-                  <div className="lx-stack-dots">
-                    {STACK_PLANS.map((p, i) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        className={`lx-stack-dot ${activePlan === i ? 'is-active' : ''}`}
-                        onClick={() => setActivePlan(i)}
-                        aria-label={`Orbit to ${p.name}`}
-                      >
-                        <span className="lx-stack-dot-inner" />
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    className="lx-stack-arrow-btn"
-                    onClick={() => setActivePlan((p) => (p + 1) % STACK_PLANS.length)}
-                    aria-label="Next plan in orbit"
-                  >
-                    <ChevronRight size={14} aria-hidden="true" />
+                    {isOrbitPaused ? <Play size={11} /> : <Pause size={11} />}
+                    <span>{isOrbitPaused ? 'Play' : 'Pause'}</span>
                   </button>
                 </div>
 

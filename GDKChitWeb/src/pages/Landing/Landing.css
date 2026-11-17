@@ -1135,9 +1135,11 @@
   left: clamp(24px, 4vw, 56px);
   z-index: 3;
   width: min(36vw, 520px);
-  opacity: calc(1 - var(--a) * 4);
-  transform: translate3d(calc(var(--a) * -3vw), calc(-50% - var(--a) * 20px), 0);
-  transition: opacity 0.2s ease;
+  opacity: clamp(0, calc(1 - var(--a) * 3), 1);
+  transform: translate3d(calc(var(--a) * -450px), calc(-50% - var(--a) * 40px), 0);
+  filter: blur(calc(var(--a) * 6px));
+  will-change: transform, opacity, filter;
+  transition: opacity 0.15s ease-out;
 }
 
 .lx-hero:not([data-step='0']) .lx-hero__copy {
@@ -1373,7 +1375,8 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   HERO CENTER 3D CIRCULAR ORBIT SHOWCASE (Circular Motion & Depth Blur)
+   HERO CENTER 3D CONTINUOUS DIAMOND ORBIT SHOWCASE
+   (Diamond Shape: Top, Right, Bottom, Left with Smooth Continuous Motion)
    ══════════════════════════════════════════════════════════════════ */
 .lx-hero__center-plans {
   position: absolute;
@@ -1381,9 +1384,15 @@
   left: clamp(470px, 42vw, 680px);
   z-index: 4;
   width: clamp(290px, 22vw, 345px);
-  opacity: calc(1 - var(--a) * 4.5);
-  transform: translate3d(calc(var(--a) * -3vw), calc(-50% - var(--a) * 35px), 0);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  opacity: clamp(0, calc(1 - var(--a) * 3), 1);
+  transform: translate3d(
+    calc(var(--a) * -720px),
+    calc(-50% - var(--a) * 70px),
+    calc(var(--a) * -120px)
+  ) scale(calc(1 - var(--a) * 0.25));
+  filter: blur(calc(var(--a) * 8px));
+  will-change: transform, opacity, filter;
+  transition: opacity 0.15s ease-out;
   pointer-events: auto;
 }
 
@@ -1393,11 +1402,11 @@
   display: none !important;
 }
 
-/* 3D Stack Perspective Viewport with Circular Orbit Depth */
+/* 3D Stack Perspective Viewport with Diamond Orbit Depth */
 .lx-stack-viewport {
   position: relative;
   width: 100%;
-  height: 256px;
+  height: 310px;
   perspective: 1400px;
   perspective-origin: center center;
   transform-style: preserve-3d;
@@ -1423,84 +1432,107 @@
   cursor: pointer;
   user-select: none;
   transform-style: preserve-3d;
-  transition:
-    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-    filter 0.7s ease,
-    opacity 0.7s ease,
-    border-color 0.4s ease,
-    box-shadow 0.4s ease;
+  will-change: transform, filter, opacity;
 }
 
-/* ═══ 3D Circular Orbit Positions (Circular Motion with Depth Blur) ═══ */
-
-/* POS 0: Front & Center Stage — Crystal clear, sharp, prominent */
-.lx-stack-card--pos-0 {
-  transform: translate3d(0, 0, 0) scale(1) rotateY(0deg);
-  z-index: 10;
-  opacity: 1;
-  filter: blur(0px);
-  border-color: rgba(229, 193, 88, 0.75);
-  box-shadow:
-    0 30px 60px -12px rgba(8, 18, 30, 0.85),
-    0 0 36px rgba(200, 164, 93, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  pointer-events: auto;
+/* ═══ Continuous Smooth Diamond Orbit Keyframes ═══ */
+/* 
+   Diamond Vertices (Top, Right, Bottom, Left):
+   • 0% & 100%: BOTTOM (Front Stage) — Closest to viewer, 100% sharp and crystal clear
+   • 25%: RIGHT VERTEX — Slanted into depth, right side
+   • 50%: TOP VERTEX (Far-Back) — Highest point, farthest away in depth, heavy blur
+   • 75%: LEFT VERTEX — Slanted into depth, left side
+*/
+@keyframes lx-diamond-orbit {
+  0% {
+    transform: translate3d(0, 42px, 35px) scale(1) rotateX(0deg) rotateY(0deg);
+    filter: blur(0px) brightness(1);
+    opacity: 1;
+    z-index: 10;
+    border-color: rgba(229, 193, 88, 0.85);
+    box-shadow:
+      0 28px 56px -12px rgba(8, 18, 30, 0.85),
+      0 0 36px rgba(200, 164, 93, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    pointer-events: auto;
+  }
+  25% {
+    transform: translate3d(105px, -14px, -65px) scale(0.85) rotateY(-22deg) rotateX(2deg);
+    filter: blur(5px) brightness(0.72);
+    opacity: 0.65;
+    z-index: 5;
+    border-color: rgba(200, 164, 93, 0.25);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+    pointer-events: auto;
+  }
+  50% {
+    transform: translate3d(0, -68px, -160px) scale(0.72) rotateX(-5deg) rotateY(0deg);
+    filter: blur(8.5px) brightness(0.45);
+    opacity: 0.36;
+    z-index: 2;
+    border-color: rgba(200, 164, 93, 0.15);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    pointer-events: auto;
+  }
+  75% {
+    transform: translate3d(-105px, -14px, -65px) scale(0.85) rotateY(22deg) rotateX(2deg);
+    filter: blur(5px) brightness(0.72);
+    opacity: 0.65;
+    z-index: 5;
+    border-color: rgba(200, 164, 93, 0.25);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+    pointer-events: auto;
+  }
+  100% {
+    transform: translate3d(0, 42px, 35px) scale(1) rotateX(0deg) rotateY(0deg);
+    filter: blur(0px) brightness(1);
+    opacity: 1;
+    z-index: 10;
+    border-color: rgba(229, 193, 88, 0.85);
+    box-shadow:
+      0 28px 56px -12px rgba(8, 18, 30, 0.85),
+      0 0 36px rgba(200, 164, 93, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    pointer-events: auto;
+  }
 }
 
-.lx-stack-card--pos-0:hover {
-  transform: translate3d(0, -3px, 12px) scale(1.02) rotateY(0deg);
+.lx-stack-card--diamond {
+  animation: lx-diamond-orbit 18s linear infinite;
+  animation-fill-mode: both;
+}
+
+/* Card 0: Starts at Bottom (Front, clear) */
+.lx-stack-card--diamond-0 {
+  animation-delay: 0s;
+}
+
+/* Card 1: Starts at Left (glides smoothly next to Bottom!) */
+.lx-stack-card--diamond-1 {
+  animation-delay: -13.5s;
+}
+
+/* Card 2: Starts at Top (Far Back) */
+.lx-stack-card--diamond-2 {
+  animation-delay: -9s;
+}
+
+/* Card 3: Starts at Right */
+.lx-stack-card--diamond-3 {
+  animation-delay: -4.5s;
+}
+
+/* Pause smoothly on hover or when toggle is active */
+.lx-hero__center-plans:hover .lx-stack-card,
+.lx-hero__center-plans[data-paused='true'] .lx-stack-card {
+  animation-play-state: paused !important;
+}
+
+.lx-hero__center-plans:hover .lx-stack-card:hover {
   border-color: rgba(229, 193, 88, 0.95);
   box-shadow:
-    0 34px 68px -12px rgba(8, 18, 30, 0.92),
-    0 0 44px rgba(200, 164, 93, 0.38);
-}
-
-/* POS 1: Right-Back Orbit — Angled right into depth, blurred */
-.lx-stack-card--pos-1 {
-  transform: translate3d(85px, -16px, -90px) scale(0.86) rotateY(-22deg);
-  z-index: 6;
-  opacity: 0.68;
-  filter: blur(5px) brightness(0.75);
-  border-color: rgba(200, 164, 93, 0.25);
-  pointer-events: auto;
-}
-
-.lx-stack-card--pos-1:hover {
-  opacity: 0.88;
-  filter: blur(1.5px) brightness(0.9);
-  transform: translate3d(75px, -12px, -60px) scale(0.9) rotateY(-16deg);
-}
-
-/* POS 2: Far-Back Orbit Center — Deepest point in the 3D circle, heavily blurred */
-.lx-stack-card--pos-2 {
-  transform: translate3d(0px, -34px, -180px) scale(0.74) rotateY(0deg);
-  z-index: 3;
-  opacity: 0.42;
-  filter: blur(8px) brightness(0.5);
-  border-color: rgba(200, 164, 93, 0.15);
-  pointer-events: auto;
-}
-
-.lx-stack-card--pos-2:hover {
-  opacity: 0.7;
-  filter: blur(3px) brightness(0.8);
-  transform: translate3d(0px, -26px, -130px) scale(0.8) rotateY(0deg);
-}
-
-/* POS 3: Left-Back Orbit — Angled left into depth, blurred */
-.lx-stack-card--pos-3 {
-  transform: translate3d(-85px, -16px, -90px) scale(0.86) rotateY(22deg);
-  z-index: 6;
-  opacity: 0.68;
-  filter: blur(5px) brightness(0.75);
-  border-color: rgba(200, 164, 93, 0.25);
-  pointer-events: auto;
-}
-
-.lx-stack-card--pos-3:hover {
-  opacity: 0.88;
-  filter: blur(1.5px) brightness(0.9);
-  transform: translate3d(-75px, -12px, -60px) scale(0.9) rotateY(16deg);
+    0 34px 68px -10px rgba(8, 18, 30, 0.95),
+    0 0 44px rgba(200, 164, 93, 0.4);
 }
 
 /* Floating Squircle Corner Badge (Direct match to Image 2) */
@@ -1696,77 +1728,50 @@
   padding: 0 4px;
 }
 
-.lx-stack-nav-group {
+.lx-diamond-status {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.85);
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  padding: 2px 6px;
+  padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid rgba(200, 164, 93, 0.35);
   box-shadow: 0 2px 10px rgba(10, 25, 38, 0.08);
 }
 
-.lx-stack-arrow-btn {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
+.lx-diamond-status-text {
+  font-size: 0.67rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.lx-diamond-pause-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(200, 164, 93, 0.45);
+  background: rgba(20, 43, 59, 0.06);
   color: var(--lx-navy);
-  display: grid;
-  place-items: center;
+  font-size: 0.62rem;
+  font-weight: 700;
   cursor: pointer;
-  padding: 0;
   transition: all 0.2s ease;
 }
 
-.lx-stack-arrow-btn:hover {
-  background: rgba(16, 185, 129, 0.14);
+.lx-diamond-pause-btn:hover {
+  background: rgba(16, 185, 129, 0.16);
   color: var(--lx-emerald);
-  transform: scale(1.1);
+  border-color: var(--lx-emerald);
 }
 
-.lx-stack-arrow-btn:active {
-  transform: scale(0.95);
-}
-
-.lx-stack-dots {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0 2px;
-}
-
-.lx-stack-dot {
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  transition: all 0.25s ease;
-}
-
-.lx-stack-dot-inner {
-  display: block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(20, 43, 59, 0.3);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.lx-stack-dot.is-active .lx-stack-dot-inner {
-  width: 18px;
-  border-radius: 999px;
-  background: var(--lx-emerald);
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+.lx-stack-dot-live.is-paused {
+  background: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b;
 }
 
 .lx-stack-calc-btn {
