@@ -114,13 +114,6 @@ const HERO_USP = [
   'Contributions and dividends shown in real time',
 ];
 
-const HERO_GROUP = [
-  { label: 'Chit value', value: '₹1,00,000' },
-  { label: 'Members', value: '20' },
-  { label: 'Term', value: '20 months' },
-  { label: 'Instalment', value: '₹5,000' },
-];
-
 const MANIFESTO =
   'For more than twenty-five years, families have trusted us with their savings, their dreams and their tomorrow. We return that trust every single month — with transparent auctions, honest numbers and payouts that arrive on time.';
 
@@ -1296,110 +1289,70 @@ const Landing = () => {
               </h1>
 
               <p className="lx-hero__sub lx-intro" style={{ '--d': '460ms' }}>
-                For over 25 years, GDK Chit Funds has empowered families, landowners, and entrepreneurs across Tamil Nadu with disciplined monthly savings, transparent live auctions, and guaranteed 24-hour prize money disbursement.
+                GDK Chit Funds has run regulated chit groups for families across Tamil Nadu since 1999. You pay a fixed instalment each month, bid for the prize money when you actually need it, and follow every rupee through a member ledger you can read — from the first instalment to maturity.
               </p>
 
-              <div className="lx-hero__highlights lx-intro" style={{ '--d': '560ms' }}>
-                <div className="lx-hero__highlight-item">
-                  <div className="lx-hero__highlight-icon">
-                    <ShieldCheck size={16} aria-hidden="true" />
-                  </div>
-                  <div className="lx-hero__highlight-text">
-                    <strong>100% Transparent Auctions</strong>
-                    <span>Every bid recorded live with verified digital passbooks</span>
-                  </div>
-                </div>
-                <div className="lx-hero__highlight-item">
-                  <div className="lx-hero__highlight-icon">
-                    <Clock size={16} aria-hidden="true" />
-                  </div>
-                  <div className="lx-hero__highlight-text">
-                    <strong>Guaranteed 24-Hour Payouts</strong>
-                    <span>Direct bank wire disbursement on winning auction day</span>
-                  </div>
-                </div>
-              </div>
+              <ul className="lx-hero__usp lx-intro" style={{ '--d': '560ms' }}>
+                {HERO_USP.map((item) => (
+                  <li key={item}>
+                    <Check size={15} aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
 
               <div className="lx-hero__actions lx-intro" style={{ '--d': '660ms' }}>
                 <button
                   type="button"
                   className="lx-btn lx-btn--primary lx-hero__cta-main"
-                  onClick={() => goToSection('plans')}
+                  onClick={() => navigate(portalPath)}
                 >
-                  <span>Explore Chit Plans</span>
+                  <span>Member Portal</span>
                   <ChevronRight size={16} aria-hidden="true" />
                 </button>
 
                 <button
                   type="button"
                   className="lx-btn lx-btn--ghost lx-hero__cta-sec"
-                  onClick={() => goToSection('calculator')}
+                  onClick={() => navigate('/admin')}
                 >
-                  <Calculator size={15} aria-hidden="true" />
-                  <span>Calculate Returns</span>
+                  <span>Admin Portal</span>
                 </button>
 
                 <button
                   type="button"
                   className="lx-btn lx-btn--link lx-hero__cta-link"
-                  onClick={() => navigate(portalPath)}
+                  onClick={() => goToSection('plans')}
                 >
-                  <span>Member Portal &rarr;</span>
+                  <span>View Plans</span>
                 </button>
               </div>
 
-              <div className="lx-hero__metrics-bar lx-intro" style={{ '--d': '760ms' }}>
-                <div className="lx-hero__metric">
+              <div className="lx-hero__proof lx-intro" style={{ '--d': '760ms' }}>
+                <div className="lx-hero__proof-avatars" aria-hidden="true">
+                  {MEMBER_COLORS.map((color, i) => (
+                    <span key={i} className="lx-hero__proof-dot" style={{ background: color, zIndex: 4 - i }} />
+                  ))}
+                  <span className="lx-hero__proof-count">500+</span>
+                </div>
+                <span className="lx-hero__proof-text">Trusted by 500+ families</span>
+
+                <div className="lx-hero__proof-divider" aria-hidden="true" />
+
+                <div className="lx-hero__proof-stat">
                   <strong>₹50 Cr+</strong>
-                  <span>Pooled &amp; Disbursed</span>
+                  <span>Pooled</span>
                 </div>
-                <div className="lx-hero__metric-divider" aria-hidden="true" />
-                <div className="lx-hero__metric">
-                  <strong>25+ Years</strong>
-                  <span>Legacy Since 1999</span>
-                </div>
-                <div className="lx-hero__metric-divider" aria-hidden="true" />
-                <div className="lx-hero__metric">
-                  <strong>500+ Families</strong>
-                  <span>Across Tamil Nadu</span>
-                </div>
-                <div className="lx-hero__metric-divider" aria-hidden="true" />
-                <div className="lx-hero__metric">
+
+                <div className="lx-hero__proof-divider" aria-hidden="true" />
+
+                <div className="lx-hero__proof-stat">
                   <strong>100%</strong>
                   <span>On-Time Payouts</span>
                 </div>
               </div>
             </div>
 
-            {/* Sleek Floating Glass Pill - positioned cleanly at bottom corner without obscuring the family */}
-            <div className="lx-hero__card">
-              <div className="lx-hero__cardHead">
-                <span className="lx-hero__cardDot" aria-hidden="true" />
-                <p className="lx-hero__cardTitle">Verified Monthly Chit Plan</p>
-                <span className="lx-hero__cardBadge">₹1,00,000 Group</span>
-              </div>
-              <div className="lx-hero__cardGrid">
-                <div className="lx-hero__cardItem">
-                  <span className="lx-hero__cardLabel">Monthly</span>
-                  <strong className="lx-hero__cardVal">₹5,000</strong>
-                </div>
-                <div className="lx-hero__cardDivider" aria-hidden="true" />
-                <div className="lx-hero__cardItem">
-                  <span className="lx-hero__cardLabel">Duration</span>
-                  <strong className="lx-hero__cardVal">20 Months</strong>
-                </div>
-                <div className="lx-hero__cardDivider" aria-hidden="true" />
-                <div className="lx-hero__cardItem">
-                  <span className="lx-hero__cardLabel">Members</span>
-                  <strong className="lx-hero__cardVal">20 Group</strong>
-                </div>
-                <div className="lx-hero__cardDivider" aria-hidden="true" />
-                <div className="lx-hero__cardItem">
-                  <span className="lx-hero__cardLabel">Payout</span>
-                  <strong className="lx-hero__cardVal">Guaranteed 24h</strong>
-                </div>
-              </div>
-            </div>
 
             <div className="lx-hero__chapter">
               <p className="lx-eyebrow lx-eyebrow--gold">Chapter 01 · Since 1999</p>
