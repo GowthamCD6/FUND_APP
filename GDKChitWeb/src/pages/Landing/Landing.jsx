@@ -924,11 +924,11 @@ const Landing = () => {
   const [activePlan, setActivePlan] = useState(0);
   const [isPlanHovered, setIsPlanHovered] = useState(false);
 
-  /* Auto-cycle hero plans ticker */
+  /* Auto-cycle hero plans circular orbit */
   useEffect(() => {
     if (isPlanHovered) return;
     const timer = setInterval(() => {
-      setActivePlan((prev) => (prev + 1) % PLANS.length);
+      setActivePlan((prev) => (prev + 1) % STACK_PLANS.length);
     }, 3800);
     return () => clearInterval(timer);
   }, [isPlanHovered]);
@@ -1443,8 +1443,6 @@ const Landing = () => {
                 {STACK_PLANS.map((plan, idx) => {
                   const offset = (idx - activePlan + STACK_PLANS.length) % STACK_PLANS.length;
                   const IconComp = plan.icon;
-                  // Render cards up to depth 3
-                  if (offset > 2 && offset !== STACK_PLANS.length - 1) return null;
 
                   return (
                     <div
@@ -1453,7 +1451,7 @@ const Landing = () => {
                       onClick={() => setActivePlan(idx)}
                       role="button"
                       tabIndex={0}
-                      aria-label={`${plan.name} plan details`}
+                      aria-label={`${plan.name} plan details - click to rotate to front`}
                     >
                       {/* Floating Squircle Icon Badge on Top-Left Corner (exact match to Image 2) */}
                       <div className="lx-stack-badge" style={{ background: plan.badgeBg }}>
@@ -1518,20 +1516,40 @@ const Landing = () => {
                 })}
               </div>
 
-              {/* Stack Navigation & Loop Indicators */}
+              {/* Stack Navigation & Circular Loop Controls */}
               <div className="lx-stack-controls">
-                <div className="lx-stack-dots">
-                  {STACK_PLANS.map((p, i) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className={`lx-stack-dot ${activePlan === i ? 'is-active' : ''}`}
-                      onClick={() => setActivePlan(i)}
-                      aria-label={`Select ${p.name}`}
-                    >
-                      <span className="lx-stack-dot-inner" />
-                    </button>
-                  ))}
+                <div className="lx-stack-nav-group">
+                  <button
+                    type="button"
+                    className="lx-stack-arrow-btn"
+                    onClick={() => setActivePlan((p) => (p - 1 + STACK_PLANS.length) % STACK_PLANS.length)}
+                    aria-label="Previous plan in orbit"
+                  >
+                    <ChevronLeft size={14} aria-hidden="true" />
+                  </button>
+
+                  <div className="lx-stack-dots">
+                    {STACK_PLANS.map((p, i) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className={`lx-stack-dot ${activePlan === i ? 'is-active' : ''}`}
+                        onClick={() => setActivePlan(i)}
+                        aria-label={`Orbit to ${p.name}`}
+                      >
+                        <span className="lx-stack-dot-inner" />
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="lx-stack-arrow-btn"
+                    onClick={() => setActivePlan((p) => (p + 1) % STACK_PLANS.length)}
+                    aria-label="Next plan in orbit"
+                  >
+                    <ChevronRight size={14} aria-hidden="true" />
+                  </button>
                 </div>
 
                 <button

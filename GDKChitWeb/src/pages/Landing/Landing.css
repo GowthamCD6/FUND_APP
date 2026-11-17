@@ -1373,14 +1373,14 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   HERO CENTER 3D STACKED SPINS SHOWCASE (Matches Image 2)
+   HERO CENTER 3D CIRCULAR ORBIT SHOWCASE (Circular Motion & Depth Blur)
    ══════════════════════════════════════════════════════════════════ */
 .lx-hero__center-plans {
   position: absolute;
   top: 50%;
-  left: clamp(480px, 42vw, 680px);
+  left: clamp(470px, 42vw, 680px);
   z-index: 4;
-  width: clamp(290px, 22vw, 350px);
+  width: clamp(290px, 22vw, 345px);
   opacity: calc(1 - var(--a) * 4.5);
   transform: translate3d(calc(var(--a) * -3vw), calc(-50% - var(--a) * 35px), 0);
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -1393,13 +1393,14 @@
   display: none !important;
 }
 
-/* 3D Stack Perspective Viewport */
+/* 3D Stack Perspective Viewport with Circular Orbit Depth */
 .lx-stack-viewport {
   position: relative;
   width: 100%;
-  height: 250px;
-  perspective: 1200px;
+  height: 256px;
+  perspective: 1400px;
   perspective-origin: center center;
+  transform-style: preserve-3d;
 }
 
 /* Base 3D Stack Card */
@@ -1407,8 +1408,8 @@
   position: absolute;
   inset: 0;
   width: 100%;
-  height: 236px;
-  background: rgba(14, 28, 44, 0.95);
+  height: 242px;
+  background: rgba(14, 28, 44, 0.96);
   border: 1.5px solid rgba(200, 164, 93, 0.4);
   border-radius: 20px;
   padding: 16px 18px 14px;
@@ -1421,61 +1422,85 @@
   color: #ffffff;
   cursor: pointer;
   user-select: none;
+  transform-style: preserve-3d;
   transition:
-    transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.5s ease,
-    filter 0.5s ease,
-    border-color 0.3s ease,
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.7s ease,
+    opacity 0.7s ease,
+    border-color 0.4s ease,
     box-shadow 0.4s ease;
 }
 
-/* 3D Stack Depth Positions */
+/* ═══ 3D Circular Orbit Positions (Circular Motion with Depth Blur) ═══ */
+
+/* POS 0: Front & Center Stage — Crystal clear, sharp, prominent */
 .lx-stack-card--pos-0 {
-  transform: translate3d(0, 0, 0) scale(1);
+  transform: translate3d(0, 0, 0) scale(1) rotateY(0deg);
   z-index: 10;
   opacity: 1;
-  filter: none;
+  filter: blur(0px);
+  border-color: rgba(229, 193, 88, 0.75);
+  box-shadow:
+    0 30px 60px -12px rgba(8, 18, 30, 0.85),
+    0 0 36px rgba(200, 164, 93, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   pointer-events: auto;
 }
 
 .lx-stack-card--pos-0:hover {
-  transform: translate3d(0, -3px, 10px) scale(1.02);
-  border-color: rgba(229, 193, 88, 0.7);
+  transform: translate3d(0, -3px, 12px) scale(1.02) rotateY(0deg);
+  border-color: rgba(229, 193, 88, 0.95);
   box-shadow:
-    0 28px 56px -12px rgba(10, 20, 32, 0.75),
-    0 0 36px rgba(200, 164, 93, 0.28);
+    0 34px 68px -12px rgba(8, 18, 30, 0.92),
+    0 0 44px rgba(200, 164, 93, 0.38);
 }
 
+/* POS 1: Right-Back Orbit — Angled right into depth, blurred */
 .lx-stack-card--pos-1 {
-  transform: translate3d(-24px, -22px, -36px) scale(0.92);
-  z-index: 9;
-  opacity: 0.72;
-  filter: blur(0.4px);
+  transform: translate3d(85px, -16px, -90px) scale(0.86) rotateY(-22deg);
+  z-index: 6;
+  opacity: 0.68;
+  filter: blur(5px) brightness(0.75);
+  border-color: rgba(200, 164, 93, 0.25);
   pointer-events: auto;
 }
 
 .lx-stack-card--pos-1:hover {
-  opacity: 0.9;
-  transform: translate3d(-20px, -20px, -24px) scale(0.94);
+  opacity: 0.88;
+  filter: blur(1.5px) brightness(0.9);
+  transform: translate3d(75px, -12px, -60px) scale(0.9) rotateY(-16deg);
 }
 
+/* POS 2: Far-Back Orbit Center — Deepest point in the 3D circle, heavily blurred */
 .lx-stack-card--pos-2 {
-  transform: translate3d(-46px, -42px, -72px) scale(0.85);
-  z-index: 8;
+  transform: translate3d(0px, -34px, -180px) scale(0.74) rotateY(0deg);
+  z-index: 3;
   opacity: 0.42;
-  filter: blur(1.2px);
+  filter: blur(8px) brightness(0.5);
+  border-color: rgba(200, 164, 93, 0.15);
   pointer-events: auto;
 }
 
 .lx-stack-card--pos-2:hover {
-  opacity: 0.65;
+  opacity: 0.7;
+  filter: blur(3px) brightness(0.8);
+  transform: translate3d(0px, -26px, -130px) scale(0.8) rotateY(0deg);
 }
 
+/* POS 3: Left-Back Orbit — Angled left into depth, blurred */
 .lx-stack-card--pos-3 {
-  transform: translate3d(40px, -50px, 40px) scale(0.78);
-  z-index: 7;
-  opacity: 0;
-  pointer-events: none;
+  transform: translate3d(-85px, -16px, -90px) scale(0.86) rotateY(22deg);
+  z-index: 6;
+  opacity: 0.68;
+  filter: blur(5px) brightness(0.75);
+  border-color: rgba(200, 164, 93, 0.25);
+  pointer-events: auto;
+}
+
+.lx-stack-card--pos-3:hover {
+  opacity: 0.88;
+  filter: blur(1.5px) brightness(0.9);
+  transform: translate3d(-75px, -12px, -60px) scale(0.9) rotateY(16deg);
 }
 
 /* Floating Squircle Corner Badge (Direct match to Image 2) */
@@ -1661,7 +1686,7 @@
   color: #f3e5ab;
 }
 
-/* Stack Controls & Loop Indicator below cards */
+/* Stack Controls & Circular Loop Controls below cards */
 .lx-stack-controls {
   display: flex;
   align-items: center;
@@ -1671,10 +1696,48 @@
   padding: 0 4px;
 }
 
+.lx-stack-nav-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(200, 164, 93, 0.35);
+  box-shadow: 0 2px 10px rgba(10, 25, 38, 0.08);
+}
+
+.lx-stack-arrow-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--lx-navy);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.lx-stack-arrow-btn:hover {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--lx-emerald);
+  transform: scale(1.1);
+}
+
+.lx-stack-arrow-btn:active {
+  transform: scale(0.95);
+}
+
 .lx-stack-dots {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  padding: 0 2px;
 }
 
 .lx-stack-dot {
