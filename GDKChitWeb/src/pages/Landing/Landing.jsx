@@ -1833,69 +1833,10 @@ const Landing = () => {
         {/* ═══ Scene 08b — Testimonials: member voices & Right-to-Left Sliding Marquee ═══ */}
         <section className="lx-testimonials" id="testimonials" data-chapter data-theme="light">
           <header className="lx-testimonials__head">
-            <div className="lx-testimonials__badge-row lx-reveal">
-              <span className="lx-testimonials__eyebrow-chip">
-                <Sparkles size={13} className="lx-testimonials__sparkle-icon" aria-hidden="true" />
-                <span>Verified Community Voices</span>
-              </span>
-              <div className="lx-testimonials__aggregate" aria-label="Rated 4.98 out of 5 stars from over 500 members">
-                <div className="lx-testimonials__aggregate-stars">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <Star key={i} size={13} fill="currentColor" aria-hidden="true" />
-                  ))}
-                </div>
-                <strong className="lx-testimonials__aggregate-score">4.98 / 5.0</strong>
-                <span className="lx-testimonials__aggregate-count">(500+ Active Members)</span>
-              </div>
-            </div>
-
+            <p className="lx-eyebrow lx-reveal">What Our Members Say</p>
             <h2 className="lx-display lx-reveal" style={{ '--i': 1 }}>
-              Voices of Trust &amp; Shared Prosperity
+              Voices of Trust
             </h2>
-            <p className="lx-body lx-reveal" style={{ '--i': 2 }}>
-              From multi-generational family milestones to thriving local businesses, hear how our disciplined, transparent auctions have shaped financial success across Tamil Nadu since 1999.
-            </p>
-
-            {/* Interactive Speed & Direction Controls */}
-            <div className="lx-testimonials__controls lx-reveal" style={{ '--i': 3 }}>
-              <div className="lx-testimonials__status">
-                <span className="lx-testimonials__pulse-dot" aria-hidden="true" />
-                <span className="lx-testimonials__status-text">
-                  {isReviewsPaused || isReviewsHovered ? 'Paused for reading' : 'Continuous stream · Hover card to pause'}
-                </span>
-              </div>
-
-              <div className="lx-testimonials__btns">
-                <button
-                  type="button"
-                  className="lx-testimonials__btn"
-                  onClick={() => nudgeTestimonials(-1)}
-                  aria-label="Scroll testimonials backward"
-                  title="Previous testimonial"
-                >
-                  <ChevronLeft size={16} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="lx-testimonials__btn lx-testimonials__btn--toggle"
-                  onClick={() => setIsReviewsPaused((p) => !p)}
-                  aria-label={isReviewsPaused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
-                  title={isReviewsPaused ? 'Resume auto-sliding' : 'Pause auto-sliding'}
-                >
-                  {isReviewsPaused ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}
-                  <span className="lx-testimonials__btn-label">{isReviewsPaused ? 'Play' : 'Pause'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="lx-testimonials__btn"
-                  onClick={() => nudgeTestimonials(1)}
-                  aria-label="Scroll testimonials forward"
-                  title="Next testimonial"
-                >
-                  <ChevronRight size={16} aria-hidden="true" />
-                </button>
-              </div>
-            </div>
           </header>
 
           {/* Continuous Right-to-Left Infinite Slider */}
@@ -1908,7 +1849,7 @@ const Landing = () => {
           >
             <div
               className="lx-testimonials__track"
-              data-paused={isReviewsPaused || isReviewsHovered}
+              data-paused={isReviewsHovered}
             >
               {[...TESTIMONIALS, ...TESTIMONIALS].map((t, index) => (
                 <article
