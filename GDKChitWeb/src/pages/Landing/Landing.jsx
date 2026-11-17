@@ -35,6 +35,10 @@ import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { useAuth } from '../../context/AuthContext.jsx';
 import brandLogo from '../../assets/logo.png';
+import southIndianHeroFamily from '../../assets/Landing/south_indian_hero_family.jpg';
+import southIndianFamilyLegacy from '../../assets/Landing/south_indian_family_legacy.png';
+import southIndianBusinessCommunity from '../../assets/Landing/south_indian_business_community.jpg';
+import southIndianKuthuvilakkuCelebration from '../../assets/Landing/south_indian_kuthuvilakku_celebration.jpg';
 import GoldenRangoli from '../../assets/UserHomePage/GoldenRangoli.png';
 import GoldenRangoliWhite from '../../assets/UserHomePage/GoldenRangoli_White.png';
 import RangoliFlankGold from '../../assets/UserHomePage/RangoliFlankGold.png';
@@ -55,17 +59,22 @@ const STAR_PATH = "M 50 5 C 50 32 68 50 95 50 C 68 50 50 68 50 95 C 50 68 32 50 
    ══════════════════════════════════════════════════════════════════ */
 
 const PHOTO = {
-  hero: 8818741, // family gathered around the table at home
-  legacy: 8819141, // parents and their daughter in traditional dress
-  ledger: 14907378, // rupee notes and coins
-  circle: 8818580, // five members seated in a circle around a rangoli
-  night: 7686304, // sparklers lit at night
+  hero: southIndianHeroFamily, // wealthy, distinguished South Indian Tamil family in traditional silk pattu veshti & Kanchipuram silk saree
+  legacy: southIndianFamilyLegacy, // prosperous Tamil family securing their generational future
+  ledger: 14907378, // Indian rupee notes and coins on gold-standard financial ledger
+  circle: southIndianBusinessCommunity, // circle of prominent South Indian business leaders and entrepreneurs
+  night: southIndianKuthuvilakkuCelebration, // traditional South Indian brass Kuthuvilakku lamp celebration at twilight
 };
 
-const photoUrl = (id, width) =>
-  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=${width}`;
+const photoUrl = (src, width) => {
+  if (typeof src === 'string') return src;
+  return `https://images.pexels.com/photos/${src}/pexels-photo-${src}.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=${width}`;
+};
 
-const photoSet = (id, widths) => widths.map((w) => `${photoUrl(id, w)} ${w}w`).join(', ');
+const photoSet = (src, widths) => {
+  if (typeof src === 'string') return `${src} 1x`;
+  return widths.map((w) => `${photoUrl(src, w)} ${w}w`).join(', ');
+};
 
 /* ══════════════════════════════════════════════════════════════════
    CONTENT
@@ -126,7 +135,7 @@ const STORY = [
     body: 'GDK Chit Fund has built a legacy of financial empowerment over 25+ years, helping families save, invest, and access funds through transparent community-based financial solutions.',
     point: 'RBI Registered & Compliant',
     photo: PHOTO.legacy,
-    alt: 'Parents standing with their daughter in traditional dress',
+    alt: 'Prosperous South Indian family securing their future and celebrating financial milestone',
   },
   {
     eyebrow: 'Our Promise',
@@ -134,7 +143,7 @@ const STORY = [
     body: 'Auctions run in the open, every bid is recorded, and every dividend is shared fairly among the group. No hidden charges and no surprises — just numbers you can read.',
     point: 'Transparent Monthly Auctions',
     photo: PHOTO.ledger,
-    alt: 'Close-up of Indian rupee notes and coins',
+    alt: 'Indian rupee notes and coins on gold-standard financial ledger',
   },
   {
     eyebrow: 'Our Community',
@@ -142,7 +151,7 @@ const STORY = [
     body: 'A chit is more than savings. It is a circle of members who lift each other up — so when someone needs funds for a wedding, education or a new venture, the circle is ready.',
     point: 'Guaranteed On-time Payouts',
     photo: PHOTO.circle,
-    alt: 'Five members seated in a circle around a rangoli',
+    alt: 'Prominent South Indian business leaders and community members in financial discussion',
   },
 ];
 
@@ -1257,7 +1266,7 @@ const Landing = () => {
                   src={photoUrl(PHOTO.hero, 1800)}
                   srcSet={photoSet(PHOTO.hero, [900, 1400, 1800, 2400])}
                   sizes="100vw"
-                  alt="A family gathered around the table at home"
+                  alt="A wealthy, distinguished South Indian Tamil family in traditional silk attire"
                   width="1800"
                   height="1350"
                   decoding="async"
@@ -1520,7 +1529,7 @@ const Landing = () => {
                 src={photoUrl(PHOTO.night, 1600)}
                 srcSet={photoSet(PHOTO.night, [800, 1600, 2200])}
                 sizes="100vw"
-                alt=""
+                alt="Auspicious South Indian brass Kuthuvilakku lamp celebration"
                 loading="lazy"
                 decoding="async"
               />
