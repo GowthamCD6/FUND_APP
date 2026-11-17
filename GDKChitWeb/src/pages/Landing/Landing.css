@@ -1380,9 +1380,9 @@
 .lx-hero__center-plans {
   position: absolute;
   top: 50%;
-  left: clamp(450px, 40vw, 670px);
+  left: clamp(470px, 41vw, 700px);
   z-index: 4;
-  width: clamp(340px, 26vw, 420px);
+  width: clamp(370px, 28vw, 450px);
   opacity: clamp(0, calc(1 - var(--a) * 3), 1);
   transform: translate3d(
     calc(var(--a) * -720px),
@@ -1405,7 +1405,7 @@
 .lx-stack-viewport {
   position: relative;
   width: 100%;
-  height: 340px;
+  height: 380px;
   perspective: 1400px;
   perspective-origin: center center;
   transform-style: preserve-3d;
@@ -1415,13 +1415,13 @@
 .lx-orbit-card {
   position: absolute;
   inset: 0 auto auto 0;
-  width: clamp(235px, 18vw, 275px);
-  min-height: 188px;
+  width: clamp(265px, 20vw, 305px);
+  min-height: 215px;
   background: rgba(18, 16, 38, 0.95);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
-  padding: 16px 16px 14px;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 0, 0, 0.4);
+  border: 1.5px solid rgba(255, 255, 255, 0.13);
+  border-radius: 22px;
+  padding: 18px 18px 16px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.7), 0 0 24px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   color: #ffffff;
@@ -1442,44 +1442,44 @@
 */
 @keyframes lx-orbit-carousel-3d {
   0%, 100% {
-    transform: translate3d(45px, -30px, 30px) scale(1.0);
+    transform: translate3d(55px, -36px, 35px) scale(1.0);
     filter: blur(0px) brightness(1);
     opacity: 1;
     z-index: 10;
-    border-color: rgba(229, 193, 88, 0.75);
+    border-color: rgba(229, 193, 88, 0.8);
     box-shadow:
-      0 26px 54px -10px rgba(5, 7, 20, 0.95),
-      0 0 34px rgba(124, 58, 237, 0.32),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      0 30px 60px -10px rgba(5, 7, 20, 0.95),
+      0 0 38px rgba(124, 58, 237, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22);
     pointer-events: auto;
   }
   25% {
-    transform: translate3d(15px, 85px, 10px) scale(0.95);
+    transform: translate3d(20px, 102px, 12px) scale(0.96);
     filter: blur(0.5px) brightness(0.95);
     opacity: 0.94;
     z-index: 7;
-    border-color: rgba(234, 179, 8, 0.55);
+    border-color: rgba(234, 179, 8, 0.6);
     box-shadow:
-      0 20px 42px -8px rgba(5, 7, 20, 0.85),
-      0 0 26px rgba(234, 179, 8, 0.22);
+      0 22px 46px -8px rgba(5, 7, 20, 0.88),
+      0 0 28px rgba(234, 179, 8, 0.25);
     pointer-events: auto;
   }
   50% {
-    transform: translate3d(-95px, 65px, -80px) scale(0.82);
+    transform: translate3d(-110px, 78px, -90px) scale(0.84);
     filter: blur(8px) brightness(0.5);
     opacity: 0.45;
     z-index: 2;
     border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
     pointer-events: none;
   }
   75% {
-    transform: translate3d(-85px, -45px, -70px) scale(0.85);
+    transform: translate3d(-100px, -52px, -80px) scale(0.86);
     filter: blur(7px) brightness(0.6);
     opacity: 0.55;
     z-index: 4;
     border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
     pointer-events: none;
   }
 }
@@ -1510,22 +1510,22 @@
 .lx-hero__center-plans:hover .lx-orbit-card:hover {
   border-color: rgba(229, 193, 88, 0.95);
   box-shadow:
-    0 32px 64px -8px rgba(5, 7, 20, 0.98),
-    0 0 38px rgba(200, 164, 93, 0.42);
+    0 34px 68px -8px rgba(5, 7, 20, 0.98),
+    0 0 42px rgba(200, 164, 93, 0.45);
 }
 
 /* Floating Squircle Badge */
 .lx-orbit-badge {
   position: absolute;
-  top: -13px;
-  left: -13px;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
+  top: -14px;
+  left: -14px;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
   display: grid;
   place-items: center;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
+  border: 1.8px solid rgba(255, 255, 255, 0.28);
   z-index: 5;
   transition: transform 0.3s ease;
 }
@@ -1540,13 +1540,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
-  padding-left: 20px;
+  margin-bottom: 10px;
+  padding-left: 22px;
 }
 
 .lx-orbit-title {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.01em;
@@ -1554,9 +1554,9 @@
 }
 
 .lx-orbit-pill {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 2.5px 8px;
   border-radius: 999px;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -1564,31 +1564,31 @@
 
 /* Card Body - Trendline */
 .lx-orbit-body--trend {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .lx-orbit-metric-row {
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .lx-orbit-sublabel {
   display: block;
-  font-size: 0.62rem;
+  font-size: 0.65rem;
   color: #94a3b8;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
 .lx-orbit-val-wrap {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 9px;
 }
 
 .lx-orbit-strike {
-  font-size: 0.84rem;
+  font-size: 0.92rem;
   color: #64748b;
   text-decoration: line-through;
   font-weight: 600;
@@ -1596,7 +1596,7 @@
 
 .lx-orbit-main-val {
   font-family: var(--lx-display);
-  font-size: 1.85rem;
+  font-size: 2.05rem;
   font-weight: 800;
   color: #ffffff;
   line-height: 1;
@@ -1606,7 +1606,7 @@
 .lx-orbit-graph svg {
   display: block;
   width: 100%;
-  height: 34px;
+  height: 38px;
   overflow: visible;
   filter: drop-shadow(0 2px 8px rgba(16, 185, 129, 0.45));
   margin-bottom: 4px;
@@ -1614,7 +1614,7 @@
 
 /* Card Body - Ranking */
 .lx-orbit-body--ranking {
-  margin: 6px 0;
+  margin: 8px 0;
 }
 
 .lx-rank-row {
@@ -1624,9 +1624,9 @@
   gap: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 8px 12px;
-  margin-bottom: 6px;
+  border-radius: 14px;
+  padding: 9px 14px;
+  margin-bottom: 7px;
 }
 
 .lx-rank-step {
@@ -1637,7 +1637,7 @@
 }
 
 .lx-rank-lbl {
-  font-size: 0.58rem;
+  font-size: 0.60rem;
   color: #94a3b8;
   font-weight: 700;
   text-transform: uppercase;
@@ -1653,25 +1653,25 @@
 }
 
 .lx-rank-pill.is-before {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   background: #23213d;
   color: #94a3b8;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .lx-rank-pill.is-now {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   background: #EAB308;
   color: #0f172a;
-  font-size: 1.05rem;
-  box-shadow: 0 0 14px rgba(234, 179, 8, 0.6);
+  font-size: 1.15rem;
+  box-shadow: 0 0 16px rgba(234, 179, 8, 0.65);
 }
 
 .lx-rank-tenure {
-  font-size: 0.64rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: #cbd5e1;
   letter-spacing: 0.02em;
@@ -1679,33 +1679,33 @@
 
 /* Card Body - Bars */
 .lx-orbit-body--bars {
-  margin: 8px 0;
+  margin: 10px 0;
 }
 
 .lx-bars-row {
   display: flex;
   align-items: flex-end;
-  gap: 14px;
-  margin-bottom: 6px;
+  gap: 16px;
+  margin-bottom: 7px;
 }
 
 .lx-bars-chart {
   display: flex;
   align-items: flex-end;
-  gap: 5px;
-  height: 32px;
+  gap: 6px;
+  height: 36px;
 }
 
 .lx-bar-col {
-  width: 7px;
-  border-radius: 3px;
+  width: 8px;
+  border-radius: 4px;
   background: #EA580C;
-  box-shadow: 0 0 8px rgba(234, 88, 12, 0.5);
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.55);
 }
 
 .lx-orbit-big-stat {
   font-family: var(--lx-display);
-  font-size: 2.1rem;
+  font-size: 2.3rem;
   font-weight: 800;
   color: #ffffff;
   line-height: 1;
@@ -1713,23 +1713,23 @@
 
 /* Card Body - Multiplier */
 .lx-orbit-body--multiplier {
-  margin: 8px 0;
+  margin: 10px 0;
 }
 
 .lx-mult-row {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  margin-bottom: 6px;
+  gap: 12px;
+  margin-bottom: 7px;
 }
 
 .lx-mult-val {
-  font-size: 2.3rem;
+  font-size: 2.5rem;
   color: #ffffff;
 }
 
 .lx-mult-tag {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: #a5b4fc;
   text-transform: uppercase;
@@ -1739,7 +1739,7 @@
 /* Caption & Sub-Footer */
 .lx-orbit-caption {
   margin: 0;
-  font-size: 0.62rem;
+  font-size: 0.66rem;
   color: #cbd5e1;
   line-height: 1.35;
   white-space: nowrap;
@@ -1751,13 +1751,13 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-top: 8px;
-  margin-top: 8px;
+  padding-top: 9px;
+  margin-top: 9px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .lx-orbit-plan-tag {
-  font-size: 0.62rem;
+  font-size: 0.66rem;
   font-weight: 700;
   color: #D4AF37;
   letter-spacing: 0.04em;
