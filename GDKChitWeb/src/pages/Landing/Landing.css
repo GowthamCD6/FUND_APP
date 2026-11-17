@@ -607,13 +607,14 @@
   inset: 0 0 auto;
   z-index: 100;
   height: var(--lx-header);
-  color: var(--lx-navy);
-  border-bottom: 1px solid rgba(200, 164, 93, 0.18);
-  background: rgba(250, 248, 242, 0.82);
-  backdrop-filter: blur(18px) saturate(180%);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  color: var(--lx-ivory);
+  border-bottom: 1.5px solid rgba(200, 164, 93, 0.35);
+  background: rgba(10, 25, 38, 0.96);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   transform: none !important; /* Always keep header visible while scrolling */
   transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
 .lx-nav::after {
@@ -622,10 +623,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(200, 164, 93, 0.35) 20%, rgba(229, 193, 88, 0.75) 50%, rgba(200, 164, 93, 0.35) 80%, transparent 100%);
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent 0%, rgba(200, 164, 93, 0.4) 20%, rgba(229, 193, 88, 0.9) 50%, rgba(200, 164, 93, 0.4) 80%, transparent 100%);
   pointer-events: none;
-  opacity: 0.85;
+  opacity: 0.95;
 }
 
 .lx-nav[data-hidden='true'] {
@@ -633,9 +634,9 @@
 }
 
 .lx-nav[data-scrolled='true'] {
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom-color: rgba(200, 164, 93, 0.28);
-  box-shadow: 0 10px 32px -10px rgba(20, 43, 59, 0.09);
+  background: rgba(8, 20, 32, 0.98);
+  border-bottom-color: rgba(200, 164, 93, 0.45);
+  box-shadow: 0 10px 32px -10px rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(20px) saturate(190%);
   -webkit-backdrop-filter: blur(20px) saturate(190%);
 }
@@ -775,16 +776,10 @@
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: #D4AF37;
-  line-height: 1.2;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
-  transition: color 0.3s ease;
-}
-
-.lx[data-nav-theme='dark'] .lx-nav .lx-brand__tamil,
-.lx[data-menu='true'] .lx-nav .lx-brand__tamil {
   color: #F3E5AB;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: color 0.3s ease;
 }
 
 .lx-brand__name {
@@ -793,14 +788,9 @@
   font-weight: 800;
   letter-spacing: 0.07em;
   line-height: 1.15;
-  color: var(--lx-navy);
-  transition: color 0.3s ease;
-}
-
-.lx[data-nav-theme='dark'] .lx-nav .lx-brand__name,
-.lx[data-menu='true'] .lx-nav .lx-brand__name {
   color: #FFFFFF;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: color 0.3s ease;
 }
 
 .lx-nav__links {
@@ -809,18 +799,12 @@
   gap: 4px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(20, 43, 59, 0.04);
-  border: 1px solid rgba(200, 164, 93, 0.24);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(200, 164, 93, 0.3);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 2px 10px rgba(20, 43, 59, 0.03), inset 0 1px 1px rgba(255, 255, 255, 0.85);
-  transition: all 0.35s ease;
-}
-
-.lx[data-nav-theme='dark'] .lx-nav .lx-nav__links {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(200, 164, 93, 0.3);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  transition: all 0.35s ease;
 }
 
 .lx-nav__link {
@@ -828,7 +812,7 @@
   padding: 7px 16px;
   background: none;
   border: 0;
-  color: var(--lx-navy);
+  color: rgba(250, 248, 242, 0.85);
   font-family: var(--lx-sans);
   font-size: 0.83rem;
   font-weight: 600;
@@ -836,6 +820,11 @@
   cursor: pointer;
   border-radius: 999px;
   transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
+}
+
+.lx-nav__link:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .lx[data-nav-theme='dark'] .lx-nav .lx-nav__link {
@@ -1146,13 +1135,14 @@
   left: clamp(24px, 4vw, 56px);
   z-index: 3;
   width: min(36vw, 520px);
-  opacity: calc(1 - var(--a) * 1.5);
+  opacity: calc(1 - var(--a) * 4);
   transform: translate3d(calc(var(--a) * -3vw), calc(-50% - var(--a) * 20px), 0);
-  transition: opacity 0.25s ease;
+  transition: opacity 0.2s ease;
 }
 
 .lx-hero:not([data-step='0']) .lx-hero__copy {
-  pointer-events: none;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .lx-hero__heritage-tag {
@@ -1383,336 +1373,360 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   HERO CENTER ANIMATED PLANS CARD (Showcases all plans)
+   HERO CENTER 3D STACKED SPINS SHOWCASE (Matches Image 2)
    ══════════════════════════════════════════════════════════════════ */
 .lx-hero__center-plans {
   position: absolute;
   top: 50%;
-  left: clamp(470px, 40vw, 640px);
+  left: clamp(480px, 42vw, 680px);
   z-index: 4;
-  width: clamp(290px, 22vw, 345px);
-  opacity: calc(1 - var(--a) * 2.2);
-  transform: translate3d(calc(var(--a) * -2vw), calc(-50% - var(--a) * 20px), 0);
-  transition: opacity 0.25s ease;
+  width: clamp(290px, 22vw, 350px);
+  opacity: calc(1 - var(--a) * 4.5);
+  transform: translate3d(calc(var(--a) * -3vw), calc(-50% - var(--a) * 35px), 0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: auto;
 }
 
 .lx-hero:not([data-step='0']) .lx-hero__center-plans {
-  pointer-events: none;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important;
 }
 
-.lx-hplan-card {
+/* 3D Stack Perspective Viewport */
+.lx-stack-viewport {
   position: relative;
-  background: rgba(12, 28, 42, 0.94);
-  border: 1.5px solid rgba(200, 164, 93, 0.38);
+  width: 100%;
+  height: 250px;
+  perspective: 1200px;
+  perspective-origin: center center;
+}
+
+/* Base 3D Stack Card */
+.lx-stack-card {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 236px;
+  background: rgba(14, 28, 44, 0.95);
+  border: 1.5px solid rgba(200, 164, 93, 0.4);
   border-radius: 20px;
   padding: 16px 18px 14px;
   box-shadow:
-    0 24px 48px -12px rgba(10, 25, 38, 0.45),
-    0 0 28px rgba(200, 164, 93, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 24px 48px -12px rgba(10, 20, 32, 0.65),
+    0 0 24px rgba(200, 164, 93, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   color: #ffffff;
-  overflow: hidden;
-  transition: transform 0.3s var(--lx-ease), border-color 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.5s ease,
+    filter 0.5s ease,
+    border-color 0.3s ease,
+    box-shadow 0.4s ease;
 }
 
-.lx-hplan-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(200, 164, 93, 0.6);
+/* 3D Stack Depth Positions */
+.lx-stack-card--pos-0 {
+  transform: translate3d(0, 0, 0) scale(1);
+  z-index: 10;
+  opacity: 1;
+  filter: none;
+  pointer-events: auto;
+}
+
+.lx-stack-card--pos-0:hover {
+  transform: translate3d(0, -3px, 10px) scale(1.02);
+  border-color: rgba(229, 193, 88, 0.7);
   box-shadow:
-    0 28px 56px -12px rgba(10, 25, 38, 0.55),
-    0 0 36px rgba(200, 164, 93, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    0 28px 56px -12px rgba(10, 20, 32, 0.75),
+    0 0 36px rgba(200, 164, 93, 0.28);
+}
+
+.lx-stack-card--pos-1 {
+  transform: translate3d(-24px, -22px, -36px) scale(0.92);
+  z-index: 9;
+  opacity: 0.72;
+  filter: blur(0.4px);
+  pointer-events: auto;
+}
+
+.lx-stack-card--pos-1:hover {
+  opacity: 0.9;
+  transform: translate3d(-20px, -20px, -24px) scale(0.94);
+}
+
+.lx-stack-card--pos-2 {
+  transform: translate3d(-46px, -42px, -72px) scale(0.85);
+  z-index: 8;
+  opacity: 0.42;
+  filter: blur(1.2px);
+  pointer-events: auto;
+}
+
+.lx-stack-card--pos-2:hover {
+  opacity: 0.65;
+}
+
+.lx-stack-card--pos-3 {
+  transform: translate3d(40px, -50px, 40px) scale(0.78);
+  z-index: 7;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Floating Squircle Corner Badge (Direct match to Image 2) */
+.lx-stack-badge {
+  position: absolute;
+  top: -14px;
+  left: -14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.45),
+    0 0 12px rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  z-index: 5;
+  transition: transform 0.3s ease;
+}
+
+.lx-stack-card:hover .lx-stack-badge {
+  transform: scale(1.08) rotate(4deg);
 }
 
 /* Card Header */
-.lx-hplan-head {
+.lx-stack-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  padding-left: 24px; /* clearance for floating squircle badge */
 }
 
-.lx-hplan-status {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.lx-hplan-pulse {
-  position: relative;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #10b981;
-}
-
-.lx-hplan-pulse::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: 50%;
-  background: rgba(16, 185, 129, 0.4);
-  animation: lx-pulse-ring 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
-}
-
-@keyframes lx-pulse-ring {
-  0% { transform: scale(0.8); opacity: 0.8; }
-  50% { transform: scale(1.8); opacity: 0; }
-  100% { transform: scale(0.8); opacity: 0; }
-}
-
-.lx-hplan-status-text {
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #94a3b8;
-}
-
-.lx-hplan-badge {
-  font-size: 0.64rem;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: rgba(200, 164, 93, 0.18);
-  border: 1px solid rgba(200, 164, 93, 0.4);
-  color: #f3e5ab;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-/* Plan Tabs */
-.lx-hplan-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  background: rgba(15, 34, 50, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  padding: 3px;
-  margin-bottom: 12px;
-}
-
-.lx-hplan-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 2px;
-  border-radius: 7px;
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-  transition: all 0.25s var(--lx-ease);
-}
-
-.lx-hplan-tab:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.lx-hplan-tab.is-active {
-  background: linear-gradient(135deg, rgba(200, 164, 93, 0.28) 0%, rgba(200, 164, 93, 0.12) 100%);
-  border: 1px solid rgba(200, 164, 93, 0.45);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-.lx-hplan-tab-title {
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.lx-hplan-tab-amt {
-  font-family: var(--lx-sans);
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #f3e5ab;
-}
-
-/* Plan Content / Values with Smooth Fade */
-.lx-hplan-content {
-  animation: lx-hplan-fade 0.35s var(--lx-ease) both;
-}
-
-@keyframes lx-hplan-fade {
-  from {
-    opacity: 0.3;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.lx-hplan-hero-val {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.lx-hplan-sublabel {
-  display: block;
-  font-size: 0.62rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #94a3b8;
-  margin-bottom: 2px;
-}
-
-.lx-hplan-big-num {
-  margin: 0;
-  font-family: var(--lx-display);
-  font-size: clamp(1.4rem, 2vw, 1.85rem);
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.lx-hplan-group-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 90px;
-}
-
-.lx-hplan-progress-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.lx-hplan-progress-label {
-  font-size: 0.58rem;
-  color: #94a3b8;
-  text-transform: uppercase;
-}
-
-.lx-hplan-progress-val {
-  font-size: 0.68rem;
-  color: #10b981;
-  font-weight: 700;
-}
-
-.lx-hplan-progress-track {
-  width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.lx-hplan-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-  border-radius: 999px;
-  transition: width 0.4s var(--lx-ease);
-}
-
-/* Metric Items 3-col */
-.lx-hplan-grid {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 12px;
-  background: rgba(15, 34, 50, 0.65);
-  padding: 8px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.lx-hplan-item {
+.lx-stack-meta {
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
-.lx-hplan-item-label {
-  font-size: 0.58rem;
-  color: #94a3b8;
-  letter-spacing: 0.02em;
-}
-
-.lx-hplan-item-val {
-  font-family: var(--lx-display);
-  font-size: 0.86rem;
+.lx-stack-name {
+  margin: 0;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #ffffff;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
-.lx-hplan-divider {
-  width: 1px;
-  height: 22px;
-  background: rgba(255, 255, 255, 0.1);
-  flex-shrink: 0;
+.lx-stack-total-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #D4AF37;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-/* Foot Action & Ticker */
-.lx-hplan-foot {
+.lx-stack-yield-pill {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* Main Metric (like Stockout rate 32% in Image 2) */
+.lx-stack-metric {
+  margin-bottom: 10px;
+}
+
+.lx-stack-metric-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.lx-stack-sublabel {
+  font-size: 0.62rem;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lx-stack-enrolled {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.lx-stack-val-row {
+  display: flex;
+  align-items: baseline;
   gap: 8px;
 }
 
-.lx-hplan-action {
-  display: inline-flex;
+.lx-stack-big-val {
+  font-family: var(--lx-display);
+  font-size: clamp(1.5rem, 2.2vw, 1.95rem);
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.lx-stack-term {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* Glowing Dividend Curve Graph (exact match to green graph line in Image 2) */
+.lx-stack-graph {
+  margin-bottom: 12px;
+}
+
+.lx-stack-graph svg {
+  display: block;
+  width: 100%;
+  height: 38px;
+  overflow: visible;
+  filter: drop-shadow(0 2px 8px rgba(16, 185, 129, 0.45));
+}
+
+.lx-stack-caption {
+  margin: 4px 0 0;
+  font-size: 0.62rem;
+  color: #cbd5e1;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Card Footer */
+.lx-stack-foot {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  padding: 8px 12px;
-  font-size: 0.72rem;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lx-stack-enrolled-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.64rem;
+  color: #94a3b8;
+}
+
+.lx-stack-dot-live {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.lx-stack-payout {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.lx-stack-payout-label {
+  font-size: 0.58rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.lx-stack-payout-val {
+  font-family: var(--lx-sans);
+  font-size: 0.78rem;
   font-weight: 700;
   color: #f3e5ab;
-  background: rgba(200, 164, 93, 0.12);
-  border: 1px solid rgba(200, 164, 93, 0.3);
-  border-radius: 8px;
+}
+
+/* Stack Controls & Loop Indicator below cards */
+.lx-stack-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 0 4px;
+}
+
+.lx-stack-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lx-stack-dot {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
   transition: all 0.25s ease;
 }
 
-.lx-hplan-action:hover {
-  background: rgba(200, 164, 93, 0.22);
-  border-color: var(--lx-gold);
-  color: #ffffff;
+.lx-stack-dot-inner {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(20, 43, 59, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.lx-hplan-ticker-track {
-  width: 100%;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.08);
+.lx-stack-dot.is-active .lx-stack-dot-inner {
+  width: 18px;
   border-radius: 999px;
-  overflow: hidden;
+  background: var(--lx-emerald);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
 
-.lx-hplan-ticker-fill {
-  width: 0%;
-  height: 100%;
-  background: linear-gradient(90deg, var(--lx-gold) 0%, #10b981 100%);
-  animation: lx-ticker-run 3.8s linear forwards;
+.lx-stack-calc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(200, 164, 93, 0.35);
+  color: var(--lx-navy);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.25s ease;
 }
 
-.lx-hplan-ticker-fill.is-paused {
-  animation-play-state: paused;
-}
-
-@keyframes lx-ticker-run {
-  0% { width: 0%; }
-  100% { width: 100%; }
+.lx-stack-calc-btn:hover {
+  background: #ffffff;
+  border-color: var(--lx-gold);
+  transform: translateY(-1px);
+  color: var(--lx-emerald);
 }
 
 
@@ -3473,27 +3487,22 @@
     gap: 12px;
   }
 
-  .lx-hplan-card {
+  .lx-stack-viewport {
+    height: 220px;
+  }
+
+  .lx-stack-card {
+    height: 215px;
     padding: 12px 14px 10px;
     border-radius: 16px;
   }
 
-  .lx-hplan-big-num {
-    font-size: 1.35rem;
+  .lx-stack-big-val {
+    font-size: 1.45rem;
   }
 
-  .lx-hplan-tabs {
-    margin-bottom: 8px;
-  }
-
-  .lx-hplan-hero-val {
-    margin-bottom: 8px;
-    padding-bottom: 8px;
-  }
-
-  .lx-hplan-grid {
-    margin-bottom: 8px;
-    padding: 6px 10px;
+  .lx-stack-graph svg {
+    height: 30px;
   }
 
   .lx-story__media {

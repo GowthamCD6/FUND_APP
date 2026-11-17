@@ -288,6 +288,73 @@ const PLANS = [
   },
 ];
 
+const STACK_PLANS = [
+  {
+    id: 1,
+    name: 'Standard Chit Circle',
+    badge: 'Popular',
+    yieldTag: '100% Escrow',
+    total: '₹1,00,000',
+    monthly: '₹5,000',
+    term: '20 Mos',
+    payout: '₹95,000',
+    enrolled: '19 / 20 Joined',
+    subtext: 'Guaranteed 24h bank wire disbursement on winning day',
+    color: '#10B981',
+    icon: ShieldCheck,
+    badgeBg: 'linear-gradient(135deg, #10B981 0%, #047857 100%)',
+    curvePath: 'M 0 32 Q 130 22, 260 6',
+  },
+  {
+    id: 2,
+    name: 'Silver Growth Circle',
+    badge: 'Best Value',
+    yieldTag: '+14% Return',
+    total: '₹2,00,000',
+    monthly: '₹10,000',
+    term: '20 Mos',
+    payout: '₹1,90,000',
+    enrolled: '18 / 20 Joined',
+    subtext: 'Zero hidden fees with live transparent member app bids',
+    color: '#3B82F6',
+    icon: Sparkles,
+    badgeBg: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+    curvePath: 'M 0 34 Q 130 20, 260 5',
+  },
+  {
+    id: 3,
+    name: 'Gold Wealth Circle',
+    badge: 'Trending',
+    yieldTag: 'High Dividend',
+    total: '₹3,00,000',
+    monthly: '₹15,000',
+    term: '20 Mos',
+    payout: '₹2,85,000',
+    enrolled: '17 / 20 Joined',
+    subtext: 'Monthly auction discount dividends shared across group',
+    color: '#F59E0B',
+    icon: Award,
+    badgeBg: 'linear-gradient(135deg, #F59E0B 0%, #B45309 100%)',
+    curvePath: 'M 0 30 Q 130 18, 260 4',
+  },
+  {
+    id: 4,
+    name: 'Platinum Elite Circle',
+    badge: 'Premium',
+    yieldTag: '₹4.75L Payout',
+    total: '₹5,00,000',
+    monthly: '₹25,000',
+    term: '20 Mos',
+    payout: '₹4,75,000',
+    enrolled: '16 / 20 Joined',
+    subtext: 'Maximum debt-free liquidity buffer for business & family',
+    color: '#8B5CF6',
+    icon: Zap,
+    badgeBg: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+    curvePath: 'M 0 35 Q 130 16, 260 3',
+  },
+];
+
 const FEATURES = [
   {
     title: 'RBI Registered',
@@ -1365,101 +1432,117 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* ═══ Center Animated Plans Showcase Card ═══ */}
+            {/* ═══ 3D Stack Spinning Loop Plans Showcase (like Image 2) ═══ */}
             <div
               className="lx-hero__center-plans lx-intro"
-              style={{ '--d': '680ms' }}
+              style={{ '--d': '640ms' }}
               onMouseEnter={() => setIsPlanHovered(true)}
               onMouseLeave={() => setIsPlanHovered(false)}
             >
-              <div className="lx-hplan-card">
-                {/* Header with live status and badge */}
-                <div className="lx-hplan-head">
-                  <div className="lx-hplan-status">
-                    <span className="lx-hplan-pulse" aria-hidden="true" />
-                    <span className="lx-hplan-status-text">Monthly Chit Circles</span>
-                  </div>
-                  <span className="lx-hplan-badge">{PLANS[activePlan].badge}</span>
-                </div>
+              <div className="lx-stack-viewport">
+                {STACK_PLANS.map((plan, idx) => {
+                  const offset = (idx - activePlan + STACK_PLANS.length) % STACK_PLANS.length;
+                  const IconComp = plan.icon;
+                  // Render cards up to depth 3
+                  if (offset > 2 && offset !== STACK_PLANS.length - 1) return null;
 
-                {/* Plan tabs: click to switch or auto-cycles */}
-                <div className="lx-hplan-tabs" role="tablist">
-                  {PLANS.map((plan, idx) => (
-                    <button
+                  return (
+                    <div
                       key={plan.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={activePlan === idx}
-                      className={`lx-hplan-tab ${activePlan === idx ? 'is-active' : ''}`}
+                      className={`lx-stack-card lx-stack-card--pos-${offset} ${offset === 0 ? 'is-front' : ''}`}
                       onClick={() => setActivePlan(idx)}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${plan.name} plan details`}
                     >
-                      <span className="lx-hplan-tab-title">{plan.name.replace(' Plan', '')}</span>
-                      <strong className="lx-hplan-tab-amt">{plan.total}</strong>
+                      {/* Floating Squircle Icon Badge on Top-Left Corner (exact match to Image 2) */}
+                      <div className="lx-stack-badge" style={{ background: plan.badgeBg }}>
+                        <IconComp size={18} color="#ffffff" aria-hidden="true" />
+                      </div>
+
+                      {/* Top Row: Plan Title & Positive Yield Pill */}
+                      <div className="lx-stack-head">
+                        <div className="lx-stack-meta">
+                          <h4 className="lx-stack-name">{plan.name}</h4>
+                          <span className="lx-stack-total-tag">Chit Pool {plan.total}</span>
+                        </div>
+                        <span className="lx-stack-yield-pill">{plan.yieldTag}</span>
+                      </div>
+
+                      {/* Primary Metric Row (like 'Stockout rate 32%' in Image 2) */}
+                      <div className="lx-stack-metric">
+                        <span className="lx-stack-metric-label">Monthly Fixed Instalment</span>
+                        <div className="lx-stack-metric-val-wrap">
+                          <strong className="lx-stack-metric-val">{plan.monthly}</strong>
+                          <span className="lx-stack-metric-tenure">/ month &middot; {plan.term}</span>
+                        </div>
+                      </div>
+
+                      {/* Glowing Dividend SVG Curve Graph (exact match to green graph line in Image 2) */}
+                      <div className="lx-stack-graph">
+                        <svg viewBox="0 0 260 42" preserveAspectRatio="none" aria-hidden="true">
+                          <defs>
+                            <linearGradient id={`curve-grad-${plan.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="#10B981" stopOpacity="0.45" />
+                              <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          <path
+                            d={`${plan.curvePath} L 260 42 L 0 42 Z`}
+                            fill={`url(#curve-grad-${plan.id})`}
+                          />
+                          <path
+                            d={plan.curvePath}
+                            fill="none"
+                            stroke="#10B981"
+                            strokeWidth="2.8"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <p className="lx-stack-caption">{plan.subtext}</p>
+                      </div>
+
+                      {/* Card Footer: Comparison stats & Action */}
+                      <div className="lx-stack-foot">
+                        <div className="lx-stack-enrolled-pill">
+                          <span className="lx-stack-dot-live" aria-hidden="true" />
+                          <span>{plan.enrolled}</span>
+                        </div>
+                        <div className="lx-stack-payout">
+                          <span className="lx-stack-payout-label">Guaranteed Payout</span>
+                          <strong className="lx-stack-payout-val">{plan.payout}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Stack Navigation & Loop Indicators */}
+              <div className="lx-stack-controls">
+                <div className="lx-stack-dots">
+                  {STACK_PLANS.map((p, i) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`lx-stack-dot ${activePlan === i ? 'is-active' : ''}`}
+                      onClick={() => setActivePlan(i)}
+                      aria-label={`Select ${p.name}`}
+                    >
+                      <span className="lx-stack-dot-inner" />
                     </button>
                   ))}
                 </div>
 
-                {/* Active Plan Animated Details */}
-                <div className="lx-hplan-content" key={PLANS[activePlan].id}>
-                  <div className="lx-hplan-hero-val">
-                    <div>
-                      <span className="lx-hplan-sublabel">Total Chit Value</span>
-                      <h3 className="lx-hplan-big-num">{PLANS[activePlan].total}</h3>
-                    </div>
-                    <div className="lx-hplan-group-progress">
-                      <div className="lx-hplan-progress-header">
-                        <span className="lx-hplan-progress-label">Group Enrolment</span>
-                        <strong className="lx-hplan-progress-val">
-                          {activePlan === 0 ? '19/20' : activePlan === 1 ? '18/20' : activePlan === 2 ? '17/20' : '16/20'}
-                        </strong>
-                      </div>
-                      <div className="lx-hplan-progress-track">
-                        <div
-                          className="lx-hplan-progress-fill"
-                          style={{
-                            width: activePlan === 0 ? '95%' : activePlan === 1 ? '90%' : activePlan === 2 ? '85%' : '80%',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="lx-hplan-grid">
-                    <div className="lx-hplan-item">
-                      <span className="lx-hplan-item-label">Monthly</span>
-                      <strong className="lx-hplan-item-val">{PLANS[activePlan].monthly}</strong>
-                    </div>
-                    <div className="lx-hplan-divider" aria-hidden="true" />
-                    <div className="lx-hplan-item">
-                      <span className="lx-hplan-item-label">Duration</span>
-                      <strong className="lx-hplan-item-val">{PLANS[activePlan].duration}</strong>
-                    </div>
-                    <div className="lx-hplan-divider" aria-hidden="true" />
-                    <div className="lx-hplan-item">
-                      <span className="lx-hplan-item-label">Max Payout</span>
-                      <strong className="lx-hplan-item-val">{PLANS[activePlan].returnAmount}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer Action & Auto-cycle Progress Line */}
-                <div className="lx-hplan-foot">
-                  <button
-                    type="button"
-                    className="lx-hplan-action"
-                    onClick={() => goToSection('calculator')}
-                  >
-                    <span>Calculate returns for {PLANS[activePlan].name}</span>
-                    <ChevronRight size={14} aria-hidden="true" />
-                  </button>
-
-                  <div className="lx-hplan-ticker-track" aria-hidden="true">
-                    <div
-                      key={`ticker-${activePlan}`}
-                      className={`lx-hplan-ticker-fill ${isPlanHovered ? 'is-paused' : ''}`}
-                    />
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  className="lx-stack-calc-btn"
+                  onClick={() => goToSection('calculator')}
+                >
+                  <Calculator size={13} aria-hidden="true" />
+                  <span>Calculate Returns</span>
+                  <ChevronRight size={13} aria-hidden="true" />
+                </button>
               </div>
             </div>
 
