@@ -679,11 +679,9 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
       }
 
       if (nav) {
-        nav.dataset.scrolled = String(y > 24);
-        if (Math.abs(y - lastY) > 25) {
-          nav.dataset.hidden = String(y > lastY && y > vh * 0.75);
-          lastY = y;
-        }
+        nav.dataset.scrolled = String(y > 20);
+        nav.dataset.hidden = 'false';
+        lastY = y;
       }
 
       if (motion) {
