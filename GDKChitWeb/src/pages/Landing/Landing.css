@@ -1061,10 +1061,10 @@
   --a: clamp(0, calc(var(--p, 0) / 0.45), 1);
   --b: clamp(0, calc((var(--p, 0) - 0.35) / 0.35), 1);
   --wt: calc(var(--lx-header) + 2.5vh);
-  --wr: 3.5vw;
+  --wr: 3vw;
   --wb: 5vh;
-  /* Balanced golden ratio split: 46vw left copy : 46.5vw right imagery */
-  --wl: 50vw;
+  /* Editorial split: Left copy + Center interactive plans card + Right imagery */
+  --wl: 54vw;
   --sx: calc((var(--wl) - var(--wr)) / 2);
   --sy: calc((var(--wt) - var(--wb)) / 2);
 
@@ -1143,9 +1143,9 @@
 .lx-hero__copy {
   position: absolute;
   top: 50%;
-  left: clamp(24px, 4.5vw, 64px);
+  left: clamp(24px, 4vw, 56px);
   z-index: 3;
-  width: min(46vw, 660px);
+  width: min(36vw, 520px);
   opacity: calc(1 - var(--a) * 1.5);
   transform: translate3d(calc(var(--a) * -3vw), calc(-50% - var(--a) * 20px), 0);
   transition: opacity 0.25s ease;
@@ -1380,6 +1380,339 @@
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   HERO CENTER ANIMATED PLANS CARD (Showcases all plans)
+   ══════════════════════════════════════════════════════════════════ */
+.lx-hero__center-plans {
+  position: absolute;
+  top: 50%;
+  left: clamp(470px, 40vw, 640px);
+  z-index: 4;
+  width: clamp(290px, 22vw, 345px);
+  opacity: calc(1 - var(--a) * 2.2);
+  transform: translate3d(calc(var(--a) * -2vw), calc(-50% - var(--a) * 20px), 0);
+  transition: opacity 0.25s ease;
+}
+
+.lx-hero:not([data-step='0']) .lx-hero__center-plans {
+  pointer-events: none;
+}
+
+.lx-hplan-card {
+  position: relative;
+  background: rgba(12, 28, 42, 0.94);
+  border: 1.5px solid rgba(200, 164, 93, 0.38);
+  border-radius: 20px;
+  padding: 16px 18px 14px;
+  box-shadow:
+    0 24px 48px -12px rgba(10, 25, 38, 0.45),
+    0 0 28px rgba(200, 164, 93, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  color: #ffffff;
+  overflow: hidden;
+  transition: transform 0.3s var(--lx-ease), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.lx-hplan-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(200, 164, 93, 0.6);
+  box-shadow:
+    0 28px 56px -12px rgba(10, 25, 38, 0.55),
+    0 0 36px rgba(200, 164, 93, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Card Header */
+.lx-hplan-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.lx-hplan-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.lx-hplan-pulse {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.lx-hplan-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.4);
+  animation: lx-pulse-ring 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+@keyframes lx-pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  50% { transform: scale(1.8); opacity: 0; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+
+.lx-hplan-status-text {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.lx-hplan-badge {
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(200, 164, 93, 0.18);
+  border: 1px solid rgba(200, 164, 93, 0.4);
+  color: #f3e5ab;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Plan Tabs */
+.lx-hplan-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: rgba(15, 34, 50, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 12px;
+}
+
+.lx-hplan-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+  border-radius: 7px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.25s var(--lx-ease);
+}
+
+.lx-hplan-tab:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.lx-hplan-tab.is-active {
+  background: linear-gradient(135deg, rgba(200, 164, 93, 0.28) 0%, rgba(200, 164, 93, 0.12) 100%);
+  border: 1px solid rgba(200, 164, 93, 0.45);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.lx-hplan-tab-title {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.lx-hplan-tab-amt {
+  font-family: var(--lx-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #f3e5ab;
+}
+
+/* Plan Content / Values with Smooth Fade */
+.lx-hplan-content {
+  animation: lx-hplan-fade 0.35s var(--lx-ease) both;
+}
+
+@keyframes lx-hplan-fade {
+  from {
+    opacity: 0.3;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lx-hplan-hero-val {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lx-hplan-sublabel {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.lx-hplan-big-num {
+  margin: 0;
+  font-family: var(--lx-display);
+  font-size: clamp(1.4rem, 2vw, 1.85rem);
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.lx-hplan-group-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 90px;
+}
+
+.lx-hplan-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.lx-hplan-progress-label {
+  font-size: 0.58rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.lx-hplan-progress-val {
+  font-size: 0.68rem;
+  color: #10b981;
+  font-weight: 700;
+}
+
+.lx-hplan-progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lx-hplan-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  border-radius: 999px;
+  transition: width 0.4s var(--lx-ease);
+}
+
+/* Metric Items 3-col */
+.lx-hplan-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  background: rgba(15, 34, 50, 0.65);
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lx-hplan-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.lx-hplan-item-label {
+  font-size: 0.58rem;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+}
+
+.lx-hplan-item-val {
+  font-family: var(--lx-display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.lx-hplan-divider {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+/* Foot Action & Ticker */
+.lx-hplan-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lx-hplan-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #f3e5ab;
+  background: rgba(200, 164, 93, 0.12);
+  border: 1px solid rgba(200, 164, 93, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.lx-hplan-action:hover {
+  background: rgba(200, 164, 93, 0.22);
+  border-color: var(--lx-gold);
+  color: #ffffff;
+}
+
+.lx-hplan-ticker-track {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lx-hplan-ticker-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--lx-gold) 0%, #10b981 100%);
+  animation: lx-ticker-run 3.8s linear forwards;
+}
+
+.lx-hplan-ticker-fill.is-paused {
+  animation-play-state: paused;
+}
+
+@keyframes lx-ticker-run {
+  0% { width: 0%; }
+  100% { width: 100%; }
 }
 
 
@@ -3140,6 +3473,29 @@
     gap: 12px;
   }
 
+  .lx-hplan-card {
+    padding: 12px 14px 10px;
+    border-radius: 16px;
+  }
+
+  .lx-hplan-big-num {
+    font-size: 1.35rem;
+  }
+
+  .lx-hplan-tabs {
+    margin-bottom: 8px;
+  }
+
+  .lx-hplan-hero-val {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+
+  .lx-hplan-grid {
+    margin-bottom: 8px;
+    padding: 6px 10px;
+  }
+
   .lx-story__media {
     height: 64vh;
   }
@@ -3209,6 +3565,7 @@
     transform: translate3d(0, calc(var(--a) * -8vh), 0);
   }
 
+  .lx-hero__center-plans,
   .lx-hero__cue {
     display: none;
   }

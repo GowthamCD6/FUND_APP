@@ -35,6 +35,7 @@ import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { useAuth } from '../../context/AuthContext.jsx';
 import brandLogo from '../../assets/logo.png';
+import southIndianRealHero from '../../assets/Landing/south_indian_real_hero.jpg';
 import southIndianHeroFamily from '../../assets/Landing/south_indian_hero_family.jpg';
 import southIndianFamilyLegacy from '../../assets/Landing/south_indian_family_legacy.png';
 import southIndianBusinessCommunity from '../../assets/Landing/south_indian_business_community.jpg';
@@ -59,7 +60,7 @@ const STAR_PATH = "M 50 5 C 50 32 68 50 95 50 C 68 50 50 68 50 95 C 50 68 32 50 
    ══════════════════════════════════════════════════════════════════ */
 
 const PHOTO = {
-  hero: southIndianHeroFamily, // wealthy, distinguished South Indian Tamil family in traditional silk pattu veshti & Kanchipuram silk saree
+  hero: southIndianRealHero, // Real authentic photograph: South Indian Tamil wedding celebration in traditional silk pattu veshti & Kanchipuram silk saree
   legacy: southIndianFamilyLegacy, // prosperous Tamil family securing their generational future
   ledger: 14907378, // Indian rupee notes and coins on gold-standard financial ledger
   circle: southIndianBusinessCommunity, // circle of prominent South Indian business leaders and entrepreneurs
@@ -853,6 +854,17 @@ const Landing = () => {
   const [isReviewsPaused, setIsReviewsPaused] = useState(false);
   const [isReviewsHovered, setIsReviewsHovered] = useState(false);
   const reviewsMarqueeRef = useRef(null);
+  const [activePlan, setActivePlan] = useState(0);
+  const [isPlanHovered, setIsPlanHovered] = useState(false);
+
+  /* Auto-cycle hero plans ticker */
+  useEffect(() => {
+    if (isPlanHovered) return;
+    const timer = setInterval(() => {
+      setActivePlan((prev) => (prev + 1) % PLANS.length);
+    }, 3800);
+    return () => clearInterval(timer);
+  }, [isPlanHovered]);
 
   const nudgeTestimonials = (direction) => {
     if (!reviewsMarqueeRef.current) return;
@@ -1349,6 +1361,104 @@ const Landing = () => {
                 <div className="lx-hero__proof-stat">
                   <strong>100%</strong>
                   <span>On-Time Payouts</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ═══ Center Animated Plans Showcase Card ═══ */}
+            <div
+              className="lx-hero__center-plans lx-intro"
+              style={{ '--d': '680ms' }}
+              onMouseEnter={() => setIsPlanHovered(true)}
+              onMouseLeave={() => setIsPlanHovered(false)}
+            >
+              <div className="lx-hplan-card">
+                {/* Header with live status and badge */}
+                <div className="lx-hplan-head">
+                  <div className="lx-hplan-status">
+                    <span className="lx-hplan-pulse" aria-hidden="true" />
+                    <span className="lx-hplan-status-text">Monthly Chit Circles</span>
+                  </div>
+                  <span className="lx-hplan-badge">{PLANS[activePlan].badge}</span>
+                </div>
+
+                {/* Plan tabs: click to switch or auto-cycles */}
+                <div className="lx-hplan-tabs" role="tablist">
+                  {PLANS.map((plan, idx) => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={activePlan === idx}
+                      className={`lx-hplan-tab ${activePlan === idx ? 'is-active' : ''}`}
+                      onClick={() => setActivePlan(idx)}
+                    >
+                      <span className="lx-hplan-tab-title">{plan.name.replace(' Plan', '')}</span>
+                      <strong className="lx-hplan-tab-amt">{plan.total}</strong>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Active Plan Animated Details */}
+                <div className="lx-hplan-content" key={PLANS[activePlan].id}>
+                  <div className="lx-hplan-hero-val">
+                    <div>
+                      <span className="lx-hplan-sublabel">Total Chit Value</span>
+                      <h3 className="lx-hplan-big-num">{PLANS[activePlan].total}</h3>
+                    </div>
+                    <div className="lx-hplan-group-progress">
+                      <div className="lx-hplan-progress-header">
+                        <span className="lx-hplan-progress-label">Group Enrolment</span>
+                        <strong className="lx-hplan-progress-val">
+                          {activePlan === 0 ? '19/20' : activePlan === 1 ? '18/20' : activePlan === 2 ? '17/20' : '16/20'}
+                        </strong>
+                      </div>
+                      <div className="lx-hplan-progress-track">
+                        <div
+                          className="lx-hplan-progress-fill"
+                          style={{
+                            width: activePlan === 0 ? '95%' : activePlan === 1 ? '90%' : activePlan === 2 ? '85%' : '80%',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lx-hplan-grid">
+                    <div className="lx-hplan-item">
+                      <span className="lx-hplan-item-label">Monthly</span>
+                      <strong className="lx-hplan-item-val">{PLANS[activePlan].monthly}</strong>
+                    </div>
+                    <div className="lx-hplan-divider" aria-hidden="true" />
+                    <div className="lx-hplan-item">
+                      <span className="lx-hplan-item-label">Duration</span>
+                      <strong className="lx-hplan-item-val">{PLANS[activePlan].duration}</strong>
+                    </div>
+                    <div className="lx-hplan-divider" aria-hidden="true" />
+                    <div className="lx-hplan-item">
+                      <span className="lx-hplan-item-label">Max Payout</span>
+                      <strong className="lx-hplan-item-val">{PLANS[activePlan].returnAmount}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Action & Auto-cycle Progress Line */}
+                <div className="lx-hplan-foot">
+                  <button
+                    type="button"
+                    className="lx-hplan-action"
+                    onClick={() => goToSection('calculator')}
+                  >
+                    <span>Calculate returns for {PLANS[activePlan].name}</span>
+                    <ChevronRight size={14} aria-hidden="true" />
+                  </button>
+
+                  <div className="lx-hplan-ticker-track" aria-hidden="true">
+                    <div
+                      key={`ticker-${activePlan}`}
+                      className={`lx-hplan-ticker-fill ${isPlanHovered ? 'is-paused' : ''}`}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
