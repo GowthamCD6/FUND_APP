@@ -1375,15 +1375,14 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   HERO CENTER 3D CONTINUOUS DIAMOND ORBIT SHOWCASE
-   (Diamond Shape: Top, Right, Bottom, Left with Smooth Continuous Motion)
+   HERO CENTER 3D ORBITAL CAROUSEL (Staggered 2x2 Depth Orbit)
    ══════════════════════════════════════════════════════════════════ */
 .lx-hero__center-plans {
   position: absolute;
   top: 50%;
-  left: clamp(470px, 42vw, 680px);
+  left: clamp(450px, 40vw, 670px);
   z-index: 4;
-  width: clamp(290px, 22vw, 345px);
+  width: clamp(340px, 26vw, 420px);
   opacity: clamp(0, calc(1 - var(--a) * 3), 1);
   transform: translate3d(
     calc(var(--a) * -720px),
@@ -1402,30 +1401,27 @@
   display: none !important;
 }
 
-/* 3D Stack Perspective Viewport with Diamond Orbit Depth */
+/* 3D Stack Perspective Viewport */
 .lx-stack-viewport {
   position: relative;
   width: 100%;
-  height: 310px;
+  height: 340px;
   perspective: 1400px;
   perspective-origin: center center;
   transform-style: preserve-3d;
 }
 
-/* Base 3D Stack Card */
-.lx-stack-card {
+/* Base 3D Orbital Card */
+.lx-orbit-card {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 242px;
-  background: rgba(14, 28, 44, 0.96);
-  border: 1.5px solid rgba(200, 164, 93, 0.4);
+  inset: 0 auto auto 0;
+  width: clamp(235px, 18vw, 275px);
+  min-height: 188px;
+  background: rgba(18, 16, 38, 0.95);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px;
-  padding: 16px 18px 14px;
-  box-shadow:
-    0 24px 48px -12px rgba(10, 20, 32, 0.65),
-    0 0 24px rgba(200, 164, 93, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  padding: 16px 16px 14px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   color: #ffffff;
@@ -1433,238 +1429,316 @@
   user-select: none;
   transform-style: preserve-3d;
   will-change: transform, filter, opacity;
+  animation: lx-orbit-carousel-3d 18s linear infinite;
 }
 
-/* ═══ Continuous Smooth Diamond Orbit Keyframes ═══ */
-/* 
-   Diamond Vertices (Top, Right, Bottom, Left):
-   • 0% & 100%: BOTTOM (Front Stage) — Closest to viewer, 100% sharp and crystal clear
-   • 25%: RIGHT VERTEX — Slanted into depth, right side
-   • 50%: TOP VERTEX (Far-Back) — Highest point, farthest away in depth, heavy blur
-   • 75%: LEFT VERTEX — Slanted into depth, left side
+/* ═══ 3D Orbital Carousel Keyframes (Staggered 2x2 Depth Orbit) ═══ */
+/*
+   Positions:
+   • 0% & 100%: Position 0 (Front Top-Right) — Primary Focus, fully sharp, z-index: 10
+   • 25%: Position 1 (Front Bottom-Center) — Secondary Focus, mostly sharp, z-index: 7
+   • 50%: Position 2 (Back Bottom-Left) — Heavy Gaussian blur (8px), dimmed, z-index: 2
+   • 75%: Position 3 (Back Top-Left) — Heavy Gaussian blur (7px), dimmed, z-index: 4
 */
-@keyframes lx-diamond-orbit {
-  0% {
-    transform: translate3d(0, 42px, 35px) scale(1) rotateX(0deg) rotateY(0deg);
+@keyframes lx-orbit-carousel-3d {
+  0%, 100% {
+    transform: translate3d(45px, -30px, 30px) scale(1.0);
     filter: blur(0px) brightness(1);
     opacity: 1;
     z-index: 10;
-    border-color: rgba(229, 193, 88, 0.85);
+    border-color: rgba(229, 193, 88, 0.75);
     box-shadow:
-      0 28px 56px -12px rgba(8, 18, 30, 0.85),
-      0 0 36px rgba(200, 164, 93, 0.28),
+      0 26px 54px -10px rgba(5, 7, 20, 0.95),
+      0 0 34px rgba(124, 58, 237, 0.32),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     pointer-events: auto;
   }
   25% {
-    transform: translate3d(105px, -14px, -65px) scale(0.85) rotateY(-22deg) rotateX(2deg);
-    filter: blur(5px) brightness(0.72);
-    opacity: 0.65;
-    z-index: 5;
-    border-color: rgba(200, 164, 93, 0.25);
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+    transform: translate3d(15px, 85px, 10px) scale(0.95);
+    filter: blur(0.5px) brightness(0.95);
+    opacity: 0.94;
+    z-index: 7;
+    border-color: rgba(234, 179, 8, 0.55);
+    box-shadow:
+      0 20px 42px -8px rgba(5, 7, 20, 0.85),
+      0 0 26px rgba(234, 179, 8, 0.22);
     pointer-events: auto;
   }
   50% {
-    transform: translate3d(0, -68px, -160px) scale(0.72) rotateX(-5deg) rotateY(0deg);
-    filter: blur(8.5px) brightness(0.45);
-    opacity: 0.36;
+    transform: translate3d(-95px, 65px, -80px) scale(0.82);
+    filter: blur(8px) brightness(0.5);
+    opacity: 0.45;
     z-index: 2;
-    border-color: rgba(200, 164, 93, 0.15);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    pointer-events: auto;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
   }
   75% {
-    transform: translate3d(-105px, -14px, -65px) scale(0.85) rotateY(22deg) rotateX(2deg);
-    filter: blur(5px) brightness(0.72);
-    opacity: 0.65;
-    z-index: 5;
-    border-color: rgba(200, 164, 93, 0.25);
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
-    pointer-events: auto;
-  }
-  100% {
-    transform: translate3d(0, 42px, 35px) scale(1) rotateX(0deg) rotateY(0deg);
-    filter: blur(0px) brightness(1);
-    opacity: 1;
-    z-index: 10;
-    border-color: rgba(229, 193, 88, 0.85);
-    box-shadow:
-      0 28px 56px -12px rgba(8, 18, 30, 0.85),
-      0 0 36px rgba(200, 164, 93, 0.28),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    pointer-events: auto;
+    transform: translate3d(-85px, -45px, -70px) scale(0.85);
+    filter: blur(7px) brightness(0.6);
+    opacity: 0.55;
+    z-index: 4;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    pointer-events: none;
   }
 }
 
-.lx-stack-card--diamond {
-  animation: lx-diamond-orbit 18s linear infinite;
-  animation-fill-mode: both;
-}
-
-/* Card 0: Starts at Bottom (Front, clear) */
-.lx-stack-card--diamond-0 {
+/* Staggered Orbit Delays for 2x2 Depth Grid */
+.lx-orbit-card--0 {
   animation-delay: 0s;
 }
 
-/* Card 1: Starts at Left (glides smoothly next to Bottom!) */
-.lx-stack-card--diamond-1 {
-  animation-delay: -13.5s;
-}
-
-/* Card 2: Starts at Top (Far Back) */
-.lx-stack-card--diamond-2 {
-  animation-delay: -9s;
-}
-
-/* Card 3: Starts at Right */
-.lx-stack-card--diamond-3 {
+.lx-orbit-card--1 {
   animation-delay: -4.5s;
 }
 
-/* Pause smoothly on hover or when toggle is active */
-.lx-hero__center-plans:hover .lx-stack-card,
-.lx-hero__center-plans[data-paused='true'] .lx-stack-card {
+.lx-orbit-card--2 {
+  animation-delay: -9s;
+}
+
+.lx-orbit-card--3 {
+  animation-delay: -13.5s;
+}
+
+/* Pause on Hover or State */
+.lx-hero__center-plans:hover .lx-orbit-card,
+.lx-hero__center-plans[data-paused='true'] .lx-orbit-card {
   animation-play-state: paused !important;
 }
 
-.lx-hero__center-plans:hover .lx-stack-card:hover {
+.lx-hero__center-plans:hover .lx-orbit-card:hover {
   border-color: rgba(229, 193, 88, 0.95);
   box-shadow:
-    0 34px 68px -10px rgba(8, 18, 30, 0.95),
-    0 0 44px rgba(200, 164, 93, 0.4);
+    0 32px 64px -8px rgba(5, 7, 20, 0.98),
+    0 0 38px rgba(200, 164, 93, 0.42);
 }
 
-/* Floating Squircle Corner Badge (Direct match to Image 2) */
-.lx-stack-badge {
+/* Floating Squircle Badge */
+.lx-orbit-badge {
   position: absolute;
-  top: -14px;
-  left: -14px;
-  width: 40px;
-  height: 40px;
+  top: -13px;
+  left: -13px;
+  width: 38px;
+  height: 38px;
   border-radius: 12px;
   display: grid;
   place-items: center;
-  box-shadow:
-    0 8px 18px rgba(0, 0, 0, 0.45),
-    0 0 12px rgba(255, 255, 255, 0.25);
-  border: 2px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
   z-index: 5;
   transition: transform 0.3s ease;
 }
 
-.lx-stack-card:hover .lx-stack-badge {
+.lx-orbit-card:hover .lx-orbit-badge {
   transform: scale(1.08) rotate(4deg);
 }
 
 /* Card Header */
-.lx-stack-head {
+.lx-orbit-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-  padding-left: 24px; /* clearance for floating squircle badge */
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-left: 20px;
 }
 
-.lx-stack-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.lx-stack-name {
+.lx-orbit-title {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
-.lx-stack-total-tag {
-  font-size: 0.62rem;
+.lx-orbit-pill {
+  font-size: 0.65rem;
   font-weight: 700;
-  color: #D4AF37;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.lx-stack-yield-pill {
-  font-size: 0.66rem;
-  font-weight: 700;
-  padding: 3px 9px;
+  padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(16, 185, 129, 0.18);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  color: #34d399;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
-/* Main Metric (like Stockout rate 32% in Image 2) */
-.lx-stack-metric {
-  margin-bottom: 10px;
+/* Card Body - Trendline */
+.lx-orbit-body--trend {
+  margin-bottom: 4px;
 }
 
-.lx-stack-metric-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+.lx-orbit-metric-row {
   margin-bottom: 2px;
 }
 
-.lx-stack-sublabel {
+.lx-orbit-sublabel {
+  display: block;
   font-size: 0.62rem;
   color: #94a3b8;
   font-weight: 600;
-  letter-spacing: 0.04em;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 1px;
 }
 
-.lx-stack-enrolled {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #10b981;
-}
-
-.lx-stack-val-row {
+.lx-orbit-val-wrap {
   display: flex;
   align-items: baseline;
   gap: 8px;
 }
 
-.lx-stack-big-val {
-  font-family: var(--lx-display);
-  font-size: clamp(1.5rem, 2.2vw, 1.95rem);
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.lx-stack-term {
-  font-size: 0.72rem;
-  color: #94a3b8;
+.lx-orbit-strike {
+  font-size: 0.84rem;
+  color: #64748b;
+  text-decoration: line-through;
   font-weight: 600;
 }
 
-/* Glowing Dividend Curve Graph (exact match to green graph line in Image 2) */
-.lx-stack-graph {
-  margin-bottom: 12px;
+.lx-orbit-main-val {
+  font-family: var(--lx-display);
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
-.lx-stack-graph svg {
+.lx-orbit-graph svg {
   display: block;
   width: 100%;
-  height: 38px;
+  height: 34px;
   overflow: visible;
   filter: drop-shadow(0 2px 8px rgba(16, 185, 129, 0.45));
+  margin-bottom: 4px;
 }
 
-.lx-stack-caption {
-  margin: 4px 0 0;
+/* Card Body - Ranking */
+.lx-orbit-body--ranking {
+  margin: 6px 0;
+}
+
+.lx-rank-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+}
+
+.lx-rank-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.lx-rank-lbl {
+  font-size: 0.58rem;
+  color: #94a3b8;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lx-rank-pill {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.lx-rank-pill.is-before {
+  width: 30px;
+  height: 30px;
+  background: #23213d;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.lx-rank-pill.is-now {
+  width: 36px;
+  height: 36px;
+  background: #EAB308;
+  color: #0f172a;
+  font-size: 1.05rem;
+  box-shadow: 0 0 14px rgba(234, 179, 8, 0.6);
+}
+
+.lx-rank-tenure {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  letter-spacing: 0.02em;
+}
+
+/* Card Body - Bars */
+.lx-orbit-body--bars {
+  margin: 8px 0;
+}
+
+.lx-bars-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+
+.lx-bars-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 32px;
+}
+
+.lx-bar-col {
+  width: 7px;
+  border-radius: 3px;
+  background: #EA580C;
+  box-shadow: 0 0 8px rgba(234, 88, 12, 0.5);
+}
+
+.lx-orbit-big-stat {
+  font-family: var(--lx-display);
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+}
+
+/* Card Body - Multiplier */
+.lx-orbit-body--multiplier {
+  margin: 8px 0;
+}
+
+.lx-mult-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.lx-mult-val {
+  font-size: 2.3rem;
+  color: #ffffff;
+}
+
+.lx-mult-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #a5b4fc;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Caption & Sub-Footer */
+.lx-orbit-caption {
+  margin: 0;
   font-size: 0.62rem;
   color: #cbd5e1;
   line-height: 1.35;
@@ -1673,49 +1747,21 @@
   text-overflow: ellipsis;
 }
 
-/* Card Footer */
-.lx-stack-foot {
+.lx-orbit-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: flex-end;
   padding-top: 8px;
+  margin-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.lx-stack-enrolled-pill {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.64rem;
-  color: #94a3b8;
-}
-
-.lx-stack-dot-live {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 6px #10b981;
-}
-
-.lx-stack-payout {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.lx-stack-payout-label {
-  font-size: 0.58rem;
-  color: #94a3b8;
-  text-transform: uppercase;
-}
-
-.lx-stack-payout-val {
-  font-family: var(--lx-sans);
-  font-size: 0.78rem;
+.lx-orbit-plan-tag {
+  font-size: 0.62rem;
   font-weight: 700;
-  color: #f3e5ab;
+  color: #D4AF37;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* Stack Controls & Circular Loop Controls below cards */

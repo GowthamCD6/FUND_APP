@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   Award,
+  Box,
   Building2,
   Calculator,
   Calendar,
@@ -16,6 +17,7 @@ import {
   HandCoins,
   Heart,
   HelpCircle,
+  ListOrdered,
   Lock,
   MapPin,
   MessageCircle,
@@ -288,70 +290,57 @@ const PLANS = [
   },
 ];
 
-const STACK_PLANS = [
+const ORBIT_CARDS = [
   {
-    id: 1,
-    name: 'Standard Chit Circle',
-    badge: 'Popular',
-    yieldTag: '100% Escrow',
-    total: '₹1,00,000',
-    monthly: '₹5,000',
-    term: '20 Mos',
-    payout: '₹95,000',
-    enrolled: '19 / 20 Joined',
-    subtext: 'Guaranteed 24h bank wire disbursement on winning day',
-    color: '#10B981',
-    icon: ShieldCheck,
-    badgeBg: 'linear-gradient(135deg, #10B981 0%, #047857 100%)',
-    curvePath: 'M 0 32 Q 130 22, 260 6',
+    id: 'operational',
+    badgeBg: '#7C3AED',
+    badgeIcon: Box,
+    title: 'Operational excellence',
+    badgePill: '-68%',
+    pillBg: 'rgba(16, 185, 129, 0.22)',
+    pillColor: '#34D399',
+    sublabel: 'Stockout rate',
+    beforeVal: '100%',
+    mainVal: '32%',
+    type: 'trendline',
+    caption: '68% reduction in stockouts',
+    planTag: 'Gold Plan · ₹3,00,000 Pool',
   },
   {
-    id: 2,
-    name: 'Silver Growth Circle',
-    badge: 'Best Value',
-    yieldTag: '+14% Return',
-    total: '₹2,00,000',
-    monthly: '₹10,000',
-    term: '20 Mos',
-    payout: '₹1,90,000',
-    enrolled: '18 / 20 Joined',
-    subtext: 'Zero hidden fees with live transparent member app bids',
-    color: '#3B82F6',
-    icon: Sparkles,
-    badgeBg: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
-    curvePath: 'M 0 34 Q 130 20, 260 5',
+    id: 'ranking',
+    badgeBg: '#EAB308',
+    badgeIcon: ListOrdered,
+    title: 'Product ranking',
+    type: 'ranking',
+    beforeRank: '#7',
+    tenure: '90 days',
+    nowRank: '#2',
+    caption: 'Product leaderboard position',
+    planTag: 'Platinum Elite · ₹5,00,000 Pool',
   },
   {
-    id: 3,
-    name: 'Gold Wealth Circle',
-    badge: 'Trending',
-    yieldTag: 'High Dividend',
-    total: '₹3,00,000',
-    monthly: '₹15,000',
-    term: '20 Mos',
-    payout: '₹2,85,000',
-    enrolled: '17 / 20 Joined',
-    subtext: 'Monthly auction discount dividends shared across group',
-    color: '#F59E0B',
-    icon: Award,
-    badgeBg: 'linear-gradient(135deg, #F59E0B 0%, #B45309 100%)',
-    curvePath: 'M 0 30 Q 130 18, 260 4',
+    id: 'multiplier',
+    badgeBg: '#4F46E5',
+    badgeIcon: Zap,
+    title: 'Revenue multiplier',
+    type: 'multiplier',
+    mainVal: '3.2x',
+    caption: 'Revenue growth multiplier',
+    planTag: 'Standard Plan · ₹1,00,000 Pool',
   },
   {
-    id: 4,
-    name: 'Platinum Elite Circle',
-    badge: 'Premium',
-    yieldTag: '₹4.75L Payout',
-    total: '₹5,00,000',
-    monthly: '₹25,000',
-    term: '20 Mos',
-    payout: '₹4,75,000',
-    enrolled: '16 / 20 Joined',
-    subtext: 'Maximum debt-free liquidity buffer for business & family',
-    color: '#8B5CF6',
-    icon: Zap,
-    badgeBg: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
-    curvePath: 'M 0 35 Q 130 16, 260 3',
+    id: 'efficiency',
+    badgeBg: '#EA580C',
+    badgeIcon: TrendingUp,
+    title: 'ROAS efficiency',
+    badgePill: '+57%',
+    pillBg: 'rgba(234, 88, 12, 0.22)',
+    pillColor: '#FB923C',
+    type: 'bars',
+    mainVal: '+57%',
+    bars: [8, 14, 18, 26],
+    caption: 'Quarter over quarter improvement',
+    planTag: 'Silver Plan · ₹2,00,000 Pool',
   },
 ];
 
@@ -1422,101 +1411,143 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* ═══ 3D Continuous Diamond Orbit Plans Showcase ═══ */}
+            {/* ═══ 3D Orbital Carousel (Staggered 2x2 Depth Orbit) ═══ */}
             <div
               className="lx-hero__center-plans lx-intro"
               style={{ '--d': '640ms' }}
               data-paused={isOrbitPaused ? 'true' : 'false'}
             >
               <div className="lx-stack-viewport">
-                {STACK_PLANS.map((plan, idx) => {
-                  const IconComp = plan.icon;
+                {ORBIT_CARDS.map((card, idx) => {
+                  const IconComp = card.badgeIcon;
 
                   return (
                     <div
-                      key={plan.id}
-                      className={`lx-stack-card lx-stack-card--diamond lx-stack-card--diamond-${idx}`}
+                      key={card.id}
+                      className={`lx-orbit-card lx-orbit-card--${idx} lx-orbit-card--${card.type}`}
                       onClick={() => goToSection('plans')}
                       role="button"
                       tabIndex={0}
-                      aria-label={`${plan.name} plan details - click to explore chit plans`}
+                      aria-label={`${card.title} - click to explore chit fund plans`}
                     >
-                      {/* Floating Squircle Icon Badge on Top-Left Corner */}
-                      <div className="lx-stack-badge" style={{ background: plan.badgeBg }}>
-                        <IconComp size={18} color="#ffffff" aria-hidden="true" />
+                      {/* Floating Squircle Badge on Top-Left Corner */}
+                      <div className="lx-orbit-badge" style={{ background: card.badgeBg }}>
+                        <IconComp size={17} color="#ffffff" aria-hidden="true" />
                       </div>
 
-                      {/* Top Row: Plan Title & Positive Yield Pill */}
-                      <div className="lx-stack-head">
-                        <div className="lx-stack-meta">
-                          <h4 className="lx-stack-name">{plan.name}</h4>
-                          <span className="lx-stack-total-tag">Chit Pool {plan.total}</span>
-                        </div>
-                        <span className="lx-stack-yield-pill">{plan.yieldTag}</span>
+                      {/* Card Header: Title & Pill */}
+                      <div className="lx-orbit-head">
+                        <h4 className="lx-orbit-title">{card.title}</h4>
+                        {card.badgePill && (
+                          <span
+                            className="lx-orbit-pill"
+                            style={{ background: card.pillBg, color: card.pillColor }}
+                          >
+                            {card.badgePill}
+                          </span>
+                        )}
                       </div>
 
-                      {/* Primary Metric Row */}
-                      <div className="lx-stack-metric">
-                        <span className="lx-stack-metric-label">Monthly Fixed Instalment</span>
-                        <div className="lx-stack-metric-val-wrap">
-                          <strong className="lx-stack-metric-val">{plan.monthly}</strong>
-                          <span className="lx-stack-metric-tenure">/ month &middot; {plan.term}</span>
+                      {/* Card Body by Format */}
+                      {card.type === 'trendline' && (
+                        <div className="lx-orbit-body lx-orbit-body--trend">
+                          <div className="lx-orbit-metric-row">
+                            <span className="lx-orbit-sublabel">{card.sublabel}</span>
+                            <div className="lx-orbit-val-wrap">
+                              <span className="lx-orbit-strike">{card.beforeVal}</span>
+                              <strong className="lx-orbit-main-val">{card.mainVal}</strong>
+                            </div>
+                          </div>
+                          <div className="lx-orbit-graph">
+                            <svg viewBox="0 0 220 38" preserveAspectRatio="none" aria-hidden="true">
+                              <defs>
+                                <linearGradient id="op-line-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.3" />
+                                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                                </linearGradient>
+                              </defs>
+                              <path
+                                d="M 0 6 Q 110 32 220 34 L 220 38 L 0 38 Z"
+                                fill="url(#op-line-grad)"
+                              />
+                              <path
+                                d="M 0 6 Q 110 32 220 34"
+                                fill="none"
+                                stroke="#10B981"
+                                strokeWidth="2.8"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                          </div>
+                          <p className="lx-orbit-caption">{card.caption}</p>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Glowing Dividend SVG Curve Graph */}
-                      <div className="lx-stack-graph">
-                        <svg viewBox="0 0 260 42" preserveAspectRatio="none" aria-hidden="true">
-                          <defs>
-                            <linearGradient id={`curve-grad-${plan.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#10B981" stopOpacity="0.45" />
-                              <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
-                            </linearGradient>
-                          </defs>
-                          <path
-                            d={`${plan.curvePath} L 260 42 L 0 42 Z`}
-                            fill={`url(#curve-grad-${plan.id})`}
-                          />
-                          <path
-                            d={plan.curvePath}
-                            fill="none"
-                            stroke="#10B981"
-                            strokeWidth="2.8"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <p className="lx-stack-caption">{plan.subtext}</p>
-                      </div>
+                      {card.type === 'ranking' && (
+                        <div className="lx-orbit-body lx-orbit-body--ranking">
+                          <div className="lx-rank-row">
+                            <div className="lx-rank-step">
+                              <span className="lx-rank-lbl">Before</span>
+                              <div className="lx-rank-pill is-before">{card.beforeRank}</div>
+                            </div>
+                            <div className="lx-rank-mid">
+                              <span className="lx-rank-tenure">→ {card.tenure} →</span>
+                            </div>
+                            <div className="lx-rank-step">
+                              <span className="lx-rank-lbl">Now</span>
+                              <div className="lx-rank-pill is-now">{card.nowRank}</div>
+                            </div>
+                          </div>
+                          <p className="lx-orbit-caption">{card.caption}</p>
+                        </div>
+                      )}
 
-                      {/* Card Footer: Comparison stats & Action */}
-                      <div className="lx-stack-foot">
-                        <div className="lx-stack-enrolled-pill">
-                          <span className="lx-stack-dot-live" aria-hidden="true" />
-                          <span>{plan.enrolled}</span>
+                      {card.type === 'bars' && (
+                        <div className="lx-orbit-body lx-orbit-body--bars">
+                          <div className="lx-bars-row">
+                            <div className="lx-bars-chart">
+                              {card.bars.map((h, bi) => (
+                                <div key={bi} className="lx-bar-col" style={{ height: `${h}px` }} />
+                              ))}
+                            </div>
+                            <strong className="lx-orbit-big-stat">{card.mainVal}</strong>
+                          </div>
+                          <p className="lx-orbit-caption">{card.caption}</p>
                         </div>
-                        <div className="lx-stack-payout">
-                          <span className="lx-stack-payout-label">Guaranteed Payout</span>
-                          <strong className="lx-stack-payout-val">{plan.payout}</strong>
+                      )}
+
+                      {card.type === 'multiplier' && (
+                        <div className="lx-orbit-body lx-orbit-body--multiplier">
+                          <div className="lx-mult-row">
+                            <strong className="lx-orbit-big-stat lx-mult-val">{card.mainVal}</strong>
+                            <span className="lx-mult-tag">Return Factor</span>
+                          </div>
+                          <p className="lx-orbit-caption">{card.caption}</p>
                         </div>
+                      )}
+
+                      {/* Card Sub-Footer: Plan Scheme tag */}
+                      <div className="lx-orbit-foot">
+                        <span className="lx-orbit-plan-tag">{card.planTag}</span>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Diamond Stream Status & Calculator Quick Action */}
+              {/* Orbital Controls & Status */}
               <div className="lx-stack-controls">
                 <div className="lx-diamond-status">
                   <span className={`lx-stack-dot-live ${isOrbitPaused ? 'is-paused' : ''}`} aria-hidden="true" />
                   <span className="lx-diamond-status-text">
-                    {isOrbitPaused ? 'Orbit Paused' : 'Continuous Stream'}
+                    {isOrbitPaused ? 'Orbit Paused' : '3D Orbital Stream'}
                   </span>
                   <button
                     type="button"
                     className="lx-diamond-pause-btn"
                     onClick={() => setIsOrbitPaused((prev) => !prev)}
-                    aria-label={isOrbitPaused ? 'Play diamond orbit' : 'Pause diamond orbit'}
-                    title={isOrbitPaused ? 'Play diamond orbit' : 'Pause diamond orbit'}
+                    aria-label={isOrbitPaused ? 'Resume 3D orbit' : 'Pause 3D orbit'}
+                    title={isOrbitPaused ? 'Resume 3D orbit' : 'Pause 3D orbit'}
                   >
                     {isOrbitPaused ? <Play size={11} /> : <Pause size={11} />}
                     <span>{isOrbitPaused ? 'Play' : 'Pause'}</span>
