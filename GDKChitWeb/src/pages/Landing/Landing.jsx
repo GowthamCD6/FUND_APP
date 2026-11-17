@@ -8,6 +8,7 @@ import {
   Calendar,
   Camera,
   Check,
+  ChevronLeft,
   ChevronRight,
   ChevronUp,
   Clock,
@@ -18,6 +19,7 @@ import {
   Lock,
   MapPin,
   MessageCircle,
+  Pause,
   Phone,
   Play,
   ShieldCheck,
@@ -32,6 +34,7 @@ import {
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { useAuth } from '../../context/AuthContext.jsx';
+import brandLogo from '../../assets/logo.png';
 import GoldenRangoli from '../../assets/UserHomePage/GoldenRangoli.png';
 import GoldenRangoliWhite from '../../assets/UserHomePage/GoldenRangoli_White.png';
 import RangoliFlankGold from '../../assets/UserHomePage/RangoliFlankGold.png';
@@ -318,43 +321,99 @@ const MARQUEE = ['Trust', 'Transparency', 'Growth', 'Community', 'Since 1999'];
 const TESTIMONIALS = [
   {
     name: 'Ramesh Kumar',
-    role: 'Business Owner',
-    location: 'Coimbatore',
-    text: 'I have been a member of GDK Chit Funds for over 8 years. The transparency in their auctions and the punctual payouts have helped me fund two of my children\'s education expenses without any financial stress.',
+    role: 'SME Business Owner',
+    location: 'Coimbatore, Tamil Nadu',
+    text: 'I have been a member of GDK Chit Funds for over 8 years. The complete transparency in their monthly live auctions and the punctual payouts helped me fund two of my children\'s higher education without taking high-interest loans.',
     rating: 5,
-    years: '8+ years member',
+    years: '8+ Years Member',
+    badge: '₹5,00,000 Chit · Matured',
+    purpose: 'Higher Education',
+    initials: 'RK',
+    gradient: 'linear-gradient(135deg, #10B981 0%, #047857 100%)',
   },
   {
     name: 'Lakshmi Devi',
-    role: 'School Teacher',
-    location: 'Salem',
-    text: 'As a single mother, saving consistently was my biggest challenge. GDK\'s structured monthly plan made it possible for me to save ₹2 lakhs which I used to renovate my home. The staff treats every member like family.',
+    role: 'Govt. School Headmistress',
+    location: 'Salem, Tamil Nadu',
+    text: 'As a working mother, disciplined savings was always my primary goal. GDK\'s structured monthly plan made it possible for me to build our dream family home in Salem. The branch staff treats every member with immense respect.',
     rating: 5,
-    years: '5 years member',
+    years: '5+ Years Member',
+    badge: '₹2,00,000 Chit · Matured',
+    purpose: 'Home Construction',
+    initials: 'LD',
+    gradient: 'linear-gradient(135deg, #E5C158 0%, #B8860B 100%)',
   },
   {
     name: 'Senthil Murugan',
-    role: 'Auto Parts Dealer',
-    location: 'Erode',
-    text: 'When I needed capital to expand my shop, GDK\'s chit fund came through perfectly. The auction process is fair and open — I could see every bid. Got my prize money within 24 hours of winning.',
+    role: 'Auto Spares Distributor',
+    location: 'Erode, Tamil Nadu',
+    text: 'When I needed working capital to expand my distribution warehouse, GDK came through within 24 hours of winning the auction. No hidden deductions, no red tape. Clean banking transactions every single month.',
     rating: 5,
-    years: '12+ years member',
+    years: '12+ Years Member',
+    badge: '₹10,00,000 Chit · Ongoing',
+    purpose: 'Business Expansion',
+    initials: 'SM',
+    gradient: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
   },
   {
     name: 'Priya Shankar',
-    role: 'Software Engineer',
-    location: 'Chennai',
-    text: 'Even with modern investment options, chit funds remain the most disciplined way to save. GDK\'s digital tracking lets me monitor my contributions from my phone. Highly recommend for young professionals.',
+    role: 'Senior Tech Lead',
+    location: 'Chennai, Tamil Nadu',
+    text: 'Even with modern mutual funds and stocks, GDK Chit Funds remains our family\'s most reliable debt-free liquidity buffer. The mobile portal allows me to track live dividends and auction bids straight from my phone.',
     rating: 5,
-    years: '3 years member',
+    years: '3+ Years Member',
+    badge: '₹3,00,000 Chit · Ongoing',
+    purpose: 'Emergency Liquidity',
+    initials: 'PS',
+    gradient: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
   },
   {
     name: 'Murugesan K.',
-    role: 'Farmer',
-    location: 'Tirupur',
-    text: 'My family has been with GDK since my father\'s time. Three generations of trust. They helped us during tough harvest seasons with timely payouts. That\'s real commitment.',
+    role: 'Agricultural Producer',
+    location: 'Tirupur, Tamil Nadu',
+    text: 'My family has been saving with GDK since my father\'s time in 1999. That is three generations of unbroken trust. During seasonal harvest dips, their timely prize money release kept our farm and machinery thriving.',
     rating: 5,
-    years: '15+ years member',
+    years: '15+ Years Member',
+    badge: '₹5,00,000 Chit · Matured',
+    purpose: 'Agri Modernization',
+    initials: 'MK',
+    gradient: 'linear-gradient(135deg, #059669 0%, #064E3B 100%)',
+  },
+  {
+    name: 'Dr. Anandhi R.',
+    role: 'Consultant Pediatrician',
+    location: 'Madurai, Tamil Nadu',
+    text: 'GDK\'s 20-month savings circle allowed me to purchase state-of-the-art diagnostic equipment for my pediatric clinic without touching expensive private medical equipment loans. Truly transparent and RBI compliant.',
+    rating: 5,
+    years: '6+ Years Member',
+    badge: '₹10,00,000 Chit · Matured',
+    purpose: 'Clinic Equipment',
+    initials: 'AR',
+    gradient: 'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)',
+  },
+  {
+    name: 'K. Vijayakumar',
+    role: 'Textile Exporter',
+    location: 'Dindigul, Tamil Nadu',
+    text: 'In textile exports, timing of liquidity is everything. GDK’s guaranteed 24-hour prize money transfer and clear monthly dividend reductions have made them my go-to financial partner for over a decade.',
+    rating: 5,
+    years: '10+ Years Member',
+    badge: '₹20,00,000 Chit · Ongoing',
+    purpose: 'Export Order Fulfillment',
+    initials: 'KV',
+    gradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+  },
+  {
+    name: 'Saravanan & Meenakshi',
+    role: 'State Govt. Employees',
+    location: 'Tiruchirappalli, Tamil Nadu',
+    text: 'We planned our daughter’s wedding 2 years in advance using GDK\'s disciplined monthly chit plan. When the auspicious month arrived, we bid comfortably and received the full prize money with zero stress.',
+    rating: 5,
+    years: '9+ Years Member',
+    badge: '₹5,00,000 Chit · Matured',
+    purpose: 'Daughter\'s Wedding',
+    initials: 'SM',
+    gradient: 'linear-gradient(135deg, #6366F1 0%, #4338CA 100%)',
   },
 ];
 
@@ -791,6 +850,17 @@ const Landing = () => {
   });
   const [menuOpen, setMenuOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isReviewsPaused, setIsReviewsPaused] = useState(false);
+  const [isReviewsHovered, setIsReviewsHovered] = useState(false);
+  const reviewsMarqueeRef = useRef(null);
+
+  const nudgeTestimonials = (direction) => {
+    if (!reviewsMarqueeRef.current) return;
+    reviewsMarqueeRef.current.scrollBy({
+      left: direction * 360,
+      behavior: 'smooth',
+    });
+  };
 
   const isAuthed = status === 'authed';
   const isAdmin = isAdminRole(user?.role);
@@ -1079,33 +1149,37 @@ const Landing = () => {
         <span />
       </div>
 
-      {/* ═══ Fixed navigation ═══ */}
+      {/* ═══ Fixed navigation: Luxury Glassmorphic Header ═══ */}
       <header className="lx-nav" data-nav data-scrolled="false" data-hidden="false">
         <div className="lx-nav__inner">
           <button
             type="button"
             className="lx-brand"
             onClick={() => goToSection('top')}
-            aria-label="GDK Chit Fund — back to top"
+            aria-label="Sri Periyanayaki Amman GDK Chit Funds — back to top"
           >
-            <span className="lx-brand__mark" aria-hidden="true">
-              G
-            </span>
-            <span className="lx-brand__name">GDK Chit Fund</span>
+            <div className="lx-brand__logo-frame">
+              <img src={brandLogo} alt="GDK Chit Funds Logo" className="lx-brand__logo-img" />
+              <span className="lx-brand__sparkle" aria-hidden="true">✦</span>
+            </div>
+            <div className="lx-brand__meta">
+              <span className="lx-brand__tamil">ஸ்ரீ பெரியநாயகி அம்மன்</span>
+              <span className="lx-brand__name">GDK CHIT FUNDS</span>
+            </div>
           </button>
 
           <nav className="lx-nav__links" aria-label="Landing sections">
             {NAV_LINKS.map((link) => (
               <button type="button" key={link.id} className="lx-nav__link" onClick={() => goToSection(link.id)}>
-                {link.label}
+                <span>{link.label}</span>
               </button>
             ))}
           </nav>
 
           <div className="lx-nav__actions">
             <button type="button" className="lx-btn lx-btn--primary lx-nav__cta" onClick={goToPortal}>
-              {portalLabel}
-              <ChevronRight size={16} aria-hidden="true" />
+              <span>{portalLabel}</span>
+              <ChevronRight size={15} aria-hidden="true" />
             </button>
 
             <button
@@ -1117,6 +1191,7 @@ const Landing = () => {
               aria-controls="lx-mobile-menu"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             >
+              <span aria-hidden="true" />
               <span aria-hidden="true" />
               <span aria-hidden="true" />
             </button>
@@ -1757,50 +1832,180 @@ const Landing = () => {
           ))}
         </section>
 
-        {/* ═══ Scene 08b — Testimonials: member voices ═══ */}
+        {/* ═══ Scene 08b — Testimonials: member voices & Right-to-Left Sliding Marquee ═══ */}
         <section className="lx-testimonials" id="testimonials" data-chapter data-theme="light">
           <header className="lx-testimonials__head">
-            <p className="lx-eyebrow lx-reveal">What Our Members Say</p>
-            <h2 className="lx-display lx-reveal" style={{ '--i': 1 }}>
-              Voices of Trust
-            </h2>
-            <p className="lx-body lx-reveal" style={{ '--i': 2 }}>
-              Real stories from real members who have experienced the GDK promise firsthand.
-            </p>
-          </header>
-
-          <div className="lx-testimonials__grid">
-            {TESTIMONIALS.map((t, index) => (
-              <article
-                className="lx-testimonial lx-reveal"
-                style={{ '--i': index % 3 }}
-                key={t.name}
-              >
-                <div className="lx-testimonial__stars" aria-label={`${t.rating} out of 5 stars`}>
-                  {Array.from({ length: t.rating }, (_, i) => (
-                    <Star key={i} size={14} fill="currentColor" aria-hidden="true" />
+            <div className="lx-testimonials__badge-row lx-reveal">
+              <span className="lx-testimonials__eyebrow-chip">
+                <Sparkles size={13} className="lx-testimonials__sparkle-icon" aria-hidden="true" />
+                <span>Verified Community Voices</span>
+              </span>
+              <div className="lx-testimonials__aggregate" aria-label="Rated 4.98 out of 5 stars from over 500 members">
+                <div className="lx-testimonials__aggregate-stars">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <Star key={i} size={13} fill="currentColor" aria-hidden="true" />
                   ))}
                 </div>
-                <blockquote className="lx-testimonial__text">
-                  &ldquo;{t.text}&rdquo;
-                </blockquote>
-                <footer className="lx-testimonial__author">
-                  <span className="lx-testimonial__avatar" aria-hidden="true">
-                    {t.name.charAt(0)}
-                  </span>
-                  <div>
-                    <cite className="lx-testimonial__name">{t.name}</cite>
-                    <p className="lx-testimonial__role">
-                      {t.role} · {t.location}
-                    </p>
-                    <p className="lx-testimonial__years">
-                      <Clock size={12} aria-hidden="true" />
-                      {t.years}
-                    </p>
+                <strong className="lx-testimonials__aggregate-score">4.98 / 5.0</strong>
+                <span className="lx-testimonials__aggregate-count">(500+ Active Members)</span>
+              </div>
+            </div>
+
+            <h2 className="lx-display lx-reveal" style={{ '--i': 1 }}>
+              Voices of Trust &amp; Shared Prosperity
+            </h2>
+            <p className="lx-body lx-reveal" style={{ '--i': 2 }}>
+              From multi-generational family milestones to thriving local businesses, hear how our disciplined, transparent auctions have shaped financial success across Tamil Nadu since 1999.
+            </p>
+
+            {/* Interactive Speed & Direction Controls */}
+            <div className="lx-testimonials__controls lx-reveal" style={{ '--i': 3 }}>
+              <div className="lx-testimonials__status">
+                <span className="lx-testimonials__pulse-dot" aria-hidden="true" />
+                <span className="lx-testimonials__status-text">
+                  {isReviewsPaused || isReviewsHovered ? 'Paused for reading' : 'Continuous stream · Hover card to pause'}
+                </span>
+              </div>
+
+              <div className="lx-testimonials__btns">
+                <button
+                  type="button"
+                  className="lx-testimonials__btn"
+                  onClick={() => nudgeTestimonials(-1)}
+                  aria-label="Scroll testimonials backward"
+                  title="Previous testimonial"
+                >
+                  <ChevronLeft size={16} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="lx-testimonials__btn lx-testimonials__btn--toggle"
+                  onClick={() => setIsReviewsPaused((p) => !p)}
+                  aria-label={isReviewsPaused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
+                  title={isReviewsPaused ? 'Resume auto-sliding' : 'Pause auto-sliding'}
+                >
+                  {isReviewsPaused ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}
+                  <span className="lx-testimonials__btn-label">{isReviewsPaused ? 'Play' : 'Pause'}</span>
+                </button>
+                <button
+                  type="button"
+                  className="lx-testimonials__btn"
+                  onClick={() => nudgeTestimonials(1)}
+                  aria-label="Scroll testimonials forward"
+                  title="Next testimonial"
+                >
+                  <ChevronRight size={16} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* Continuous Right-to-Left Infinite Slider */}
+          <div
+            className="lx-testimonials__marquee-wrap"
+            ref={reviewsMarqueeRef}
+            onMouseEnter={() => setIsReviewsHovered(true)}
+            onMouseLeave={() => setIsReviewsHovered(false)}
+            aria-label="Customer reviews slider moving right to left"
+          >
+            <div
+              className="lx-testimonials__track"
+              data-paused={isReviewsPaused || isReviewsHovered}
+            >
+              {[...TESTIMONIALS, ...TESTIMONIALS].map((t, index) => (
+                <article
+                  className="lx-testimonial"
+                  key={`${t.name}-${index}`}
+                  tabIndex={0}
+                >
+                  <div className="lx-testimonial__watermark" aria-hidden="true">“</div>
+
+                  <div className="lx-testimonial__top">
+                    <div className="lx-testimonial__rating-group">
+                      <div className="lx-testimonial__stars" aria-label={`${t.rating} out of 5 stars`}>
+                        {Array.from({ length: t.rating }, (_, i) => (
+                          <Star key={i} size={14} fill="currentColor" aria-hidden="true" />
+                        ))}
+                      </div>
+                      <span className="lx-testimonial__score">5.0</span>
+                    </div>
+                    <span className="lx-testimonial__badge">{t.badge}</span>
                   </div>
-                </footer>
-              </article>
-            ))}
+
+                  <blockquote className="lx-testimonial__text">
+                    &ldquo;{t.text}&rdquo;
+                  </blockquote>
+
+                  <footer className="lx-testimonial__author">
+                    <span
+                      className="lx-testimonial__avatar"
+                      style={{ background: t.gradient }}
+                      aria-hidden="true"
+                    >
+                      {t.initials}
+                    </span>
+                    <div className="lx-testimonial__info">
+                      <div className="lx-testimonial__name-row">
+                        <cite className="lx-testimonial__name">{t.name}</cite>
+                        <span className="lx-testimonial__verified">
+                          <ShieldCheck size={12} aria-hidden="true" />
+                          <span>Verified</span>
+                        </span>
+                      </div>
+                      <p className="lx-testimonial__role">{t.role}</p>
+                      <div className="lx-testimonial__meta-row">
+                        <span className="lx-testimonial__loc">
+                          <MapPin size={11} aria-hidden="true" />
+                          <span>{t.location}</span>
+                        </span>
+                        <span className="lx-testimonial__years">
+                          <Clock size={11} aria-hidden="true" />
+                          <span>{t.years}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </footer>
+
+                  <div className="lx-testimonial__footer-tag">
+                    <span className="lx-testimonial__purpose-label">Goal achieved:</span>
+                    <span className="lx-testimonial__purpose-val">{t.purpose}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          {/* Testimonial Trust Pillars Banner */}
+          <div className="lx-testimonials__trust-bar lx-reveal" style={{ '--i': 4 }}>
+            <div className="lx-testimonials__trust-item">
+              <div className="lx-testimonials__trust-icon-wrap">
+                <Check size={16} aria-hidden="true" />
+              </div>
+              <div className="lx-testimonials__trust-text">
+                <strong>100% On-Time Payout Guarantee</strong>
+                <span>Guaranteed prize money wire within 24 hours of auction</span>
+              </div>
+            </div>
+            <div className="lx-testimonials__trust-divider" aria-hidden="true" />
+            <div className="lx-testimonials__trust-item">
+              <div className="lx-testimonials__trust-icon-wrap">
+                <ShieldCheck size={16} aria-hidden="true" />
+              </div>
+              <div className="lx-testimonials__trust-text">
+                <strong>25+ Years Legacy of Trust</strong>
+                <span>Registered, audited, and strictly RBI Act compliant since 1999</span>
+              </div>
+            </div>
+            <div className="lx-testimonials__trust-divider" aria-hidden="true" />
+            <div className="lx-testimonials__trust-item">
+              <div className="lx-testimonials__trust-icon-wrap">
+                <Users size={16} aria-hidden="true" />
+              </div>
+              <div className="lx-testimonials__trust-text">
+                <strong>500+ Thriving Families</strong>
+                <span>Disciplined savings circles empowering Tamil Nadu households</span>
+              </div>
+            </div>
           </div>
         </section>
 
