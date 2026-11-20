@@ -39,7 +39,7 @@ import {
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { useAuth } from '../../context/AuthContext.jsx';
-import brandLogo from '../../assets/logo.png';
+import brandLogo from '../../assets/logo_crop.png';
 import southIndianRealHero from '../../assets/Landing/south_indian_real_hero.jpg';
 import southIndianHeroFamily from '../../assets/Landing/south_indian_hero_family.jpg';
 import southIndianFamilyLegacy from '../../assets/Landing/south_indian_family_legacy.png';
@@ -1227,10 +1227,7 @@ const Landing = () => {
             onClick={() => goToSection('top')}
             aria-label="Sri Periyanayaki Amman GDK Chit Funds — back to top"
           >
-            <div className="lx-brand__logo-frame">
-              <img src={brandLogo} alt="GDK Chit Funds Logo" className="lx-brand__logo-img" />
-              <span className="lx-brand__sparkle" aria-hidden="true">✦</span>
-            </div>
+            <img src={brandLogo} alt="GDK Chit Funds Emblem" className="lx-brand__logo-img" />
             <div className="lx-brand__meta">
               <span className="lx-brand__tamil">ஸ்ரீ பெரியநாயகி அம்மன்</span>
               <span className="lx-brand__name">GDK CHIT FUNDS</span>
