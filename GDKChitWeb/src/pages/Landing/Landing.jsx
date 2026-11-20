@@ -1415,7 +1415,6 @@ const Landing = () => {
             <div
               className="lx-hero__center-plans lx-intro"
               style={{ '--d': '640ms' }}
-              data-paused={isOrbitPaused ? 'true' : 'false'}
             >
               <div className="lx-stack-viewport">
                 {ORBIT_CARDS.map((card, idx) => {
@@ -1533,36 +1532,6 @@ const Landing = () => {
                     </div>
                   );
                 })}
-              </div>
-
-              {/* Orbital Controls & Status */}
-              <div className="lx-stack-controls">
-                <div className="lx-diamond-status">
-                  <span className={`lx-stack-dot-live ${isOrbitPaused ? 'is-paused' : ''}`} aria-hidden="true" />
-                  <span className="lx-diamond-status-text">
-                    {isOrbitPaused ? 'Orbit Paused' : '3D Orbital Stream'}
-                  </span>
-                  <button
-                    type="button"
-                    className="lx-diamond-pause-btn"
-                    onClick={() => setIsOrbitPaused((prev) => !prev)}
-                    aria-label={isOrbitPaused ? 'Resume 3D orbit' : 'Pause 3D orbit'}
-                    title={isOrbitPaused ? 'Resume 3D orbit' : 'Pause 3D orbit'}
-                  >
-                    {isOrbitPaused ? <Play size={11} /> : <Pause size={11} />}
-                    <span>{isOrbitPaused ? 'Play' : 'Pause'}</span>
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  className="lx-stack-calc-btn"
-                  onClick={() => goToSection('calculator')}
-                >
-                  <Calculator size={13} aria-hidden="true" />
-                  <span>Calculate Returns</span>
-                  <ChevronRight size={13} aria-hidden="true" />
-                </button>
               </div>
             </div>
 
