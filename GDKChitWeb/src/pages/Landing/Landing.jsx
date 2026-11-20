@@ -17,13 +17,16 @@ import {
   HandCoins,
   Heart,
   HelpCircle,
+  Layers,
   ListOrdered,
   Lock,
   MapPin,
   MessageCircle,
+  MessageSquareQuote,
   Pause,
   Phone,
   Play,
+  Route,
   ShieldCheck,
   Smartphone,
   Sparkles,
@@ -84,13 +87,13 @@ const photoSet = (src, widths) => {
    ══════════════════════════════════════════════════════════════════ */
 
 const NAV_LINKS = [
-  { id: 'about', label: 'About' },
-  { id: 'journey', label: 'How It Works' },
-  { id: 'plans', label: 'Plans' },
-  { id: 'calculator', label: 'Calculator' },
-  { id: 'features', label: 'Features' },
-  { id: 'platform', label: 'Digital App' },
-  { id: 'testimonials', label: 'Testimonials' },
+  { id: 'about', label: 'About', icon: ShieldCheck },
+  { id: 'journey', label: 'How It Works', icon: Route },
+  { id: 'plans', label: 'Plans', icon: Layers },
+  { id: 'calculator', label: 'Calculator', icon: Calculator },
+  { id: 'features', label: 'Features', icon: Sparkles },
+  { id: 'platform', label: 'Digital App', icon: Smartphone },
+  { id: 'testimonials', label: 'Testimonials', icon: MessageSquareQuote },
 ];
 
 const CHAPTERS = [
@@ -559,6 +562,7 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
 
     const nav = root.querySelector('[data-nav]');
     const railButtons = Array.from(root.querySelectorAll('[data-rail]'));
+    const navButtons = Array.from(root.querySelectorAll('[data-nav-link]'));
     const chapters = Array.from(root.querySelectorAll('[data-chapter]'));
     const themed = Array.from(root.querySelectorAll('[data-theme]'));
 
@@ -737,8 +741,15 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
         onScrollRef.current(y);
       }
 
+      const navTheme = probeTheme(40);
+      root.dataset.navTheme = navTheme;
+      root.dataset.railTheme = probeTheme(vh / 2);
+
       if (nav) {
-        nav.dataset.scrolled = String(y > 20);
+        const isPastHero = navTheme === 'dark' || y > 350;
+        nav.dataset.scrolled = String(isPastHero);
+        nav.dataset.pastHero = String(isPastHero);
+        nav.dataset.theme = navTheme;
         nav.dataset.hidden = 'false';
         lastY = y;
       }
@@ -748,9 +759,6 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
           updateScene(scene);
         });
       }
-
-      root.dataset.navTheme = probeTheme(40);
-      root.dataset.railTheme = probeTheme(vh / 2);
 
       let current = '';
       for (const chapter of chapters) {
@@ -765,6 +773,9 @@ const useScrollytelling = (rootRef, motion, lenisRef, onScrollUpdate) => {
         lastChapter = current;
         railButtons.forEach((button) => {
           button.dataset.active = String(button.dataset.rail === current);
+        });
+        navButtons.forEach((button) => {
+          button.dataset.active = String(button.dataset.navLink === current);
         });
       }
     };
@@ -1227,17 +1238,29 @@ const Landing = () => {
           </button>
 
           <nav className="lx-nav__links" aria-label="Landing sections">
-            {NAV_LINKS.map((link) => (
-              <button type="button" key={link.id} className="lx-nav__link" onClick={() => goToSection(link.id)}>
-                <span>{link.label}</span>
-              </button>
-            ))}
+            {NAV_LINKS.map((link) => {
+              const IconComp = link.icon;
+              return (
+                <button
+                  type="button"
+                  key={link.id}
+                  data-nav-link={link.id}
+                  className="lx-nav__link"
+                  onClick={() => goToSection(link.id)}
+                >
+                  {IconComp && (
+                    <IconComp size={15} strokeWidth={1.5} className="lx-nav__link-icon" aria-hidden="true" />
+                  )}
+                  <span>{link.label}</span>
+                </button>
+              );
+            })}
           </nav>
 
           <div className="lx-nav__actions">
             <button type="button" className="lx-btn lx-btn--primary lx-nav__cta" onClick={goToPortal}>
               <span>{portalLabel}</span>
-              <ChevronRight size={15} aria-hidden="true" />
+              <ChevronRight size={15} className="lx-nav__cta-icon" aria-hidden="true" />
             </button>
 
             <button
@@ -1260,21 +1283,37 @@ const Landing = () => {
       {menuOpen && (
         <div className="lx-menu" id="lx-mobile-menu">
           <nav className="lx-menu__links" aria-label="Mobile navigation">
-            {NAV_LINKS.map((link, index) => (
-              <button
-                type="button"
-                key={link.id}
-                className="lx-menu__link"
-                style={{ '--i': index }}
-                onClick={() => goToSection(link.id)}
-              >
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                {link.label}
-              </button>
-            ))}
+            {NAV_LINKS.map((link, index) => {
+              const IconComp = link.icon;
+              return (
+                <button
+                  type="button"
+                  key={link.id}
+                  className="lx-menu__link"
+                  style={{ '--i': index }}
+                  onClick={() => {
+                    goToSection(link.id);
+                    setMenuOpen(false);
+                  }}
+                >
+                  <span className="lx-menu__link-num">{String(index + 1).padStart(2, '0')}</span>
+                  {IconComp && (
+                    <IconComp size={18} strokeWidth={1.5} className="lx-menu__link-icon" aria-hidden="true" />
+                  )}
+                  <span className="lx-menu__link-label">{link.label}</span>
+                </button>
+              );
+            })}
           </nav>
 
-          <button type="button" className="lx-btn lx-btn--gold lx-menu__cta" onClick={goToPortal}>
+          <button
+            type="button"
+            className="lx-btn lx-btn--gold lx-menu__cta"
+            onClick={() => {
+              goToPortal();
+              setMenuOpen(false);
+            }}
+          >
             {portalLabel}
             <ChevronRight size={16} aria-hidden="true" />
           </button>
