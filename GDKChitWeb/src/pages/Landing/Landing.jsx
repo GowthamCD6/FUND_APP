@@ -897,16 +897,13 @@ const Landing = () => {
   const { user, status, isAdminRole } = useAuth();
 
   const rootRef = useRef(null);
+  const splashRef = useRef(null);
   const lenisRef = useRef(null);
   const loaderCountRef = useRef(null);
   const loaderBarRef = useRef(null);
 
   const reducedMotion = useReducedMotion();
   const motion = !reducedMotion;
-
-  const [rotationDeg, setRotationDeg] = useState(180);
-  const [goldWave, setGoldWave] = useState(0);
-  const [goldOpacity, setGoldOpacity] = useState(0);
 
   const [loaded, setLoaded] = useState(() => {
     if (prefersReducedMotion()) return true;
@@ -972,7 +969,31 @@ const Landing = () => {
     navigate(portalPath);
   };
 
-  /* ── Mobile-app style Splash Screen (2400ms ceremonial entrance) ── */
+  /* ── Asset Preloader: Prime splash mandalas & hero photograph beforehand ── */
+  useEffect(() => {
+    const assets = [
+      GoldenRangoliWhite,
+      GoldenRangoli,
+      RangoliFlankGoldWhite,
+      RangoliFlankGold,
+      ZoomGoldenRangoliWhite,
+      ZoomGoldenRangoli,
+      ZoomRangoliGoldWhite,
+      ZoomRangoliGold,
+      southIndianRealHero,
+      brandLogo,
+    ];
+
+    assets.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+      if (img.decode) {
+        img.decode().catch(() => {});
+      }
+    });
+  }, []);
+
+  /* ── Ultra-Smooth 60/120fps Splash Screen (Direct GPU CSS Variables - 0 React Re-renders) ── */
   useEffect(() => {
     if (loaded) return undefined;
 
@@ -986,16 +1007,21 @@ const Landing = () => {
       const t = clamp((now - start) / duration);
       const eased = easeOut(t);
 
-      // Rotating mandalas: 180deg to 270deg (exact match to ceremonial mobile entrance)
+      // Rotating mandalas: 180deg to 270deg
       const rot = 180 + eased * 90;
-      setRotationDeg(rot);
 
-      // White to Gold revelation wave:
-      // Begins as pure celestial silver-white, expands outward into 24K radiant temple gold
+      // Revelation wave
       const wave = clamp((t - 0.16) / 0.62);
       const easedWave = easeOut(wave);
-      setGoldWave(Math.round(easedWave * 125));
-      setGoldOpacity(Math.min(1, easedWave * 1.25));
+      const waveVal = Math.round(easedWave * 125);
+      const goldOp = Math.min(1, easedWave * 1.25);
+
+      // Update CSS variables directly on splash container (Zero React component re-renders!)
+      if (splashRef.current) {
+        splashRef.current.style.setProperty('--splash-rot', `${rot.toFixed(2)}deg`);
+        splashRef.current.style.setProperty('--splash-wave', `${waveVal}%`);
+        splashRef.current.style.setProperty('--splash-gold-op', goldOp.toFixed(3));
+      }
 
       if (loaderCountRef.current) loaderCountRef.current.textContent = String(Math.round(eased * 100));
       if (loaderBarRef.current) loaderBarRef.current.style.transform = `scaleX(${eased.toFixed(3)})`;
@@ -1070,6 +1096,7 @@ const Landing = () => {
       {/* ═══ Mobile App Authentic Splash Screen ═══ */}
       {!loaderGone && (
         <div
+          ref={splashRef}
           className="lx-splash"
           data-done={loaded}
           role="dialog"
@@ -1080,10 +1107,7 @@ const Landing = () => {
             {/* Multi-depth Rangoli Stage (4 Unique Sized Organic Rangolis with White-to-Gold Transition) */}
             <div className="lx-splash__rangoli-stage" aria-hidden="true">
               {/* Rangoli 1: Hero Crown Rangoli (Largest - Grand Sizing) */}
-              <div
-                className="lx-splash__rangoli-unit lx-splash__rangoli-unit--hero"
-                style={{ transform: `translate(-50%, -50%) rotate(${rotationDeg}deg)` }}
-              >
+              <div className="lx-splash__rangoli-unit lx-splash__rangoli-unit--hero">
                 <img
                   src={GoldenRangoliWhite}
                   alt=""
@@ -1093,19 +1117,11 @@ const Landing = () => {
                   src={GoldenRangoli}
                   alt=""
                   className="lx-splash__rangoli lx-splash__rangoli--gold"
-                  style={{
-                    clipPath: `circle(${goldWave}% at 50% 50%)`,
-                    WebkitClipPath: `circle(${goldWave}% at 50% 50%)`,
-                    opacity: goldOpacity,
-                  }}
                 />
               </div>
 
               {/* Rangoli 2: Top-Left Floating Rangoli (Medium-Large - Spacious Flank) */}
-              <div
-                className="lx-splash__rangoli-unit lx-splash__rangoli-unit--left"
-                style={{ transform: `translate(-50%, -50%) rotate(${-rotationDeg * 0.75}deg)` }}
-              >
+              <div className="lx-splash__rangoli-unit lx-splash__rangoli-unit--left">
                 <img
                   src={RangoliFlankGoldWhite}
                   alt=""
@@ -1115,19 +1131,11 @@ const Landing = () => {
                   src={RangoliFlankGold}
                   alt=""
                   className="lx-splash__rangoli lx-splash__rangoli--gold"
-                  style={{
-                    clipPath: `circle(${goldWave}% at 50% 50%)`,
-                    WebkitClipPath: `circle(${goldWave}% at 50% 50%)`,
-                    opacity: goldOpacity,
-                  }}
                 />
               </div>
 
               {/* Rangoli 3: Top-Right Floating Rangoli (Medium - Spacious Flank) */}
-              <div
-                className="lx-splash__rangoli-unit lx-splash__rangoli-unit--right"
-                style={{ transform: `translate(-50%, -50%) rotate(${rotationDeg * 0.65 + 45}deg)` }}
-              >
+              <div className="lx-splash__rangoli-unit lx-splash__rangoli-unit--right">
                 <img
                   src={ZoomGoldenRangoliWhite}
                   alt=""
@@ -1137,19 +1145,11 @@ const Landing = () => {
                   src={ZoomGoldenRangoli}
                   alt=""
                   className="lx-splash__rangoli lx-splash__rangoli--gold"
-                  style={{
-                    clipPath: `circle(${goldWave}% at 50% 50%)`,
-                    WebkitClipPath: `circle(${goldWave}% at 50% 50%)`,
-                    opacity: goldOpacity,
-                  }}
                 />
               </div>
 
               {/* Rangoli 4: Sacred Center Core Jewel (Smallest - Concentrated Radiance) */}
-              <div
-                className="lx-splash__rangoli-unit lx-splash__rangoli-unit--core"
-                style={{ transform: `translate(-50%, -50%) rotate(${-rotationDeg * 1.25}deg)` }}
-              >
+              <div className="lx-splash__rangoli-unit lx-splash__rangoli-unit--core">
                 <img
                   src={ZoomRangoliGoldWhite}
                   alt=""
@@ -1159,11 +1159,6 @@ const Landing = () => {
                   src={ZoomRangoliGold}
                   alt=""
                   className="lx-splash__rangoli lx-splash__rangoli--gold"
-                  style={{
-                    clipPath: `circle(${goldWave}% at 50% 50%)`,
-                    WebkitClipPath: `circle(${goldWave}% at 50% 50%)`,
-                    opacity: goldOpacity,
-                  }}
                 />
               </div>
             </div>

@@ -271,18 +271,23 @@
   align-items: center;
   justify-content: center;
   background-color: #1A0C38;
-  background: #1A0C38;
+  background: radial-gradient(circle at 50% 45%, #25124D 0%, #170932 55%, #0F0523 100%);
   color: #FAF8F2;
   overflow: hidden;
-  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.75s;
   cursor: default;
   user-select: none;
+  --splash-rot: 180deg;
+  --splash-wave: 0%;
+  --splash-gold-op: 0;
+  will-change: opacity, transform;
 }
 
 .lx-splash[data-done='true'] {
   opacity: 0;
   transform: scale(1.04);
   pointer-events: none;
+  visibility: hidden;
 }
 
 /* ── Main Centered Showcase Card ── */
@@ -332,14 +337,15 @@
 .lx-splash__rangoli--white {
   opacity: 0.95;
   filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
-  transition: opacity 0.4s ease;
 }
 
-/* Gold Transformation Layer: Radiant 24K Temple Gold (Crisp & High-Definition) */
+/* Gold Transformation Layer: Radiant 24K Temple Gold (Hardware-accelerated clip & opacity) */
 .lx-splash__rangoli--gold {
   filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5));
+  clip-path: circle(var(--splash-wave) at 50% 50%);
+  -webkit-clip-path: circle(var(--splash-wave) at 50% 50%);
+  opacity: var(--splash-gold-op);
   will-change: clip-path, opacity;
-  transition: opacity 0.25s ease;
 }
 
 /* Rangoli 1: Hero Crown Rangoli (Largest - Grand Sizing) */
@@ -349,6 +355,7 @@
   width: clamp(340px, 38vw, 520px);
   height: clamp(340px, 38vw, 520px);
   z-index: 2;
+  transform: translate(-50%, -50%) rotate(var(--splash-rot));
 }
 
 /* Rangoli 2: Top-Left Floating Rangoli (Medium-Large - Spacious Flank) */
@@ -358,6 +365,7 @@
   width: clamp(210px, 24vw, 330px);
   height: clamp(210px, 24vw, 330px);
   z-index: 1;
+  transform: translate(-50%, -50%) rotate(calc(var(--splash-rot) * -0.75));
 }
 
 /* Rangoli 3: Top-Right Floating Rangoli (Medium - Spacious Flank) */
@@ -367,6 +375,7 @@
   width: clamp(165px, 19vw, 260px);
   height: clamp(165px, 19vw, 260px);
   z-index: 1;
+  transform: translate(-50%, -50%) rotate(calc(var(--splash-rot) * 0.65 + 45deg));
 }
 
 /* Rangoli 4: Sacred Center Core Jewel (Smallest - Concentrated Radiance) */
@@ -376,6 +385,7 @@
   width: clamp(110px, 12vw, 160px);
   height: clamp(110px, 12vw, 160px);
   z-index: 3;
+  transform: translate(-50%, -50%) rotate(calc(var(--splash-rot) * -1.25));
 }
 
 /* ── Centered Content: Clean, Spacious Spacing ── */
