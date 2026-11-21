@@ -1743,10 +1743,12 @@ const Landing = () => {
                     </span>
 
                     <div className="lx-journey__content">
-                      <span className="lx-journey__icon" aria-hidden="true">
-                        <Icon size={22} />
-                      </span>
-                      <p className="lx-journey__when">{step.when}</p>
+                      <div className="lx-journey__top-row">
+                        <span className="lx-journey__icon" aria-hidden="true">
+                          <Icon size={20} />
+                        </span>
+                        <span className="lx-journey__when">{step.when}</span>
+                      </div>
                       <h3 className="lx-journey__title">{step.title}</h3>
                       <p className="lx-journey__text">{step.text}</p>
                     </div>

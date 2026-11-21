@@ -2370,9 +2370,9 @@
 .lx-journey__panel {
   position: relative;
   flex: 0 0 var(--card-w);
-  min-height: 320px;
-  padding: 38px 34px 34px;
-  border-radius: 24px;
+  min-height: 230px;
+  padding: 28px 28px 24px;
+  border-radius: 22px;
   overflow: hidden;
   background: linear-gradient(145deg, rgba(14, 30, 24, 0.85) 0%, rgba(8, 20, 16, 0.92) 100%);
   backdrop-filter: blur(20px);
@@ -2388,8 +2388,8 @@
   content: '';
   position: absolute;
   top: 0;
-  left: 24px;
-  right: 24px;
+  left: 20px;
+  right: 20px;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(200, 164, 93, 0.4), transparent);
   pointer-events: none;
@@ -2410,11 +2410,11 @@
 
 .lx-journey__num {
   position: absolute;
-  top: 26px;
-  right: 32px;
+  top: 20px;
+  right: 24px;
   font-family: var(--lx-display);
   font-optical-sizing: auto;
-  font-size: clamp(4.4rem, 6.8vw, 5.8rem);
+  font-size: clamp(3.8rem, 5.8vw, 4.8rem);
   font-weight: 300;
   line-height: 0.88;
   letter-spacing: -0.03em;
@@ -2439,17 +2439,24 @@
   flex-direction: column;
 }
 
+.lx-journey__top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .lx-journey__icon {
   display: grid;
   place-items: center;
-  width: 50px;
-  height: 50px;
-  border-radius: 15px;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
   background: linear-gradient(135deg, rgba(200, 164, 93, 0.16) 0%, rgba(16, 185, 129, 0.1) 100%);
   border: 1px solid rgba(200, 164, 93, 0.35);
   color: #FFD54F;
-  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.35);
-  margin-bottom: 18px;
+  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.35);
+  margin-bottom: 0;
   transition: transform 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease;
 }
 
@@ -2463,18 +2470,17 @@
 .lx-journey__when {
   display: inline-flex;
   align-items: center;
-  align-self: flex-start;
-  gap: 7px;
-  padding: 5px 13px;
+  gap: 6px;
+  padding: 5px 12px;
   border-radius: 999px;
   background: rgba(200, 164, 93, 0.12);
   border: 1px solid rgba(200, 164, 93, 0.28);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #E5C158;
-  margin: 0 0 14px;
+  margin: 0;
   white-space: nowrap;
 }
 
@@ -2488,11 +2494,11 @@
 }
 
 .lx-journey__title {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   font-family: var(--lx-display);
-  font-size: clamp(1.75rem, 2.4vw, 2.25rem);
+  font-size: clamp(1.65rem, 2.2vw, 2.05rem);
   font-weight: 500;
-  line-height: 1.24;
+  line-height: 1.22;
   letter-spacing: -0.015em;
   color: #FAF8F2;
   text-wrap: balance;
@@ -2501,11 +2507,11 @@
 
 .lx-journey__text {
   margin: 0;
-  font-size: 0.96rem;
-  line-height: 1.72;
-  color: rgba(250, 248, 242, 0.78);
+  font-size: 0.94rem;
+  line-height: 1.65;
+  color: rgba(250, 248, 242, 0.8);
   font-weight: 400;
-  max-width: 42ch;
+  max-width: 40ch;
 }
 
 .lx-journey__panel[data-active='true'] .lx-journey__text {
@@ -2606,10 +2612,12 @@
   align-items: center;
   gap: clamp(24px, 5vw, 64px);
   min-height: 0;
+  padding-top: clamp(20px, 3vh, 36px);
 }
 
 .lx-stats__numbers {
   display: grid;
+  overflow: visible;
 }
 
 .lx-stats__item {
@@ -2619,6 +2627,7 @@
   filter: blur(6px);
   transition: opacity 0.65s ease, transform 0.65s ease, filter 0.65s ease;
   pointer-events: none;
+  overflow: visible;
 }
 
 .lx-stats[data-step='0'] .lx-stats__item[data-index='0'],
@@ -2646,10 +2655,12 @@
   display: block;
   font-family: var(--lx-display);
   font-optical-sizing: auto;
-  font-size: clamp(4.6rem, 11vw, 10.5rem);
+  font-size: clamp(4.2rem, 9.8vw, 9.5rem);
   font-weight: 300;
-  line-height: 0.9;
-  letter-spacing: -0.04em;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  padding-top: 0.12em;
+  padding-bottom: 0.06em;
   background: linear-gradient(135deg, #091B15 0%, #154D3B 55%, #C8A45D 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -2657,7 +2668,7 @@
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
   white-space: nowrap;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 /* Category Eyebrow Badge */
