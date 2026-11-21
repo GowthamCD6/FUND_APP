@@ -2316,10 +2316,10 @@
   inset: 0;
   background: radial-gradient(
       ellipse at 50% 50%,
-      rgba(14, 33, 48, 0.25) 0%,
-      rgba(14, 33, 48, 0.88) 75%
+      rgba(8, 26, 19, 0.35) 0%,
+      rgba(6, 18, 14, 0.9) 78%
     ),
-    linear-gradient(180deg, rgba(14, 33, 48, 0.7) 0%, rgba(14, 33, 48, 0) 30%);
+    linear-gradient(180deg, rgba(6, 18, 14, 0.75) 0%, rgba(6, 18, 14, 0.15) 30%, rgba(6, 18, 14, 0.95) 100%);
 }
 
 .lx-journey__head {
@@ -2357,11 +2357,11 @@
 }
 
 .lx-journey__track {
-  --card-w: min(460px, 80vw);
+  --card-w: min(480px, 82vw);
   position: relative;
   z-index: 2;
   display: flex;
-  gap: clamp(20px, 4vw, 64px);
+  gap: clamp(24px, 4.5vw, 64px);
   width: max-content;
   padding: 0 calc(50vw - var(--card-w) / 2);
   will-change: transform;
@@ -2370,73 +2370,152 @@
 .lx-journey__panel {
   position: relative;
   flex: 0 0 var(--card-w);
-  min-height: 300px;
-  padding: 32px 30px 28px;
+  min-height: 330px;
+  padding: 40px 36px 36px;
+  border-radius: 24px;
   overflow: hidden;
-  background: rgba(20, 43, 59, 0.86);
-  border: 1px solid var(--lx-line-light);
+  background: linear-gradient(145deg, rgba(14, 30, 24, 0.82) 0%, rgba(8, 20, 16, 0.9) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.65);
   opacity: calc(1 - min(var(--ad, 0), 1.6) * 0.42);
-  transform: scale(calc(1 - min(var(--ad, 0), 1) * 0.1));
-  transition: border-color 0.5s ease, background-color 0.5s ease, transform 0.35s ease, opacity 0.35s ease;
+  transform: scale(calc(1 - min(var(--ad, 0), 1) * 0.08));
+  transition: border-color 0.45s ease, background 0.45s ease, transform 0.35s ease, opacity 0.35s ease, box-shadow 0.45s ease;
+}
+
+.lx-journey__panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200, 164, 93, 0.4), transparent);
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.45s ease, background 0.45s ease;
 }
 
 .lx-journey__panel[data-active='true'] {
-  background: rgba(23, 107, 80, 0.32);
-  border-color: rgba(200, 164, 93, 0.7);
+  background: linear-gradient(145deg, rgba(18, 54, 42, 0.92) 0%, rgba(9, 32, 24, 0.96) 100%);
+  border-color: rgba(229, 193, 88, 0.75);
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.8), 0 0 35px -5px rgba(16, 185, 129, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.lx-journey__panel[data-active='true']::before {
+  opacity: 1;
+  background: linear-gradient(90deg, transparent, rgba(229, 193, 88, 0.9), transparent);
 }
 
 .lx-journey__num {
   position: absolute;
-  top: -0.12em;
-  right: 18px;
+  bottom: 8px;
+  right: 24px;
+  top: auto;
   font-family: var(--lx-display);
-  font-size: clamp(7rem, 12vw, 10rem);
+  font-optical-sizing: auto;
+  font-size: clamp(6.2rem, 10.5vw, 8.8rem);
   font-weight: 300;
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(200, 164, 93, 0.5);
-  transform: translate3d(calc(var(--d, 0) * -70px), 0, 0);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  color: rgba(200, 164, 93, 0.035);
+  -webkit-text-stroke: 1.5px rgba(200, 164, 93, 0.28);
+  transform: translate3d(calc(var(--d, 0) * -35px), 0, 0);
   pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  transition: -webkit-text-stroke-color 0.45s ease, color 0.45s ease;
+}
+
+.lx-journey__panel[data-active='true'] .lx-journey__num {
+  color: rgba(229, 193, 88, 0.07);
+  -webkit-text-stroke: 1.5px rgba(229, 193, 88, 0.5);
 }
 
 .lx-journey__content {
   position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.lx-journey__top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
 }
 
 .lx-journey__icon {
   display: grid;
   place-items: center;
-  width: 50px;
-  height: 50px;
-  margin-bottom: 20px;
-  border: 1px solid rgba(200, 164, 93, 0.6);
-  border-radius: 50%;
-  color: var(--lx-gold);
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(200, 164, 93, 0.16) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border: 1px solid rgba(200, 164, 93, 0.35);
+  color: #FFD54F;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease;
+}
+
+.lx-journey__panel[data-active='true'] .lx-journey__icon {
+  border-color: rgba(229, 193, 88, 0.65);
+  color: #FFE082;
+  box-shadow: 0 10px 24px -4px rgba(16, 185, 129, 0.25), 0 0 16px rgba(229, 193, 88, 0.2);
+  transform: translateY(-2px);
 }
 
 .lx-journey__when {
-  margin: 0 0 10px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(200, 164, 93, 0.12);
+  border: 1px solid rgba(200, 164, 93, 0.3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--lx-gold);
+  color: #E5C158;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.lx-journey__when::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
 }
 
 .lx-journey__title {
-  margin: 0 0 10px;
+  margin: 0 0 14px;
   font-family: var(--lx-display);
-  font-size: clamp(1.7rem, 2.6vw, 2.3rem);
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  color: var(--lx-ivory);
+  font-size: clamp(1.8rem, 2.5vw, 2.35rem);
+  font-weight: 500;
+  line-height: 1.24;
+  letter-spacing: -0.015em;
+  color: #FAF8F2;
+  text-wrap: balance;
 }
 
 .lx-journey__text {
   margin: 0;
-  font-size: 0.97rem;
-  line-height: 1.7;
-  color: rgba(250, 248, 242, 0.72);
+  font-size: 0.98rem;
+  line-height: 1.72;
+  color: rgba(250, 248, 242, 0.78);
+  font-weight: 400;
+  max-width: 44ch;
+}
+
+.lx-journey__panel[data-active='true'] .lx-journey__text {
+  color: rgba(250, 248, 242, 0.92);
 }
 
 .lx-journey__ticks {
@@ -4053,16 +4132,31 @@
   }
 
   .lx-journey__panel {
-    min-height: 0;
+    min-height: 280px;
     padding: 28px 22px 24px;
+    border-radius: 20px;
   }
 
   .lx-journey__num {
-    font-size: 6rem;
+    font-size: clamp(4.5rem, 16vw, 6rem);
+    bottom: 6px;
+    right: 14px;
+  }
+
+  .lx-journey__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+  }
+
+  .lx-journey__title {
+    font-size: 1.55rem;
+    margin-bottom: 10px;
   }
 
   .lx-journey__text {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
+    line-height: 1.62;
   }
 
   .lx-journey__ticks {
