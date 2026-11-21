@@ -1608,11 +1608,11 @@ const Landing = () => {
         {/* ═══ Scene 02 — Manifesto: words light up as you read ═══ */}
         <section className="lx-manifesto" id="manifesto" data-scene="pin" data-chapter data-theme="light">
           <div className="lx-sticky lx-manifesto__sticky">
-            <span className="lx-manifesto__ghost" aria-hidden="true">
-              25
-            </span>
-
             <div className="lx-manifesto__inner">
+              <span className="lx-manifesto__ghost" aria-hidden="true">
+                25
+              </span>
+
               <p className="lx-eyebrow">Our Manifesto</p>
 
               <p className="lx-manifesto__text" style={{ '--n': MANIFESTO_WORDS.length }}>
