@@ -2328,8 +2328,95 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 16px 28px;
   padding: 0 var(--lx-gutter);
+}
+
+.lx-journey__head-main {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dynamic Interactive Scheme Simulator */
+.lx-journey__plans-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(8, 26, 19, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(200, 164, 93, 0.28);
+  border-radius: 999px;
+  padding: 4px 6px 4px 14px;
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.lx-journey__plans-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(229, 193, 88, 0.85);
+  white-space: nowrap;
+}
+
+.lx-journey__plans-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lx-journey__plan-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: rgba(250, 248, 242, 0.72);
+  line-height: 1.15;
+}
+
+.lx-journey__plan-btn:hover {
+  background: rgba(200, 164, 93, 0.12);
+  border-color: rgba(200, 164, 93, 0.3);
+  color: #FAF8F2;
+}
+
+.lx-journey__plan-btn.is-active {
+  background: linear-gradient(135deg, rgba(229, 193, 88, 0.25) 0%, rgba(16, 185, 129, 0.18) 100%);
+  border-color: rgba(229, 193, 88, 0.75);
+  color: #FAF8F2;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4), 0 0 14px rgba(229, 193, 88, 0.2);
+}
+
+.lx-journey__plan-lbl {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #FFF;
+}
+
+.lx-journey__plan-btn.is-active .lx-journey__plan-lbl {
+  color: #FFD54F;
+}
+
+.lx-journey__plan-sub {
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(250, 248, 242, 0.5);
+  margin-top: 1px;
+}
+
+.lx-journey__plan-btn.is-active .lx-journey__plan-sub {
+  color: rgba(250, 248, 242, 0.88);
 }
 
 .lx-journey__month {
@@ -2370,11 +2457,11 @@
 .lx-journey__panel {
   position: relative;
   flex: 0 0 var(--card-w);
-  min-height: 230px;
-  padding: 28px 28px 24px;
+  min-height: 290px;
+  padding: 24px 26px 22px;
   border-radius: 22px;
   overflow: hidden;
-  background: linear-gradient(145deg, rgba(14, 30, 24, 0.85) 0%, rgba(8, 20, 16, 0.92) 100%);
+  background: linear-gradient(145deg, rgba(14, 30, 24, 0.88) 0%, rgba(8, 20, 16, 0.94) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2410,11 +2497,11 @@
 
 .lx-journey__num {
   position: absolute;
-  top: 20px;
-  right: 24px;
+  top: 18px;
+  right: 22px;
   font-family: var(--lx-display);
   font-optical-sizing: auto;
-  font-size: clamp(3.8rem, 5.8vw, 4.8rem);
+  font-size: clamp(3.4rem, 5.2vw, 4.4rem);
   font-weight: 300;
   line-height: 0.88;
   letter-spacing: -0.03em;
@@ -2442,8 +2529,8 @@
 .lx-journey__top-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .lx-journey__icon {
@@ -2457,6 +2544,7 @@
   color: #FFD54F;
   box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.35);
   margin-bottom: 0;
+  flex-shrink: 0;
   transition: transform 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease;
 }
 
@@ -2493,29 +2581,136 @@
   box-shadow: 0 0 8px #10B981;
 }
 
+.lx-journey__badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(250, 248, 242, 0.65);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .lx-journey__title {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   font-family: var(--lx-display);
-  font-size: clamp(1.65rem, 2.2vw, 2.05rem);
+  font-size: clamp(1.45rem, 2vw, 1.85rem);
   font-weight: 500;
   line-height: 1.22;
   letter-spacing: -0.015em;
   color: #FAF8F2;
   text-wrap: balance;
-  max-width: 14ch;
 }
 
 .lx-journey__text {
   margin: 0;
-  font-size: 0.94rem;
-  line-height: 1.65;
+  font-size: 0.92rem;
+  line-height: 1.62;
   color: rgba(250, 248, 242, 0.8);
   font-weight: 400;
-  max-width: 40ch;
+  max-width: 44ch;
 }
 
 .lx-journey__panel[data-active='true'] .lx-journey__text {
   color: rgba(250, 248, 242, 0.92);
+}
+
+/* Dynamic Financial Strip */
+.lx-journey__metrics {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: center;
+  gap: 12px;
+  background: rgba(4, 14, 11, 0.65);
+  border: 1px solid rgba(200, 164, 93, 0.2);
+  border-radius: 12px;
+  padding: 9px 13px;
+  margin-top: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.lx-journey__metric-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lx-journey__metric-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(200, 164, 93, 0.25);
+}
+
+.lx-journey__metric-label {
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: rgba(250, 248, 242, 0.55);
+}
+
+.lx-journey__metric-val {
+  font-family: var(--lx-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #FAF8F2;
+  letter-spacing: -0.01em;
+  font-feature-settings: 'tnum' 1;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+.lx-journey__metric-val--accent {
+  color: #FFD54F;
+}
+
+.lx-journey__highlight {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: rgba(229, 193, 88, 0.9);
+}
+
+.lx-journey__highlight-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+  flex-shrink: 0;
+}
+
+@media (max-width: 992px) {
+  .lx-journey__head {
+    align-items: flex-start;
+  }
+  .lx-journey__plans-bar {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 16px;
+    padding: 6px 8px;
+  }
+  .lx-journey__plans-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .lx-journey__plans-label {
+    display: none;
+  }
+  .lx-journey__plans-tabs {
+    width: max-content;
+  }
 }
 
 .lx-journey__ticks {

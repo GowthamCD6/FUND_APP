@@ -155,44 +155,137 @@ const STORY = [
   },
 ];
 
-const JOURNEY = [
+const JOURNEY_PLANS = [
   {
-    when: 'Month 01',
-    title: 'Join a Group',
-    text: 'Choose a plan that fits your goals and join a group of members who contribute the same amount every month.',
-    icon: Users,
+    id: '5L',
+    label: '₹5 Lakh Chit',
+    monthly: '₹25,000',
+    tenure: '20 Months',
+    pool: '₹5,00,000',
+    chitValue: 500000,
+    monthlyBase: 25000,
+    maxDiscount: '₹1,50,000',
+    winnerRange: '₹3.50L – ₹4.85L',
+    avgDividend: '–₹3,325/mo',
+    netPayable: '₹21,675',
+    estGain: '+₹66,500',
+    roi: '11.4% p.a.',
+    tag: 'Most Popular',
   },
   {
-    when: 'Every Month',
-    title: 'Contribute Together',
-    text: 'Pay a fixed monthly instalment. Every contribution pools together to form the full chit value of the group.',
-    icon: HandCoins,
+    id: '10L',
+    label: '₹10 Lakh Chit',
+    monthly: '₹50,000',
+    tenure: '20 Months',
+    pool: '₹10,00,000',
+    chitValue: 1000000,
+    monthlyBase: 50000,
+    maxDiscount: '₹3,00,000',
+    winnerRange: '₹7.00L – ₹9.70L',
+    avgDividend: '–₹6,650/mo',
+    netPayable: '₹43,350',
+    estGain: '+₹1,33,000',
+    roi: '11.6% p.a.',
+    tag: 'Business Growth',
   },
   {
-    when: 'Monthly',
-    title: 'Transparent Auction',
-    text: 'Members who need funds bid openly. The member willing to take the highest discount wins that month’s prize money.',
-    icon: Building2,
+    id: '2L',
+    label: '₹2 Lakh Chit',
+    monthly: '₹10,000',
+    tenure: '20 Months',
+    pool: '₹2,00,000',
+    chitValue: 200000,
+    monthlyBase: 10000,
+    maxDiscount: '₹60,000',
+    winnerRange: '₹1.40L – ₹1.94L',
+    avgDividend: '–₹1,330/mo',
+    netPayable: '₹8,670',
+    estGain: '+₹26,600',
+    roi: '11.2% p.a.',
+    tag: 'Starter Circle',
   },
   {
-    when: 'Monthly',
-    title: 'Dividends Shared',
-    text: 'The discount from the winning bid is shared across the group as a dividend — lowering what everyone pays next.',
-    icon: TrendingUp,
-  },
-  {
-    when: 'On Winning',
-    title: 'Prize Payout',
-    text: 'The winning member receives the prize money promptly, ready for a wedding, education or a new venture.',
-    icon: ShieldCheck,
-  },
-  {
-    when: 'Month 20',
-    title: 'Maturity',
-    text: 'By the end of the term every member has received the chit value — saving with discipline, borrowing without stress.',
-    icon: Check,
+    id: '25L',
+    label: '₹25 Lakh Chit',
+    monthly: '₹1,25,000',
+    tenure: '20 Months',
+    pool: '₹25,00,000',
+    chitValue: 2500000,
+    monthlyBase: 125000,
+    maxDiscount: '₹7,50,000',
+    winnerRange: '₹17.50L – ₹24.25L',
+    avgDividend: '–₹16,625/mo',
+    netPayable: '₹1,08,375',
+    estGain: '+₹3,32,500',
+    roi: '11.8% p.a.',
+    tag: 'Commercial Scale',
   },
 ];
+
+const JOURNEY_STEPS = [
+  {
+    when: 'Month 01',
+    badge: 'Circle Formation',
+    title: 'Group Enrolment & Escrow',
+    text: '20 verified Tamil Nadu families or enterprises join a government-registered circle. A 100% bank-backed security deposit is placed with the Registrar before the circle begins.',
+    icon: Users,
+    getMetric1: (p) => ({ label: 'Total Pool', value: p.pool }),
+    getMetric2: (p) => ({ label: 'Base Instalment', value: `${p.monthly}/mo` }),
+    highlight: '100% Escrow & RBI Act 1982 Compliant',
+  },
+  {
+    when: 'Months 01–20',
+    badge: 'Disciplined Pooling',
+    title: 'Mutual Monthly Contribution',
+    text: 'Every member contributes their instalment before the 10th. Every rupee is recorded real-time in your mobile passbook, pooling the full prize fund transparently.',
+    icon: HandCoins,
+    getMetric1: (p) => ({ label: 'Monthly Pool Formed', value: p.pool }),
+    getMetric2: (p) => ({ label: 'App Passbook', value: 'Live UPI & RTGS' }),
+    highlight: 'Zero Late Fine If Paid by 10th',
+  },
+  {
+    when: 'Every 10th',
+    badge: 'Open Reverse Auction',
+    title: 'Transparent Live Auction',
+    text: 'Members needing capital bid down the prize openly (up to 30% discount cap). The member accepting the highest discount wins the month’s pool — broadcast live in app and hall.',
+    icon: Building2,
+    getMetric1: (p) => ({ label: 'Max Discount Cap', value: `${p.maxDiscount} (30%)` }),
+    getMetric2: (p) => ({ label: 'Audit Trail', value: 'Live Digital Gavel' }),
+    highlight: 'Guaranteed 0% Collateral Hassle',
+  },
+  {
+    when: 'Instant Credit',
+    badge: 'Shared Wealth',
+    title: 'Equal Dividend Sharing',
+    text: 'The auction discount is distributed equally to all 20 members as an immediate dividend, significantly reducing what you have to pay in the next month’s instalment.',
+    icon: TrendingUp,
+    getMetric1: (p) => ({ label: 'Est. Monthly Dividend', value: p.avgDividend }),
+    getMetric2: (p) => ({ label: 'You Pay Next Month', value: p.netPayable }),
+    highlight: 'Automatic Instalment Reduction',
+  },
+  {
+    when: 'Winning Month',
+    badge: 'Liquidity Guarantee',
+    title: '24-Hour Prize Disbursal',
+    text: 'Once your bid wins, the prize money is wired directly to your bank account within 24 hours. Ideal for weddings, home purchases, or working capital without loan delays.',
+    icon: ShieldCheck,
+    getMetric1: (p) => ({ label: 'Liquid Cash Disbursal', value: p.winnerRange }),
+    getMetric2: (p) => ({ label: 'Bank Wire SLA', value: '< 24 Hours Bank RTGS' }),
+    highlight: 'No CIBIL Score Impact or Hidden Fee',
+  },
+  {
+    when: 'Month 20 Final',
+    badge: 'Wealth Harvest',
+    title: 'Maturity & Wealth Creation',
+    text: 'Patient savers who do not bid collect the full chit value at term maturity, having enjoyed 19 consecutive months of dividend discounts to beat bank fixed deposit rates.',
+    icon: Award,
+    getMetric1: (p) => ({ label: 'Full Chit Harvest', value: p.pool }),
+    getMetric2: (p) => ({ label: 'Total Gain / Yield', value: `${p.estGain} (${p.roi})` }),
+    highlight: 'Outperforms Traditional Fixed Deposits',
+  },
+];
+
+const JOURNEY = JOURNEY_STEPS;
 
 const STATS = [
   {
@@ -920,6 +1013,7 @@ const Landing = () => {
   const [isReviewsHovered, setIsReviewsHovered] = useState(false);
   const reviewsMarqueeRef = useRef(null);
   const [isOrbitPaused, setIsOrbitPaused] = useState(false);
+  const [activeJourneyPlan, setActiveJourneyPlan] = useState('5L');
 
   const nudgeTestimonials = (direction) => {
     if (!reviewsMarqueeRef.current) return;
@@ -1718,9 +1812,29 @@ const Landing = () => {
             </div>
 
             <header className="lx-journey__head">
-              <div>
+              <div className="lx-journey__head-main">
                 <p className="lx-eyebrow lx-eyebrow--gold">How a Chit Works</p>
                 <h2 className="lx-display lx-display--light">Your 20-Month Journey</h2>
+              </div>
+
+              {/* Dynamic Interactive Scheme Simulator */}
+              <div className="lx-journey__plans-bar" role="tablist" aria-label="Simulate Chit Scheme Journey">
+                <span className="lx-journey__plans-label">Live Simulation:</span>
+                <div className="lx-journey__plans-tabs">
+                  {JOURNEY_PLANS.map((plan) => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeJourneyPlan === plan.id}
+                      className={`lx-journey__plan-btn ${activeJourneyPlan === plan.id ? 'is-active' : ''}`}
+                      onClick={() => setActiveJourneyPlan(plan.id)}
+                    >
+                      <span className="lx-journey__plan-lbl">{plan.label}</span>
+                      <span className="lx-journey__plan-sub">{plan.tag}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <p className="lx-journey__month" aria-hidden="true">
@@ -1733,8 +1847,11 @@ const Landing = () => {
             </header>
 
             <div className="lx-journey__track" data-track>
-              {JOURNEY.map((step, index) => {
+              {JOURNEY_STEPS.map((step, index) => {
                 const Icon = step.icon;
+                const currentPlan = JOURNEY_PLANS.find((p) => p.id === activeJourneyPlan) || JOURNEY_PLANS[0];
+                const metric1 = step.getMetric1(currentPlan);
+                const metric2 = step.getMetric2(currentPlan);
 
                 return (
                   <article className="lx-journey__panel" data-card key={step.title}>
@@ -1748,9 +1865,29 @@ const Landing = () => {
                           <Icon size={20} />
                         </span>
                         <span className="lx-journey__when">{step.when}</span>
+                        <span className="lx-journey__badge">{step.badge}</span>
                       </div>
+
                       <h3 className="lx-journey__title">{step.title}</h3>
                       <p className="lx-journey__text">{step.text}</p>
+
+                      {/* Dynamic Live Financial Breakdown Strip */}
+                      <div className="lx-journey__metrics">
+                        <div className="lx-journey__metric-col">
+                          <span className="lx-journey__metric-label">{metric1.label}</span>
+                          <span className="lx-journey__metric-val">{metric1.value}</span>
+                        </div>
+                        <span className="lx-journey__metric-divider" aria-hidden="true" />
+                        <div className="lx-journey__metric-col">
+                          <span className="lx-journey__metric-label">{metric2.label}</span>
+                          <span className="lx-journey__metric-val lx-journey__metric-val--accent">{metric2.value}</span>
+                        </div>
+                      </div>
+
+                      <div className="lx-journey__highlight">
+                        <span className="lx-journey__highlight-dot" aria-hidden="true" />
+                        <span>{step.highlight}</span>
+                      </div>
                     </div>
                   </article>
                 );
