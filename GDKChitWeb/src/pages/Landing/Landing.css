@@ -1982,7 +1982,7 @@
 
 .lx-manifesto__ghost {
   position: absolute;
-  top: 57%;
+  top: 63%;
   left: 50%;
   font-family: var(--lx-display);
   font-size: clamp(16rem, 52vw, 46rem);
