@@ -1787,11 +1787,6 @@ const Landing = () => {
               <div className="lx-stats__numbers">
                 {STATS.map((stat, index) => (
                   <div className="lx-stats__item" data-index={index} key={stat.label}>
-                    <div className="lx-stats__badge">
-                      <Sparkles size={13} aria-hidden="true" />
-                      <span>{stat.category}</span>
-                    </div>
-
                     <span
                       className="lx-stats__value"
                       data-count={stat.value}
@@ -1801,6 +1796,10 @@ const Landing = () => {
                     >
                       {`${stat.prefix}${stat.value}${stat.suffix}`}
                     </span>
+                    <div className="lx-stats__badge">
+                      <Sparkles size={13} aria-hidden="true" />
+                      <span>{stat.category}</span>
+                    </div>
                     <h3 className="lx-stats__label">{stat.label}</h3>
                     <p className="lx-stats__caption">{stat.caption}</p>
 
@@ -1832,11 +1831,6 @@ const Landing = () => {
                   {Array.from({ length: 50 }, (_, index) => (
                     <span key={index} style={{ '--i': index }} />
                   ))}
-                  <div className="lx-viz__center-badge">
-                    <Users size={20} className="lx-viz__badge-icon" />
-                    <strong>500+ Active Members</strong>
-                    <span>Across 14 Tamil Nadu Districts</span>
-                  </div>
                 </div>
 
                 <div className="lx-viz lx-viz--bars" data-index="1">
@@ -1845,7 +1839,7 @@ const Landing = () => {
                     <span>₹50 Cr+ Total Disbursed Capital</span>
                   </div>
                   {BAR_HEIGHTS.map((height, index) => (
-                    <span key={height} style={{ '--i': index, '--h': `${height}%` }} />
+                    <span className="lx-viz__bar" key={height} style={{ '--i': index, '--h': `${height}%` }} />
                   ))}
                 </div>
 
@@ -2106,39 +2100,6 @@ const Landing = () => {
                   </div>
                 </article>
               ))}
-            </div>
-          </div>
-
-          {/* Testimonial Trust Pillars Banner */}
-          <div className="lx-testimonials__trust-bar lx-reveal" style={{ '--i': 4 }}>
-            <div className="lx-testimonials__trust-item">
-              <div className="lx-testimonials__trust-icon-wrap">
-                <Check size={16} aria-hidden="true" />
-              </div>
-              <div className="lx-testimonials__trust-text">
-                <strong>100% On-Time Payout Guarantee</strong>
-                <span>Guaranteed prize money wire within 24 hours of auction</span>
-              </div>
-            </div>
-            <div className="lx-testimonials__trust-divider" aria-hidden="true" />
-            <div className="lx-testimonials__trust-item">
-              <div className="lx-testimonials__trust-icon-wrap">
-                <ShieldCheck size={16} aria-hidden="true" />
-              </div>
-              <div className="lx-testimonials__trust-text">
-                <strong>25+ Years Legacy of Trust</strong>
-                <span>Registered, audited, and strictly RBI Act compliant since 1999</span>
-              </div>
-            </div>
-            <div className="lx-testimonials__trust-divider" aria-hidden="true" />
-            <div className="lx-testimonials__trust-item">
-              <div className="lx-testimonials__trust-icon-wrap">
-                <Users size={16} aria-hidden="true" />
-              </div>
-              <div className="lx-testimonials__trust-text">
-                <strong>500+ Thriving Families</strong>
-                <span>Disciplined savings circles empowering Tamil Nadu households</span>
-              </div>
             </div>
           </div>
         </section>
