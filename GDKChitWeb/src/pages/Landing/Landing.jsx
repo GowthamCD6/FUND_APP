@@ -2,6 +2,7 @@ import React, { Fragment, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
+  ArrowUpRight,
   Award,
   Box,
   Building2,
@@ -1773,8 +1774,12 @@ const Landing = () => {
           data-theme="light"
         >
           <div className="lx-sticky lx-stats__sticky">
+            <div className="lx-stats__ambient-stage" aria-hidden="true" />
             <header className="lx-stats__head">
-              <p className="lx-eyebrow">By the Numbers</p>
+              <div className="lx-stats__head-badge">
+                <span className="lx-stats__head-dot" />
+                <p className="lx-eyebrow">By the Numbers</p>
+              </div>
               <h2 className="lx-stats__title">Numbers That Tell the Story</h2>
             </header>
 
@@ -2199,40 +2204,113 @@ const Landing = () => {
 
         {/* ═══ Scene 08e — Contact / Office info ═══ */}
         <section className="lx-contact" id="contact" data-chapter data-theme="light">
+          <div className="lx-contact__ambient-glow" aria-hidden="true" />
           <div className="lx-contact__inner">
             <header className="lx-contact__head">
-              <p className="lx-eyebrow lx-reveal">Get in Touch</p>
-              <h2 className="lx-display lx-reveal" style={{ '--i': 1 }}>
-                Visit Our Office
+              <div className="lx-contact__badge-row lx-reveal">
+                <span className="lx-contact__status-pill">
+                  <span className="lx-contact__status-dot" />
+                  <span>Office Open Today • 9:00 AM – 6:00 PM IST</span>
+                </span>
+                <span className="lx-eyebrow lx-eyebrow--contact">Get in Touch</span>
+              </div>
+              <h2 className="lx-display lx-contact__title lx-reveal" style={{ '--i': 1 }}>
+                Visit Our Office or Connect Instantly
               </h2>
-              <p className="lx-body lx-reveal" style={{ '--i': 2 }}>
-                Come meet us in person. Our team is always ready to help you choose the right plan and answer all your questions.
+              <p className="lx-body lx-contact__subtitle lx-reveal" style={{ '--i': 2 }}>
+                Experience 25 years of trusted community savings in person. Meet our senior chit fund advisors at our Tamil Nadu headquarters, or get instant support via WhatsApp and phone.
               </p>
             </header>
 
             <div className="lx-contact__cards">
-              <div className="lx-contact__card lx-reveal" style={{ '--i': 0 }}>
-                <span className="lx-contact__icon" aria-hidden="true">
-                  <MapPin size={22} />
-                </span>
-                <h3>Office Address</h3>
-                <p>GDK Chit Funds, Sri Periyanayagi Amman Complex, Main Road, Tamil Nadu, India</p>
+              {/* Card 1: Headquarters & Physical Branch */}
+              <div className="lx-contact__card lx-contact__card--featured lx-reveal" style={{ '--i': 0 }}>
+                <div className="lx-contact__card-top">
+                  <span className="lx-contact__icon lx-contact__icon--gold" aria-hidden="true">
+                    <MapPin size={24} />
+                  </span>
+                  <span className="lx-contact__card-tag">Headquarters</span>
+                </div>
+                <h3 className="lx-contact__card-title">Registered Office</h3>
+                <p className="lx-contact__card-desc">
+                  GDK Chit Funds, Sri Periyanayagi Amman Complex, Main Road, Tamil Nadu, India.
+                </p>
+                <div className="lx-contact__card-feature">
+                  <Check size={14} className="lx-contact__check-icon" />
+                  <span>Govt. Approved & RBI Chit Funds Act 1982 Compliant</span>
+                </div>
+                <a
+                  href="https://maps.google.com/?q=GDK+Chit+Funds+Tamil+Nadu"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="lx-contact__btn lx-contact__btn--primary"
+                >
+                  <span>Get Directions</span>
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                </a>
               </div>
 
-              <div className="lx-contact__card lx-reveal" style={{ '--i': 1 }}>
-                <span className="lx-contact__icon" aria-hidden="true">
-                  <Phone size={22} />
-                </span>
-                <h3>Phone / WhatsApp</h3>
-                <p>Call or message us for inquiries, plan details, and membership support.</p>
+              {/* Card 2: Phone & WhatsApp */}
+              <div className="lx-contact__card lx-contact__card--featured lx-reveal" style={{ '--i': 1 }}>
+                <div className="lx-contact__card-top">
+                  <span className="lx-contact__icon lx-contact__icon--emerald" aria-hidden="true">
+                    <Phone size={24} />
+                  </span>
+                  <span className="lx-contact__card-tag lx-contact__card-tag--emerald">Fast Response</span>
+                </div>
+                <h3 className="lx-contact__card-title">Phone & WhatsApp</h3>
+                <p className="lx-contact__card-desc">
+                  Call directly or send a message for new plan enrollment, auction details, or payout status.
+                </p>
+                <div className="lx-contact__card-feature">
+                  <Check size={14} className="lx-contact__check-icon" />
+                  <span>Immediate Assistance • Dedicated Support Desk</span>
+                </div>
+                <div className="lx-contact__actions-group">
+                  <a
+                    href="tel:+919443212345"
+                    className="lx-contact__btn lx-contact__btn--primary"
+                  >
+                    <span>Call Hotline</span>
+                    <Phone size={15} aria-hidden="true" />
+                  </a>
+                  <a
+                    href="https://wa.me/919443212345?text=Hello%20GDK%20Chit%20Funds,%20I%20would%20like%20to%20know%20more%20about%20your%20chit%20plans."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="lx-contact__btn lx-contact__btn--whatsapp"
+                  >
+                    <span>WhatsApp</span>
+                    <MessageCircle size={15} aria-hidden="true" />
+                  </a>
+                </div>
               </div>
 
-              <div className="lx-contact__card lx-reveal" style={{ '--i': 2 }}>
-                <span className="lx-contact__icon" aria-hidden="true">
-                  <Clock size={22} />
-                </span>
-                <h3>Office Hours</h3>
-                <p>Monday to Saturday: 9:00 AM – 6:00 PM<br />Sunday: Closed</p>
+              {/* Card 3: Working Hours & Auction Days */}
+              <div className="lx-contact__card lx-contact__card--featured lx-reveal" style={{ '--i': 2 }}>
+                <div className="lx-contact__card-top">
+                  <span className="lx-contact__icon lx-contact__icon--navy" aria-hidden="true">
+                    <Clock size={24} />
+                  </span>
+                  <span className="lx-contact__card-tag">Working Hours</span>
+                </div>
+                <h3 className="lx-contact__card-title">Hours & Auction Schedule</h3>
+                <p className="lx-contact__card-desc">
+                  <strong>Monday to Saturday:</strong> 9:00 AM – 6:00 PM IST<br />
+                  <span className="lx-contact__closed">Sunday: Closed</span>
+                </p>
+                <div className="lx-contact__card-feature">
+                  <Calendar size={14} className="lx-contact__check-icon" />
+                  <span>Live Group Auctions: 10th of every month at 4:30 PM</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="lx-contact__btn lx-contact__btn--secondary"
+                >
+                  <span>Member Portal Sign In</span>
+                  <ArrowRight size={15} aria-hidden="true" />
+                </button>
               </div>
             </div>
           </div>
