@@ -2492,9 +2492,9 @@ const Landing = () => {
 
             <div className="lx-footer__col">
               <h4>Legal</h4>
-              <a href="#">Terms &amp; Conditions</a>
-              <a href="#">Privacy Policy</a>
-              <a href="#">RBI Guidelines</a>
+              <button type="button" onClick={() => navigate('/terms')}>Terms &amp; Conditions</button>
+              <button type="button" onClick={() => navigate('/privacy')}>Privacy Policy</button>
+              <button type="button" onClick={() => navigate('/terms#sec-preamble')}>RBI Guidelines</button>
             </div>
           </div>
         </div>

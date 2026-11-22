@@ -56,6 +56,8 @@ import LanguageSettings from '../pages/User/Profile/Pages/LanguageSettings.jsx';
 // ── Public Pages ──
 import Landing from '../pages/Landing/Landing.jsx';
 import Login, { NotAuthorized, NotFound } from '../pages/Login/Login.jsx';
+import TermsAndConditions from '../pages/Legal/TermsAndConditions.jsx';
+import PublicPrivacyPolicy from '../pages/Legal/PrivacyPolicy.jsx';
 
 /* ── Loading Spinner ── */
 const LoadingScreen = () => (
@@ -104,6 +106,10 @@ const AppNavigation = () => {
       <Route path="/" element={<SmartRedirect />} />
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<NotAuthorized />} />
+      <Route path="/terms" element={<TermsAndConditions />} />
+      <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+      <Route path="/privacy" element={<PublicPrivacyPolicy />} />
+      <Route path="/privacy-policy" element={<PublicPrivacyPolicy />} />
 
       {/* ── Admin ── */}
       <Route

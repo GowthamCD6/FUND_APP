@@ -23,6 +23,17 @@ const PrivacyPolicy = () => {
         </div>
 
         <div style={{ color: '#475569', fontSize: 14, lineHeight: 1.8 }}>
+          <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 8, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span style={{ color: '#166534', fontWeight: 600 }}>Comprehensive DPDP &amp; RBI Compliance Document Available</span>
+            <button
+              type="button"
+              onClick={() => navigate('/privacy')}
+              style={{ background: '#059669', color: '#FFF', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+            >
+              View Full Policy
+            </button>
+          </div>
+
           <h4 style={{ color: '#0f172a', fontSize: 16, marginTop: 24, marginBottom: 12 }}>1. Information We Collect</h4>
           <p>We collect personal information that you provide to us such as name, address, contact information, passwords and security data, and payment information.</p>
           
