@@ -456,21 +456,21 @@ const PrivacyPolicy = () => {
                   <MapPin size={20} />
                   <div>
                     <span>Designated Office</span>
-                    <strong>Compliance &amp; Data Security Cell, Main Branch, Tamil Nadu, India</strong>
+                    <strong>Sri Periyanayaki Complex, Main Road, Tiruppur &amp; Coimbatore, Tamil Nadu – 641601</strong>
                   </div>
                 </div>
                 <div className="legal-contact-item">
                   <Mail size={20} />
                   <div>
-                    <span>Privacy Email</span>
+                    <span>Privacy &amp; Data Email</span>
                     <strong>privacy@gdkchitfunds.com</strong>
                   </div>
                 </div>
                 <div className="legal-contact-item">
                   <Phone size={20} />
                   <div>
-                    <span>Toll-Free Grievance Desk</span>
-                    <strong>+91 94432 00000 / 0422-2400000</strong>
+                    <span>Direct Helpline Desk</span>
+                    <strong>+91 86106 96889 / 0421-2244550</strong>
                   </div>
                 </div>
               </div>

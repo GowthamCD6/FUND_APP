@@ -473,20 +473,20 @@ const TermsAndConditions = () => {
                   <MapPin size={20} />
                   <div>
                     <span>Registered Head Office</span>
-                    <strong>Sri Periyanayaki Amman Chit Funds, Main Road, Tamil Nadu, India</strong>
+                    <strong>Sri Periyanayaki Complex, Main Road, Tiruppur &amp; Coimbatore, Tamil Nadu – 641601</strong>
                   </div>
                 </div>
                 <div className="legal-contact-item">
                   <Phone size={20} />
                   <div>
-                    <span>Direct Helpline</span>
-                    <strong>+91 94432 00000 / 0422-2400000</strong>
+                    <span>Direct Helpline &amp; Desk</span>
+                    <strong>+91 86106 96889 / 0421-2244550</strong>
                   </div>
                 </div>
                 <div className="legal-contact-item">
                   <Mail size={20} />
                   <div>
-                    <span>Compliance Email</span>
+                    <span>Compliance &amp; Grievance Email</span>
                     <strong>compliance@gdkchitfunds.com</strong>
                   </div>
                 </div>
