@@ -2465,7 +2465,7 @@ const Landing = () => {
       {/* ═══ Footer ═══ */}
       <footer className="lx-footer" data-scene="enter" data-theme="dark">
         <div className="lx-footer__top">
-          {/* Brand, Logo, Quote & Contact Details */}
+          {/* Left Column: Brand Identity, Regulatory Badge & Inspiring Quote */}
           <div className="lx-footer__brand">
             <div className="lx-footer__brandRow">
               <img src={brandLogo} alt="GDK Chit Funds Emblem" className="lx-footer__brand-logo" />
@@ -2480,7 +2480,6 @@ const Landing = () => {
               <span>Govt. Regd. Chit Fund • Act 1982 Compliant • Estd. 1999</span>
             </div>
 
-            {/* Inspiring Bilingual Quote */}
             <blockquote className="lx-footer__quote">
               <p className="lx-footer__quote-tamil">“நம்பிக்கையே நமது மூலதனம் — சேமிப்பே குடும்பத்தின் உறுதியான எதிர்காலம்.”</p>
               <p className="lx-footer__quote-en">
@@ -2488,33 +2487,9 @@ const Landing = () => {
                 milestones, generational security, and debt-free prosperity across Tamil Nadu.”
               </p>
             </blockquote>
-
-            {/* Real Location & Contact Info */}
-            <div className="lx-footer__contacts">
-              <div className="lx-footer__contact-item">
-                <MapPin size={16} className="lx-footer__contact-icon" aria-hidden="true" />
-                <span>Sri Periyanayaki Complex, Main Road, Tiruppur &amp; Coimbatore, Tamil Nadu – 641 601</span>
-              </div>
-              <div className="lx-footer__contact-item">
-                <Phone size={16} className="lx-footer__contact-icon" aria-hidden="true" />
-                <div>
-                  <a href="tel:+919443212345" className="lx-footer__contact-link">+91 94432 12345</a>
-                  <span className="lx-footer__contact-sep"> | </span>
-                  <a href="tel:04212244550" className="lx-footer__contact-link">0421-2244550</a>
-                </div>
-              </div>
-              <div className="lx-footer__contact-item">
-                <Mail size={16} className="lx-footer__contact-icon" aria-hidden="true" />
-                <a href="mailto:support@gdkchitfunds.com" className="lx-footer__contact-link">support@gdkchitfunds.com</a>
-              </div>
-              <div className="lx-footer__contact-item">
-                <Clock size={16} className="lx-footer__contact-icon" aria-hidden="true" />
-                <span>Mon – Sat: 9:30 AM – 6:30 PM • Live Auction: 10th of Every Month</span>
-              </div>
-            </div>
           </div>
 
-          {/* Navigation Columns */}
+          {/* Right Columns: Company, Legal & Real Head Office Location in the same row */}
           <div className="lx-footer__cols">
             <div className="lx-footer__col">
               <h4>Company</h4>
@@ -2523,16 +2498,6 @@ const Landing = () => {
               <button type="button" onClick={() => goToSection('stats')}>Our Numbers</button>
               <button type="button" onClick={() => goToSection('journey')}>20-Month Journey</button>
               <button type="button" onClick={() => goToSection('testimonials')}>Member Stories</button>
-              <button type="button" onClick={() => goToSection('app')}>Mobile App</button>
-            </div>
-
-            <div className="lx-footer__col">
-              <h4>Chit Schemes</h4>
-              <button type="button" onClick={() => goToSection('plans')}>₹2 Lakh Starter Chit</button>
-              <button type="button" onClick={() => goToSection('plans')}>₹5 Lakh Family Wealth</button>
-              <button type="button" onClick={() => goToSection('plans')}>₹10 Lakh Business Growth</button>
-              <button type="button" onClick={() => goToSection('plans')}>₹25 Lakh Commercial Pool</button>
-              <button type="button" onClick={() => goToSection('calculator')}>Dividend Calculator</button>
               <button type="button" onClick={goToPortal}>Member Portal</button>
             </div>
 
@@ -2544,6 +2509,33 @@ const Landing = () => {
               <button type="button" onClick={() => navigate('/terms#sec-auction')}>30% Auction Cap</button>
               <button type="button" onClick={() => navigate('/terms#sec-disbursal')}>24-Hour Payout SLA</button>
               <button type="button" onClick={() => navigate('/terms#sec-grievance')}>Grievance Officer</button>
+            </div>
+
+            {/* Real Head Office Location & Contact Details from App Data */}
+            <div className="lx-footer__col lx-footer__col--office">
+              <h4>Head Office &amp; Contact</h4>
+              <div className="lx-footer__office-card">
+                <div className="lx-footer__office-head">
+                  <Building2 size={16} className="lx-footer__office-ico" aria-hidden="true" />
+                  <strong>Periyanayagi Amman ChitFunds</strong>
+                </div>
+                <div className="lx-footer__office-row">
+                  <MapPin size={15} className="lx-footer__office-ico" aria-hidden="true" />
+                  <span>No. 45, Commercial Complex,<br />Coimbatore, Tamil Nadu – 641 001</span>
+                </div>
+                <div className="lx-footer__office-row">
+                  <Phone size={15} className="lx-footer__office-ico" aria-hidden="true" />
+                  <a href="tel:+918610696889" className="lx-footer__contact-link">+91 86106 96889</a>
+                </div>
+                <div className="lx-footer__office-row">
+                  <Mail size={15} className="lx-footer__office-ico" aria-hidden="true" />
+                  <a href="mailto:Gowthamnaveen124@gmail.com" className="lx-footer__contact-link">Gowthamnaveen124@gmail.com</a>
+                </div>
+                <div className="lx-footer__office-row lx-footer__office-row--hours">
+                  <Clock size={15} className="lx-footer__office-ico" aria-hidden="true" />
+                  <span>Mon – Sat: 9:30 AM – 6:30 PM<br /><small>Live Auction: 10th of Every Month at 5:00 PM</small></span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2561,12 +2553,12 @@ const Landing = () => {
           <div className="lx-footer__socials">
             {/* WhatsApp */}
             <a
-              href="https://wa.me/919443212345?text=Hello%20GDK%20Chit%20Funds,%20I%20would%20like%20to%20know%20more%20about%20your%20registered%20chit%20plans."
+              href="https://wa.me/918610696889?text=Hello%20GDK%20Chit%20Funds,%20I%20would%20like%20to%20know%20more%20about%20your%20registered%20chit%20plans."
               target="_blank"
               rel="noopener noreferrer"
               className="lx-social"
               aria-label="Chat with GDK Chit Funds on WhatsApp"
-              title="WhatsApp"
+              title="WhatsApp: +91 86106 96889"
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M17.472 14.382c-.301-.15-1.782-.879-2.058-.98-.276-.1-.476-.15-.676.15-.2.3-.777.98-.952 1.18-.175.2-.351.225-.652.075-.301-.15-1.27-.468-2.42-1.494-.895-.799-1.5-1.786-1.675-2.086-.175-.301-.019-.463.132-.613.136-.135.301-.35.452-.526.15-.175.2-.3.301-.5.1-.2.05-.376-.025-.526-.075-.15-.677-1.631-.927-2.233-.244-.585-.492-.506-.677-.515-.175-.008-.376-.01-.577-.01-.2 0-.526.075-.802.375-.276.3-1.053 1.029-1.053 2.508 0 1.48 1.078 2.909 1.229 3.109.15.2 2.122 3.24 5.141 4.544.718.31 1.279.496 1.716.635.722.23 1.379.197 1.898.12.578-.087 1.782-.728 2.033-1.431.25-.703.25-1.306.175-1.432-.075-.125-.276-.2-.577-.35zM12.04 2C6.52 2 2.03 6.49 2.03 12.01c0 1.764.46 3.488 1.334 5.006L2 22l5.122-1.343a9.98 9.98 0 0 0 4.918 1.285h.005c5.518 0 10.008-4.49 10.008-10.01 0-2.673-1.041-5.186-2.932-7.078A9.94 9.94 0 0 0 12.04 2z"/>
