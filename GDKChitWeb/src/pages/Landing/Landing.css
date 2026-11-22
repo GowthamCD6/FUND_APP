@@ -3797,55 +3797,158 @@
   position: relative;
   overflow: hidden;
   padding: clamp(50px, 8vh, 88px) var(--lx-gutter) 24px;
-  background: var(--lx-navy-deep);
+  background: linear-gradient(180deg, #061611 0%, #030D0A 100%);
   color: var(--lx-ivory);
+  border-top: 1px solid rgba(200, 164, 93, 0.22);
 }
 
 .lx-footer__top {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: clamp(32px, 6vw, 80px);
-  max-width: 1300px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.65fr);
+  gap: clamp(36px, 5.5vw, 76px);
+  max-width: 1320px;
   margin: 0 auto;
 }
 
 .lx-footer__brandRow {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
-.lx-footer__brandRow h3 {
+.lx-footer__brand-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+  flex-shrink: 0;
+}
+
+.lx-footer__brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.lx-footer__tamil {
+  font-family: 'Noto Sans Tamil', 'Mukta Malar', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #C8A45D;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+.lx-footer__brand-name {
   margin: 0;
   font-family: var(--lx-display);
-  font-size: 1.2rem;
-  font-weight: 400;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #FAF8F2;
+  line-height: 1.2;
 }
 
-.lx-footer__desc {
+.lx-footer__reg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(200, 164, 93, 0.12);
+  border: 1px solid rgba(200, 164, 93, 0.3);
+  color: #E5C158;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 18px;
+  width: fit-content;
+}
+
+.lx-footer__reg-icon {
+  color: #10B981;
+  flex-shrink: 0;
+}
+
+.lx-footer__quote {
+  margin: 0 0 20px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid #C8A45D;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lx-footer__quote-tamil {
+  font-family: 'Noto Sans Tamil', 'Mukta Malar', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #FFD54F;
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.lx-footer__quote-en {
+  font-size: 0.82rem;
+  color: rgba(250, 248, 242, 0.74);
   margin: 0;
-  max-width: 42ch;
-  font-size: 0.92rem;
-  line-height: 1.7;
-  color: rgba(250, 248, 242, 0.6);
+  line-height: 1.55;
+  font-style: italic;
+}
+
+.lx-footer__contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lx-footer__contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.83rem;
+  color: rgba(250, 248, 242, 0.74);
+  line-height: 1.45;
+}
+
+.lx-footer__contact-icon {
+  color: #E5C158;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.lx-footer__contact-link {
+  color: rgba(250, 248, 242, 0.88);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.lx-footer__contact-link:hover {
+  color: #FFD54F;
+}
+
+.lx-footer__contact-sep {
+  color: rgba(250, 248, 242, 0.4);
+  margin: 0 4px;
 }
 
 .lx-footer__cols {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
 }
 
 .lx-footer__col {
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 10px;
 }
 
 .lx-footer__col h4 {
-  margin: 0 0 4px;
-  font-size: 0.7rem;
+  margin: 0 0 6px;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -3859,21 +3962,22 @@
   background: none;
   border: 0;
   font-family: var(--lx-sans);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   text-align: left;
   text-decoration: none;
-  color: rgba(250, 248, 242, 0.68);
+  color: rgba(250, 248, 242, 0.7);
   cursor: pointer;
-  transition: color 0.3s ease;
+  transition: color 0.25s ease, transform 0.25s ease;
 }
 
 .lx-footer__col a:hover,
 .lx-footer__col button:hover {
-  color: var(--lx-ivory);
+  color: #FFF;
+  transform: translateX(2px);
 }
 
 .lx-footer__mark {
-  margin: clamp(32px, 5vh, 64px) 0 clamp(16px, 3vh, 32px);
+  margin: clamp(20px, 3vh, 36px) 0 clamp(12px, 2vh, 20px);
   overflow: hidden;
   text-align: center;
   user-select: none;
@@ -3882,14 +3986,14 @@
 .lx-footer__mark span {
   display: inline-block;
   font-family: var(--lx-display);
-  font-size: 11.4vw;
+  font-size: clamp(2.4rem, 6.2vw, 5.6rem);
   font-weight: 300;
-  line-height: 0.95;
-  letter-spacing: -0.035em;
+  line-height: 1;
+  letter-spacing: -0.02em;
   white-space: nowrap;
   color: transparent;
-  -webkit-text-stroke: 1px rgba(200, 164, 93, 0.5);
-  transform: translate3d(0, calc((1 - var(--p, 1)) * 55%), 0);
+  -webkit-text-stroke: 1px rgba(200, 164, 93, 0.35);
+  transform: translate3d(0, calc((1 - var(--p, 1)) * 30%), 0);
 }
 
 .lx-footer__bottom {
@@ -3897,22 +4001,23 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  max-width: 1300px;
+  max-width: 1320px;
   margin: 0 auto;
   padding-top: 24px;
-  border-top: 1px solid var(--lx-line-light);
+  border-top: 1px solid rgba(200, 164, 93, 0.2);
 }
 
 .lx-footer__copy {
   margin: 0;
-  font-size: 0.79rem;
-  color: rgba(250, 248, 242, 0.5);
+  font-size: 0.8rem;
+  color: rgba(250, 248, 242, 0.58);
 }
 
 .lx-footer__socials {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 10px;
 }
 
 .lx-social {
@@ -3921,28 +4026,31 @@
   width: 38px;
   height: 38px;
   padding: 0;
-  background: none;
-  border: 1px solid var(--lx-line-light);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(200, 164, 93, 0.28);
   border-radius: 50%;
-  color: var(--lx-ivory);
+  color: #FAF8F2;
   cursor: pointer;
-  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+  text-decoration: none;
+  transition: all 0.25s ease;
 }
 
 .lx-social:hover {
-  background: var(--lx-gold);
-  border-color: var(--lx-gold);
-  color: var(--lx-navy-deep);
+  background: rgba(200, 164, 93, 0.22);
+  border-color: #E5C158;
+  color: #FFD54F;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 193, 88, 0.25);
 }
 
 .lx-social--top {
   width: auto;
-  padding: 0 18px;
+  height: 38px;
+  padding: 0 16px;
   border-radius: 999px;
-  font-family: var(--lx-sans);
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
