@@ -1829,7 +1829,7 @@ const Landing = () => {
 
             <header className="lx-journey__head">
               <div className="lx-journey__head-main">
-                <p className="lx-eyebrow lx-eyebrow--gold">How a Chit Works</p>
+                <p className="lx-eyebrow">How a Chit Works</p>
                 <h2 className="lx-display lx-display--light">Your 20-Month Journey</h2>
               </div>
 
