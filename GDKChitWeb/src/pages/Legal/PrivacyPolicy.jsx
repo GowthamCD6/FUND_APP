@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ArrowLeft, FileText, Printer } from 'lucide-react';
 import brandLogo from '../../assets/logo_crop.png';
+import Footer from '../../components/Footer/Footer.jsx';
 import './PrivacyPolicy.css';
 
 const PRIVACY_TOC = [
@@ -19,10 +20,18 @@ const PRIVACY_TOC = [
 
 const PrivacyPolicy = () => {
   const navigate = useNavigate();
+  const { hash } = useLocation();
   const [activeSection, setActiveSection] = useState('sec-intro');
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    if (hash) {
+      const target = document.getElementById(hash.slice(1));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      window.scrollTo(0, 0);
+    }
 
     const handleScroll = () => {
       const scrollPos = window.scrollY + 180;
@@ -406,22 +415,8 @@ const PrivacyPolicy = () => {
         </div>
       </main>
 
-      {/* ── Minimal Monochrome Footer ── */}
-      <footer className="pp-footer">
-        <div className="pp-footer__inner">
-          <p className="pp-footer__copy">
-            © {new Date().getFullYear()} GDK Chit Funds (ஸ்ரீ பெரியநாயகி அம்மன்). All rights reserved. Registered under
-            Central Chit Funds Act, 1982.
-          </p>
-
-          <div className="pp-footer__links">
-            <Link to="/" className="pp-footer__link">Home</Link>
-            <Link to="/terms" className="pp-footer__link">Terms &amp; Conditions</Link>
-            <Link to="/privacy" className="pp-footer__link">Privacy Policy</Link>
-            <a href="#sec-intro" className="pp-footer__link">Back to Top ↑</a>
-          </div>
-        </div>
-      </footer>
+      {/* ── Shared Home Page Footer ── */}
+      <Footer />
     </div>
   );
 };
