@@ -196,30 +196,32 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  border-left: 1px solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .pp-toc__link {
   display: block;
-  padding: 7px 0 7px 14px;
-  margin-left: -1px;
-  border-left: 2px solid transparent;
+  padding: 8px 12px;
+  border-radius: 6px;
   font-size: 0.8125rem;
   font-weight: 400;
   color: #6B7280;
   text-decoration: none;
   line-height: 1.4;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .pp-toc__link:hover {
+  background: #F9FAFB;
   color: #111827;
 }
 
 .pp-toc__link.is-active {
+  background: #F3F4F6;
   color: #111827;
   font-weight: 600;
-  border-left-color: #111827;
 }
 
 .pp-sidebar__note {
