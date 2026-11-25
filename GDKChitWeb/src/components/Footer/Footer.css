@@ -2,11 +2,11 @@
 .lx-footer {
   position: relative;
   overflow: hidden;
-  padding: clamp(50px, 8vh, 88px) var(--lx-gutter, clamp(20px, 4vw, 56px)) 24px;
+  padding: clamp(56px, 8vh, 88px) clamp(24px, 4vw, 56px) 28px;
   background: linear-gradient(180deg, #061611 0%, #030D0A 100%);
-  color: var(--lx-ivory, #FAF8F2);
+  color: #FAF8F2;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  font-family: var(--lx-sans, 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
 .lx-footer__top {
