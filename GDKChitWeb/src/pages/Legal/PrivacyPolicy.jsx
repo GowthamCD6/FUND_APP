@@ -1,38 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import {
-  ArrowLeft,
-  ShieldCheck,
-  Lock,
-  Eye,
-  FileCheck,
-  Database,
-  Server,
-  UserCheck,
-  AlertTriangle,
-  Printer,
-  ChevronRight,
-  Phone,
-  Mail,
-  MapPin,
-  Calendar,
-  Building2,
-  CheckCircle2,
-} from 'lucide-react';
+import { ArrowLeft, FileText, Printer } from 'lucide-react';
 import brandLogo from '../../assets/logo_crop.png';
-import './LegalPages.css';
+import './PrivacyPolicy.css';
 
 const PRIVACY_TOC = [
   { id: 'sec-intro', label: '1. Introduction & Scope' },
   { id: 'sec-collection', label: '2. Personal Data We Collect' },
-  { id: 'sec-purpose', label: '3. Legal Basis & How We Use Data' },
-  { id: 'sec-security', label: '4. Bank-Grade Data Security & Encryption' },
-  { id: 'sec-sharing', label: '5. Zero-Sale Policy & Third-Party Sharing' },
-  { id: 'sec-app', label: '6. Mobile App & Device Permissions' },
-  { id: 'sec-retention', label: '7. Data Retention & Archival Norms' },
+  { id: 'sec-purpose', label: '3. Legal Basis & Purpose of Use' },
+  { id: 'sec-security', label: '4. Data Security & Encryption' },
+  { id: 'sec-sharing', label: '5. Zero-Sale Policy & Disclosures' },
+  { id: 'sec-app', label: '6. Mobile App & Permissions' },
+  { id: 'sec-retention', label: '7. Data Retention & Archival' },
   { id: 'sec-rights', label: '8. Your Rights as a Subscriber' },
   { id: 'sec-updates', label: '9. Policy Revisions & Amendments' },
-  { id: 'sec-dpo', label: '10. Grievance Officer & Contact' },
+  { id: 'sec-dpo', label: '10. Data Protection Officer' },
 ];
 
 const PrivacyPolicy = () => {
@@ -43,7 +25,7 @@ const PrivacyPolicy = () => {
     window.scrollTo(0, 0);
 
     const handleScroll = () => {
-      const scrollPos = window.scrollY + 200;
+      const scrollPos = window.scrollY + 180;
       for (const item of PRIVACY_TOC) {
         const el = document.getElementById(item.id);
         if (el) {
@@ -66,432 +48,377 @@ const PrivacyPolicy = () => {
   };
 
   return (
-    <div className="legal-page">
-      {/* ── Top Header ── */}
-      <header className="legal-header">
-        <div className="legal-header__inner">
-          <button type="button" className="legal-brand" onClick={() => navigate('/')}>
-            <img src={brandLogo} alt="GDK Chit Funds" className="legal-brand__logo" />
-            <div className="legal-brand__meta">
-              <span className="legal-brand__tamil">ஸ்ரீ பெரியநாயகி அம்மன்</span>
-              <span className="legal-brand__name">GDK CHIT FUNDS</span>
+    <div className="pp-page">
+      {/* ── Minimal Monochrome Top Bar ── */}
+      <header className="pp-header">
+        <div className="pp-header__inner">
+          <button type="button" className="pp-brand" onClick={() => navigate('/')}>
+            <img src={brandLogo} alt="GDK Chit Funds" className="pp-brand__logo" />
+            <div className="pp-brand__meta">
+              <span className="pp-brand__tamil">ஸ்ரீ பெரியநாயகி அம்மன்</span>
+              <span className="pp-brand__name">GDK CHIT FUNDS</span>
             </div>
           </button>
 
-          <div className="legal-header__actions">
-            <button type="button" className="legal-btn-ghost" onClick={() => navigate('/')}>
-              <ArrowLeft size={16} />
-              <span>Back to Home</span>
+          <div className="pp-header__actions">
+            <button type="button" className="pp-btn" onClick={() => navigate('/')} title="Back to Home">
+              <ArrowLeft size={15} />
+              <span>Home</span>
             </button>
-            <button type="button" className="legal-btn-ghost" onClick={handlePrint} title="Print Policy">
-              <Printer size={16} />
-              <span>Print Policy</span>
-            </button>
-            <Link to="/terms" className="legal-btn-ghost">
-              <FileCheck size={16} />
+            <Link to="/terms" className="pp-btn" title="Terms & Conditions">
+              <FileText size={15} />
               <span>Terms &amp; Conditions</span>
             </Link>
+            <button type="button" className="pp-btn" onClick={handlePrint} title="Print Policy">
+              <Printer size={15} />
+              <span>Print</span>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* ── Hero Banner ── */}
-      <section className="legal-hero">
-        <div className="legal-hero__pattern" aria-hidden="true" />
-        <div className="legal-hero__inner">
-          <div className="legal-hero__badge">
-            <ShieldCheck size={14} />
-            <span>Information Security &amp; Privacy Mandate</span>
-          </div>
-
-          <h1 className="legal-hero__title">Privacy Policy</h1>
-          <p className="legal-hero__desc">
-            How Sri Periyanayaki Amman Chit Funds collects, protects, encrypts, and processes your identity, KYC,
-            and financial transaction records in strict accordance with the Digital Personal Data Protection Act (DPDP),
-            Chit Funds Act, 1982, and RBI security standards.
+      {/* ── Main Document Area (No Hero Section) ── */}
+      <main className="pp-main">
+        {/* Clean Editorial Title Header */}
+        <div className="pp-doc-header">
+          <p className="pp-doc-eyebrow">Legal &amp; Compliance · Privacy Notice</p>
+          <h1 className="pp-doc-title">Privacy Policy</h1>
+          <p className="pp-doc-lead">
+            This Privacy Policy describes how Sri Periyanayaki Amman Chit Funds / GDK Chit Funds collects, protects,
+            stores, and processes subscriber personal, KYC, and financial transaction records in accordance with the
+            Digital Personal Data Protection Act, 2023 (DPDP), the Central Chit Funds Act, 1982, and Reserve Bank of
+            India security standards.
           </p>
-
-          <div className="legal-hero__chips">
-            <div className="legal-chip legal-chip--accent">
-              <Lock size={14} />
-              <span>256-bit AES Bank-Grade Encryption</span>
-            </div>
-            <div className="legal-chip">
-              <Calendar size={14} />
-              <span>Last Revised: January 2026</span>
-            </div>
-            <div className="legal-chip">
-              <Eye size={14} />
-              <span>Strict Zero Data Selling Policy</span>
-            </div>
-            <div className="legal-chip">
-              <Building2 size={14} />
-              <span>RBI &amp; Chit Registrar Audit Compliant</span>
-            </div>
+          <div className="pp-doc-meta">
+            <span className="pp-doc-meta__item">
+              Effective Date: <strong>January 1, 2026</strong>
+            </span>
+            <span>·</span>
+            <span className="pp-doc-meta__item">
+              Last Revised: <strong>January 2026</strong>
+            </span>
+            <span>·</span>
+            <span className="pp-doc-meta__item">
+              Jurisdiction: <strong>Tamil Nadu, India</strong>
+            </span>
           </div>
         </div>
-      </section>
 
-      {/* ── Main Legal Body ── */}
-      <main className="legal-body">
-        {/* Sticky Sidebar */}
-        <aside className="legal-sidebar">
-          <h2 className="legal-sidebar__title">Privacy Sections</h2>
-          <ul className="legal-toc">
-            {PRIVACY_TOC.map((item) => (
-              <li key={item.id}>
-                <a
-                  href={`#${item.id}`}
-                  className={`legal-toc__link ${activeSection === item.id ? 'is-active' : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                >
-                  <ChevronRight size={13} style={{ flexShrink: 0 }} />
-                  <span>{item.label}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
+        {/* Two-Column Document Body */}
+        <div className="pp-layout">
+          {/* Sticky Table of Contents */}
+          <aside className="pp-sidebar" aria-label="Table of Contents">
+            <h2 className="pp-sidebar__label">Contents</h2>
+            <ul className="pp-toc">
+              {PRIVACY_TOC.map((item) => (
+                <li key={item.id}>
+                  <a
+                    href={`#${item.id}`}
+                    className={`pp-toc__link ${activeSection === item.id ? 'is-active' : ''}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
 
-          <div className="legal-sidebar__card">
-            <h3 className="legal-sidebar__card-title">
-              <Lock size={16} color="#059669" />
-              <span>Zero-Marketing Guarantee</span>
-            </h3>
-            <p className="legal-sidebar__card-text">
-              We never sell or monetise your personal data. Your contact and financial details are exclusively used
-              for chit group management, statutory audits, and member passbook alerts.
-            </p>
-          </div>
-        </aside>
-
-        {/* Content Area */}
-        <article className="legal-content">
-          {/* Section 1 */}
-          <section id="sec-intro" className="legal-section">
-            <span className="legal-section__badge">Section 01</span>
-            <h2 className="legal-section__heading">
-              <ShieldCheck size={24} color="#059669" />
-              1. Introduction &amp; Privacy Commitment
-            </h2>
-            <p>
-              At <strong>Sri Periyanayaki Amman Chit Funds / GDK Chit Funds</strong> (“we”, “our”, or “Company”), we hold
-              the financial privacy of our subscribers as sacred. For over 25 years since 1999, families, business owners,
-              and professionals across Tamil Nadu have trusted us with their savings, dreams, and personal records.
-            </p>
-            <p>
-              This Privacy Policy details how we collect, store, safeguard, and disclose personal and financial
-              information gathered through our physical branch network, website (<strong>gdkchitfunds.com</strong>), and
-              the <strong>GDK Member Mobile Application</strong>.
-            </p>
-
-            <div className="legal-callout legal-callout--emerald">
-              <div className="legal-callout__title">
-                <CheckCircle2 size={18} color="#059669" />
-                <span>Statutory Compliance Umbrella</span>
-              </div>
-              <p>
-                This policy is formulated in compliance with the <strong>Digital Personal Data Protection Act, 2023 (DPDP)</strong>,
-                the Information Technology Act, 2000, the Central Chit Funds Act, 1982, and the Master Directions issued by
-                the Reserve Bank of India on Know Your Customer (KYC) norms.
+            <div className="pp-sidebar__note">
+              <p className="pp-sidebar__note-title">Zero-Marketing Guarantee</p>
+              <p className="pp-sidebar__note-text">
+                We never sell, rent, or monetize your personal data. Subscriber records are used exclusively for
+                regulated chit administration, statutory audits, and official passbook communications.
               </p>
             </div>
-          </section>
+          </aside>
 
-          {/* Section 2 */}
-          <section id="sec-collection" className="legal-section">
-            <span className="legal-section__badge">Section 02</span>
-            <h2 className="legal-section__heading">
-              <Database size={24} color="#059669" />
-              2. Personal Data We Collect
-            </h2>
-            <p>
-              To maintain statutory compliance and provide seamless chit operations, we collect the following categories
-              of subscriber information:
-            </p>
-            <ul>
-              <li>
-                <strong>Identity &amp; Demographic Data:</strong> Full legal name, date of birth, gender, marital status,
-                father's / spouse's name, photograph, and nominee information.
-              </li>
-              <li>
-                <strong>Statutory KYC Documents:</strong> Permanent Account Number (PAN Card), Aadhaar Card details,
-                Voter ID, or Passport copies as required by Section 16 of the Chit Funds Act.
-              </li>
-              <li>
-                <strong>Financial &amp; Banking Details:</strong> Bank name, branch address, account number, IFSC code,
-                cancelled cheque / bank passbook copy, and UPI Virtual Payment Address (VPA) for prize disbursements.
-              </li>
-              <li>
-                <strong>Transaction &amp; Auction Records:</strong> Historical monthly instalments paid, dividend credits
-                earned, auction bidding logs, prized status, and outstanding liability balances.
-              </li>
-              <li>
-                <strong>Surety &amp; Guarantor Records:</strong> Employment proofs, salary slips, Form 16, or property
-                title documents submitted by prized subscribers as statutory security.
-              </li>
-              <li>
-                <strong>Technical &amp; Device Information:</strong> IP address, device model, operating system version,
-                mobile network details, and app crash diagnostics collected during authenticated app sessions.
-              </li>
-            </ul>
-          </section>
-
-          {/* Section 3 */}
-          <section id="sec-purpose" className="legal-section">
-            <span className="legal-section__badge">Section 03</span>
-            <h2 className="legal-section__heading">
-              <FileCheck size={24} color="#059669" />
-              3. Legal Basis &amp; How We Use Your Data
-            </h2>
-            <p>We process subscriber information strictly for lawful, documented purposes:</p>
-            <ul>
-              <li>
-                <strong>Group Administration:</strong> Registering your ticket with the Registrar of Chits, creating group
-                rosters, and issuing official chit agreements.
-              </li>
-              <li>
-                <strong>Live Auction Management:</strong> Conducting reverse auctions, verifying winning bids, and maintaining
-                digital gavel records.
-              </li>
-              <li>
-                <strong>Dividend Redistribution:</strong> Calculating and crediting monthly auction discount dividends to
-                your digital passbook.
-              </li>
-              <li>
-                <strong>Prize Money Disbursement:</strong> Verifying solvent sureties and executing RTGS/NEFT prize money
-                transfers within our 24-hour SLA.
-              </li>
-              <li>
-                <strong>Member Notifications:</strong> Sending automated transactional SMS, WhatsApp updates, and app push
-                notifications regarding auction schedules, payment receipts, and dividend credits.
-              </li>
-              <li>
-                <strong>Statutory Audits:</strong> Submitting annual audited accounts, minute books, and subscriber lists to
-                the Registrar of Chits, Tamil Nadu.
-              </li>
-            </ul>
-          </section>
-
-          {/* Section 4 */}
-          <section id="sec-security" className="legal-section">
-            <span className="legal-section__badge">Section 04</span>
-            <h2 className="legal-section__heading">
-              <Lock size={24} color="#059669" />
-              4. Bank-Grade Data Security &amp; Encryption
-            </h2>
-            <p>
-              We implement industry-leading technical and organizational security controls to protect your data from
-              unauthorized access, loss, or alteration:
-            </p>
-
-            <div className="legal-grid">
-              <div className="legal-card">
-                <div className="legal-card__label">Encryption in Transit</div>
-                <div className="legal-card__val">TLS 1.3 / 256-bit SSL</div>
-                <p className="legal-card__desc">All communications between your device and our servers are encrypted with military-grade protocols.</p>
-              </div>
-              <div className="legal-card">
-                <div className="legal-card__label">Encryption at Rest</div>
-                <div className="legal-card__val">AES-256 Storage</div>
-                <p className="legal-card__desc">KYC documents, banking credentials, and passbook ledgers are stored in encrypted databases.</p>
-              </div>
-              <div className="legal-card">
-                <div className="legal-card__label">Access Governance</div>
-                <div className="legal-card__val">Role-Based RBAC</div>
-                <p className="legal-card__desc">Only authorized compliance personnel can view sensitive documents under dual-custody audit logs.</p>
-              </div>
-            </div>
-
-            <p>
-              Additionally, our infrastructure undergoes routine vulnerability assessments, penetration testing, and annual
-              statutory cybersecurity audits.
-            </p>
-          </section>
-
-          {/* Section 5 */}
-          <section id="sec-sharing" className="legal-section">
-            <span className="legal-section__badge">Section 05</span>
-            <h2 className="legal-section__heading">
-              <Eye size={24} color="#059669" />
-              5. Zero-Sale Policy &amp; Third-Party Sharing
-            </h2>
-            <div className="legal-callout legal-callout--alert">
-              <div className="legal-callout__title">
-                <AlertTriangle size={18} color="#D97706" />
-                <span>Our Uncompromising Zero Data Selling Guarantee</span>
-              </div>
+          {/* Document Content */}
+          <article className="pp-article">
+            {/* Section 1 */}
+            <section id="sec-intro" className="pp-section">
+              <h2 className="pp-section__heading">1. Introduction &amp; Scope</h2>
               <p>
-                <strong>We do NOT sell, rent, trade, or monetize your personal or financial data to third-party telemarketers,
-                advertising networks, or credit brokers under any circumstances.</strong>
+                At <strong>Sri Periyanayaki Amman Chit Funds / GDK Chit Funds</strong> (“we”, “our”, or “Company”), we
+                treat the confidentiality and financial privacy of our subscribers as a foundational obligation. Since
+                1999, families, business owners, and salaried professionals across Tamil Nadu have entrusted us with
+                their savings and statutory identification records.
               </p>
-            </div>
-
-            <p>Personal data is disclosed only in the following legally defined circumstances:</p>
-            <ul>
-              <li>
-                <strong>Statutory Regulators:</strong> The Registrar of Chits, State Government of Tamil Nadu, Income Tax
-                Department, or Reserve Bank of India pursuant to a lawful subpoena or mandatory inspection.
-              </li>
-              <li>
-                <strong>Escrow Banking Partners:</strong> Scheduled Commercial Banks where chit group escrow accounts and
-                security deposits are maintained, solely for RTGS/NEFT transfer execution.
-              </li>
-              <li>
-                <strong>Payment Aggregators:</strong> RBI-authorized payment gateways (e.g., Razorpay/Cashfree/UPI) for
-                processing your online instalment deposits.
-              </li>
-              <li>
-                <strong>Statutory Auditors:</strong> Certified Chartered Accountants appointed under Section 61 of the
-                Chit Funds Act to audit annual financial balance sheets.
-              </li>
-            </ul>
-          </section>
-
-          {/* Section 6 */}
-          <section id="sec-app" className="legal-section">
-            <span className="legal-section__badge">Section 06</span>
-            <h2 className="legal-section__heading">
-              <Server size={24} color="#059669" />
-              6. Mobile App &amp; Device Permissions
-            </h2>
-            <p>
-              The GDK Chit Funds Mobile Application requests only permissions strictly necessary for core functionality:
-            </p>
-            <ul>
-              <li>
-                <strong>Camera &amp; Storage:</strong> Required only when uploading KYC documents, cancelled cheques, or
-                surety papers during enrolment or prize claim.
-              </li>
-              <li>
-                <strong>Push Notifications:</strong> Used solely to alert you of live auction commencement, bid confirmations,
-                dividend announcements, and payment due date reminders.
-              </li>
-              <li>
-                <strong>Location (Coarse):</strong> Used to confirm branch proximity and prevent fraudulent remote account
-                hijacking. We never track your ongoing physical movements.
-              </li>
-            </ul>
-          </section>
-
-          {/* Section 7 */}
-          <section id="sec-retention" className="legal-section">
-            <span className="legal-section__badge">Section 07</span>
-            <h2 className="legal-section__heading">
-              <Database size={24} color="#059669" />
-              7. Data Retention &amp; Archival Norms
-            </h2>
-            <p>
-              In accordance with Section 17 of the Chit Funds Act, 1982 and Prevention of Money Laundering (PMLA) rules,
-              the Company is legally required to preserve chit registers, subscriber ledgers, minute books, and KYC records
-              for a minimum period of <strong>eight (8) years</strong> following the final termination and audit of the group.
-            </p>
-            <p>
-              Upon expiration of statutory retention windows, records are purged using irreversible cryptographic shredding
-              procedures.
-            </p>
-          </section>
-
-          {/* Section 8 */}
-          <section id="sec-rights" className="legal-section">
-            <span className="legal-section__badge">Section 08</span>
-            <h2 className="legal-section__heading">
-              <UserCheck size={24} color="#059669" />
-              8. Your Rights as a Subscriber
-            </h2>
-            <p>Under the DPDP Act and Chit Fund bylaws, subscribers enjoy clear data prerogatives:</p>
-            <ul>
-              <li>
-                <strong>Right to Access:</strong> View complete historical contribution passbooks, dividend logs, and
-                auction certificates anytime via the mobile app.
-              </li>
-              <li>
-                <strong>Right to Rectification:</strong> Request correction of outdated address, phone number, bank account,
-                or nominee information by submitting verified proofs.
-              </li>
-              <li>
-                <strong>Right to Grievance Redressal:</strong> Prompt resolution of any data handling concern by our
-                designated Data Protection Officer.
-              </li>
-            </ul>
-          </section>
-
-          {/* Section 9 */}
-          <section id="sec-updates" className="legal-section">
-            <span className="legal-section__badge">Section 09</span>
-            <h2 className="legal-section__heading">
-              <Calendar size={24} color="#059669" />
-              9. Policy Revisions &amp; Amendments
-            </h2>
-            <p>
-              We reserve the right to amend this Privacy Policy to reflect evolving regulatory directives or security
-              enhancements. Any material changes will be notified via our official website, SMS alert, and prominent in-app
-              announcement at least 15 days before taking effect.
-            </p>
-          </section>
-
-          {/* Section 10 */}
-          <section id="sec-dpo" className="legal-section">
-            <span className="legal-section__badge">Section 10</span>
-            <h2 className="legal-section__heading">
-              <ShieldCheck size={24} color="#059669" />
-              10. Data Protection Officer &amp; Grievance Redressal
-            </h2>
-            <p>
-              If you have any questions, concerns, or requests regarding the processing of your personal data, you may
-              contact our designated Data Protection Officer:
-            </p>
-
-            <div className="legal-contact-box">
-              <h3>Office of the Data Protection Officer (DPO)</h3>
               <p>
-                Sri Periyanayaki Amman Chit Funds / GDK Chit Funds is committed to resolving all subscriber privacy
-                inquiries within 48 business hours.
+                This Privacy Policy explains how we collect, store, safeguard, and disclose personal and financial
+                information gathered through our physical branch network, our official website (
+                <strong>gdkchitfunds.com</strong>), and the <strong>GDK Member Mobile Application</strong>.
               </p>
 
-              <div className="legal-contact-grid">
-                <div className="legal-contact-item">
-                  <MapPin size={20} />
-                  <div>
+              <div className="pp-notice">
+                <p className="pp-notice__title">Statutory Compliance Framework</p>
+                <p>
+                  This policy is governed by the <strong>Digital Personal Data Protection Act, 2023 (DPDP)</strong>,
+                  the Information Technology Act, 2000, the Central Chit Funds Act, 1982, and Master Directions issued
+                  by the Reserve Bank of India (RBI) on Know Your Customer (KYC) compliance.
+                </p>
+              </div>
+            </section>
+
+            {/* Section 2 */}
+            <section id="sec-collection" className="pp-section">
+              <h2 className="pp-section__heading">2. Personal Data We Collect</h2>
+              <p>
+                To maintain statutory compliance and administer chit groups accurately, we collect only the following
+                categories of subscriber information:
+              </p>
+              <ul>
+                <li>
+                  <strong>Identity &amp; Demographic Data:</strong> Full legal name, date of birth, gender, marital
+                  status, father&apos;s or spouse&apos;s name, photograph, and designated nominee particulars.
+                </li>
+                <li>
+                  <strong>Statutory KYC Documents:</strong> Permanent Account Number (PAN), Aadhaar verification
+                  records, Voter ID, or Passport copies as mandated under Section 16 of the Chit Funds Act, 1982.
+                </li>
+                <li>
+                  <strong>Financial &amp; Banking Details:</strong> Bank name, branch address, account number, IFSC
+                  code, cancelled cheque or passbook copy, and UPI Virtual Payment Address (VPA) for prize money
+                  disbursement.
+                </li>
+                <li>
+                  <strong>Transaction &amp; Auction Records:</strong> Monthly subscription payment history, dividend
+                  credits, reverse auction bidding logs, prized status, and outstanding instalment balances.
+                </li>
+                <li>
+                  <strong>Surety &amp; Guarantor Records:</strong> Employment verification, salary slips, Form 16, or
+                  immovable property title documents furnished by prized subscribers as statutory security.
+                </li>
+                <li>
+                  <strong>Technical &amp; Session Metadata:</strong> IP address, device model, operating system version,
+                  and diagnostic crash logs recorded during authenticated mobile application sessions.
+                </li>
+              </ul>
+            </section>
+
+            {/* Section 3 */}
+            <section id="sec-purpose" className="pp-section">
+              <h2 className="pp-section__heading">3. Legal Basis &amp; Purpose of Use</h2>
+              <p>We process subscriber information strictly for lawful, documented, and operational purposes:</p>
+              <ul>
+                <li>
+                  <strong>Group Administration:</strong> Enrolling your chit ticket with the Registrar of Chits,
+                  maintaining group rosters, and executing official chit agreements.
+                </li>
+                <li>
+                  <strong>Auction Management:</strong> Conducting transparent reverse auctions, validating winning bids,
+                  and preserving signed digital minute books.
+                </li>
+                <li>
+                  <strong>Dividend Redistribution:</strong> Computing and crediting monthly auction discount dividends to
+                  your digital passbook ledger.
+                </li>
+                <li>
+                  <strong>Prize Money Disbursement:</strong> Verifying solvent sureties and executing RTGS/NEFT prize
+                  transfers within our 24-hour service commitment.
+                </li>
+                <li>
+                  <strong>Member Communications:</strong> Delivering transactional SMS, WhatsApp receipts, and app
+                  notifications regarding auction schedules, payment confirmations, and dividend credits.
+                </li>
+                <li>
+                  <strong>Statutory Audits:</strong> Filing annual audited balance sheets, minute books, and subscriber
+                  registers with the Registrar of Chits, Tamil Nadu.
+                </li>
+              </ul>
+            </section>
+
+            {/* Section 4 */}
+            <section id="sec-security" className="pp-section">
+              <h2 className="pp-section__heading">4. Data Security &amp; Encryption</h2>
+              <p>
+                We enforce strict technical and organizational security controls to protect subscriber records from
+                unauthorized access, alteration, or disclosure:
+              </p>
+
+              <div className="pp-spec-grid">
+                <div className="pp-spec-card">
+                  <p className="pp-spec-card__label">In Transit</p>
+                  <p className="pp-spec-card__val">TLS 1.3 / 256-bit SSL</p>
+                  <p className="pp-spec-card__desc">
+                    All traffic between your device and our servers is encrypted using modern transport protocols.
+                  </p>
+                </div>
+                <div className="pp-spec-card">
+                  <p className="pp-spec-card__label">At Rest</p>
+                  <p className="pp-spec-card__val">AES-256 Storage</p>
+                  <p className="pp-spec-card__desc">
+                    KYC documents, banking details, and passbook ledgers are stored in encrypted databases.
+                  </p>
+                </div>
+                <div className="pp-spec-card">
+                  <p className="pp-spec-card__label">Access Control</p>
+                  <p className="pp-spec-card__val">Role-Based RBAC</p>
+                  <p className="pp-spec-card__desc">
+                    Sensitive records are restricted to authorized compliance staff under full audit logging.
+                  </p>
+                </div>
+              </div>
+
+              <p>
+                Our systems undergo periodic vulnerability assessments, access reviews, and annual statutory audits to
+                maintain continuous security compliance.
+              </p>
+            </section>
+
+            {/* Section 5 */}
+            <section id="sec-sharing" className="pp-section">
+              <h2 className="pp-section__heading">5. Zero-Sale Policy &amp; Disclosures</h2>
+              <div className="pp-notice">
+                <p className="pp-notice__title">Strict Prohibition on Data Monetization</p>
+                <p>
+                  We do <strong>not</strong> sell, rent, lease, trade, or disclose your personal or financial data to
+                  third-party telemarketers, advertising networks, or external credit brokers under any circumstances.
+                </p>
+              </div>
+
+              <p style={{ marginTop: '16px' }}>
+                Personal information is shared only when legally mandated or operationally necessary with the following
+                entities:
+              </p>
+              <ul>
+                <li>
+                  <strong>Statutory Regulators:</strong> The Registrar of Chits, Government of Tamil Nadu, Income Tax
+                  Department, or Reserve Bank of India pursuant to statutory filings or lawful orders.
+                </li>
+                <li>
+                  <strong>Escrow Banking Partners:</strong> Scheduled Commercial Banks holding chit group escrow
+                  accounts and security deposits, solely to execute RTGS/NEFT disbursements.
+                </li>
+                <li>
+                  <strong>Authorized Payment Gateways:</strong> RBI-licensed payment aggregators used to process your
+                  online instalment payments.
+                </li>
+                <li>
+                  <strong>Statutory Auditors:</strong> Chartered Accountants appointed under Section 61 of the Chit
+                  Funds Act, 1982 to audit annual financial statements.
+                </li>
+              </ul>
+            </section>
+
+            {/* Section 6 */}
+            <section id="sec-app" className="pp-section">
+              <h2 className="pp-section__heading">6. Mobile App &amp; Permissions</h2>
+              <p>
+                The GDK Chit Funds Mobile Application requests only permissions strictly required for core member
+                services:
+              </p>
+              <ul>
+                <li>
+                  <strong>Camera &amp; Storage:</strong> Used solely when you choose to upload KYC documents, cancelled
+                  cheques, or surety records during enrolment or prize claims.
+                </li>
+                <li>
+                  <strong>Notifications:</strong> Used exclusively to deliver live auction alerts, bid confirmations,
+                  dividend updates, and payment due reminders.
+                </li>
+                <li>
+                  <strong>Coarse Location:</strong> Used only to verify branch proximity and prevent unauthorized remote
+                  account access. We do not perform continuous background location tracking.
+                </li>
+              </ul>
+            </section>
+
+            {/* Section 7 */}
+            <section id="sec-retention" className="pp-section">
+              <h2 className="pp-section__heading">7. Data Retention &amp; Archival</h2>
+              <p>
+                Pursuant to Section 17 of the Chit Funds Act, 1982 and Prevention of Money Laundering (PMLA)
+                regulations, the Company is legally required to retain chit registers, subscriber ledgers, minute books,
+                and KYC documentation for a minimum period of <strong>eight (8) years</strong> following the final
+                termination and statutory audit of each chit group.
+              </p>
+              <p>
+                Once statutory retention periods expire and no pending legal obligations remain, records are permanently
+                purged using irreversible cryptographic erasure.
+              </p>
+            </section>
+
+            {/* Section 8 */}
+            <section id="sec-rights" className="pp-section">
+              <h2 className="pp-section__heading">8. Your Rights as a Subscriber</h2>
+              <p>Under the DPDP Act, 2023 and applicable chit bylaws, subscribers hold the following rights:</p>
+              <ul>
+                <li>
+                  <strong>Right to Access:</strong> Inspect your complete contribution passbook, dividend statements,
+                  and auction logs at any time via the mobile app or branch office.
+                </li>
+                <li>
+                  <strong>Right to Rectification:</strong> Request updates or corrections to your address, phone number,
+                  bank account, or nominee details upon submitting verified supporting documents.
+                </li>
+                <li>
+                  <strong>Right to Grievance Redressal:</strong> Escalate any privacy or data handling concern directly
+                  to our Data Protection Officer for timely resolution.
+                </li>
+              </ul>
+            </section>
+
+            {/* Section 9 */}
+            <section id="sec-updates" className="pp-section">
+              <h2 className="pp-section__heading">9. Policy Revisions &amp; Amendments</h2>
+              <p>
+                We may update this Privacy Policy periodically to reflect regulatory updates or operational security
+                improvements. Any material revisions will be published on this page with an updated revision date and
+                communicated via official in-app notice or SMS at least 15 days prior to taking effect.
+              </p>
+            </section>
+
+            {/* Section 10 */}
+            <section id="sec-dpo" className="pp-section">
+              <h2 className="pp-section__heading">10. Data Protection Officer</h2>
+              <p>
+                For questions, access requests, or privacy concerns, please contact our designated Data Protection
+                Officer:
+              </p>
+
+              <div className="pp-dpo-box">
+                <h3 className="pp-dpo-box__title">Office of the Data Protection Officer (DPO)</h3>
+                <p className="pp-dpo-box__sub">
+                  Sri Periyanayaki Amman Chit Funds / GDK Chit Funds responds to all verified subscriber privacy
+                  inquiries within 48 business hours.
+                </p>
+
+                <div className="pp-dpo-grid">
+                  <div className="pp-dpo-item">
                     <span>Designated Office</span>
                     <strong>Sri Periyanayaki Complex, Main Road, Tiruppur &amp; Coimbatore, Tamil Nadu – 641601</strong>
                   </div>
-                </div>
-                <div className="legal-contact-item">
-                  <Mail size={20} />
-                  <div>
-                    <span>Privacy &amp; Data Email</span>
+                  <div className="pp-dpo-item">
+                    <span>Privacy Email</span>
                     <strong>privacy@gdkchitfunds.com</strong>
                   </div>
-                </div>
-                <div className="legal-contact-item">
-                  <Phone size={20} />
-                  <div>
-                    <span>Direct Helpline Desk</span>
+                  <div className="pp-dpo-item">
+                    <span>Direct Helpline</span>
                     <strong>+91 86106 96889 / 0421-2244550</strong>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-        </article>
+            </section>
+          </article>
+        </div>
       </main>
 
-      {/* ── Footer ── */}
-      <footer className="legal-footer">
-        <div className="legal-footer__inner">
-          <p className="legal-footer__copy">
+      {/* ── Minimal Monochrome Footer ── */}
+      <footer className="pp-footer">
+        <div className="pp-footer__inner">
+          <p className="pp-footer__copy">
             © {new Date().getFullYear()} GDK Chit Funds (ஸ்ரீ பெரியநாயகி அம்மன்). All rights reserved. Registered under
             Central Chit Funds Act, 1982.
           </p>
 
-          <div className="legal-footer__links">
-            <Link to="/" className="legal-footer__link">Home</Link>
-            <Link to="/terms" className="legal-footer__link">Terms &amp; Conditions</Link>
-            <Link to="/privacy" className="legal-footer__link">Privacy Policy</Link>
-            <a href="#sec-intro" className="legal-footer__link">Back to Top ↑</a>
+          <div className="pp-footer__links">
+            <Link to="/" className="pp-footer__link">Home</Link>
+            <Link to="/terms" className="pp-footer__link">Terms &amp; Conditions</Link>
+            <Link to="/privacy" className="pp-footer__link">Privacy Policy</Link>
+            <a href="#sec-intro" className="pp-footer__link">Back to Top ↑</a>
           </div>
         </div>
       </footer>
