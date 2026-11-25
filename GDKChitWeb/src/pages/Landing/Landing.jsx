@@ -1066,6 +1066,20 @@ const Landing = () => {
     navigate(portalPath);
   };
 
+  /* ── Scroll to hash section when navigating from /terms or /privacy ── */
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+    const id = hash.slice(1);
+    const timer = setTimeout(() => {
+      const target = document.getElementById(id);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
+
   /* ── Asset Preloader: Prime splash mandalas & hero photograph beforehand ── */
   useEffect(() => {
     const assets = [
