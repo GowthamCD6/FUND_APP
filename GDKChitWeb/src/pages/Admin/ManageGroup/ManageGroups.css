@@ -99,6 +99,7 @@
 
 .mg-enhanced-card .gc-header {
   padding: 18px 20px 14px 20px;
+  align-items: flex-start;
 }
 
 .mg-enhanced-card .gc-name {
@@ -106,6 +107,59 @@
   font-weight: 700;
   color: #0B140E;
   letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.mg-header-badges-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mg-header-days-row {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.mg-status-pill,
+.mg-month-pill,
+.mg-days-pill,
+.mg-activate-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.mg-month-pill {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.mg-days-pill {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.mg-activate-pill {
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.25);
 }
 
 .mg-code-chip {
@@ -122,8 +176,8 @@
 
 .mg-card-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
   background: #F8FAF8;
   border: 1px solid #E2E8E2;
   border-radius: 10px;
@@ -133,18 +187,24 @@
 .mg-metric-item {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  min-width: 0;
 }
 
 .mg-metric-lbl {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: #6B7A6E;
   display: flex;
   align-items: center;
   gap: 5px;
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.mg-metric-lbl svg {
+  flex-shrink: 0;
 }
 
 .mg-metric-val {

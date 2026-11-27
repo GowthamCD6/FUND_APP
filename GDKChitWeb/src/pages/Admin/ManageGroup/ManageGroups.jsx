@@ -661,73 +661,40 @@ const ManageGroups = () => {
                 {/* Header */}
                 <div className="gc-header">
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <h3 className="gc-name" style={{ margin: 0 }}>{g.name}</h3>
-                      {g.groupCode && (
-                        <span className="mg-code-chip">{g.groupCode}</span>
-                      )}
-                    </div>
-                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <span className="gc-badge" style={{ background: color }}>
-                        <StatusIcon status={g.status} size={10} />
-                        {g.status.toUpperCase()}
+                    <h3 className="gc-name" style={{ margin: 0 }}>{g.name}</h3>
+
+                    {/* Status & Month Row */}
+                    <div className="mg-header-badges-row">
+                      <span className="gc-badge mg-status-pill" style={{ background: color }}>
+                        <StatusIcon status={g.status} size={11} />
+                        <span>{g.status.toUpperCase()}</span>
                       </span>
-                      <span style={{ 
-                        display: 'inline-flex', 
-                        alignItems: 'center', 
-                        gap: 4, 
-                        background: '#eff6ff', 
-                        color: '#1d4ed8', 
-                        border: '1px solid #bfdbfe', 
-                        padding: '2px 8px', 
-                        borderRadius: 100, 
-                        fontSize: 11, 
-                        fontWeight: 700 
-                      }}>
-                        <RiCalendarLine size={11} /> {g.currentMonthDisplay || (g.duration ? `1st Month of ${g.duration}` : '1st Month')}
-                      </span>
-                      <span style={{ 
-                        display: 'inline-flex', 
-                        alignItems: 'center', 
-                        gap: 4, 
-                        background: '#ecfdf5', 
-                        color: '#047857', 
-                        border: '1px solid #a7f3d0', 
-                        padding: '2px 8px', 
-                        borderRadius: 100, 
-                        fontSize: 11, 
-                        fontWeight: 700 
-                      }}>
-                        Next Chit: {calculateDaysToNextChit(g)} Days
+                      <span className="mg-month-pill">
+                        <RiCalendarLine size={11} />
+                        <span>{g.currentMonthDisplay || (g.duration ? `1st Month of ${g.duration}` : '1st Month')}</span>
                       </span>
                       {(g.status === 'Not Started' || g.status === 'not-started') && (
                         <button
                           type="button"
+                          className="mg-activate-pill"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleActivateGroup(g);
                           }}
                           disabled={activatingGroupId === g.id}
                           title="Activate this chit group"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            background: '#10b981',
-                            color: '#ffffff',
-                            border: 'none',
-                            padding: '2px 8px',
-                            borderRadius: '100px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            boxShadow: '0 1px 2px rgba(16, 185, 129, 0.25)',
-                          }}
                         >
                           <RiPlayCircleLine size={12} />
                           <span>{activatingGroupId === g.id ? 'Starting...' : 'Activate'}</span>
                         </button>
                       )}
+                    </div>
+
+                    {/* Next Chit Days Row */}
+                    <div className="mg-header-days-row">
+                      <span className="mg-days-pill">
+                        Next Chit: {calculateDaysToNextChit(g)} Days
+                      </span>
                     </div>
                   </div>
                   <button className="gc-arrow-btn" onClick={(e) => { e.stopPropagation(); openGroupDetails(g); }} title="View Group Details">
