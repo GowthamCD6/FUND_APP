@@ -32,12 +32,12 @@ const SC = {
 };
 const scOf = (s) => SC[String(s).toLowerCase()] || '#6B7280';
 
-const StatusIcon = ({ status, size = 11 }) => {
+const StatusIcon = ({ status, size = 11, color }) => {
   const s = String(status).toLowerCase();
   const Icon = s === 'paid' || s === 'completed' || s === 'active' || s === 'ongoing' ? RiCheckLine
     : s === 'overdue' ? RiAlertLine
       : RiTimeLine;
-  return <Icon size={size} color={scOf(s)} style={{ verticalAlign: 'middle', marginRight: 4 }} />;
+  return <Icon size={size} color={color || scOf(s)} style={{ verticalAlign: 'middle', flexShrink: 0 }} />;
 };
 
 const ManageGroups = () => {
@@ -661,12 +661,18 @@ const ManageGroups = () => {
                 {/* Header */}
                 <div className="gc-header">
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 className="gc-name" style={{ margin: 0 }}>{g.name}</h3>
+                    {/* Group Name & Next Chit Days Row */}
+                    <div className="mg-header-title-row">
+                      <h3 className="gc-name" style={{ margin: 0 }}>{g.name}</h3>
+                      <span className="mg-days-pill">
+                        Next Chit: {calculateDaysToNextChit(g)} Days
+                      </span>
+                    </div>
 
                     {/* Status & Month Row */}
                     <div className="mg-header-badges-row">
                       <span className="gc-badge mg-status-pill" style={{ background: color }}>
-                        <StatusIcon status={g.status} size={11} />
+                        <StatusIcon status={g.status} size={11} color="#ffffff" />
                         <span>{g.status.toUpperCase()}</span>
                       </span>
                       <span className="mg-month-pill">
@@ -688,13 +694,6 @@ const ManageGroups = () => {
                           <span>{activatingGroupId === g.id ? 'Starting...' : 'Activate'}</span>
                         </button>
                       )}
-                    </div>
-
-                    {/* Next Chit Days Row */}
-                    <div className="mg-header-days-row">
-                      <span className="mg-days-pill">
-                        Next Chit: {calculateDaysToNextChit(g)} Days
-                      </span>
                     </div>
                   </div>
                   <button className="gc-arrow-btn" onClick={(e) => { e.stopPropagation(); openGroupDetails(g); }} title="View Group Details">

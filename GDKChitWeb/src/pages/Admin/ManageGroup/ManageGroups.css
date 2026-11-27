@@ -110,18 +110,19 @@
   line-height: 1.25;
 }
 
+.mg-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .mg-header-badges-row {
   margin-top: 8px;
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-}
-
-.mg-header-days-row {
-  margin-top: 6px;
-  display: flex;
-  align-items: center;
 }
 
 .mg-status-pill,
